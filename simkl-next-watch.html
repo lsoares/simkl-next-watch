@@ -358,6 +358,32 @@
         margin: 0;
       }
 
+      .range-tabs {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+        margin-right: 12px;
+      }
+
+      .range-tab {
+        background: transparent;
+        border: 1px solid var(--panel-border);
+        color: var(--muted);
+        border-radius: 6px;
+        min-height: unset;
+        padding: 4px 10px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+
+      .range-tab.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #000;
+        font-weight: 600;
+      }
+
       .close-btn {
         width: 32px;
         height: 32px;
@@ -532,6 +558,11 @@
       <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="statsModalTitle">
         <div class="modal-header">
           <h2 id="statsModalTitle">My watching stats</h2>
+          <div class="range-tabs">
+            <button class="range-tab" data-range="30d">30d</button>
+            <button class="range-tab" data-range="6m">6m</button>
+            <button class="range-tab active" data-range="all">All</button>
+          </div>
           <button id="closeStatsModalButton" class="secondary close-btn" type="button">&#x2715;</button>
         </div>
         <div id="statsContent"><p class="empty">Loading…</p></div>
@@ -1161,47 +1192,71 @@
         });
       }
 
+      let statsRawData = null;
+
       async function openStatsModal() {
         statsModalBackdrop.hidden = false;
-        statsContent.innerHTML = `<p class="empty">Loading…</p>`;
-        try {
-          const [showsResponse, moviesResponse, settings] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
-            simklFetch("https://api.simkl.com/users/settings"),
-          ]);
 
-          const shows = normalizeList(showsResponse.shows);
-          const movies = normalizeList(moviesResponse.movies);
+        if (!statsRawData) {
+          statsContent.innerHTML = `<p class="empty">Loading…</p>`;
+          try {
+            const [showsResponse, moviesResponse, settings] = await Promise.all([
+              simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
+              simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
+              simklFetch("https://api.simkl.com/users/settings"),
+            ]);
 
-          const userId = settings?.account?.id;
-          if (!userId) throw new Error("Could not determine user ID.");
+            const shows = normalizeList(showsResponse.shows);
+            const movies = normalizeList(moviesResponse.movies);
+            const userId = settings?.account?.id;
+            if (!userId) throw new Error("Could not determine user ID.");
 
-          statsContent.innerHTML = `<p class="empty">Loading details…</p>`;
+            statsContent.innerHTML = `<p class="empty">Loading details…</p>`;
 
-          const watched = (s) => normalizeStatus(s.status) !== "plantowatch";
-          const [stats, tvDetails, movieDetails] = await Promise.all([
-            simklFetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
-            fetchItemDetails(shows.filter(watched), "tv"),
-            fetchItemDetails(movies.filter(watched), "movies"),
-          ]);
+            const watched = (s) => normalizeStatus(s.status) !== "plantowatch";
+            const [apiStats, tvDetails, movieDetails] = await Promise.all([
+              simklFetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
+              fetchItemDetails(shows.filter(watched), "tv"),
+              fetchItemDetails(movies.filter(watched), "movies"),
+            ]);
 
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-          const last30ShowMins = shows
-            .filter((s) => s.last_watched_at && new Date(s.last_watched_at) >= thirtyDaysAgo)
-            .reduce((sum, s) => sum + (s.runtime || 0), 0);
-          const last30MovieMins = movies
-            .filter((m) => m.last_watched_at && new Date(m.last_watched_at) >= thirtyDaysAgo)
-            .reduce((sum, m) => sum + (m.runtime || 0), 0);
-
-          const totalShowMins = stats.tv?.total_mins || 0;
-          const totalMovieMins = stats.movies?.total_mins || 0;
-
-          statsContent.innerHTML = renderStatsShell({ totalShowMins, totalMovieMins, last30ShowMins, last30MovieMins });
-          initStatsCharts(shows, movies, tvDetails, movieDetails);
-        } catch (error) {
-          statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
+            statsRawData = { shows, movies, tvDetails, movieDetails, apiStats };
+          } catch (error) {
+            statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
+            return;
+          }
         }
+
+        applyStatsRange();
+
+        statsModalBackdrop.querySelectorAll(".range-tab:not([data-wired])").forEach((btn) => {
+          btn.dataset.wired = "1";
+          btn.addEventListener("click", () => {
+            statsModalBackdrop.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            applyStatsRange();
+          });
+        });
+      }
+
+      function applyStatsRange() {
+        const range = statsModalBackdrop.querySelector(".range-tab.active")?.dataset.range || "all";
+        const { shows, movies, tvDetails, movieDetails, apiStats } = statsRawData;
+
+        const cutoff = range === "30d" ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                     : range === "6m"  ? new Date(Date.now() - 183 * 24 * 60 * 60 * 1000)
+                     : null;
+        const inRange = (item) => !cutoff || (item.last_watched_at && new Date(item.last_watched_at) >= cutoff);
+
+        const filtShows  = shows.filter(inRange);
+        const filtMovies = movies.filter(inRange);
+
+        const showMins  = range === "all" ? (apiStats.tv?.total_mins     || 0) : filtShows.reduce((s, i)  => s + (i.runtime || 0), 0);
+        const movieMins = range === "all" ? (apiStats.movies?.total_mins || 0) : filtMovies.reduce((s, i) => s + (i.runtime || 0), 0);
+        const rangeLabel = { "30d": "Last 30 days", "6m": "Last 6 months", "all": "All time" }[range];
+
+        statsContent.innerHTML = renderStatsShell({ rangeLabel, showMins, movieMins });
+        initStatsCharts(filtShows, filtMovies, tvDetails, movieDetails);
       }
 
       function closeStatsModal() {
@@ -1256,22 +1311,17 @@
         return h > 0 ? `${h}h` : "0h";
       }
 
-      function renderStatsShell({ totalShowMins, totalMovieMins, last30ShowMins, last30MovieMins }) {
-        function row(label, showMins, movieMins) {
-          return `
+      function renderStatsShell({ rangeLabel, showMins, movieMins }) {
+        return `
+          <div class="stats-time">
             <div class="stats-time-item">
-              <span class="stats-time-label">${escapeHtml(label)}</span>
+              <span class="stats-time-label">${escapeHtml(rangeLabel)}</span>
               <span class="stats-time-value">${escapeHtml(minsToDaysHours(showMins + movieMins))}</span>
               <span class="stats-time-sub">
                 <span class="stats-time-tv">${escapeHtml(minsToDaysHours(showMins))} TV</span>
                 <span class="stats-time-movie">${escapeHtml(minsToDaysHours(movieMins))} movies</span>
               </span>
-            </div>`;
-        }
-        return `
-          <div class="stats-time">
-            ${row("Total watched", totalShowMins, totalMovieMins)}
-            ${row("Last 30 days", last30ShowMins, last30MovieMins)}
+            </div>
           </div>
           <div id="statsStatus" class="stats-status"></div>
           <div class="stats-charts">
@@ -1322,7 +1372,9 @@
         const labels = entries.map(([l]) => l);
         const data = entries.map(([, v]) => v);
         const colors = GENRE_COLORS.slice(0, labels.length);
-        new Chart(document.getElementById(canvasId), {
+        const canvas = document.getElementById(canvasId);
+        Chart.getChart(canvas)?.destroy();
+        new Chart(canvas, {
           type: "pie",
           data: {
             labels,
@@ -1346,7 +1398,9 @@
       }
 
       function makeBarChart(canvasId, labels, datasets) {
-        return new Chart(document.getElementById(canvasId), {
+        const canvas = document.getElementById(canvasId);
+        Chart.getChart(canvas)?.destroy();
+        return new Chart(canvas, {
           type: "bar",
           data: { labels, datasets },
           options: {
