@@ -1280,9 +1280,13 @@
                 <canvas id="chartRatings"></canvas>
               </div>
               <div class="stats-chart-wrap">
-                <h3>Release decade</h3>
-                <canvas id="chartYear"></canvas>
+                <h3>Day of week</h3>
+                <canvas id="chartDow"></canvas>
               </div>
+            </div>
+            <div class="stats-chart-wrap">
+              <h3>Release decade</h3>
+              <canvas id="chartYear"></canvas>
             </div>
             <div class="stats-genres">
               <div class="stats-chart-wrap">
@@ -1404,6 +1408,22 @@
         makeBarChart("chartRatings", ratingLabels, [
           { label: "TV Shows", data: ratingLabels.map((r) => showRatings[r] || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
           { label: "Movies",   data: ratingLabels.map((r) => movieRatings[r] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+        ]);
+
+        // Day of week
+        const dowLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        function dowCounts(items) {
+          const map = [0,0,0,0,0,0,0];
+          for (const item of items) {
+            if (!item.last_watched_at) continue;
+            const day = new Date(item.last_watched_at).getDay(); // 0=Sun
+            map[(day + 6) % 7]++; // shift so Mon=0
+          }
+          return map;
+        }
+        makeBarChart("chartDow", dowLabels, [
+          { label: "TV Shows", data: dowCounts(shows),  backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+          { label: "Movies",   data: dowCounts(movies), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
         ]);
 
         // Release decade
