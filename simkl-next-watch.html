@@ -576,9 +576,11 @@
         tvPickId: "simkl-tv-pick-id",
         moviePickId: "simkl-movie-pick-id",
         genreCache: "simkl-genre-cache",
+        statsCache: "simkl-stats-cache",
       };
 
       const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const STATS_CACHE_TTL = 15 * 60 * 1000;           // 15 min
 
       const state = {
         tvCandidates: [],
@@ -1194,8 +1196,26 @@
 
       let statsRawData = null;
 
+      function loadStatsCache() {
+        try {
+          const raw = localStorage.getItem(storageKeys.statsCache);
+          if (!raw) return null;
+          const cached = JSON.parse(raw);
+          if (Date.now() - cached.ts > STATS_CACHE_TTL) return null;
+          return cached.data;
+        } catch { return null; }
+      }
+
+      function saveStatsCache(data) {
+        try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), data })); } catch {}
+      }
+
       async function openStatsModal() {
         statsModalBackdrop.hidden = false;
+
+        if (!statsRawData) {
+          statsRawData = loadStatsCache();
+        }
 
         if (!statsRawData) {
           statsContent.innerHTML = `<p class="empty">Loading…</p>`;
@@ -1221,6 +1241,7 @@
             ]);
 
             statsRawData = { shows, movies, tvDetails, movieDetails, apiStats };
+            saveStatsCache(statsRawData);
           } catch (error) {
             statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
             return;
