@@ -441,6 +441,7 @@
 
       /* install button */
       #installButton { display: inline-flex; }
+      #installButton.hidden { display: none; }
 
       .empty {
         color: var(--muted);
@@ -696,7 +697,28 @@
 
       @media (max-width: 640px) {
         main {
-          padding: 16px;
+          padding: 16px 12px 72px;
+        }
+        .suggestions-grid {
+          flex-wrap: nowrap;
+          gap: 10px;
+          height: calc(100dvh - 110px);
+        }
+        .suggestion-card {
+          flex: 1;
+          min-width: 0;
+          max-width: none;
+          width: 50%;
+          gap: 0;
+        }
+        .card-nav-wrap,
+        .card-content-wrap,
+        .card-content {
+          height: 100%;
+        }
+        .item-card {
+          aspect-ratio: unset;
+          height: 100%;
         }
       }
     </style>
@@ -713,7 +735,7 @@
       </div>
 
       <div class="bottom-bar">
-        <button id="installButton" class="tiny-link" type="button">Install</button>
+        <button id="installButton" class="tiny-link" type="button">install</button>
         <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
       </div>
@@ -1014,6 +1036,9 @@
       const statsContent = document.getElementById("statsContent");
 
       // PWA install
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      if (isStandalone) document.getElementById("installButton").classList.add("hidden");
+
       let deferredInstall;
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
