@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:simkl.com)",
+      "Bash(curl -s \"https://simkl.com\")",
+      "Bash(curl -sL --user-agent \"Mozilla/5.0\" \"https://simkl.com\")",
+      "Bash(curl -sL --user-agent \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://simkl.com\")",
+      "Bash(curl -v --user-agent \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\" \"https://simkl.com\")",
+      "Bash(curl -sI \"https://simkl.com/favicon.ico\")",
+      "WebFetch(domain:simkl.docs.apiary.io)",
+      "Bash(curl -sL \"https://jsapi.apiary.io/apis/simkl.json\")",
+      "Bash(python3 -c \" import sys, json d = json.load\\(sys.stdin\\) rgs = d.get\\('resourceGroups', []\\) for rg in rgs: for r in rg.get\\('resources', []\\): uri = r.get\\('uriTemplate',''\\) if any\\(x in uri.lower\\(\\) for x in ['history', 'activity', 'last', 'stat', 'sync']\\): print\\(uri\\) \")",
+      "Bash(python3 -c \" import sys, json d = json.load\\(sys.stdin\\) rgs = d.get\\('resourceGroups', []\\) for rg in rgs: for r in rg.get\\('resources', []\\): uri = r.get\\('uriTemplate',''\\) if 'all-items' in uri or 'activities' in uri: print\\('URI:', uri\\) for action in r.get\\('actions', []\\): for ex in action.get\\('examples', []\\): for resp in ex.get\\('responses', []\\): print\\('SAMPLE:', resp.get\\('body',''\\)[:600]\\) print\\(\\) \")",
+      "Bash(python3 -c \" import sys, json d = json.load\\(sys.stdin\\) rgs = d.get\\('resourceGroups', []\\) for rg in rgs: for r in rg.get\\('resources', []\\): uri = r.get\\('uriTemplate',''\\) if 'history' in uri and 'remove' not in uri: for action in r.get\\('actions', []\\): for ex in action.get\\('examples', []\\): for resp in ex.get\\('responses', []\\): print\\('URI:', uri\\) print\\('SAMPLE:', resp.get\\('body',''\\)[:800]\\) \")",
+      "Bash(python3 -c \" import sys, json d = json.load\\(sys.stdin\\) rgs = d.get\\('resourceGroups', []\\) for rg in rgs: for r in rg.get\\('resources', []\\): uri = r.get\\('uriTemplate',''\\) if uri in ['/tv/{id}{?client_id}', '/movies/{id}{?client_id}']: for action in r.get\\('actions', []\\): for ex in action.get\\('examples', []\\): for resp in ex.get\\('responses', []\\): print\\('URI:', uri\\) print\\(resp.get\\('body',''\\)[:1200]\\) \")",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.simkl.org)",
+      "WebFetch(domain:publicapi.dev)",
+      "WebFetch(domain:dlthub.com)",
+      "WebFetch(domain:codeberg.org)",
+      "Bash(node:*)",
+      "Bash(git init:*)",
+      "Bash(git --version)"
+    ]
+  }
+}

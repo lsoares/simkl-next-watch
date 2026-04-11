@@ -234,6 +234,7 @@
       .suggestion-nav {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         margin-bottom: 10px;
       }
@@ -269,16 +270,10 @@
         overflow: hidden;
       }
 
-      @keyframes slideFromRight  { from { transform: translateX(100%); } to { transform: translateX(0); } }
-      @keyframes slideFromLeft   { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-      @keyframes slideOutToLeft  { from { transform: translateX(0); } to { transform: translateX(-100%); } }
-      @keyframes slideOutToRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
-
-      .card-content { overflow: hidden; }
-      .card-content.enter-right  { animation: slideFromRight  0.22s ease-out; }
-      .card-content.enter-left   { animation: slideFromLeft   0.22s ease-out; }
-      .card-content.exit-left    { animation: slideOutToLeft  0.18s ease-in forwards; pointer-events: none; }
-      .card-content.exit-right   { animation: slideOutToRight 0.18s ease-in forwards; pointer-events: none; }
+      @keyframes fromRight { from { transform: translateX(24px); } to { transform: translateX(0); } }
+      @keyframes fromLeft  { from { transform: translateX(-24px); } to { transform: translateX(0); } }
+      .card-content.from-right { animation: fromRight 0.2s ease-out; }
+      .card-content.from-left  { animation: fromLeft  0.2s ease-out; }
 
       .mark-watched-btn {
         display: inline-flex;
@@ -892,9 +887,11 @@
       });
 
       hydrateCredentials();
-      renderCard("tv");
-      renderCard("movie");
-      if (getClientId() && getAccessToken()) loadSuggestions();
+      if (getClientId() && getAccessToken()) {
+        renderCard("tv");
+        renderCard("movie");
+        loadSuggestions();
+      }
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js").catch(() => {});
@@ -1146,45 +1143,27 @@
             <button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>
           </div>` : "";
 
-        const enterClass = dir > 0 ? "enter-right" : dir < 0 ? "enter-left" : "";
-        const exitClass  = dir > 0 ? "exit-left"   : dir < 0 ? "exit-right"  : "";
+        const animClass = dir > 0 ? "from-right" : dir < 0 ? "from-left" : "";
 
-        function attachHandlers() {
-          container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
-            ?.addEventListener("click", () => markSuggestionWatched(type));
-          container.querySelectorAll(".rating-btn").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-              e.preventDefault();
-              rateAndMarkWatched(type, Number(btn.dataset.rating));
-            });
+        container.innerHTML = navHtml + `<div class="card-content ${animClass}">${renderItem(item, type)}</div>`;
+
+        container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
+          ?.addEventListener("click", () => markSuggestionWatched(type));
+        container.querySelectorAll(".rating-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            rateAndMarkWatched(type, Number(btn.dataset.rating));
           });
-          container.querySelectorAll(".nav-arrow").forEach((btn) => {
-            btn.addEventListener("click", async () => {
-              const t = btn.dataset.type;
-              const d = Number(btn.dataset.dir);
-              const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
-              await selectCandidate(t, newIndex);
-              renderCard(t, d);
-            });
+        });
+        container.querySelectorAll(".nav-arrow").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const t = btn.dataset.type;
+            const d = Number(btn.dataset.dir);
+            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
+            await selectCandidate(t, newIndex);
+            renderCard(t, d);
           });
-        }
-
-        function injectNewCard() {
-          const newContent = document.createElement("div");
-          newContent.className = `card-content ${enterClass}`;
-          newContent.innerHTML = renderItem(item, type);
-          container.innerHTML = navHtml;
-          container.appendChild(newContent);
-          attachHandlers();
-        }
-
-        const old = container.querySelector(".card-content");
-        if (exitClass && old) {
-          old.classList.add(exitClass);
-          old.addEventListener("animationend", injectNewCard, { once: true });
-        } else {
-          injectNewCard();
-        }
+        });
       }
 
       function renderItem(item, type) {
