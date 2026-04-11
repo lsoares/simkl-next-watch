@@ -45,6 +45,11 @@
         margin-bottom: 12px;
       }
 
+      .header {
+        display: flex;
+        align-items: center;
+      }
+
       .row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -256,6 +261,31 @@
         color: var(--muted);
       }
 
+      .skeleton {
+        background: #1e2a3a;
+        border-radius: 8px;
+        animation: shimmer 1.4s infinite;
+      }
+
+      @keyframes shimmer {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+      }
+
+      .skeleton-poster {
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        border-radius: 10px;
+      }
+
+      .skeleton-line {
+        height: 14px;
+        margin-top: 10px;
+      }
+
+      .skeleton-line.short { width: 55%; }
+      .skeleton-line.medium { width: 75%; }
+
       .pin-box {
         padding: 16px;
         border-radius: 12px;
@@ -305,6 +335,16 @@
 
       .modal-header h2 {
         margin: 0;
+      }
+
+      .close-btn {
+        width: 32px;
+        height: 32px;
+        min-height: unset;
+        padding: 0;
+        font-size: 1rem;
+        border-radius: 50%;
+        flex-shrink: 0;
       }
 
       .stats-time {
@@ -390,10 +430,12 @@
   </head>
   <body>
     <main>
-      <section class="panel">
+      <section class="panel header">
         <h1>Simkl Next Watch</h1>
-        <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
-        <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+        <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+          <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
+        </div>
       </section>
 
       <div class="suggestions-grid">
@@ -405,40 +447,29 @@
     <div id="authModalBackdrop" class="modal-backdrop" hidden>
       <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
         <div class="modal-header">
-          <h2 id="authModalTitle">Simkl login</h2>
-          <button id="closeAuthModalButton" class="secondary" type="button">Close</button>
+          <h2 id="authModalTitle">Connect to Simkl</h2>
+          <button id="closeAuthModalButton" class="secondary close-btn" type="button">&#x2715;</button>
         </div>
 
-        <div class="row">
-          <div>
-            <label for="clientId">Simkl client ID</label>
-            <input id="clientId" placeholder="Paste your Simkl app client ID" />
-            <div class="field-help">
-              Need one?
-              <a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">
-                Create a Simkl app
-              </a>
-            </div>
+        <div id="authStep1">
+          <p class="field-help">Step 1 — <a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong></p>
+          <label for="clientId">Client ID</label>
+          <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
+          <div class="actions" style="margin-top:12px">
+            <button id="startPinButton">Connect with PIN</button>
           </div>
-          <div>
-            <label for="accessToken">Access token</label>
-            <input id="accessToken" placeholder="Optional if you use PIN connect below" />
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="saveCredentialsButton" class="secondary">Save credentials</button>
-          <button id="startPinButton">Connect with PIN</button>
-          <button id="logoutButton" class="danger">Clear saved auth</button>
         </div>
 
         <div id="pinArea" class="pin-box" hidden>
-          <div>Open <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">Simkl PIN</a></div>
+          <p class="field-help">Step 2 — Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
           <div id="pinCode" class="pin-code"></div>
           <div id="pinStatus" class="status"></div>
         </div>
 
         <div id="globalStatus" class="status"></div>
+        <div style="margin-top:14px;text-align:right">
+          <button id="logoutButton" class="tiny-link">Clear saved auth</button>
+        </div>
       </section>
     </div>
 
@@ -446,7 +477,7 @@
       <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="statsModalTitle">
         <div class="modal-header">
           <h2 id="statsModalTitle">My watching stats</h2>
-          <button id="closeStatsModalButton" class="secondary" type="button">Close</button>
+          <button id="closeStatsModalButton" class="secondary close-btn" type="button">&#x2715;</button>
         </div>
         <div id="statsContent"><p class="empty">Loading…</p></div>
       </section>
@@ -458,7 +489,10 @@
         accessToken: "simkl-access-token",
         tvPickId: "simkl-tv-pick-id",
         moviePickId: "simkl-movie-pick-id",
+        genreCache: "simkl-genre-cache",
       };
+
+      const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
       const state = {
         tvCandidates: [],
@@ -471,7 +505,6 @@
       };
 
       const clientIdInput = document.getElementById("clientId");
-      const accessTokenInput = document.getElementById("accessToken");
       const globalStatus = document.getElementById("globalStatus");
       const pinArea = document.getElementById("pinArea");
       const pinLink = document.getElementById("pinLink");
@@ -480,6 +513,7 @@
       const tvSuggestionContainer = document.getElementById("tvSuggestion");
       const movieSuggestionContainer = document.getElementById("movieSuggestion");
       const authModalBackdrop = document.getElementById("authModalBackdrop");
+      document.getElementById("currentUrl").textContent = window.location.href;
       const statsModalBackdrop = document.getElementById("statsModalBackdrop");
       const statsContent = document.getElementById("statsContent");
 
@@ -487,7 +521,6 @@
       document.getElementById("closeAuthModalButton").addEventListener("click", closeAuthModal);
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
       document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
-      document.getElementById("saveCredentialsButton").addEventListener("click", saveCredentials);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
       document.getElementById("logoutButton").addEventListener("click", clearSavedAuth);
       authModalBackdrop.addEventListener("click", (event) => {
@@ -510,7 +543,6 @@
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
-        accessTokenInput.value = localStorage.getItem(storageKeys.accessToken) || "";
       }
 
       function openAuthModal() {
@@ -521,44 +553,23 @@
         authModalBackdrop.hidden = true;
       }
 
-      function saveCredentials() {
-        const clientId = clientIdInput.value.trim();
-        const accessToken = accessTokenInput.value.trim();
-
-        if (!clientId) {
-          setGlobalStatus("Client ID is required.", true);
-          return;
-        }
-
-        localStorage.setItem(storageKeys.clientId, clientId);
-
-        if (accessToken) {
-          localStorage.setItem(storageKeys.accessToken, accessToken);
-        } else {
-          localStorage.removeItem(storageKeys.accessToken);
-        }
-
-        setGlobalStatus("Credentials saved.");
-        closeAuthModal();
-      }
-
       function clearSavedAuth() {
         localStorage.removeItem(storageKeys.clientId);
         localStorage.removeItem(storageKeys.accessToken);
         clientIdInput.value = "";
-        accessTokenInput.value = "";
         pinArea.hidden = true;
         setGlobalStatus("Saved auth cleared.");
         closeAuthModal();
       }
 
       async function startPinFlow() {
-        const clientId = getClientId();
+        const clientId = clientIdInput.value.trim();
         if (!clientId) {
           setGlobalStatus("Add a Simkl client ID first.", true);
           return;
         }
 
+        localStorage.setItem(storageKeys.clientId, clientId);
         state.pinPollAbortController?.abort();
         state.pinPollAbortController = new AbortController();
 
@@ -578,7 +589,7 @@
           pinArea.hidden = false;
           pinCode.textContent = pinPayload.user_code;
           pinLink.href = pinPayload.verification_url || "https://simkl.com/pin/";
-          pinStatus.textContent = "Enter this code in Simkl, then this page will keep polling for access.";
+          pinStatus.textContent = "Waiting for authorization…";
 
           await pollForAccessToken({
             clientId,
@@ -614,7 +625,6 @@
           const payload = await response.json();
 
           if (payload.result === "OK" && payload.access_token) {
-            accessTokenInput.value = payload.access_token;
             localStorage.setItem(storageKeys.clientId, clientId);
             localStorage.setItem(storageKeys.accessToken, payload.access_token);
             pinStatus.textContent = "Connected.";
@@ -649,8 +659,8 @@
 
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?extended=full&episode_watched_at=yes"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
           ]);
 
           const shows = normalizeList(showsResponse.shows);
@@ -878,7 +888,11 @@
 
       function renderItem(item, type) {
         if (!item) {
-          return `<p class="empty">Nothing queued right now.</p>`;
+          return `
+            <div class="skeleton skeleton-poster"></div>
+            <div class="skeleton skeleton-line medium"></div>
+            <div class="skeleton skeleton-line short"></div>
+          `;
         }
 
         const posterUrl = getPosterUrl(item);
@@ -1049,7 +1063,7 @@
       }
 
       function getAccessToken() {
-        return accessTokenInput.value.trim();
+        return localStorage.getItem(storageKeys.accessToken) || "";
       }
 
       function setGlobalStatus(message, isError = false) {
@@ -1076,8 +1090,8 @@
         statsContent.innerHTML = `<p class="empty">Loading…</p>`;
         try {
           const [showsResponse, moviesResponse, settings] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?extended=full"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
             simklFetch("https://api.simkl.com/users/settings"),
           ]);
 
@@ -1117,9 +1131,16 @@
         statsModalBackdrop.hidden = true;
       }
 
+      function loadGenreCache() {
+        try { return JSON.parse(localStorage.getItem(storageKeys.genreCache) || "{}"); } catch { return {}; }
+      }
+
       async function fetchGenres(items, type) {
         const counts = {};
         const clientId = getClientId();
+        const cache = loadGenreCache();
+        const now = Date.now();
+
         const subset = [...items]
           .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
           .slice(0, 50);
@@ -1128,9 +1149,18 @@
           subset.map((item) => {
             const id = item.ids?.simkl;
             if (!id) return Promise.resolve(null);
-            return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`);
+            const key = `${type}:${id}`;
+            const cached = cache[key];
+            if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve({ genres: cached.genres });
+            return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`)
+              .then((data) => {
+                if (data?.genres) cache[key] = { genres: data.genres, ts: now };
+                return data;
+              });
           }),
         );
+
+        try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch { /* storage full */ }
 
         for (const r of settled) {
           for (const genre of (r.status === "fulfilled" ? r.value?.genres : null) || []) {
