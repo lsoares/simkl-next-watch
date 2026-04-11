@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simkl Next Watch</title>
-    <link rel="icon" href="https://simkl.com/favicon.ico" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Next Watch" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <style>
       :root {
@@ -26,12 +32,17 @@
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: var(--bg);
         color: var(--text);
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       main {
-        max-width: 960px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: 680px;
         padding: 24px;
+        box-sizing: border-box;
       }
 
       h1,
@@ -137,15 +148,10 @@
       }
 
       .suggestions-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 24px;
-      }
-
-      @media (max-width: 560px) {
-        .suggestions-grid {
-          grid-template-columns: 1fr;
-        }
       }
 
       .suggestion-card {
@@ -153,6 +159,8 @@
         flex-direction: column;
         gap: 14px;
         width: min(100%, 280px);
+        flex: 1 1 220px;
+        max-width: 280px;
       }
 
       .item-card {
@@ -261,15 +269,16 @@
         overflow: hidden;
       }
 
-      @keyframes slideFromRight  { from { transform: translateX(40px);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-      @keyframes slideFromLeft   { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-      @keyframes slideOutToLeft  { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-40px); opacity: 0; } }
-      @keyframes slideOutToRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(40px);  opacity: 0; } }
+      @keyframes slideFromRight  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+      @keyframes slideFromLeft   { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+      @keyframes slideOutToLeft  { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+      @keyframes slideOutToRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
 
-      .card-content.enter-right  { animation: slideFromRight  0.2s ease-out; }
-      .card-content.enter-left   { animation: slideFromLeft   0.2s ease-out; }
-      .card-content.exit-left    { animation: slideOutToLeft  0.15s ease-in forwards; pointer-events: none; }
-      .card-content.exit-right   { animation: slideOutToRight 0.15s ease-in forwards; pointer-events: none; }
+      .card-content { overflow: hidden; }
+      .card-content.enter-right  { animation: slideFromRight  0.22s ease-out; }
+      .card-content.enter-left   { animation: slideFromLeft   0.22s ease-out; }
+      .card-content.exit-left    { animation: slideOutToLeft  0.18s ease-in forwards; pointer-events: none; }
+      .card-content.exit-right   { animation: slideOutToRight 0.18s ease-in forwards; pointer-events: none; }
 
       .mark-watched-btn {
         display: inline-flex;
@@ -579,7 +588,6 @@
   <body>
     <main>
       <section class="panel header">
-        <h1>Simkl Next Watch</h1>
         <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
           <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
           <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
@@ -887,6 +895,10 @@
       renderCard("tv");
       renderCard("movie");
       if (getClientId() && getAccessToken()) loadSuggestions();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      }
 
       addSwipe(tvSuggestionContainer, "tv");
       addSwipe(movieSuggestionContainer, "movie");
