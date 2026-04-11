@@ -603,24 +603,21 @@
         </div>
 
         <div id="authStep1">
-          <p class="field-help">Step 1 — <a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong></p>
+          <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
           <label for="clientId">Client ID</label>
           <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
           <div class="actions" style="margin-top:12px">
-            <button id="startPinButton">Connect with PIN</button>
+            <button id="startPinButton" disabled>Connect with PIN</button>
           </div>
         </div>
 
         <div id="pinArea" class="pin-box" hidden>
-          <p class="field-help">Step 2 — Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
+          <p class="field-help">Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
           <div id="pinCode" class="pin-code"></div>
           <div id="pinStatus" class="status"></div>
         </div>
 
         <div id="globalStatus" class="status"></div>
-        <div style="margin-top:14px;text-align:right">
-          <button id="logoutButton" class="tiny-link">Clear saved auth</button>
-        </div>
       </section>
     </div>
 
@@ -864,6 +861,13 @@
       const movieSuggestionContainer = document.getElementById("movieSuggestion");
       const authModalBackdrop = document.getElementById("authModalBackdrop");
       document.getElementById("currentUrl").textContent = window.location.href;
+      document.getElementById("copyUrlButton").addEventListener("click", () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          const btn = document.getElementById("copyUrlButton");
+          btn.textContent = "Copied!";
+          setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+        });
+      });
       const statsModalBackdrop = document.getElementById("statsModalBackdrop");
       const statsContent = document.getElementById("statsContent");
 
@@ -872,7 +876,9 @@
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
       document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
-      document.getElementById("logoutButton").addEventListener("click", clearSavedAuth);
+      clientIdInput.addEventListener("input", () => {
+        document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
+      });
       authModalBackdrop.addEventListener("click", (event) => {
         if (event.target === authModalBackdrop) closeAuthModal();
       });
@@ -887,7 +893,7 @@
       });
 
       hydrateCredentials();
-      if (getClientId() && getAccessToken()) {
+      if (getAccessToken()) {
         renderCard("tv");
         renderCard("movie");
         loadSuggestions();
@@ -918,6 +924,7 @@
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
+        document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
       }
 
       function openAuthModal() {
