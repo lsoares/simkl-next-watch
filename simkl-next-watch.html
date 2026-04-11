@@ -147,6 +147,21 @@
         min-height: 24px;
       }
 
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e2d3d;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 0.875rem;
+        z-index: 999;
+        white-space: nowrap;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      }
+
       .suggestions-grid {
         display: flex;
         flex-wrap: wrap;
@@ -188,31 +203,40 @@
         object-fit: cover;
       }
 
-      .poster-rating {
+      /* X remove button — top-right of poster */
+      .poster-remove {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        z-index: 10;
-        border-radius: 10px 10px 0 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.88) 60%, transparent);
-        padding: 6px 4px 10px;
+        top: 6px;
+        right: 6px;
+        z-index: 11;
+        width: 22px;
+        height: 22px;
+        min-height: unset;
+        padding: 0;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.65);
+        border: none;
+        color: #94a3b8;
+        font-size: 0.75rem;
+        line-height: 1;
+        cursor: pointer;
         opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.18s;
+        transition: opacity 0.15s, color 0.15s;
       }
+      .poster-column:hover .poster-remove { opacity: 1; }
+      .poster-remove:hover { color: #fca5a5; }
 
-      .poster-column:hover .poster-rating {
-        opacity: 1;
-        pointer-events: auto;
+      /* Rating row — below the poster for both TV and movies */
+      .card-rating {
+        display: flex;
+        margin-top: 6px;
       }
 
       .rating-btn {
         flex: 1;
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: #475569;
         font-size: 0.68rem;
         font-weight: 600;
         cursor: pointer;
@@ -223,9 +247,9 @@
         line-height: 1;
       }
 
-      /* progressive highlight: when hovering btn N, highlight 1…N via sibling trick */
-      .poster-rating:hover .rating-btn { color: #fbbf24; }
-      .poster-rating .rating-btn:hover ~ .rating-btn { color: #475569; }
+      /* progressive highlight: hovering btn N lights up 1…N */
+      .card-rating:hover .rating-btn { color: #fbbf24; }
+      .card-rating .rating-btn:hover ~ .rating-btn { color: #475569; }
 
       .item-card h3 {
         margin-bottom: 8px;
@@ -593,6 +617,7 @@
         <div id="tvSuggestion" class="suggestion-card"></div>
         <div id="movieSuggestion" class="suggestion-card"></div>
       </div>
+      <div id="globalStatus" class="status toast" hidden></div>
     </main>
 
     <div id="authModalBackdrop" class="modal-backdrop" hidden>
@@ -617,7 +642,6 @@
           <div id="pinStatus" class="status"></div>
         </div>
 
-        <div id="globalStatus" class="status"></div>
       </section>
     </div>
 
@@ -637,6 +661,8 @@
     </div>
 
     <script>
+      let toastTimer;
+
       const storageKeys = {
         clientId: "simkl-client-id",
         accessToken: "simkl-access-token",
@@ -1136,6 +1162,26 @@
         }
       }
 
+      async function removeFromWatchlist(type) {
+        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
+        if (!suggestion) return;
+        const simklId = suggestion.ids?.simkl;
+        if (!simklId) { setGlobalStatus("Cannot remove: missing Simkl ID.", true); return; }
+
+        try {
+          setGlobalStatus(`Removing ${suggestion.title}…`);
+          const key = type === "tv" ? "shows" : "movies";
+          await simklFetch("https://api.simkl.com/sync/history/remove", {
+            method: "POST",
+            body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
+          });
+          setGlobalStatus("Removed from watchlist.");
+          await loadSuggestions();
+        } catch (error) {
+          setGlobalStatus(error.message || "Failed to remove.", true);
+        }
+      }
+
       function renderCard(type, dir = 0) {
         const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
         const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
@@ -1156,6 +1202,8 @@
 
         container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
           ?.addEventListener("click", () => markSuggestionWatched(type));
+        container.querySelector(".poster-remove")
+          ?.addEventListener("click", (e) => { e.preventDefault(); removeFromWatchlist(type); });
         container.querySelectorAll(".rating-btn").forEach((btn) => {
           btn.addEventListener("click", (e) => {
             e.preventDefault();
@@ -1191,7 +1239,12 @@
         return `
           <article class="item-card">
             <div class="poster-column">
-              ${renderPoster(item, posterUrl, episodeUrl, type)}
+              ${renderPoster(item, posterUrl, episodeUrl)}
+              <div class="card-rating">${
+                Array.from({ length: 10 }, (_, i) => i + 1)
+                  .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`)
+                  .join("")
+              }</div>
             </div>
             <div>
               <h3>
@@ -1207,28 +1260,24 @@
         `;
       }
 
-      function renderPoster(item, posterUrl, episodeUrl, type) {
+      function renderPoster(item, posterUrl, episodeUrl) {
         const linkUrl = episodeUrl || item.url || "";
         const posterMarkup = posterUrl
           ? `<img class="poster" src="${posterUrl}" alt="${escapeHtml(item.title)} poster" />`
           : `<div class="poster"></div>`;
-
-        const ratingOverlay = `<div class="poster-rating" data-rating-type="${escapeHtml(type)}">${
-          Array.from({ length: 10 }, (_, i) => i + 1)
-            .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`)
-            .join("")
-        }</div>`;
-
+        const removeBtn = `<button class="poster-remove" title="Remove from watchlist">&#x2715;</button>`;
         const inner = linkUrl
           ? `<a class="poster-anchor" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${posterMarkup}</a>`
           : posterMarkup;
-
-        return ratingOverlay + inner;
+        return removeBtn + inner;
       }
 
       function setGlobalStatus(message, isError = false) {
         globalStatus.textContent = message;
         globalStatus.style.color = isError ? "#fca5a5" : "";
+        globalStatus.hidden = !message;
+        clearTimeout(toastTimer);
+        if (message) toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 3000);
       }
 
       function sleep(ms, signal) {
