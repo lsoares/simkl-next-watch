@@ -607,11 +607,12 @@
           const dx = e.changedTouches[0].clientX - startX;
           startX = null;
           if (Math.abs(dx) < 50) return;
+          e.preventDefault(); // prevent poster link from firing on swipe
           const d = dx < 0 ? 1 : -1;
           const newIndex = (type === "tv" ? state.tvIndex : state.movieIndex) + d;
           await selectCandidate(type, newIndex);
           renderCard(type, d);
-        }, { passive: true });
+        });
       }
 
       function hydrateCredentials() {
