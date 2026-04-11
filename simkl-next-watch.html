@@ -440,7 +440,7 @@
 
 
       /* install button */
-      #installButton { display: none; }
+      #installButton { display: inline-flex; }
 
       .empty {
         color: var(--muted);
@@ -1018,14 +1018,20 @@
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredInstall = e;
-        document.getElementById("installButton").style.display = "";
+      });
+      window.addEventListener("appinstalled", () => {
+        document.getElementById("installButton").style.display = "none";
       });
       document.getElementById("installButton").addEventListener("click", async () => {
-        if (!deferredInstall) return;
-        deferredInstall.prompt();
-        const { outcome } = await deferredInstall.userChoice;
-        deferredInstall = null;
-        if (outcome === "accepted") document.getElementById("installButton").style.display = "none";
+        if (deferredInstall) {
+          deferredInstall.prompt();
+          const { outcome } = await deferredInstall.userChoice;
+          deferredInstall = null;
+          if (outcome === "accepted") document.getElementById("installButton").style.display = "none";
+        } else {
+          // iOS / already installed fallback
+          setGlobalStatus("On iOS: tap Share → Add to Home Screen");
+        }
       });
 
       document.getElementById("openAuthModalButton").addEventListener("click", openAuthModal);
