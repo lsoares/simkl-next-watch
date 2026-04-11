@@ -940,17 +940,10 @@
           const seasonImg = Array.isArray(episodes)
             ? episodes.find((e) => Number(e?.season) === nextEpisode.season && e?.type === "season")?.img || null
             : null;
-          const seasonEps = Array.isArray(episodes)
-            ? episodes.filter((e) => Number(e?.season) === nextEpisode.season && e?.type === "episode")
-            : [];
-          const seasonProgress = seasonEps.length > 0
-            ? { watched: nextEpisode.episode - 1, total: seasonEps.length }
-            : null;
           return {
             ...item,
             nextEpisodeTitle: match?.title || null,
             nextSeasonImg:    seasonImg || null,
-            seasonProgress,
           };
         } catch { return item; }
       }
@@ -1473,12 +1466,16 @@
                   <button class="mark-watched-btn">✓ Watched</button>
                 </div>` : ""}
             </div>
-            ${type === "tv" && item.seasonProgress
-              ? `<div class="season-bar-wrap">
+            ${(() => {
+                const total = (item.total_episodes_count || 0) - (item.not_aired_episodes_count || 0);
+                const watched = item.watched_episodes_count || 0;
+                if (type !== "tv" || total <= 0) return "";
+                const pct = Math.min(100, Math.round(watched / total * 100));
+                return `<div class="season-bar-wrap">
                   ${remaining > 0 ? `<span class="ep-remaining">${remaining} ep left</span>` : ""}
-                  <div class="season-bar"><div class="season-bar-fill" style="width:${Math.round(item.seasonProgress.watched / item.seasonProgress.total * 100)}%"></div></div>
-                </div>`
-              : ""}
+                  <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div></div>
+                </div>`;
+              })()}
           </article>`;
       }
 
