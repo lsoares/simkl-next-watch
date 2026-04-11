@@ -342,13 +342,24 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 6px;
-        padding: 8px;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.5) 60%, transparent);
+        padding: 8px 8px 18px;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 60%, rgba(0,0,0,0.2) 85%, transparent);
         border-radius: 10px 10px 0 0;
         pointer-events: none;
       }
       .poster-top > * { pointer-events: auto; }
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .poster-memo {
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.6);
+        font-style: italic;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        display: block;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .ep-remaining, .ep-watched {
         font-size: 0.6rem;
         font-weight: 600;
@@ -1501,6 +1512,7 @@
                 ${episodeTitle && episodeUrl
                   ? `<a class="poster-episode" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a>`
                   : ""}
+                ${item.memo ? `<span class="poster-memo">${escapeHtml(item.memo)}</span>` : ""}
               </div>
               ${type === "movie" ? `<button class="poster-remove" title="Remove from list">🗑</button>` : ""}
             </div>
