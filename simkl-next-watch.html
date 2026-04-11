@@ -10,12 +10,10 @@
       :root {
         color-scheme: dark;
         --bg: #111827;
-        --panel: transparent;
         --panel-border: #2f3a4f;
         --text: #f9fafb;
         --muted: #94a3b8;
         --accent: #22c55e;
-        --accent-strong: #16a34a;
         --danger: #ef4444;
       }
 
@@ -80,8 +78,7 @@
         color: #86efac;
       }
 
-      button,
-      a.button-link {
+      button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -96,8 +93,7 @@
         text-decoration: none;
       }
 
-      button.secondary,
-      a.secondary {
+      button.secondary {
         background: #374151;
         color: var(--text);
       }
@@ -204,11 +200,10 @@
         transition: color 0.15s, border-color 0.15s;
       }
 
-      .nav-arrow:hover:not(:disabled) {
+      .nav-arrow:hover {
         color: var(--text);
         border-color: var(--text);
       }
-
 
       .nav-pos {
         font-size: 0.8rem;
@@ -509,8 +504,9 @@
       });
 
       hydrateCredentials();
-      renderSuggestions();
-      autoLoadSuggestions();
+      renderCard("tv");
+      renderCard("movie");
+      if (getClientId() && getAccessToken()) loadSuggestions();
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
@@ -673,19 +669,12 @@
             selectCandidate("movie", movieIdx >= 0 ? movieIdx : 0, false),
           ]);
 
-          renderSuggestions();
+          renderCard("tv");
+          renderCard("movie");
           setGlobalStatus("");
         } catch (error) {
           setGlobalStatus(error.message || "Failed to load suggestions.", true);
         }
-      }
-
-      async function autoLoadSuggestions() {
-        if (!getClientId() || !getAccessToken()) {
-          return;
-        }
-
-        await loadSuggestions();
       }
 
       async function simklFetch(url, options = {}) {
@@ -740,19 +729,14 @@
         }
       }
 
-      function hasAired(show) {
-        const total = show.total_episodes_count ?? 0;
-        const notAired = show.not_aired_episodes_count ?? 0;
-        return total === 0 || total > notAired;
-      }
-
       function buildTvCandidates(shows) {
+        const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
         const watching = shows
-          .filter((s) => isPendingShow(s) && hasAired(s))
+          .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
           .sort((a, b) => (b.watched_episodes_count ?? 0) - (a.watched_episodes_count ?? 0))
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
         const watchlisted = shows
-          .filter((s) => isWatchlistedShow(s) && hasAired(s))
+          .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
         return [...watching, ...watchlisted];
       }
@@ -762,7 +746,7 @@
         const currentYear = new Date().getFullYear();
         const clientId = getClientId();
 
-        const queued = movies.filter(isQueuedMovie);
+        const queued = movies.filter((m) => ["plantowatch", "watching"].includes(normalizeStatus(m.status)));
 
         // For movies whose year is current or future, verify actual release date via detail endpoint
         const ambiguous = queued.filter((m) => m.year >= currentYear);
@@ -787,7 +771,6 @@
           .map((movie) => ({
             ...movie,
             watchAction: {
-              kind: "movie",
               payload: {
                 movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }],
               },
@@ -813,19 +796,6 @@
         }
       }
 
-      function isPendingShow(show) {
-        return normalizeStatus(show.status) === "watching" && Boolean(parseNextEpisode(show.next_to_watch));
-      }
-
-      function isWatchlistedShow(show) {
-        return normalizeStatus(show.status) === "plantowatch";
-      }
-
-      function isQueuedMovie(movie) {
-        const status = normalizeStatus(movie.status);
-        return status === "plantowatch" || status === "watching";
-      }
-
       function buildEpisodeWatchAction(show, allowFallbackToPilot = false) {
         const episodeInfo = parseNextEpisode(show.next_to_watch) || (allowFallbackToPilot ? { season: 1, episode: 1 } : null);
         if (!episodeInfo) {
@@ -833,7 +803,6 @@
         }
 
         return {
-          kind: "episode",
           payload: {
             shows: [
               {
@@ -878,11 +847,6 @@
         }
       }
 
-      function renderSuggestions() {
-        renderCard("tv");
-        renderCard("movie");
-      }
-
       function renderCard(type) {
         const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
         const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
@@ -922,7 +886,6 @@
         const buttonId = `mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`;
         const episodeTitle = nextEpisode ? getEpisodeDisplayTitle(item, nextEpisode) : "";
         const episodeUrl = nextEpisode ? buildEpisodeUrl(item, nextEpisode) : "";
-        const description = type === "movie" ? item.overview : "";
 
         return `
           <article class="item-card">
@@ -937,8 +900,7 @@
                 ${escapeHtml(item.title)}${item.year ? ` (${item.year})` : ""}
               </h3>
               ${episodeTitle && episodeUrl ? `<p class="episode-link"><a href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a></p>` : ""}
-              ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-              ${type === "tv" && item.overview ? `<p>${escapeHtml(item.overview)}</p>` : ""}
+              ${item.overview ? `<p>${escapeHtml(item.overview)}</p>` : ""}
             </div>
           </article>
         `;
