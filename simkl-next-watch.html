@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simkl Next Watch</title>
     <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" href="./favicon.ico" />
     <meta name="theme-color" content="#111827" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -286,6 +286,7 @@
       }
       .poster-episode:hover { color: #fff; }
       .mark-watched-btn {
+        position: relative;
         width: 100%;
         background: transparent;
         border: 1px solid rgba(255,255,255,0.12);
@@ -304,6 +305,24 @@
         color: #86efac;
         font-weight: 600;
       }
+      .mark-watched-btn::after {
+        content: "I've watched this";
+        position: absolute;
+        bottom: calc(100% + 5px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.85);
+        color: #f9fafb;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        padding: 3px 7px;
+        border-radius: 4px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s;
+        font-weight: 400;
+      }
+      .mark-watched-btn:hover::after { opacity: 1; }
 
       /* bottom action row */
       .poster-actions {
@@ -330,11 +349,11 @@
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
       .ep-remaining {
         font-size: 0.62rem;
-        color: rgba(255,255,255,0.85);
+        color: rgba(255,255,255,0.7);
         text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        position: absolute;
-        bottom: 8px;
-        right: 6px;
+        display: block;
+        text-align: right;
+        padding: 0 6px 3px;
         opacity: 0;
         transition: opacity 0.15s;
         pointer-events: none;
@@ -357,7 +376,7 @@
       }
       .poster-remove:hover { color: #fca5a5; border-color: #fca5a5; background: rgba(239,68,68,0.25); }
       .poster-remove::after {
-        content: "Remove from watchlist";
+        content: "Remove from list";
         position: absolute;
         top: calc(100% + 5px);
         right: 0;
@@ -377,7 +396,8 @@
       .season-bar-wrap {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        padding-top: 24px;
+        display: flex;
+        flex-direction: column;
         cursor: default;
         opacity: 0;
         transition: opacity 0.2s;
@@ -1076,8 +1096,6 @@
 
       hydrateCredentials();
       if (getAccessToken()) {
-        renderCard("tv");
-        renderCard("movie");
         loadSuggestions();
       } else {
         openAuthModal();
@@ -1459,12 +1477,12 @@
                   ? `<a class="poster-episode" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a>`
                   : ""}
               </div>
-              ${type === "movie" ? `<button class="poster-remove" title="Remove from watchlist">✕</button>` : ""}
+              ${type === "movie" ? `<button class="poster-remove" title="Remove from list">🗑</button>` : ""}
             </div>
             <div class="poster-bottom">
               ${item.watchAction ? `
                 <div class="poster-actions">
-                  <button class="mark-watched-btn">✓ Watched</button>
+                  <button class="mark-watched-btn" title="I've watched this">✓</button>
                 </div>` : ""}
             </div>
             ${(() => {

@@ -9,16 +9,9 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "./favicon.ico",
+      "sizes": "32x32 48x48",
+      "type": "image/x-icon"
     }
   ]
 }
