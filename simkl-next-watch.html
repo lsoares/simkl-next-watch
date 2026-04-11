@@ -349,11 +349,11 @@
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
       .ep-remaining {
         font-size: 0.62rem;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255,255,255,0.8);
         text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        display: block;
-        text-align: right;
-        padding: 0 6px 3px;
+        position: absolute;
+        bottom: 5px;
+        right: 6px;
         opacity: 0;
         transition: opacity 0.15s;
         pointer-events: none;
@@ -396,8 +396,6 @@
       .season-bar-wrap {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        display: flex;
-        flex-direction: column;
         cursor: default;
         opacity: 0;
         transition: opacity 0.2s;
@@ -461,30 +459,30 @@
 
       /* install button */
       #installButton { display: inline-flex; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 32px;
+        height: 32px;
+        margin: -16px 0 0 -16px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        z-index: 50;
+        pointer-events: none;
+      }
+      .spinner[hidden] { display: none; }
       #installButton.hidden { display: none; }
 
       .empty {
         color: var(--muted);
       }
 
-      @keyframes shimmer {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.4; }
-      }
 
-      .skeleton-poster {
-        animation: shimmer 1.4s infinite;
-        background: #1e2a3a;
-        cursor: default;
-      }
-
-      .skeleton-line {
-        height: 14px;
-        margin-top: 10px;
-      }
-
-      .skeleton-line.short { width: 55%; }
-      .skeleton-line.medium { width: 75%; }
 
       .pin-box {
         padding: 16px;
@@ -760,6 +758,7 @@
         <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
       </div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
       <div id="globalStatus" class="status toast" hidden></div>
     </main>
 
@@ -1047,6 +1046,7 @@
         });
       });
       const statsModalBackdrop = document.getElementById("statsModalBackdrop");
+      const loadingSpinner = document.getElementById("loadingSpinner");
       const statsContent = document.getElementById("statsContent");
 
       // PWA install
@@ -1248,6 +1248,7 @@
           return;
         }
 
+        loadingSpinner.hidden = false;
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
             simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
@@ -1275,6 +1276,8 @@
           setGlobalStatus("");
         } catch (error) {
           setGlobalStatus(error.message || "Failed to load suggestions.", true);
+        } finally {
+          loadingSpinner.hidden = true;
         }
       }
 
@@ -1449,7 +1452,7 @@
       }
 
       function renderItem(item, type) {
-        if (!item) return `<div class="item-card skeleton-poster"></div>`;
+        if (!item) return "";
 
         const posterUrl = getPosterUrl(item);
         const nextEpisode = parseNextEpisode(item.next_to_watch);
