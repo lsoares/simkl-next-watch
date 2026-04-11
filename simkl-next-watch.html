@@ -41,7 +41,7 @@
       main {
         width: 100%;
         max-width: 680px;
-        padding: 24px;
+        padding: 64px 24px 80px;
         box-sizing: border-box;
       }
 
@@ -56,9 +56,17 @@
         margin-bottom: 12px;
       }
 
-      .header {
+      .bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
         display: flex;
-        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 12px 0 max(16px, env(safe-area-inset-bottom));
+        background: linear-gradient(to bottom, transparent, rgba(17,24,39,0.95) 40%);
+        z-index: 10;
       }
 
       .row {
@@ -173,180 +181,269 @@
         display: flex;
         flex-direction: column;
         gap: 14px;
-        width: min(100%, 280px);
-        flex: 1 1 220px;
-        max-width: 280px;
+        width: min(100%, 340px);
+        flex: 1 1 260px;
+        max-width: 340px;
       }
 
-      .item-card {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .poster-column {
-        display: flex;
-        flex-direction: column;
-        position: relative;
-      }
-
-      .poster-anchor {
-        display: block;
-      }
-
-      .poster {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 2 / 3;
-        border-radius: 10px;
-        background: #0b1220;
-        object-fit: cover;
-      }
-
-      /* X remove button — top-right of poster */
-      .poster-remove {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        z-index: 11;
-        width: 22px;
-        height: 22px;
-        min-height: unset;
-        padding: 0;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.65);
-        border: none;
-        color: #94a3b8;
-        font-size: 0.75rem;
-        line-height: 1;
-        cursor: pointer;
-        opacity: 0;
-        transition: opacity 0.15s, color 0.15s;
-      }
-      .poster-column:hover .poster-remove { opacity: 1; }
-      .poster-remove:hover { color: #fca5a5; }
-
-      /* Rating row — below the poster for both TV and movies */
-      .card-rating {
-        display: flex;
-        margin-top: 6px;
-      }
-
-      .rating-btn {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: #475569;
-        font-size: 0.68rem;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 4px 0;
-        min-height: unset;
-        border-radius: 3px;
-        transition: color 0.1s;
-        line-height: 1;
-      }
-
-      /* progressive highlight: hovering btn N lights up 1…N */
-      .card-rating:hover .rating-btn { color: #fbbf24; }
-      .card-rating .rating-btn:hover ~ .rating-btn { color: #475569; }
-
-      .item-card h3 {
-        margin-bottom: 8px;
-      }
-
-      .suggestion-nav {
+      /* ── Card layout ── */
+      .card-nav-wrap {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 4px;
       }
-
-      .nav-arrow {
-        background: transparent;
-        border: 1px solid var(--panel-border);
-        color: var(--muted);
-        border-radius: 6px;
-        min-height: unset;
-        width: 28px;
-        height: 28px;
-        padding: 0;
-        font-size: 1.2rem;
-        line-height: 1;
-        cursor: pointer;
-        transition: color 0.15s, border-color 0.15s;
-      }
-
-      .nav-arrow:hover {
-        color: var(--text);
-        border-color: var(--text);
-      }
-
-      .nav-pos {
-        font-size: 0.8rem;
-        color: var(--muted);
-        min-width: 36px;
-        text-align: center;
-      }
-
-      .card-content {
+      .card-content-wrap {
+        flex: 1;
+        min-width: 0;
         overflow: hidden;
       }
-
+      .card-content {
+        /* animation classes applied here */
+      }
       @keyframes fromRight { from { transform: translateX(24px); } to { transform: translateX(0); } }
       @keyframes fromLeft  { from { transform: translateX(-24px); } to { transform: translateX(0); } }
       .card-content.from-right { animation: fromRight 0.2s ease-out; }
       .card-content.from-left  { animation: fromLeft  0.2s ease-out; }
 
+      .nav-arrow {
+        background: transparent;
+        border: none;
+        color: #334155;
+        min-height: unset;
+        width: 20px;
+        flex-shrink: 0;
+        padding: 0;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+      .nav-arrow:hover { color: var(--text); }
+      .nav-arrow:disabled { opacity: 0.2; cursor: default; }
+
+
+      /* ── Poster card ── */
+      .item-card {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 2 / 3;
+        background: #0b1220;
+        cursor: pointer;
+      }
+      .poster {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 10px;
+        user-select: none;
+        -webkit-user-select: none;
+        draggable: false;
+        -webkit-user-drag: none;
+        pointer-events: none;
+      }
+      .poster-anchor { display: block; width: 100%; height: 100%; }
+
+      /* always-on gradient + text at bottom */
+      .poster-bottom {
+        position: absolute;
+        inset: 40% 0 0 0;
+        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.92) 55%);
+        border-radius: 0 0 10px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 8px 8px 14px;
+        pointer-events: none;
+      }
+      .poster-bottom > * { pointer-events: auto; }
+      .poster-title {
+        text-decoration: none;
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0;
+        color: #f9fafb;
+        text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .poster-episode {
+        font-size: 1rem;
+        font-weight: 400;
+        color: rgba(255,255,255,0.75);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
+        text-decoration: none;
+        display: block;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-style: italic;
+      }
+      .poster-episode:hover { color: #fff; }
       .mark-watched-btn {
-        display: inline-flex;
+        width: 100%;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.3);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 7px 0;
+        min-height: unset;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s, color 0.2s;
+      }
+      .mark-watched-btn:hover {
+        background: rgba(34,197,94,0.2);
+        border-color: #22c55e;
+        color: #86efac;
+        font-weight: 600;
+      }
+
+      /* bottom action row */
+      .poster-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+      }
+
+      /* top strip: title (left) + remove X (right, movies only) */
+      .poster-top {
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 8px;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 70%, transparent);
+        border-radius: 10px 10px 0 0;
+        pointer-events: none;
+      }
+      .poster-top > * { pointer-events: auto; }
+      .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .ep-remaining {
+        font-size: 0.62rem;
+        color: rgba(255,255,255,0.85);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        position: absolute;
+        bottom: 8px;
+        right: 6px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+      }
+      .poster-remove {
+        position: relative;
+        background: rgba(0,0,0,0.45);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.6);
+        font-size: 0.65rem;
+        border-radius: 4px;
+        min-height: unset;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        line-height: 1;
+        cursor: pointer;
+        margin-left: auto;
+        transition: color 0.15s, background 0.15s;
+      }
+      .poster-remove:hover { color: #fca5a5; border-color: #fca5a5; background: rgba(239,68,68,0.25); }
+      .poster-remove::after {
+        content: "Remove from watchlist";
+        position: absolute;
+        top: calc(100% + 5px);
+        right: 0;
+        background: rgba(0,0,0,0.85);
+        color: #f9fafb;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        padding: 3px 7px;
+        border-radius: 4px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .poster-remove:hover::after { opacity: 1; }
+
+      /* season progress bar */
+      .season-bar-wrap {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        padding-top: 24px;
+        cursor: default;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .item-card:hover .season-bar-wrap { opacity: 1; }
+      .item-card:hover .ep-remaining { opacity: 1; }
+      .season-bar {
+        height: 3px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 0 0 10px 10px;
+        overflow: hidden;
+        transition: height 0.15s;
+      }
+      .item-card:hover .season-bar { height: 5px; }
+      .season-bar-fill {
+        height: 100%;
+        background: var(--accent);
+      }
+
+      /* watched fade-out */
+      @keyframes watchedOut {
+        0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
+        40%  { filter: brightness(2.5) saturate(0); }
+        100% { opacity: 0; transform: scale(0.9); }
+      }
+      .item-card.marking-watched { animation: watchedOut 0.55s ease-out forwards; pointer-events: none; }
+
+      /* rating prompt overlay */
+      .rating-prompt {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 8px;
+        z-index: 20;
+      }
+      .rating-prompt-label { font-size: 0.75rem; color: #94a3b8; }
+      .rating-prompt-row { display: flex; gap: 2px; }
+      .rating-btn {
+        background: transparent;
+        border: 1px solid #334155;
+        color: #94a3b8;
+        font-size: 0.7rem;
+        font-weight: 600;
         width: 22px;
         height: 22px;
         min-height: unset;
-        padding: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: var(--muted);
-        font-size: 0.85rem;
-        font-weight: 400;
-        border: 1px solid var(--panel-border);
-        vertical-align: middle;
-        margin-right: 5px;
+        border-radius: 4px;
         cursor: pointer;
-        transition: color 0.15s, border-color 0.15s;
+        padding: 0;
+        transition: background 0.1s, color 0.1s, border-color 0.1s;
       }
+      .rating-btn:hover { background: #fbbf24; border-color: #fbbf24; color: #000; }
+      .rating-skip { font-size: 0.65rem; color: #475569; background: none; border: none; cursor: pointer; min-height: unset; padding: 2px; }
+      .rating-skip:hover { color: #94a3b8; }
 
-      .mark-watched-btn:hover {
-        color: var(--accent);
-        border-color: var(--accent);
-      }
 
-      .episode-link {
-        margin-bottom: 10px;
-        font-size: 1rem;
-        font-weight: 700;
-      }
-
-      .episode-link a {
-        color: #86efac;
-        text-decoration: none;
-      }
-
-      .episode-link a:hover {
-        text-decoration: underline;
-      }
+      /* install button */
+      #installButton { display: none; }
 
       .empty {
         color: var(--muted);
-      }
-
-      .skeleton {
-        background: #1e2a3a;
-        border-radius: 8px;
-        animation: shimmer 1.4s infinite;
       }
 
       @keyframes shimmer {
@@ -355,9 +452,9 @@
       }
 
       .skeleton-poster {
-        width: 100%;
-        aspect-ratio: 2 / 3;
-        border-radius: 10px;
+        animation: shimmer 1.4s infinite;
+        background: #1e2a3a;
+        cursor: default;
       }
 
       .skeleton-line {
@@ -606,16 +703,19 @@
   </head>
   <body>
     <main>
-      <section class="panel header">
-        <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
-          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
-          <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
-        </div>
-      </section>
-
       <div class="suggestions-grid">
-        <div id="tvSuggestion" class="suggestion-card"></div>
-        <div id="movieSuggestion" class="suggestion-card"></div>
+        <div class="suggestion-card">
+          <div id="tvSuggestion"></div>
+        </div>
+        <div class="suggestion-card">
+          <div id="movieSuggestion"></div>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <button id="installButton" class="tiny-link" type="button">Install</button>
+        <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+        <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
       </div>
       <div id="globalStatus" class="status toast" hidden></div>
     </main>
@@ -748,6 +848,8 @@
       }
 
       function getPosterUrl(item) {
+        // Season poster → series poster (episode stills are low quality, skipped)
+        if (item.nextSeasonImg) return `https://wsrv.nl/?url=https://simkl.in/posters/${item.nextSeasonImg}_c.webp`;
         if (!item.poster) return "";
         if (String(item.poster).startsWith("http")) return item.poster;
         return `https://wsrv.nl/?url=https://simkl.in/posters/${item.poster}_c.webp`;
@@ -813,7 +915,21 @@
           const match = Array.isArray(episodes)
             ? episodes.find((e) => Number(e?.season) === nextEpisode.season && Number(e?.episode) === nextEpisode.episode && e?.type === "episode")
             : null;
-          return match?.title ? { ...item, nextEpisodeTitle: match.title } : item;
+          const seasonImg = Array.isArray(episodes)
+            ? episodes.find((e) => Number(e?.season) === nextEpisode.season && e?.type === "season")?.img || null
+            : null;
+          const seasonEps = Array.isArray(episodes)
+            ? episodes.filter((e) => Number(e?.season) === nextEpisode.season && e?.type === "episode")
+            : [];
+          const seasonProgress = seasonEps.length > 0
+            ? { watched: nextEpisode.episode - 1, total: seasonEps.length }
+            : null;
+          return {
+            ...item,
+            nextEpisodeTitle: match?.title || null,
+            nextSeasonImg:    seasonImg || null,
+            seasonProgress,
+          };
         } catch { return item; }
       }
 
@@ -897,6 +1013,21 @@
       const statsModalBackdrop = document.getElementById("statsModalBackdrop");
       const statsContent = document.getElementById("statsContent");
 
+      // PWA install
+      let deferredInstall;
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstall = e;
+        document.getElementById("installButton").style.display = "";
+      });
+      document.getElementById("installButton").addEventListener("click", async () => {
+        if (!deferredInstall) return;
+        deferredInstall.prompt();
+        const { outcome } = await deferredInstall.userChoice;
+        deferredInstall = null;
+        if (outcome === "accepted") document.getElementById("installButton").style.display = "none";
+      });
+
       document.getElementById("openAuthModalButton").addEventListener("click", openAuthModal);
       document.getElementById("closeAuthModalButton").addEventListener("click", closeAuthModal);
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
@@ -923,24 +1054,35 @@
         renderCard("tv");
         renderCard("movie");
         loadSuggestions();
+      } else {
+        openAuthModal();
       }
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js").catch(() => {});
       }
 
-      addSwipe(tvSuggestionContainer, "tv");
-      addSwipe(movieSuggestionContainer, "movie");
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && getAccessToken()) loadSuggestions();
+      });
+
+      addSwipe(tvSuggestionContainer.closest(".suggestion-card"), "tv");
+      addSwipe(movieSuggestionContainer.closest(".suggestion-card"), "movie");
 
       function addSwipe(el, type) {
-        let startX = null;
-        el.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
+        let startX = null, startY = null;
+        el.addEventListener("touchstart", (e) => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }, { passive: true });
         el.addEventListener("touchend", async (e) => {
           if (startX === null) return;
           const dx = e.changedTouches[0].clientX - startX;
-          startX = null;
-          if (Math.abs(dx) < 50) return;
-          e.preventDefault(); // prevent poster link from firing on swipe
+          const dy = e.changedTouches[0].clientY - startY;
+          startX = startY = null;
+          // Ignore if mostly vertical (scroll intent) or too short
+          if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+          e.preventDefault();
           const d = dx < 0 ? 1 : -1;
           const newIndex = (type === "tv" ? state.tvIndex : state.movieIndex) + d;
           await selectCandidate(type, newIndex);
@@ -1063,8 +1205,6 @@
           return;
         }
 
-        setGlobalStatus("Loading Simkl suggestions...");
-
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
             simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
@@ -1112,34 +1252,64 @@
         }
       }
 
-      async function markSuggestionWatched(type) {
+      function promptRateAndWatch(type) {
+        const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
+        const card = container.querySelector(".item-card");
+        if (!card) return;
+        // Inject rating prompt overlay
+        const ratingBtns = Array.from({ length: 10 }, (_, i) => i + 1)
+          .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`).join("");
+        const prompt = document.createElement("div");
+        prompt.className = "rating-prompt";
+        prompt.innerHTML = `
+          <span class="rating-prompt-label">Rate before marking watched</span>
+          <div class="rating-prompt-row">${ratingBtns}</div>
+          <button class="rating-skip">Skip rating</button>`;
+        card.appendChild(prompt);
+        prompt.querySelectorAll(".rating-btn").forEach((btn) => {
+          btn.addEventListener("click", () => rateAndMarkWatched(type, Number(btn.dataset.rating), card));
+        });
+        prompt.querySelector(".rating-skip").addEventListener("click", () => markSuggestionWatched(type, card));
+      }
+
+      async function markSuggestionWatched(type, card) {
         const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
         if (!suggestion?.watchAction) {
           setGlobalStatus("This suggestion cannot be marked watched from the available API data.", true);
           return;
         }
-
+        if (card) card.classList.add("marking-watched");
         try {
-          setGlobalStatus(`Updating ${suggestion.title} on Simkl...`);
           await simklFetch("https://api.simkl.com/sync/history", {
             method: "POST",
             body: JSON.stringify(suggestion.watchAction.payload),
           });
-          setGlobalStatus("Marked as watched.");
+          const simklId = suggestion.ids?.simkl;
+          const key = type === "tv" ? "shows" : "movies";
           await loadSuggestions();
+          setGlobalStatus("Marked as watched.", false, simklId ? async () => {
+            try {
+              await simklFetch("https://api.simkl.com/sync/history/remove", {
+                method: "POST",
+                body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
+              });
+              await loadSuggestions();
+              setGlobalStatus("Undone.");
+            } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
+          } : null);
         } catch (error) {
+          if (card) card.classList.remove("marking-watched");
           setGlobalStatus(error.message || "Failed to mark watched.", true);
         }
       }
 
-      async function rateAndMarkWatched(type, rating) {
+      async function rateAndMarkWatched(type, rating, card) {
         const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
         if (!suggestion) return;
         const simklId = suggestion.ids?.simkl;
         if (!simklId) { setGlobalStatus("Cannot rate: missing Simkl ID.", true); return; }
-
+        if (card) card.classList.add("marking-watched");
         try {
-          setGlobalStatus(`Rating ${suggestion.title}…`);
           const key = type === "tv" ? "shows" : "movies";
           const ratedAt = new Date().toISOString();
           const calls = [
@@ -1155,11 +1325,28 @@
             }));
           }
           await Promise.all(calls);
-          setGlobalStatus(`Rated ${rating}/10 and marked as watched.`);
           await loadSuggestions();
+          setGlobalStatus("Marked as watched.", false, async () => {
+            try {
+              await simklFetch("https://api.simkl.com/sync/history/remove", {
+                method: "POST",
+                body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
+              });
+              await loadSuggestions();
+              setGlobalStatus("Undone.");
+            } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
+          });
         } catch (error) {
+          if (card) card.classList.remove("marking-watched");
           setGlobalStatus(error.message || "Failed to rate.", true);
         }
+      }
+
+      function confirmRemove(type) {
+        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
+        if (!suggestion) return;
+        if (!confirm(`Remove "${suggestion.title}" from your watchlist?`)) return;
+        removeFromWatchlist(type);
       }
 
       async function removeFromWatchlist(type) {
@@ -1189,27 +1376,24 @@
         const item = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
         const total = candidates.length;
 
-        const navHtml = total > 1 ? `
-          <div class="suggestion-nav">
-            <button class="nav-arrow" data-type="${type}" data-dir="-1">&#8249;</button>
-            <span class="nav-pos">${index + 1} / ${total}</span>
-            <button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>
-          </div>` : "";
-
         const animClass = dir > 0 ? "from-right" : dir < 0 ? "from-left" : "";
+        const leftBtn  = total > 1 ? `<button class="nav-arrow" data-type="${type}" data-dir="-1">&#8249;</button>` : "";
+        const rightBtn = total > 1 ? `<button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>` : "";
 
-        container.innerHTML = navHtml + `<div class="card-content ${animClass}">${renderItem(item, type)}</div>`;
+        container.innerHTML = `
+          <div class="card-nav-wrap">
+            ${leftBtn}
+            <div class="card-content-wrap">
+              <div class="card-content ${animClass}">${renderItem(item, type)}</div>
+            </div>
+            ${rightBtn}
+          </div>
+          `;
 
-        container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
-          ?.addEventListener("click", () => markSuggestionWatched(type));
+        container.querySelector(".mark-watched-btn")
+          ?.addEventListener("click", () => promptRateAndWatch(type));
         container.querySelector(".poster-remove")
-          ?.addEventListener("click", (e) => { e.preventDefault(); removeFromWatchlist(type); });
-        container.querySelectorAll(".rating-btn").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            rateAndMarkWatched(type, Number(btn.dataset.rating));
-          });
-        });
+          ?.addEventListener("click", (e) => { e.preventDefault(); confirmRemove(type); });
         container.querySelectorAll(".nav-arrow").forEach((btn) => {
           btn.addEventListener("click", async () => {
             const t = btn.dataset.type;
@@ -1222,62 +1406,67 @@
       }
 
       function renderItem(item, type) {
-        if (!item) {
-          return `
-            <div class="skeleton skeleton-poster"></div>
-            <div class="skeleton skeleton-line medium"></div>
-            <div class="skeleton skeleton-line short"></div>
-          `;
-        }
+        if (!item) return `<div class="item-card skeleton-poster"></div>`;
 
         const posterUrl = getPosterUrl(item);
         const nextEpisode = parseNextEpisode(item.next_to_watch);
-        const buttonId = `mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`;
         const episodeTitle = nextEpisode ? getEpisodeDisplayTitle(item, nextEpisode) : "";
         const episodeUrl = nextEpisode ? buildEpisodeUrl(item, nextEpisode) : "";
+        const remaining = type === "tv" && item.total_episodes_count > 0
+          ? item.total_episodes_count - (item.watched_episodes_count || 0) - (item.not_aired_episodes_count || 0)
+          : null;
+        const posterImg = posterUrl
+          ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${escapeHtml(item.title)}" draggable="false" />`
+          : "";
+        const posterInner = episodeUrl || item.url
+          ? `<a class="poster-anchor" href="${escapeHtml(episodeUrl || item.url)}" target="_blank" rel="noreferrer">${posterImg}</a>`
+          : posterImg;
 
         return `
           <article class="item-card">
-            <div class="poster-column">
-              ${renderPoster(item, posterUrl, episodeUrl)}
-              <div class="card-rating">${
-                Array.from({ length: 10 }, (_, i) => i + 1)
-                  .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`)
-                  .join("")
-              }</div>
-            </div>
-            <div>
-              <h3>
-                ${item.watchAction
-                  ? `<button id="${buttonId}" class="mark-watched-btn" title="${escapeHtml(item.watchAction.label)}">✓</button>`
+            ${posterInner}
+            <div class="poster-top">
+              <div class="poster-top-text">
+                ${item.url
+                  ? `<a class="poster-title" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>`
+                  : `<span class="poster-title">${escapeHtml(item.title)}</span>`}
+                ${episodeTitle && episodeUrl
+                  ? `<a class="poster-episode" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a>`
                   : ""}
-                ${escapeHtml(item.title)}${item.year ? ` (${item.year})` : ""}
-              </h3>
-              ${episodeTitle && episodeUrl ? `<p class="episode-link"><a href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a></p>` : ""}
-              ${item.overview ? `<p>${escapeHtml(item.overview)}</p>` : ""}
+              </div>
+              ${type === "movie" ? `<button class="poster-remove" title="Remove from watchlist">✕</button>` : ""}
             </div>
-          </article>
-        `;
+            <div class="poster-bottom">
+              ${item.watchAction ? `
+                <div class="poster-actions">
+                  <button class="mark-watched-btn">✓ Watched</button>
+                </div>` : ""}
+            </div>
+            ${type === "tv" && item.seasonProgress
+              ? `<div class="season-bar-wrap">
+                  ${remaining > 0 ? `<span class="ep-remaining">${remaining} ep left</span>` : ""}
+                  <div class="season-bar"><div class="season-bar-fill" style="width:${Math.round(item.seasonProgress.watched / item.seasonProgress.total * 100)}%"></div></div>
+                </div>`
+              : ""}
+          </article>`;
       }
 
-      function renderPoster(item, posterUrl, episodeUrl) {
-        const linkUrl = episodeUrl || item.url || "";
-        const posterMarkup = posterUrl
-          ? `<img class="poster" src="${posterUrl}" alt="${escapeHtml(item.title)} poster" />`
-          : `<div class="poster"></div>`;
-        const removeBtn = `<button class="poster-remove" title="Remove from watchlist">&#x2715;</button>`;
-        const inner = linkUrl
-          ? `<a class="poster-anchor" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${posterMarkup}</a>`
-          : posterMarkup;
-        return removeBtn + inner;
-      }
-
-      function setGlobalStatus(message, isError = false) {
-        globalStatus.textContent = message;
-        globalStatus.style.color = isError ? "#fca5a5" : "";
-        globalStatus.hidden = !message;
+      function setGlobalStatus(message, isError = false, undoFn = null) {
         clearTimeout(toastTimer);
-        if (message) toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 3000);
+        if (!message) { globalStatus.hidden = true; return; }
+        globalStatus.style.color = isError ? "#fca5a5" : "";
+        if (undoFn) {
+          globalStatus.innerHTML = `${escapeHtml(message)} <button id="undoBtn" style="margin-left:8px;font-size:0.75rem;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:4px;padding:2px 8px;min-height:unset;cursor:pointer;">Undo</button>`;
+          globalStatus.querySelector("#undoBtn").addEventListener("click", () => {
+            clearTimeout(toastTimer);
+            globalStatus.hidden = true;
+            undoFn();
+          });
+        } else {
+          globalStatus.textContent = message;
+        }
+        globalStatus.hidden = false;
+        toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 5000);
       }
 
       function sleep(ms, signal) {
