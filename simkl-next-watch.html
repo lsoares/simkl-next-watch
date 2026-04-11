@@ -342,6 +342,10 @@
         background: #111827;
       }
 
+      #statsModalBackdrop .modal {
+        width: min(980px, 100%);
+      }
+
       .modal-header {
         display: flex;
         align-items: center;
@@ -1285,7 +1289,7 @@
               </div>
             </div>
             <div class="stats-chart-wrap">
-              <h3>Release decade</h3>
+              <h3>Release year</h3>
               <canvas id="chartYear"></canvas>
             </div>
             <div class="stats-genres">
@@ -1426,14 +1430,13 @@
           { label: "Movies",   data: dowCounts(movies), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
         ]);
 
-        // Release decade
-        const decadeOf = (year) => `${Math.floor(year / 10) * 10}s`;
-        const showDecades  = countBy(shows.map((s) => ({ d: s.year ? decadeOf(s.year) : null })), "d");
-        const movieDecades = countBy(movies.map((m) => ({ d: m.year ? decadeOf(m.year) : null })), "d");
-        const allDecades = [...new Set([...Object.keys(showDecades), ...Object.keys(movieDecades)])].filter(Boolean).sort();
-        makeBarChart("chartYear", allDecades, [
-          { label: "TV Shows", data: allDecades.map((d) => showDecades[d]  || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
-          { label: "Movies",   data: allDecades.map((d) => movieDecades[d] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+        // Release year (per year, only years with data)
+        const showYears  = countBy(shows.map((s) => ({ y: s.year || null })), "y");
+        const movieYears = countBy(movies.map((m) => ({ y: m.year || null })), "y");
+        const allYears = [...new Set([...Object.keys(showYears), ...Object.keys(movieYears)])].filter(Boolean).sort();
+        makeBarChart("chartYear", allYears, [
+          { label: "TV Shows", data: allYears.map((y) => showYears[y]  || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 2 },
+          { label: "Movies",   data: allYears.map((y) => movieYears[y] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 2 },
         ]);
 
         // Genre pie charts (top 10)
