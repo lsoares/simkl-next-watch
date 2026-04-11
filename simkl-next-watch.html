@@ -217,6 +217,23 @@
         text-align: center;
       }
 
+      .card-content {
+        overflow: hidden;
+      }
+
+      @keyframes slideFromRight {
+        from { transform: translateX(32px); opacity: 0; }
+        to   { transform: translateX(0);   opacity: 1; }
+      }
+
+      @keyframes slideFromLeft {
+        from { transform: translateX(-32px); opacity: 0; }
+        to   { transform: translateX(0);    opacity: 1; }
+      }
+
+      .card-content.slide-right { animation: slideFromRight 0.22s ease-out; }
+      .card-content.slide-left  { animation: slideFromLeft  0.22s ease-out; }
+
       .mark-watched-btn {
         display: inline-flex;
         align-items: center;
@@ -375,7 +392,7 @@
         display: block;
         font-size: 1.4rem;
         font-weight: 700;
-        color: var(--accent);
+        color: var(--text);
       }
 
       .stats-time-sub {
@@ -409,13 +426,47 @@
         letter-spacing: 0.06em;
       }
 
+      .stats-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
       .stats-genres {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
       }
 
+      .stats-status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .stats-status-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .stats-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .stats-status-count {
+        font-weight: 600;
+        color: var(--text);
+      }
+
       @media (max-width: 500px) {
+        .stats-row,
         .stats-genres {
           grid-template-columns: 1fr;
         }
@@ -857,7 +908,7 @@
         }
       }
 
-      function renderCard(type) {
+      function renderCard(type, dir = 0) {
         const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
         const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
         const index = type === "tv" ? state.tvIndex : state.movieIndex;
@@ -871,7 +922,8 @@
             <button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>
           </div>` : "";
 
-        container.innerHTML = navHtml + renderItem(item, type);
+        const animClass = dir > 0 ? "slide-right" : dir < 0 ? "slide-left" : "";
+        container.innerHTML = navHtml + `<div class="card-content ${animClass}">${renderItem(item, type)}</div>`;
 
         container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
           ?.addEventListener("click", () => markSuggestionWatched(type));
@@ -879,9 +931,10 @@
         container.querySelectorAll(".nav-arrow").forEach((btn) => {
           btn.addEventListener("click", async () => {
             const t = btn.dataset.type;
-            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + Number(btn.dataset.dir);
+            const d = Number(btn.dataset.dir);
+            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
             await selectCandidate(t, newIndex);
-            renderCard(t);
+            renderCard(t, d);
           });
         });
       }
@@ -1101,12 +1154,13 @@
           const userId = settings?.account?.id;
           if (!userId) throw new Error("Could not determine user ID.");
 
-          statsContent.innerHTML = `<p class="empty">Loading genres…</p>`;
+          statsContent.innerHTML = `<p class="empty">Loading details…</p>`;
 
-          const [stats, tvGenres, movieGenres] = await Promise.all([
+          const watched = (s) => normalizeStatus(s.status) !== "plantowatch";
+          const [stats, tvDetails, movieDetails] = await Promise.all([
             simklFetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
-            fetchGenres(shows.filter((s) => normalizeStatus(s.status) !== "plantowatch"), "tv"),
-            fetchGenres(movies.filter((m) => normalizeStatus(m.status) !== "plantowatch"), "movies"),
+            fetchItemDetails(shows.filter(watched), "tv"),
+            fetchItemDetails(movies.filter(watched), "movies"),
           ]);
 
           const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -1121,7 +1175,7 @@
           const totalMovieMins = stats.movies?.total_mins || 0;
 
           statsContent.innerHTML = renderStatsShell({ totalShowMins, totalMovieMins, last30ShowMins, last30MovieMins });
-          initStatsCharts(shows, movies, tvGenres, movieGenres);
+          initStatsCharts(shows, movies, tvDetails, movieDetails);
         } catch (error) {
           statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
         }
@@ -1135,8 +1189,7 @@
         try { return JSON.parse(localStorage.getItem(storageKeys.genreCache) || "{}"); } catch { return {}; }
       }
 
-      async function fetchGenres(items, type) {
-        const counts = {};
+      async function fetchItemDetails(items, type) {
         const clientId = getClientId();
         const cache = loadGenreCache();
         const now = Date.now();
@@ -1151,23 +1204,25 @@
             if (!id) return Promise.resolve(null);
             const key = `${type}:${id}`;
             const cached = cache[key];
-            if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve({ genres: cached.genres });
+            if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve(cached);
             return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`)
               .then((data) => {
-                if (data?.genres) cache[key] = { genres: data.genres, ts: now };
-                return data;
+                const entry = { genres: data?.genres || [], network: data?.network || null, ts: now };
+                cache[key] = entry;
+                return entry;
               });
           }),
         );
 
         try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch { /* storage full */ }
 
+        const genres = {}, networks = {};
         for (const r of settled) {
-          for (const genre of (r.status === "fulfilled" ? r.value?.genres : null) || []) {
-            counts[genre] = (counts[genre] || 0) + 1;
-          }
+          const val = r.status === "fulfilled" ? r.value : null;
+          for (const g of val?.genres || []) genres[g] = (genres[g] || 0) + 1;
+          if (val?.network) networks[val.network] = (networks[val.network] || 0) + 1;
         }
-        return counts;
+        return { genres, networks };
       }
 
       function minsToDaysHours(mins) {
@@ -1195,14 +1250,21 @@
             ${row("Total watched", totalShowMins, totalMovieMins)}
             ${row("Last 30 days", last30ShowMins, last30MovieMins)}
           </div>
+          <div id="statsStatus" class="stats-status"></div>
           <div class="stats-charts">
             <div class="stats-chart-wrap">
-              <h3>Ratings distribution</h3>
-              <canvas id="chartRatings"></canvas>
+              <h3>Watch activity</h3>
+              <canvas id="chartActivity"></canvas>
             </div>
-            <div class="stats-chart-wrap">
-              <h3>Release decade</h3>
-              <canvas id="chartYear"></canvas>
+            <div class="stats-row">
+              <div class="stats-chart-wrap">
+                <h3>Your ratings</h3>
+                <canvas id="chartRatings"></canvas>
+              </div>
+              <div class="stats-chart-wrap">
+                <h3>Release decade</h3>
+                <canvas id="chartYear"></canvas>
+              </div>
             </div>
             <div class="stats-genres">
               <div class="stats-chart-wrap">
@@ -1274,7 +1336,49 @@
         });
       }
 
-      function initStatsCharts(shows, movies, tvGenres, movieGenres) {
+      function initStatsCharts(shows, movies, tvDetails, movieDetails) {
+        // Library status pills
+        const STATUS_META = {
+          watching:    { label: "Watching",     color: "#22c55e" },
+          completed:   { label: "Completed",    color: "#60a5fa" },
+          hold:        { label: "On hold",      color: "#f59e0b" },
+          dropped:     { label: "Dropped",      color: "#ef4444" },
+          plantowatch: { label: "Plan to watch",color: "#8b5cf6" },
+        };
+        const allItems = [...shows, ...movies];
+        const statusCounts = countBy(allItems.map((i) => ({ s: normalizeStatus(i.status) })), "s");
+        const statusEl = document.getElementById("statsStatus");
+        statusEl.innerHTML = Object.entries(STATUS_META)
+          .filter(([k]) => statusCounts[k])
+          .map(([k, { label, color }]) => `
+            <span class="stats-status-item">
+              <span class="stats-status-dot" style="background:${color}"></span>
+              <span class="stats-status-count">${statusCounts[k]}</span>
+              ${escapeHtml(label)}
+            </span>`)
+          .join("");
+
+        // Watch activity — items per month over last 12 months
+        const now = new Date();
+        const monthKeys = Array.from({ length: 12 }, (_, i) => {
+          const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+          return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleString("default", { month: "short", year: "2-digit" }) };
+        });
+        function countActivity(items) {
+          const map = Object.fromEntries(monthKeys.map(({ key }) => [key, 0]));
+          for (const item of items) {
+            if (!item.last_watched_at) continue;
+            const d = new Date(item.last_watched_at);
+            const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            if (k in map) map[k]++;
+          }
+          return monthKeys.map(({ key }) => map[key]);
+        }
+        makeBarChart("chartActivity", monthKeys.map(({ label }) => label), [
+          { label: "TV Shows", data: countActivity(shows), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+          { label: "Movies",   data: countActivity(movies), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+        ]);
+
         // Ratings distribution
         const ratingLabels = ["1","2","3","4","5","6","7","8","9","10"];
         const showRatings = countBy(shows, "user_rating");
@@ -1294,9 +1398,9 @@
           { label: "Movies",   data: allDecades.map((d) => movieDecades[d] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
         ]);
 
-        // Genre pie charts (top 12)
-        makePieChart("chartMovieGenres", topN(movieGenres, 12));
-        makePieChart("chartTvGenres",    topN(tvGenres,    12));
+        // Genre pie charts (top 10)
+        makePieChart("chartMovieGenres", topN(movieDetails.genres, 10));
+        makePieChart("chartTvGenres",    topN(tvDetails.genres,    10));
       }
 
       function escapeHtml(value) {
