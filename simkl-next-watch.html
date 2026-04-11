@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simkl Next Watch</title>
+    <link rel="icon" href="https://simkl.com/favicon.ico" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #111827;
+        --panel: transparent;
+        --panel-border: #2f3a4f;
+        --text: #f9fafb;
+        --muted: #94a3b8;
+        --accent: #22c55e;
+        --accent-strong: #16a34a;
+        --danger: #ef4444;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+
+      .panel {
+        padding: 12px 0;
+        margin-bottom: 12px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #4b5563;
+        background: #0f172a;
+        color: var(--text);
+      }
+
+      .field-help {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .field-help a {
+        color: #86efac;
+      }
+
+      button,
+      a.button-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #052e16;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      button.secondary,
+      a.secondary {
+        background: #374151;
+        color: var(--text);
+      }
+
+      button.danger {
+        background: var(--danger);
+        color: white;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .tiny-link {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .status {
+        color: var(--muted);
+        min-height: 24px;
+      }
+
+      .suggestions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+
+      @media (max-width: 560px) {
+        .suggestions-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .suggestion-card {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: min(100%, 280px);
+      }
+
+      .item-card {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .poster-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .poster-anchor {
+        display: block;
+      }
+
+      .poster {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 2 / 3;
+        border-radius: 10px;
+        background: #0b1220;
+        object-fit: cover;
+      }
+
+      .item-card h3 {
+        margin-bottom: 8px;
+      }
+
+      .suggestion-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .nav-arrow {
+        background: transparent;
+        border: 1px solid var(--panel-border);
+        color: var(--muted);
+        border-radius: 6px;
+        min-height: unset;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+
+      .nav-arrow:hover:not(:disabled) {
+        color: var(--text);
+        border-color: var(--text);
+      }
+
+
+      .nav-pos {
+        font-size: 0.8rem;
+        color: var(--muted);
+        min-width: 36px;
+        text-align: center;
+      }
+
+      .mark-watched-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        min-height: unset;
+        padding: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 400;
+        border: 1px solid var(--panel-border);
+        vertical-align: middle;
+        margin-right: 5px;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+
+      .mark-watched-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .episode-link {
+        margin-bottom: 10px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .episode-link a {
+        color: #86efac;
+        text-decoration: none;
+      }
+
+      .episode-link a:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        color: var(--muted);
+      }
+
+      .pin-box {
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px dashed #4b5563;
+        background: transparent;
+      }
+
+      .pin-code {
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        margin: 8px 0;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(2, 6, 23, 0.55);
+        z-index: 20;
+      }
+
+      .modal-backdrop[hidden] {
+        display: none;
+      }
+
+      .modal {
+        width: min(720px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow: auto;
+        padding: 20px;
+        border: 1px solid var(--panel-border);
+        border-radius: 14px;
+        background: #111827;
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+      }
+
+      .stats-time {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .stats-time-item {
+        flex: 1;
+        min-width: 130px;
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        padding: 14px 18px;
+      }
+
+      .stats-time-label {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 6px;
+      }
+
+      .stats-time-value {
+        display: block;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .stats-time-sub {
+        display: flex;
+        gap: 10px;
+        margin-top: 5px;
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+      }
+
+      .stats-time-tv    { color: #22c55e; }
+      .stats-time-movie { color: #60a5fa; }
+
+      .stats-charts {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .stats-chart-wrap {
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+
+      .stats-chart-wrap h3 {
+        margin: 0 0 12px;
+        font-size: 0.85rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .stats-genres {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      @media (max-width: 500px) {
+        .stats-genres {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <h1>Simkl Next Watch</h1>
+        <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
+        <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+      </section>
+
+      <div class="suggestions-grid">
+        <div id="tvSuggestion" class="suggestion-card"></div>
+        <div id="movieSuggestion" class="suggestion-card"></div>
+      </div>
+    </main>
+
+    <div id="authModalBackdrop" class="modal-backdrop" hidden>
+      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <div class="modal-header">
+          <h2 id="authModalTitle">Simkl login</h2>
+          <button id="closeAuthModalButton" class="secondary" type="button">Close</button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="clientId">Simkl client ID</label>
+            <input id="clientId" placeholder="Paste your Simkl app client ID" />
+            <div class="field-help">
+              Need one?
+              <a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">
+                Create a Simkl app
+              </a>
+            </div>
+          </div>
+          <div>
+            <label for="accessToken">Access token</label>
+            <input id="accessToken" placeholder="Optional if you use PIN connect below" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="saveCredentialsButton" class="secondary">Save credentials</button>
+          <button id="startPinButton">Connect with PIN</button>
+          <button id="logoutButton" class="danger">Clear saved auth</button>
+        </div>
+
+        <div id="pinArea" class="pin-box" hidden>
+          <div>Open <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">Simkl PIN</a></div>
+          <div id="pinCode" class="pin-code"></div>
+          <div id="pinStatus" class="status"></div>
+        </div>
+
+        <div id="globalStatus" class="status"></div>
+      </section>
+    </div>
+
+    <div id="statsModalBackdrop" class="modal-backdrop" hidden>
+      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="statsModalTitle">
+        <div class="modal-header">
+          <h2 id="statsModalTitle">My watching stats</h2>
+          <button id="closeStatsModalButton" class="secondary" type="button">Close</button>
+        </div>
+        <div id="statsContent"><p class="empty">Loading…</p></div>
+      </section>
+    </div>
+
+    <script>
+      const storageKeys = {
+        clientId: "simkl-client-id",
+        accessToken: "simkl-access-token",
+        tvPickId: "simkl-tv-pick-id",
+        moviePickId: "simkl-movie-pick-id",
+      };
+
+      const state = {
+        tvCandidates: [],
+        movieCandidates: [],
+        tvIndex: 0,
+        movieIndex: 0,
+        tvSuggestion: null,
+        movieSuggestion: null,
+        pinPollAbortController: null,
+      };
+
+      const clientIdInput = document.getElementById("clientId");
+      const accessTokenInput = document.getElementById("accessToken");
+      const globalStatus = document.getElementById("globalStatus");
+      const pinArea = document.getElementById("pinArea");
+      const pinLink = document.getElementById("pinLink");
+      const pinCode = document.getElementById("pinCode");
+      const pinStatus = document.getElementById("pinStatus");
+      const tvSuggestionContainer = document.getElementById("tvSuggestion");
+      const movieSuggestionContainer = document.getElementById("movieSuggestion");
+      const authModalBackdrop = document.getElementById("authModalBackdrop");
+      const statsModalBackdrop = document.getElementById("statsModalBackdrop");
+      const statsContent = document.getElementById("statsContent");
+
+      document.getElementById("openAuthModalButton").addEventListener("click", openAuthModal);
+      document.getElementById("closeAuthModalButton").addEventListener("click", closeAuthModal);
+      document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
+      document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
+      document.getElementById("saveCredentialsButton").addEventListener("click", saveCredentials);
+      document.getElementById("startPinButton").addEventListener("click", startPinFlow);
+      document.getElementById("logoutButton").addEventListener("click", clearSavedAuth);
+      authModalBackdrop.addEventListener("click", (event) => {
+        if (event.target === authModalBackdrop) closeAuthModal();
+      });
+      statsModalBackdrop.addEventListener("click", (event) => {
+        if (event.target === statsModalBackdrop) closeStatsModal();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          if (!authModalBackdrop.hidden) closeAuthModal();
+          if (!statsModalBackdrop.hidden) closeStatsModal();
+        }
+      });
+
+      hydrateCredentials();
+      renderSuggestions();
+      autoLoadSuggestions();
+
+      function hydrateCredentials() {
+        clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
+        accessTokenInput.value = localStorage.getItem(storageKeys.accessToken) || "";
+      }
+
+      function openAuthModal() {
+        authModalBackdrop.hidden = false;
+      }
+
+      function closeAuthModal() {
+        authModalBackdrop.hidden = true;
+      }
+
+      function saveCredentials() {
+        const clientId = clientIdInput.value.trim();
+        const accessToken = accessTokenInput.value.trim();
+
+        if (!clientId) {
+          setGlobalStatus("Client ID is required.", true);
+          return;
+        }
+
+        localStorage.setItem(storageKeys.clientId, clientId);
+
+        if (accessToken) {
+          localStorage.setItem(storageKeys.accessToken, accessToken);
+        } else {
+          localStorage.removeItem(storageKeys.accessToken);
+        }
+
+        setGlobalStatus("Credentials saved.");
+        closeAuthModal();
+      }
+
+      function clearSavedAuth() {
+        localStorage.removeItem(storageKeys.clientId);
+        localStorage.removeItem(storageKeys.accessToken);
+        clientIdInput.value = "";
+        accessTokenInput.value = "";
+        pinArea.hidden = true;
+        setGlobalStatus("Saved auth cleared.");
+        closeAuthModal();
+      }
+
+      async function startPinFlow() {
+        const clientId = getClientId();
+        if (!clientId) {
+          setGlobalStatus("Add a Simkl client ID first.", true);
+          return;
+        }
+
+        state.pinPollAbortController?.abort();
+        state.pinPollAbortController = new AbortController();
+
+        try {
+          setGlobalStatus("Requesting Simkl PIN...");
+          pinStatus.textContent = "";
+
+          const response = await fetch(
+            `https://api.simkl.com/oauth/pin?client_id=${encodeURIComponent(clientId)}&redirect=${encodeURIComponent(window.location.href)}`,
+          );
+          const pinPayload = await response.json();
+
+          if (!response.ok || pinPayload.result !== "OK") {
+            throw new Error(pinPayload.error || pinPayload.message || "Failed to request PIN.");
+          }
+
+          pinArea.hidden = false;
+          pinCode.textContent = pinPayload.user_code;
+          pinLink.href = pinPayload.verification_url || "https://simkl.com/pin/";
+          pinStatus.textContent = "Enter this code in Simkl, then this page will keep polling for access.";
+
+          await pollForAccessToken({
+            clientId,
+            userCode: pinPayload.user_code,
+            intervalSeconds: pinPayload.interval || 5,
+            expiresInSeconds: pinPayload.expires_in || 900,
+            signal: state.pinPollAbortController.signal,
+          });
+        } catch (error) {
+          if (error.name === "AbortError") {
+            return;
+          }
+
+          setGlobalStatus(error.message || "PIN auth failed.", true);
+          pinStatus.textContent = error.message || "PIN auth failed.";
+        }
+      }
+
+      async function pollForAccessToken({ clientId, userCode, intervalSeconds, expiresInSeconds, signal }) {
+        const deadline = Date.now() + expiresInSeconds * 1000;
+
+        while (Date.now() < deadline) {
+          if (signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
+          }
+
+          await sleep(intervalSeconds * 1000, signal);
+
+          const response = await fetch(
+            `https://api.simkl.com/oauth/pin/${encodeURIComponent(userCode)}?client_id=${encodeURIComponent(clientId)}`,
+            { signal },
+          );
+          const payload = await response.json();
+
+          if (payload.result === "OK" && payload.access_token) {
+            accessTokenInput.value = payload.access_token;
+            localStorage.setItem(storageKeys.clientId, clientId);
+            localStorage.setItem(storageKeys.accessToken, payload.access_token);
+            pinStatus.textContent = "Connected.";
+            setGlobalStatus("Simkl access token received.");
+            closeAuthModal();
+            await loadSuggestions();
+            return;
+          }
+
+          if (payload.message === "Slow down") {
+            pinStatus.textContent = "Simkl asked this page to slow down. Waiting a bit longer.";
+            intervalSeconds += 2;
+            continue;
+          }
+
+          pinStatus.textContent = payload.message || "Waiting for authorization...";
+        }
+
+        throw new Error("PIN code expired before authorization completed.");
+      }
+
+      async function loadSuggestions() {
+        const clientId = getClientId();
+        const accessToken = getAccessToken();
+
+        if (!clientId || !accessToken) {
+          setGlobalStatus("A client ID and access token are required.", true);
+          return;
+        }
+
+        setGlobalStatus("Loading Simkl suggestions...");
+
+        try {
+          const [showsResponse, moviesResponse] = await Promise.all([
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?extended=full&episode_watched_at=yes"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?extended=full"),
+          ]);
+
+          const shows = normalizeList(showsResponse.shows);
+          const movies = normalizeList(moviesResponse.movies);
+
+          state.tvCandidates = buildTvCandidates(shows);
+          state.movieCandidates = await buildMovieCandidates(movies);
+
+          const savedTvId = localStorage.getItem(storageKeys.tvPickId);
+          const savedMovieId = localStorage.getItem(storageKeys.moviePickId);
+          const tvIdx = state.tvCandidates.findIndex((c) => String(c.ids?.simkl) === savedTvId);
+          const movieIdx = state.movieCandidates.findIndex((c) => String(c.ids?.simkl) === savedMovieId);
+
+          await Promise.all([
+            selectCandidate("tv", tvIdx >= 0 ? tvIdx : 0, false),
+            selectCandidate("movie", movieIdx >= 0 ? movieIdx : 0, false),
+          ]);
+
+          renderSuggestions();
+          setGlobalStatus("");
+        } catch (error) {
+          setGlobalStatus(error.message || "Failed to load suggestions.", true);
+        }
+      }
+
+      async function autoLoadSuggestions() {
+        if (!getClientId() || !getAccessToken()) {
+          return;
+        }
+
+        await loadSuggestions();
+      }
+
+      async function simklFetch(url, options = {}) {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            "simkl-api-key": getClientId(),
+            Authorization: `Bearer ${getAccessToken()}`,
+            ...(options.headers || {}),
+          },
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
+        }
+
+        return payload;
+      }
+
+      async function enrichTvSuggestionWithEpisodeTitle(item) {
+        const nextEpisode = parseNextEpisode(item?.next_to_watch);
+        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
+
+        if (!item || !nextEpisode || !simklId) {
+          return item;
+        }
+
+        try {
+          const episodes = await simklFetch(`https://api.simkl.com/tv/episodes/${encodeURIComponent(simklId)}`);
+          const matchingEpisode = Array.isArray(episodes)
+            ? episodes.find(
+                (episode) =>
+                  Number(episode?.season) === nextEpisode.season &&
+                  Number(episode?.episode) === nextEpisode.episode &&
+                  episode?.type === "episode",
+              )
+            : null;
+
+          if (!matchingEpisode?.title) {
+            return item;
+          }
+
+          return {
+            ...item,
+            nextEpisodeTitle: matchingEpisode.title,
+          };
+        } catch {
+          return item;
+        }
+      }
+
+      function hasAired(show) {
+        const total = show.total_episodes_count ?? 0;
+        const notAired = show.not_aired_episodes_count ?? 0;
+        return total === 0 || total > notAired;
+      }
+
+      function buildTvCandidates(shows) {
+        const watching = shows
+          .filter((s) => isPendingShow(s) && hasAired(s))
+          .sort((a, b) => (b.watched_episodes_count ?? 0) - (a.watched_episodes_count ?? 0))
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
+        const watchlisted = shows
+          .filter((s) => isWatchlistedShow(s) && hasAired(s))
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
+        return [...watching, ...watchlisted];
+      }
+
+      async function buildMovieCandidates(movies) {
+        const today = new Date().toISOString().slice(0, 10);
+        const currentYear = new Date().getFullYear();
+        const clientId = getClientId();
+
+        const queued = movies.filter(isQueuedMovie);
+
+        // For movies whose year is current or future, verify actual release date via detail endpoint
+        const ambiguous = queued.filter((m) => m.year >= currentYear);
+        const settled = await Promise.allSettled(
+          ambiguous.map((m) => {
+            const id = m.ids?.simkl;
+            if (!id) return Promise.resolve(null);
+            return simklFetch(`https://api.simkl.com/movies/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`);
+          }),
+        );
+
+        const releasedIds = new Set();
+        ambiguous.forEach((m, i) => {
+          const r = settled[i];
+          const detail = r.status === "fulfilled" ? r.value : null;
+          if (!detail) { releasedIds.add(m.ids?.simkl); return; } // keep if fetch failed
+          if (!detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
+        });
+
+        return queued
+          .filter((m) => m.year < currentYear || releasedIds.has(m.ids?.simkl))
+          .map((movie) => ({
+            ...movie,
+            watchAction: {
+              kind: "movie",
+              payload: {
+                movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }],
+              },
+              label: "Mark movie watched",
+            },
+          }));
+      }
+
+      async function selectCandidate(type, index, save = true) {
+        const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
+        const len = candidates.length;
+        const clamped = len === 0 ? 0 : ((index % len) + len) % len;
+
+        if (type === "tv") {
+          state.tvIndex = clamped;
+          const item = candidates[clamped] ?? null;
+          state.tvSuggestion = await enrichTvSuggestionWithEpisodeTitle(item);
+          if (save && item) localStorage.setItem(storageKeys.tvPickId, String(item.ids?.simkl ?? ""));
+        } else {
+          state.movieIndex = clamped;
+          state.movieSuggestion = candidates[clamped] ?? null;
+          if (save && state.movieSuggestion) localStorage.setItem(storageKeys.moviePickId, String(state.movieSuggestion.ids?.simkl ?? ""));
+        }
+      }
+
+      function isPendingShow(show) {
+        return normalizeStatus(show.status) === "watching" && Boolean(parseNextEpisode(show.next_to_watch));
+      }
+
+      function isWatchlistedShow(show) {
+        return normalizeStatus(show.status) === "plantowatch";
+      }
+
+      function isQueuedMovie(movie) {
+        const status = normalizeStatus(movie.status);
+        return status === "plantowatch" || status === "watching";
+      }
+
+      function buildEpisodeWatchAction(show, allowFallbackToPilot = false) {
+        const episodeInfo = parseNextEpisode(show.next_to_watch) || (allowFallbackToPilot ? { season: 1, episode: 1 } : null);
+        if (!episodeInfo) {
+          return null;
+        }
+
+        return {
+          kind: "episode",
+          payload: {
+            shows: [
+              {
+                title: show.title,
+                year: show.year,
+                ids: show.ids,
+                seasons: [
+                  {
+                    number: episodeInfo.season,
+                    episodes: [
+                      {
+                        number: episodeInfo.episode,
+                        watched_at: new Date().toISOString(),
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          label: "Mark episode watched",
+        };
+      }
+
+      async function markSuggestionWatched(type) {
+        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
+        if (!suggestion?.watchAction) {
+          setGlobalStatus("This suggestion cannot be marked watched from the available API data.", true);
+          return;
+        }
+
+        try {
+          setGlobalStatus(`Updating ${suggestion.title} on Simkl...`);
+          await simklFetch("https://api.simkl.com/sync/history", {
+            method: "POST",
+            body: JSON.stringify(suggestion.watchAction.payload),
+          });
+          setGlobalStatus("Marked as watched.");
+          await loadSuggestions();
+        } catch (error) {
+          setGlobalStatus(error.message || "Failed to mark watched.", true);
+        }
+      }
+
+      function renderSuggestions() {
+        renderCard("tv");
+        renderCard("movie");
+      }
+
+      function renderCard(type) {
+        const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
+        const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
+        const index = type === "tv" ? state.tvIndex : state.movieIndex;
+        const item = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
+        const total = candidates.length;
+
+        const navHtml = total > 1 ? `
+          <div class="suggestion-nav">
+            <button class="nav-arrow" data-type="${type}" data-dir="-1">&#8249;</button>
+            <span class="nav-pos">${index + 1} / ${total}</span>
+            <button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>
+          </div>` : "";
+
+        container.innerHTML = navHtml + renderItem(item, type);
+
+        container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
+          ?.addEventListener("click", () => markSuggestionWatched(type));
+
+        container.querySelectorAll(".nav-arrow").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const t = btn.dataset.type;
+            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + Number(btn.dataset.dir);
+            await selectCandidate(t, newIndex);
+            renderCard(t);
+          });
+        });
+      }
+
+      function renderItem(item, type) {
+        if (!item) {
+          return `<p class="empty">Nothing queued right now.</p>`;
+        }
+
+        const posterUrl = getPosterUrl(item);
+        const nextEpisode = parseNextEpisode(item.next_to_watch);
+        const buttonId = `mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`;
+        const episodeTitle = nextEpisode ? getEpisodeDisplayTitle(item, nextEpisode) : "";
+        const episodeUrl = nextEpisode ? buildEpisodeUrl(item, nextEpisode) : "";
+        const description = type === "movie" ? item.overview : "";
+
+        return `
+          <article class="item-card">
+            <div class="poster-column">
+              ${renderPoster(item, posterUrl, episodeUrl)}
+            </div>
+            <div>
+              <h3>
+                ${item.watchAction
+                  ? `<button id="${buttonId}" class="mark-watched-btn" title="${escapeHtml(item.watchAction.label)}">✓</button>`
+                  : ""}
+                ${escapeHtml(item.title)}${item.year ? ` (${item.year})` : ""}
+              </h3>
+              ${episodeTitle && episodeUrl ? `<p class="episode-link"><a href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a></p>` : ""}
+              ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+              ${type === "tv" && item.overview ? `<p>${escapeHtml(item.overview)}</p>` : ""}
+            </div>
+          </article>
+        `;
+      }
+
+      function renderPoster(item, posterUrl, episodeUrl) {
+        const linkUrl = episodeUrl || item.url || "";
+        const posterMarkup = posterUrl
+          ? `<img class="poster" src="${posterUrl}" alt="${escapeHtml(item.title)} poster" />`
+          : `<div class="poster"></div>`;
+
+        if (!linkUrl) {
+          return posterMarkup;
+        }
+
+        return `<a class="poster-anchor" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${posterMarkup}</a>`;
+      }
+
+      function normalizeList(items) {
+        return Array.isArray(items)
+          ? items.map((item) => {
+              const media = item.show || item.movie || item;
+              return {
+                ...item,
+                ...media,
+                ids: media.ids || item.ids || {},
+                title: media.title || item.title || "Unknown title",
+                year: media.year || item.year || "",
+                overview: media.overview || item.overview || "",
+                poster: media.poster || item.poster || media.img || item.img || "",
+                next_to_watch: item.next_to_watch || media.next_to_watch || "",
+                url: buildSimklUrl(media),
+              };
+            })
+          : [];
+      }
+
+      function buildSimklUrl(media) {
+        if (media?.url && /^https?:\/\//i.test(media.url)) {
+          return media.url.replace(/\/+$/, "");
+        }
+
+        const simklId = media?.ids?.simkl;
+        if (!simklId) {
+          return "";
+        }
+
+        const slug = slugifyTitle(media.title);
+
+        if (media.type === "movie" || media.release_date || media.runtime && !media.aired_episodes) {
+          return slug ? `https://simkl.com/movies/${simklId}/${slug}` : `https://simkl.com/movies/${simklId}`;
+        }
+
+        return slug ? `https://simkl.com/tv/${simklId}/${slug}` : `https://simkl.com/tv/${simklId}`;
+      }
+
+      function getPosterUrl(item) {
+        if (!item.poster) {
+          return "";
+        }
+
+        if (String(item.poster).startsWith("http")) {
+          return item.poster;
+        }
+
+        return `https://wsrv.nl/?url=https://simkl.in/posters/${item.poster}_c.webp`;
+      }
+
+      function parseNextEpisode(value) {
+        if (!value) {
+          return null;
+        }
+
+        if (typeof value === "object") {
+          const season = Number(value.season ?? value.season_number ?? value.seasonNumber);
+          const episode = Number(value.episode ?? value.episode_number ?? value.episodeNumber ?? value.number);
+
+          if (Number.isFinite(season) && Number.isFinite(episode)) {
+            return { season, episode };
+          }
+
+          return null;
+        }
+
+        if (typeof value !== "string") {
+          return null;
+        }
+
+        const match = value.match(/S(\d+)E(\d+)/i);
+        if (!match) {
+          return null;
+        }
+
+        return {
+          season: Number(match[1]),
+          episode: Number(match[2]),
+        };
+      }
+
+      function formatEpisode({ season, episode }) {
+        return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+      }
+
+      function getEpisodeDisplayTitle(item, nextEpisode) {
+        const episodeTitle =
+          item?.nextEpisodeTitle ||
+          item?.next_to_watch?.title ||
+          item?.next_to_watch?.name ||
+          item?.next_episode?.title ||
+          item?.next_episode?.name ||
+          item?.next_episode_title ||
+          item?.next_to_watch_title;
+
+        const code = formatEpisode(nextEpisode);
+        if (episodeTitle) {
+          return `${episodeTitle} · ${code}`;
+        }
+
+        return code;
+      }
+
+      function buildEpisodeUrl(item, nextEpisode) {
+        if (!item?.url || !nextEpisode) {
+          return "";
+        }
+
+        const baseUrl = item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/");
+        return `${baseUrl}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
+      }
+
+      function slugifyTitle(value) {
+        return String(value || "")
+          .toLowerCase()
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      function normalizeStatus(status) {
+        return String(status || "").toLowerCase().replace(/\s+/g, "");
+      }
+
+      function getClientId() {
+        return clientIdInput.value.trim();
+      }
+
+      function getAccessToken() {
+        return accessTokenInput.value.trim();
+      }
+
+      function setGlobalStatus(message, isError = false) {
+        globalStatus.textContent = message;
+        globalStatus.style.color = isError ? "#fca5a5" : "";
+      }
+
+      function sleep(ms, signal) {
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, ms);
+          signal?.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(timer);
+              reject(new DOMException("Aborted", "AbortError"));
+            },
+            { once: true },
+          );
+        });
+      }
+
+      async function openStatsModal() {
+        statsModalBackdrop.hidden = false;
+        statsContent.innerHTML = `<p class="empty">Loading…</p>`;
+        try {
+          const [showsResponse, moviesResponse, settings] = await Promise.all([
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?extended=full"),
+            simklFetch("https://api.simkl.com/users/settings"),
+          ]);
+
+          const shows = normalizeList(showsResponse.shows);
+          const movies = normalizeList(moviesResponse.movies);
+
+          const userId = settings?.account?.id;
+          if (!userId) throw new Error("Could not determine user ID.");
+
+          statsContent.innerHTML = `<p class="empty">Loading genres…</p>`;
+
+          const [stats, tvGenres, movieGenres] = await Promise.all([
+            simklFetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
+            fetchGenres(shows.filter((s) => normalizeStatus(s.status) !== "plantowatch"), "tv"),
+            fetchGenres(movies.filter((m) => normalizeStatus(m.status) !== "plantowatch"), "movies"),
+          ]);
+
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          const last30ShowMins = shows
+            .filter((s) => s.last_watched_at && new Date(s.last_watched_at) >= thirtyDaysAgo)
+            .reduce((sum, s) => sum + (s.runtime || 0), 0);
+          const last30MovieMins = movies
+            .filter((m) => m.last_watched_at && new Date(m.last_watched_at) >= thirtyDaysAgo)
+            .reduce((sum, m) => sum + (m.runtime || 0), 0);
+
+          const totalShowMins = stats.tv?.total_mins || 0;
+          const totalMovieMins = stats.movies?.total_mins || 0;
+
+          statsContent.innerHTML = renderStatsShell({ totalShowMins, totalMovieMins, last30ShowMins, last30MovieMins });
+          initStatsCharts(shows, movies, tvGenres, movieGenres);
+        } catch (error) {
+          statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
+        }
+      }
+
+      function closeStatsModal() {
+        statsModalBackdrop.hidden = true;
+      }
+
+      async function fetchGenres(items, type) {
+        const counts = {};
+        const clientId = getClientId();
+        const subset = [...items]
+          .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
+          .slice(0, 50);
+
+        const settled = await Promise.allSettled(
+          subset.map((item) => {
+            const id = item.ids?.simkl;
+            if (!id) return Promise.resolve(null);
+            return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`);
+          }),
+        );
+
+        for (const r of settled) {
+          for (const genre of (r.status === "fulfilled" ? r.value?.genres : null) || []) {
+            counts[genre] = (counts[genre] || 0) + 1;
+          }
+        }
+        return counts;
+      }
+
+      function minsToDaysHours(mins) {
+        const totalHours = Math.floor(mins / 60);
+        const d = Math.floor(totalHours / 24);
+        const h = totalHours % 24;
+        if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+        return h > 0 ? `${h}h` : "0h";
+      }
+
+      function renderStatsShell({ totalShowMins, totalMovieMins, last30ShowMins, last30MovieMins }) {
+        function row(label, showMins, movieMins) {
+          return `
+            <div class="stats-time-item">
+              <span class="stats-time-label">${escapeHtml(label)}</span>
+              <span class="stats-time-value">${escapeHtml(minsToDaysHours(showMins + movieMins))}</span>
+              <span class="stats-time-sub">
+                <span class="stats-time-tv">${escapeHtml(minsToDaysHours(showMins))} TV</span>
+                <span class="stats-time-movie">${escapeHtml(minsToDaysHours(movieMins))} movies</span>
+              </span>
+            </div>`;
+        }
+        return `
+          <div class="stats-time">
+            ${row("Total watched", totalShowMins, totalMovieMins)}
+            ${row("Last 30 days", last30ShowMins, last30MovieMins)}
+          </div>
+          <div class="stats-charts">
+            <div class="stats-chart-wrap">
+              <h3>Ratings distribution</h3>
+              <canvas id="chartRatings"></canvas>
+            </div>
+            <div class="stats-chart-wrap">
+              <h3>Release decade</h3>
+              <canvas id="chartYear"></canvas>
+            </div>
+            <div class="stats-genres">
+              <div class="stats-chart-wrap">
+                <h3>Movie genres</h3>
+                <canvas id="chartMovieGenres"></canvas>
+              </div>
+              <div class="stats-chart-wrap">
+                <h3>TV genres</h3>
+                <canvas id="chartTvGenres"></canvas>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      const GENRE_COLORS = [
+        "#22c55e","#60a5fa","#f59e0b","#f97316","#ec4899",
+        "#8b5cf6","#06b6d4","#84cc16","#ef4444","#14b8a6",
+        "#a78bfa","#fb923c","#34d399","#93c5fd","#fcd34d",
+      ];
+
+      function topN(countMap, n) {
+        return Object.entries(countMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, n);
+      }
+
+      function makePieChart(canvasId, entries) {
+        const labels = entries.map(([l]) => l);
+        const data = entries.map(([, v]) => v);
+        const colors = GENRE_COLORS.slice(0, labels.length);
+        new Chart(document.getElementById(canvasId), {
+          type: "pie",
+          data: {
+            labels,
+            datasets: [{ data, backgroundColor: colors, borderColor: "#111827", borderWidth: 2 }],
+          },
+          options: {
+            plugins: {
+              legend: { position: "bottom", labels: { color: "#f9fafb", boxWidth: 12, padding: 8, font: { size: 11 } } },
+            },
+          },
+        });
+      }
+
+      function countBy(items, key) {
+        const map = {};
+        for (const item of items) {
+          const val = item[key];
+          if (val != null) map[val] = (map[val] || 0) + 1;
+        }
+        return map;
+      }
+
+      function makeBarChart(canvasId, labels, datasets) {
+        return new Chart(document.getElementById(canvasId), {
+          type: "bar",
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { labels: { color: "#f9fafb", boxWidth: 12, padding: 10 } },
+              tooltip: { mode: "index" },
+            },
+            scales: {
+              x: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
+              y: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
+            },
+          },
+        });
+      }
+
+      function initStatsCharts(shows, movies, tvGenres, movieGenres) {
+        // Ratings distribution
+        const ratingLabels = ["1","2","3","4","5","6","7","8","9","10"];
+        const showRatings = countBy(shows, "user_rating");
+        const movieRatings = countBy(movies, "user_rating");
+        makeBarChart("chartRatings", ratingLabels, [
+          { label: "TV Shows", data: ratingLabels.map((r) => showRatings[r] || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+          { label: "Movies",   data: ratingLabels.map((r) => movieRatings[r] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+        ]);
+
+        // Release decade
+        const decadeOf = (year) => `${Math.floor(year / 10) * 10}s`;
+        const showDecades  = countBy(shows.map((s) => ({ d: s.year ? decadeOf(s.year) : null })), "d");
+        const movieDecades = countBy(movies.map((m) => ({ d: m.year ? decadeOf(m.year) : null })), "d");
+        const allDecades = [...new Set([...Object.keys(showDecades), ...Object.keys(movieDecades)])].filter(Boolean).sort();
+        makeBarChart("chartYear", allDecades, [
+          { label: "TV Shows", data: allDecades.map((d) => showDecades[d]  || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+          { label: "Movies",   data: allDecades.map((d) => movieDecades[d] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+        ]);
+
+        // Genre pie charts (top 12)
+        makePieChart("chartMovieGenres", topN(movieGenres, 12));
+        makePieChart("chartTvGenres",    topN(tvGenres,    12));
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+    </script>
+  </body>
+</html>
