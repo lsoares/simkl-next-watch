@@ -164,6 +164,7 @@
       .poster-column {
         display: flex;
         flex-direction: column;
+        position: relative;
       }
 
       .poster-anchor {
@@ -178,6 +179,45 @@
         background: #0b1220;
         object-fit: cover;
       }
+
+      .poster-rating {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        z-index: 10;
+        border-radius: 10px 10px 0 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.88) 60%, transparent);
+        padding: 6px 4px 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s;
+      }
+
+      .poster-column:hover .poster-rating {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .rating-btn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 0.68rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 0;
+        min-height: unset;
+        border-radius: 3px;
+        transition: color 0.1s;
+        line-height: 1;
+      }
+
+      /* progressive highlight: when hovering btn N, highlight 1…N via sibling trick */
+      .poster-rating:hover .rating-btn { color: #fbbf24; }
+      .poster-rating .rating-btn:hover ~ .rating-btn { color: #475569; }
 
       .item-card h3 {
         margin-bottom: 8px;
@@ -221,18 +261,15 @@
         overflow: hidden;
       }
 
-      @keyframes slideFromRight {
-        from { transform: translateX(32px); opacity: 0; }
-        to   { transform: translateX(0);   opacity: 1; }
-      }
+      @keyframes slideFromRight  { from { transform: translateX(40px);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slideFromLeft   { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slideOutToLeft  { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-40px); opacity: 0; } }
+      @keyframes slideOutToRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(40px);  opacity: 0; } }
 
-      @keyframes slideFromLeft {
-        from { transform: translateX(-32px); opacity: 0; }
-        to   { transform: translateX(0);    opacity: 1; }
-      }
-
-      .card-content.slide-right { animation: slideFromRight 0.22s ease-out; }
-      .card-content.slide-left  { animation: slideFromLeft  0.22s ease-out; }
+      .card-content.enter-right  { animation: slideFromRight  0.2s ease-out; }
+      .card-content.enter-left   { animation: slideFromLeft   0.2s ease-out; }
+      .card-content.exit-left    { animation: slideOutToLeft  0.15s ease-in forwards; pointer-events: none; }
+      .card-content.exit-right   { animation: slideOutToRight 0.15s ease-in forwards; pointer-events: none; }
 
       .mark-watched-btn {
         display: inline-flex;
@@ -454,6 +491,36 @@
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.06em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chart-mode-tabs {
+        display: flex;
+        gap: 3px;
+        margin-left: auto;
+      }
+
+      .chart-mode-tab {
+        background: transparent;
+        border: 1px solid var(--panel-border);
+        color: var(--muted);
+        border-radius: 5px;
+        min-height: unset;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: 0;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+
+      .chart-mode-tab.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #000;
+        font-weight: 600;
       }
 
       .stats-row {
@@ -581,6 +648,198 @@
 
       const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
       const STATS_CACHE_TTL = 15 * 60 * 1000;           // 15 min
+
+      // ── Repo layer (API, cache, data transforms — no DOM) ───────────────────
+
+      function getClientId()    { return localStorage.getItem(storageKeys.clientId)    || ""; }
+      function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || ""; }
+
+      function normalizeStatus(status) {
+        return String(status || "").toLowerCase().replace(/\s+/g, "");
+      }
+
+      function slugifyTitle(value) {
+        return String(value || "")
+          .toLowerCase()
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      function parseNextEpisode(value) {
+        if (!value) return null;
+        if (typeof value === "object") {
+          const season  = Number(value.season  ?? value.season_number  ?? value.seasonNumber);
+          const episode = Number(value.episode ?? value.episode_number ?? value.episodeNumber ?? value.number);
+          return Number.isFinite(season) && Number.isFinite(episode) ? { season, episode } : null;
+        }
+        if (typeof value !== "string") return null;
+        const match = value.match(/S(\d+)E(\d+)/i);
+        return match ? { season: Number(match[1]), episode: Number(match[2]) } : null;
+      }
+
+      function formatEpisode({ season, episode }) {
+        return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+      }
+
+      function getEpisodeDisplayTitle(item, nextEpisode) {
+        const title = item?.nextEpisodeTitle || item?.next_to_watch?.title || item?.next_to_watch?.name
+          || item?.next_episode?.title || item?.next_episode?.name || item?.next_episode_title || item?.next_to_watch_title;
+        const code = formatEpisode(nextEpisode);
+        return title ? `${title} · ${code}` : code;
+      }
+
+      function buildEpisodeUrl(item, nextEpisode) {
+        if (!item?.url || !nextEpisode) return "";
+        return `${item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/")}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
+      }
+
+      function buildSimklUrl(media) {
+        if (media?.url && /^https?:\/\//i.test(media.url)) return media.url.replace(/\/+$/, "");
+        const simklId = media?.ids?.simkl;
+        if (!simklId) return "";
+        const slug = slugifyTitle(media.title);
+        if (media.type === "movie" || media.release_date || (media.runtime && !media.aired_episodes))
+          return slug ? `https://simkl.com/movies/${simklId}/${slug}` : `https://simkl.com/movies/${simklId}`;
+        return slug ? `https://simkl.com/tv/${simklId}/${slug}` : `https://simkl.com/tv/${simklId}`;
+      }
+
+      function normalizeList(items) {
+        return Array.isArray(items) ? items.map((item) => {
+          const media = item.show || item.movie || item;
+          return {
+            ...item, ...media,
+            ids:          media.ids   || item.ids   || {},
+            title:        media.title || item.title || "Unknown title",
+            year:         media.year  || item.year  || "",
+            overview:     media.overview || item.overview || "",
+            poster:       media.poster || item.poster || media.img || item.img || "",
+            next_to_watch: item.next_to_watch || media.next_to_watch || "",
+            url:          buildSimklUrl(media),
+          };
+        }) : [];
+      }
+
+      function getPosterUrl(item) {
+        if (!item.poster) return "";
+        if (String(item.poster).startsWith("http")) return item.poster;
+        return `https://wsrv.nl/?url=https://simkl.in/posters/${item.poster}_c.webp`;
+      }
+
+      function buildEpisodeWatchAction(show, allowFallbackToPilot = false) {
+        const episodeInfo = parseNextEpisode(show.next_to_watch) || (allowFallbackToPilot ? { season: 1, episode: 1 } : null);
+        if (!episodeInfo) return null;
+        return {
+          payload: { shows: [{ title: show.title, year: show.year, ids: show.ids, seasons: [{ number: episodeInfo.season, episodes: [{ number: episodeInfo.episode, watched_at: new Date().toISOString() }] }] }] },
+          label: "Mark episode watched",
+        };
+      }
+
+      function buildTvCandidates(shows) {
+        const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
+        const watching = shows
+          .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
+          .sort((a, b) => (b.watched_episodes_count ?? 0) - (a.watched_episodes_count ?? 0))
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
+        const watchlisted = shows
+          .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
+        return [...watching, ...watchlisted];
+      }
+
+      async function buildMovieCandidates(movies) {
+        const today = new Date().toISOString().slice(0, 10);
+        const currentYear = new Date().getFullYear();
+        const queued = movies.filter((m) => ["plantowatch", "watching"].includes(normalizeStatus(m.status)));
+        const ambiguous = queued.filter((m) => m.year >= currentYear);
+        const settled = await Promise.allSettled(ambiguous.map((m) => {
+          const id = m.ids?.simkl;
+          if (!id) return Promise.resolve(null);
+          return simklFetch(`https://api.simkl.com/movies/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`);
+        }));
+        const releasedIds = new Set();
+        ambiguous.forEach((m, i) => {
+          const detail = settled[i].status === "fulfilled" ? settled[i].value : null;
+          if (!detail || !detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
+        });
+        return queued
+          .filter((m) => m.year < currentYear || releasedIds.has(m.ids?.simkl))
+          .map((movie) => ({ ...movie, watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" } }));
+      }
+
+      async function simklFetch(url, options = {}) {
+        const response = await fetch(url, {
+          ...options,
+          headers: { "Content-Type": "application/json", "simkl-api-key": getClientId(), Authorization: `Bearer ${getAccessToken()}`, ...(options.headers || {}) },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
+        return payload;
+      }
+
+      async function enrichTvSuggestionWithEpisodeTitle(item) {
+        const nextEpisode = parseNextEpisode(item?.next_to_watch);
+        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
+        if (!item || !nextEpisode || !simklId) return item;
+        try {
+          const episodes = await simklFetch(`https://api.simkl.com/tv/episodes/${encodeURIComponent(simklId)}`);
+          const match = Array.isArray(episodes)
+            ? episodes.find((e) => Number(e?.season) === nextEpisode.season && Number(e?.episode) === nextEpisode.episode && e?.type === "episode")
+            : null;
+          return match?.title ? { ...item, nextEpisodeTitle: match.title } : item;
+        } catch { return item; }
+      }
+
+      function loadGenreCache() {
+        try { return JSON.parse(localStorage.getItem(storageKeys.genreCache) || "{}"); } catch { return {}; }
+      }
+
+      function loadStatsCache() {
+        try {
+          const raw = localStorage.getItem(storageKeys.statsCache);
+          if (!raw) return null;
+          const cached = JSON.parse(raw);
+          return Date.now() - cached.ts > STATS_CACHE_TTL ? null : cached.data;
+        } catch { return null; }
+      }
+
+      function saveStatsCache(data) {
+        try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), data })); } catch {}
+      }
+
+      async function fetchItemDetails(items, type) {
+        const cache = loadGenreCache();
+        const now = Date.now();
+        const subset = [...items]
+          .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
+          .slice(0, 50);
+        const settled = await Promise.allSettled(subset.map((item) => {
+          const id = item.ids?.simkl;
+          if (!id) return Promise.resolve(null);
+          const key = `${type}:${id}`;
+          const cached = cache[key];
+          if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve(cached);
+          return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`)
+            .then((data) => { const entry = { genres: data?.genres || [], network: data?.network || null, ts: now }; cache[key] = entry; return entry; });
+        }));
+        try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch {}
+        const genres = {}, networks = {};
+        for (const r of settled) {
+          const val = r.status === "fulfilled" ? r.value : null;
+          for (const g of val?.genres || []) genres[g] = (genres[g] || 0) + 1;
+          if (val?.network) networks[val.network] = (networks[val.network] || 0) + 1;
+        }
+        return { genres, networks };
+      }
+
+      // ── UI layer (DOM, events, rendering) ───────────────────────────────────
+
+      const GENRE_COLORS = [
+        "#22c55e","#60a5fa","#f59e0b","#f97316","#ec4899",
+        "#8b5cf6","#06b6d4","#84cc16","#ef4444","#14b8a6",
+        "#a78bfa","#fb923c","#34d399","#93c5fd","#fcd34d",
+      ];
 
       const state = {
         tvCandidates: [],
@@ -794,108 +1053,6 @@
         }
       }
 
-      async function simklFetch(url, options = {}) {
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            "Content-Type": "application/json",
-            "simkl-api-key": getClientId(),
-            Authorization: `Bearer ${getAccessToken()}`,
-            ...(options.headers || {}),
-          },
-        });
-
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
-        }
-
-        return payload;
-      }
-
-      async function enrichTvSuggestionWithEpisodeTitle(item) {
-        const nextEpisode = parseNextEpisode(item?.next_to_watch);
-        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
-
-        if (!item || !nextEpisode || !simklId) {
-          return item;
-        }
-
-        try {
-          const episodes = await simklFetch(`https://api.simkl.com/tv/episodes/${encodeURIComponent(simklId)}`);
-          const matchingEpisode = Array.isArray(episodes)
-            ? episodes.find(
-                (episode) =>
-                  Number(episode?.season) === nextEpisode.season &&
-                  Number(episode?.episode) === nextEpisode.episode &&
-                  episode?.type === "episode",
-              )
-            : null;
-
-          if (!matchingEpisode?.title) {
-            return item;
-          }
-
-          return {
-            ...item,
-            nextEpisodeTitle: matchingEpisode.title,
-          };
-        } catch {
-          return item;
-        }
-      }
-
-      function buildTvCandidates(shows) {
-        const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
-        const watching = shows
-          .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-          .sort((a, b) => (b.watched_episodes_count ?? 0) - (a.watched_episodes_count ?? 0))
-          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
-        const watchlisted = shows
-          .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
-          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
-        return [...watching, ...watchlisted];
-      }
-
-      async function buildMovieCandidates(movies) {
-        const today = new Date().toISOString().slice(0, 10);
-        const currentYear = new Date().getFullYear();
-        const clientId = getClientId();
-
-        const queued = movies.filter((m) => ["plantowatch", "watching"].includes(normalizeStatus(m.status)));
-
-        // For movies whose year is current or future, verify actual release date via detail endpoint
-        const ambiguous = queued.filter((m) => m.year >= currentYear);
-        const settled = await Promise.allSettled(
-          ambiguous.map((m) => {
-            const id = m.ids?.simkl;
-            if (!id) return Promise.resolve(null);
-            return simklFetch(`https://api.simkl.com/movies/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`);
-          }),
-        );
-
-        const releasedIds = new Set();
-        ambiguous.forEach((m, i) => {
-          const r = settled[i];
-          const detail = r.status === "fulfilled" ? r.value : null;
-          if (!detail) { releasedIds.add(m.ids?.simkl); return; } // keep if fetch failed
-          if (!detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
-        });
-
-        return queued
-          .filter((m) => m.year < currentYear || releasedIds.has(m.ids?.simkl))
-          .map((movie) => ({
-            ...movie,
-            watchAction: {
-              payload: {
-                movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }],
-              },
-              label: "Mark movie watched",
-            },
-          }));
-      }
-
       async function selectCandidate(type, index, save = true) {
         const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
         const len = candidates.length;
@@ -911,37 +1068,6 @@
           state.movieSuggestion = candidates[clamped] ?? null;
           if (save && state.movieSuggestion) localStorage.setItem(storageKeys.moviePickId, String(state.movieSuggestion.ids?.simkl ?? ""));
         }
-      }
-
-      function buildEpisodeWatchAction(show, allowFallbackToPilot = false) {
-        const episodeInfo = parseNextEpisode(show.next_to_watch) || (allowFallbackToPilot ? { season: 1, episode: 1 } : null);
-        if (!episodeInfo) {
-          return null;
-        }
-
-        return {
-          payload: {
-            shows: [
-              {
-                title: show.title,
-                year: show.year,
-                ids: show.ids,
-                seasons: [
-                  {
-                    number: episodeInfo.season,
-                    episodes: [
-                      {
-                        number: episodeInfo.episode,
-                        watched_at: new Date().toISOString(),
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          label: "Mark episode watched",
-        };
       }
 
       async function markSuggestionWatched(type) {
@@ -964,6 +1090,36 @@
         }
       }
 
+      async function rateAndMarkWatched(type, rating) {
+        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
+        if (!suggestion) return;
+        const simklId = suggestion.ids?.simkl;
+        if (!simklId) { setGlobalStatus("Cannot rate: missing Simkl ID.", true); return; }
+
+        try {
+          setGlobalStatus(`Rating ${suggestion.title}…`);
+          const key = type === "tv" ? "shows" : "movies";
+          const ratedAt = new Date().toISOString();
+          const calls = [
+            simklFetch("https://api.simkl.com/ratings", {
+              method: "POST",
+              body: JSON.stringify({ [key]: [{ ids: { simkl: simklId }, rating, rated_at: ratedAt }] }),
+            }),
+          ];
+          if (suggestion.watchAction) {
+            calls.push(simklFetch("https://api.simkl.com/sync/history", {
+              method: "POST",
+              body: JSON.stringify(suggestion.watchAction.payload),
+            }));
+          }
+          await Promise.all(calls);
+          setGlobalStatus(`Rated ${rating}/10 and marked as watched.`);
+          await loadSuggestions();
+        } catch (error) {
+          setGlobalStatus(error.message || "Failed to rate.", true);
+        }
+      }
+
       function renderCard(type, dir = 0) {
         const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
         const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
@@ -978,21 +1134,45 @@
             <button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>
           </div>` : "";
 
-        const animClass = dir > 0 ? "slide-right" : dir < 0 ? "slide-left" : "";
-        container.innerHTML = navHtml + `<div class="card-content ${animClass}">${renderItem(item, type)}</div>`;
+        const enterClass = dir > 0 ? "enter-right" : dir < 0 ? "enter-left" : "";
+        const exitClass  = dir > 0 ? "exit-left"   : dir < 0 ? "exit-right"  : "";
 
-        container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
-          ?.addEventListener("click", () => markSuggestionWatched(type));
-
-        container.querySelectorAll(".nav-arrow").forEach((btn) => {
-          btn.addEventListener("click", async () => {
-            const t = btn.dataset.type;
-            const d = Number(btn.dataset.dir);
-            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
-            await selectCandidate(t, newIndex);
-            renderCard(t, d);
+        function attachHandlers() {
+          container.querySelector(`#mark${type === "tv" ? "Tv" : "Movie"}WatchedButton`)
+            ?.addEventListener("click", () => markSuggestionWatched(type));
+          container.querySelectorAll(".rating-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              rateAndMarkWatched(type, Number(btn.dataset.rating));
+            });
           });
-        });
+          container.querySelectorAll(".nav-arrow").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const t = btn.dataset.type;
+              const d = Number(btn.dataset.dir);
+              const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
+              await selectCandidate(t, newIndex);
+              renderCard(t, d);
+            });
+          });
+        }
+
+        function injectNewCard() {
+          const newContent = document.createElement("div");
+          newContent.className = `card-content ${enterClass}`;
+          newContent.innerHTML = renderItem(item, type);
+          container.innerHTML = navHtml;
+          container.appendChild(newContent);
+          attachHandlers();
+        }
+
+        const old = container.querySelector(".card-content");
+        if (exitClass && old) {
+          old.classList.add(exitClass);
+          old.addEventListener("animationend", injectNewCard, { once: true });
+        } else {
+          injectNewCard();
+        }
       }
 
       function renderItem(item, type) {
@@ -1013,7 +1193,7 @@
         return `
           <article class="item-card">
             <div class="poster-column">
-              ${renderPoster(item, posterUrl, episodeUrl)}
+              ${renderPoster(item, posterUrl, episodeUrl, type)}
             </div>
             <div>
               <h3>
@@ -1029,150 +1209,23 @@
         `;
       }
 
-      function renderPoster(item, posterUrl, episodeUrl) {
+      function renderPoster(item, posterUrl, episodeUrl, type) {
         const linkUrl = episodeUrl || item.url || "";
         const posterMarkup = posterUrl
           ? `<img class="poster" src="${posterUrl}" alt="${escapeHtml(item.title)} poster" />`
           : `<div class="poster"></div>`;
 
-        if (!linkUrl) {
-          return posterMarkup;
-        }
+        const ratingOverlay = `<div class="poster-rating" data-rating-type="${escapeHtml(type)}">${
+          Array.from({ length: 10 }, (_, i) => i + 1)
+            .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`)
+            .join("")
+        }</div>`;
 
-        return `<a class="poster-anchor" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${posterMarkup}</a>`;
-      }
+        const inner = linkUrl
+          ? `<a class="poster-anchor" href="${escapeHtml(linkUrl)}" target="_blank" rel="noreferrer">${posterMarkup}</a>`
+          : posterMarkup;
 
-      function normalizeList(items) {
-        return Array.isArray(items)
-          ? items.map((item) => {
-              const media = item.show || item.movie || item;
-              return {
-                ...item,
-                ...media,
-                ids: media.ids || item.ids || {},
-                title: media.title || item.title || "Unknown title",
-                year: media.year || item.year || "",
-                overview: media.overview || item.overview || "",
-                poster: media.poster || item.poster || media.img || item.img || "",
-                next_to_watch: item.next_to_watch || media.next_to_watch || "",
-                url: buildSimklUrl(media),
-              };
-            })
-          : [];
-      }
-
-      function buildSimklUrl(media) {
-        if (media?.url && /^https?:\/\//i.test(media.url)) {
-          return media.url.replace(/\/+$/, "");
-        }
-
-        const simklId = media?.ids?.simkl;
-        if (!simklId) {
-          return "";
-        }
-
-        const slug = slugifyTitle(media.title);
-
-        if (media.type === "movie" || media.release_date || media.runtime && !media.aired_episodes) {
-          return slug ? `https://simkl.com/movies/${simklId}/${slug}` : `https://simkl.com/movies/${simklId}`;
-        }
-
-        return slug ? `https://simkl.com/tv/${simklId}/${slug}` : `https://simkl.com/tv/${simklId}`;
-      }
-
-      function getPosterUrl(item) {
-        if (!item.poster) {
-          return "";
-        }
-
-        if (String(item.poster).startsWith("http")) {
-          return item.poster;
-        }
-
-        return `https://wsrv.nl/?url=https://simkl.in/posters/${item.poster}_c.webp`;
-      }
-
-      function parseNextEpisode(value) {
-        if (!value) {
-          return null;
-        }
-
-        if (typeof value === "object") {
-          const season = Number(value.season ?? value.season_number ?? value.seasonNumber);
-          const episode = Number(value.episode ?? value.episode_number ?? value.episodeNumber ?? value.number);
-
-          if (Number.isFinite(season) && Number.isFinite(episode)) {
-            return { season, episode };
-          }
-
-          return null;
-        }
-
-        if (typeof value !== "string") {
-          return null;
-        }
-
-        const match = value.match(/S(\d+)E(\d+)/i);
-        if (!match) {
-          return null;
-        }
-
-        return {
-          season: Number(match[1]),
-          episode: Number(match[2]),
-        };
-      }
-
-      function formatEpisode({ season, episode }) {
-        return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
-      }
-
-      function getEpisodeDisplayTitle(item, nextEpisode) {
-        const episodeTitle =
-          item?.nextEpisodeTitle ||
-          item?.next_to_watch?.title ||
-          item?.next_to_watch?.name ||
-          item?.next_episode?.title ||
-          item?.next_episode?.name ||
-          item?.next_episode_title ||
-          item?.next_to_watch_title;
-
-        const code = formatEpisode(nextEpisode);
-        if (episodeTitle) {
-          return `${episodeTitle} · ${code}`;
-        }
-
-        return code;
-      }
-
-      function buildEpisodeUrl(item, nextEpisode) {
-        if (!item?.url || !nextEpisode) {
-          return "";
-        }
-
-        const baseUrl = item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/");
-        return `${baseUrl}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
-      }
-
-      function slugifyTitle(value) {
-        return String(value || "")
-          .toLowerCase()
-          .normalize("NFKD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-      }
-
-      function normalizeStatus(status) {
-        return String(status || "").toLowerCase().replace(/\s+/g, "");
-      }
-
-      function getClientId() {
-        return clientIdInput.value.trim();
-      }
-
-      function getAccessToken() {
-        return localStorage.getItem(storageKeys.accessToken) || "";
+        return ratingOverlay + inner;
       }
 
       function setGlobalStatus(message, isError = false) {
@@ -1195,20 +1248,6 @@
       }
 
       let statsRawData = null;
-
-      function loadStatsCache() {
-        try {
-          const raw = localStorage.getItem(storageKeys.statsCache);
-          if (!raw) return null;
-          const cached = JSON.parse(raw);
-          if (Date.now() - cached.ts > STATS_CACHE_TTL) return null;
-          return cached.data;
-        } catch { return null; }
-      }
-
-      function saveStatsCache(data) {
-        try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), data })); } catch {}
-      }
 
       async function openStatsModal() {
         statsModalBackdrop.hidden = false;
@@ -1277,51 +1316,11 @@
         const rangeLabel = { "30d": "Last 30 days", "6m": "Last 6 months", "all": "All time" }[range];
 
         statsContent.innerHTML = renderStatsShell({ rangeLabel, showMins, movieMins });
-        initStatsCharts(filtShows, filtMovies, tvDetails, movieDetails);
+        initStatsCharts(filtShows, filtMovies, tvDetails, movieDetails, range);
       }
 
       function closeStatsModal() {
         statsModalBackdrop.hidden = true;
-      }
-
-      function loadGenreCache() {
-        try { return JSON.parse(localStorage.getItem(storageKeys.genreCache) || "{}"); } catch { return {}; }
-      }
-
-      async function fetchItemDetails(items, type) {
-        const clientId = getClientId();
-        const cache = loadGenreCache();
-        const now = Date.now();
-
-        const subset = [...items]
-          .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
-          .slice(0, 50);
-
-        const settled = await Promise.allSettled(
-          subset.map((item) => {
-            const id = item.ids?.simkl;
-            if (!id) return Promise.resolve(null);
-            const key = `${type}:${id}`;
-            const cached = cache[key];
-            if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve(cached);
-            return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`)
-              .then((data) => {
-                const entry = { genres: data?.genres || [], network: data?.network || null, ts: now };
-                cache[key] = entry;
-                return entry;
-              });
-          }),
-        );
-
-        try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch { /* storage full */ }
-
-        const genres = {}, networks = {};
-        for (const r of settled) {
-          const val = r.status === "fulfilled" ? r.value : null;
-          for (const g of val?.genres || []) genres[g] = (genres[g] || 0) + 1;
-          if (val?.network) networks[val.network] = (networks[val.network] || 0) + 1;
-        }
-        return { genres, networks };
       }
 
       function minsToDaysHours(mins) {
@@ -1347,7 +1346,12 @@
           <div id="statsStatus" class="stats-status"></div>
           <div class="stats-charts">
             <div class="stats-chart-wrap">
-              <h3>Watch activity</h3>
+              <h3>Watch activity
+                <span class="chart-mode-tabs">
+                  <button class="chart-mode-tab active" data-mode="count">Count</button>
+                  <button class="chart-mode-tab" data-mode="runtime">Runtime</button>
+                </span>
+              </h3>
               <canvas id="chartActivity"></canvas>
             </div>
             <div class="stats-row">
@@ -1376,12 +1380,6 @@
             </div>
           </div>`;
       }
-
-      const GENRE_COLORS = [
-        "#22c55e","#60a5fa","#f59e0b","#f97316","#ec4899",
-        "#8b5cf6","#06b6d4","#84cc16","#ef4444","#14b8a6",
-        "#a78bfa","#fb923c","#34d399","#93c5fd","#fcd34d",
-      ];
 
       function topN(countMap, n) {
         return Object.entries(countMap)
@@ -1438,7 +1436,7 @@
         });
       }
 
-      function initStatsCharts(shows, movies, tvDetails, movieDetails) {
+      function initStatsCharts(shows, movies, tvDetails, movieDetails, range = "all") {
         // Library status pills
         const STATUS_META = {
           watching:    { label: "Watching",     color: "#22c55e" },
@@ -1460,26 +1458,84 @@
             </span>`)
           .join("");
 
-        // Watch activity — items per month over last 12 months
+        // Watch activity — buckets depend on selected range
         const now = new Date();
-        const monthKeys = Array.from({ length: 12 }, (_, i) => {
-          const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
-          return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleString("default", { month: "short", year: "2-digit" }) };
-        });
-        function countActivity(items) {
-          const map = Object.fromEntries(monthKeys.map(({ key }) => [key, 0]));
-          for (const item of items) {
-            if (!item.last_watched_at) continue;
-            const d = new Date(item.last_watched_at);
-            const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-            if (k in map) map[k]++;
-          }
-          return monthKeys.map(({ key }) => map[key]);
+        let buckets;
+        if (range === "30d") {
+          // Daily for last 30 days
+          buckets = Array.from({ length: 30 }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (29 - i));
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            const label = d.toLocaleString("default", { month: "short", day: "numeric" });
+            return { key, label, match: (item) => item.last_watched_at?.slice(0, 10) === key };
+          });
+        } else if (range === "6m") {
+          // Weekly for last ~26 weeks
+          buckets = Array.from({ length: 26 }, (_, i) => {
+            const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (25 - i) * 7);
+            const weekEnd   = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+            const key = weekStart.toISOString().slice(0, 10);
+            const label = weekStart.toLocaleString("default", { month: "short", day: "numeric" });
+            return { key, label, match: (item) => {
+              if (!item.last_watched_at) return false;
+              const d = new Date(item.last_watched_at);
+              return d >= weekStart && d <= weekEnd;
+            }};
+          });
+        } else {
+          // Monthly for last 12 months
+          buckets = Array.from({ length: 12 }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            const label = d.toLocaleString("default", { month: "short", year: "2-digit" });
+            return { key, label, match: (item) => item.last_watched_at?.slice(0, 7) === key };
+          });
         }
-        makeBarChart("chartActivity", monthKeys.map(({ label }) => label), [
-          { label: "TV Shows", data: countActivity(shows), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
-          { label: "Movies",   data: countActivity(movies), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
-        ]);
+        const bucketLabels = buckets.map(({ label }) => label);
+        function activityDatasets(mode) {
+          const agg = (items) => buckets.map(({ match }) => {
+            const matched = items.filter(match);
+            return mode === "runtime"
+              ? Math.round(matched.reduce((s, i) => s + (i.runtime || 0), 0) / 60) // hours
+              : matched.length;
+          });
+          return [
+            { label: "TV Shows", data: agg(shows), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+            { label: "Movies",   data: agg(movies), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 4 },
+          ];
+        }
+        function yActivityLabel(mode) {
+          return mode === "runtime" ? { title: { display: true, text: "Hours", color: "#94a3b8", font: { size: 11 } } } : {};
+        }
+        function renderActivityChart(mode) {
+          const canvas = document.getElementById("chartActivity");
+          Chart.getChart(canvas)?.destroy();
+          new Chart(canvas, {
+            type: "bar",
+            data: { labels: bucketLabels, datasets: activityDatasets(mode) },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { labels: { color: "#f9fafb", boxWidth: 12, padding: 10 } },
+                tooltip: { mode: "index", callbacks: mode === "runtime" ? {
+                  label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}h`,
+                } : {} },
+              },
+              scales: {
+                x: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
+                y: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" }, ...yActivityLabel(mode) },
+              },
+            },
+          });
+        }
+        renderActivityChart("count");
+        statsContent.querySelectorAll(".chart-mode-tab").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            statsContent.querySelectorAll(".chart-mode-tab").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderActivityChart(btn.dataset.mode);
+          });
+        });
 
         // Ratings distribution
         const ratingLabels = ["1","2","3","4","5","6","7","8","9","10"];
