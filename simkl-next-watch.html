@@ -659,16 +659,19 @@
       .trending-watched { opacity: 0.35; }
       .trending-watched:hover { opacity: 0.75; }
       .trending-watched::before {
-        content: "✓";
+        content: "✓\AAlready watched";
+        white-space: pre;
+        text-align: center;
         position: absolute;
         inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.5rem;
+        font-size: 1.5rem;
         font-weight: 700;
+        line-height: 1.5;
         color: #22c55e;
-        background: rgba(0,0,0,0.45);
+        background: rgba(0,0,0,0.55);
         border-radius: 10px;
         opacity: 0;
         transition: opacity 0.15s;
@@ -1639,6 +1642,24 @@
         }).join("")}</div></div>`;
       }
 
+      async function ensureLibraryIds() {
+        if (state.libraryIds.size > 0 || !getAccessToken()) return;
+        try {
+          const [sRes, mRes] = await Promise.all([
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch,completed").catch(() => ({})),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
+          ]);
+          const extractIds = (item) => {
+            const ids = (item.show || item.movie || item)?.ids || item.ids || {};
+            return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
+          };
+          state.libraryIds = new Set([
+            ...(sRes.shows || []).flatMap(extractIds),
+            ...(mRes.movies || []).flatMap(extractIds),
+          ]);
+        } catch (_) {}
+      }
+
       async function loadTrending() {
         const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
         history.replaceState(null, "", `#trending/${period}`);
@@ -1647,7 +1668,7 @@
         moviesEl.innerHTML = tvEl.innerHTML = `<p class="empty">Loading…</p>`;
         const load = (type) => fetch(`https://data.simkl.in/discover/trending/${type}/${encodeURIComponent(period)}_100.json`).then(r => r.json());
         try {
-          const [moviesData, tvData] = await Promise.all([load("movies"), load("tv")]);
+          const [moviesData, tvData] = await Promise.all([load("movies"), load("tv"), ensureLibraryIds()]);
           const movies = Array.isArray(moviesData) ? moviesData.slice(0, 12) : [];
           const tv = Array.isArray(tvData) ? tvData.slice(0, 12) : [];
           moviesEl.innerHTML = movies.length ? renderTrendingRow(movies, "movies") : `<p class="empty">No results.</p>`;
