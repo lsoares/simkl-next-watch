@@ -41,7 +41,7 @@
       main {
         width: 100%;
         max-width: 680px;
-        padding: 64px 24px 80px;
+        padding: 56px 24px 40px;
         box-sizing: border-box;
       }
 
@@ -56,20 +56,20 @@
         margin-bottom: 12px;
       }
 
-      .bottom-bar {
+      .top-bar {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         right: 0;
         display: flex;
         justify-content: center;
         gap: 20px;
-        padding: 12px 0 max(16px, env(safe-area-inset-bottom));
-        background: linear-gradient(to bottom, transparent, rgba(17,24,39,0.95) 40%);
+        padding: max(12px, env(safe-area-inset-top)) 0 12px;
+        background: linear-gradient(to top, transparent, rgba(17,24,39,0.95) 40%);
         z-index: 10;
         pointer-events: none;
       }
-      .bottom-bar > * { pointer-events: auto; }
+      .top-bar > * { pointer-events: auto; }
 
       .row {
         display: grid;
@@ -755,7 +755,7 @@
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          padding: max(16px, env(safe-area-inset-top)) 12px max(72px, 56px + env(safe-area-inset-bottom));
+          padding: max(56px, 44px + env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
         }
         .suggestions-grid {
           flex: 1;
@@ -798,7 +798,7 @@
         </div>
       </div>
 
-      <div class="bottom-bar">
+      <div class="top-bar">
         <button id="installButton" class="tiny-link" type="button">install</button>
         <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
@@ -827,6 +827,10 @@
           <p class="field-help">Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
           <div id="pinCode" class="pin-code"></div>
           <div id="pinStatus" class="status"></div>
+        </div>
+
+        <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
+          <button id="logoutButton" class="tiny-link" type="button">logout</button>
         </div>
 
       </section>
@@ -1120,6 +1124,11 @@
 
       document.getElementById("openAuthModalButton").addEventListener("click", openAuthModal);
       document.getElementById("closeAuthModalButton").addEventListener("click", closeAuthModal);
+      document.getElementById("logoutButton").addEventListener("click", () => {
+        localStorage.removeItem(storageKeys.accessToken);
+        closeAuthModal();
+        loadSuggestions();
+      });
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
       document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
@@ -1185,6 +1194,7 @@
 
       function openAuthModal() {
         authModalBackdrop.hidden = false;
+        document.getElementById("logoutArea").hidden = !getAccessToken();
       }
 
       function closeAuthModal() {
