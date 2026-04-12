@@ -196,7 +196,7 @@
         gap: 28px;
       }
 
-      .media-section {}
+      .media-section { position: relative; }
       .section-label {
         font-size: 0.72rem;
         font-weight: 600;
@@ -205,11 +205,10 @@
         letter-spacing: 0.06em;
         margin: 0 0 8px;
       }
-      .media-section { position: relative; }
       .media-section::after {
         content: "";
         position: absolute;
-        top: 0; right: 0; bottom: 4px;
+        top: 0; right: 0; bottom: 0;
         width: 60px;
         background: linear-gradient(to right, transparent, #111827);
         pointer-events: none;
@@ -221,11 +220,23 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        padding-bottom: 4px;
       }
       .items-row::-webkit-scrollbar { display: none; }
-      .row-item { flex-shrink: 0; width: min(72vw, 300px); }
+      .row-item { flex-shrink: 0; width: calc((min(100vw, 680px) - 68px) / 3.2); }
       .row-item .item-card { width: 100%; aspect-ratio: 2/3; height: auto; }
+
+      /* Mobile: fit both rows on screen without vertical scroll */
+      @media (max-width: 680px) {
+        main { padding-bottom: 12px; }
+        .suggestions-grid {
+          height: calc(100dvh - 80px - 12px);
+          gap: 10px;
+        }
+        .media-section { flex: 1; min-height: 0; overflow: hidden; }
+        .items-row { height: 100%; }
+        .row-item { height: 100%; width: auto; }
+        .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
+      }
 
       .nav-arrow {
         display: none;
@@ -416,6 +427,25 @@
         transition: opacity 0.15s;
       }
       .poster-remove:hover::after { opacity: 1; }
+
+      /* IMDb rating badge */
+      .imdb-badge {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: #f5c518;
+        color: #000;
+        font-size: 0.6rem;
+        font-weight: 800;
+        padding: 2px 5px;
+        border-radius: 3px;
+        z-index: 4;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .item-card:hover .imdb-badge { opacity: 1; }
 
       /* season progress bar */
       .season-bar-wrap {
@@ -626,6 +656,26 @@
         height: auto;
         text-decoration: none;
       }
+      .trending-watched { opacity: 0.35; }
+      .trending-watched:hover { opacity: 0.75; }
+      .trending-watched::before {
+        content: "✓";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #22c55e;
+        background: rgba(0,0,0,0.45);
+        border-radius: 10px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        z-index: 3;
+        pointer-events: none;
+      }
+      .trending-watched:hover::before { opacity: 1; }
       .trending-rank {
         font-size: 0.7rem;
         font-weight: 800;
@@ -1104,6 +1154,7 @@
       const state = {
         tvItems: [],
         movieItems: [],
+        libraryIds: new Set(),
         pinPollAbortController: null,
       };
 
@@ -1319,12 +1370,24 @@
         }
         loadingSpinner.hidden = false;
         try {
-          const [showsResponse, moviesResponse] = await Promise.all([
+          const [showsResponse, moviesResponse, completedShowsRes, completedMoviesRes] = await Promise.all([
             simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
             simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=completed").catch(() => ({})),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=completed").catch(() => ({})),
           ]);
           const shows = normalizeList(showsResponse.shows);
           const movies = normalizeList(moviesResponse.movies);
+          const extractIds = (item) => {
+            const ids = (item.show || item.movie || item)?.ids || item.ids || {};
+            return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
+          };
+          state.libraryIds = new Set([
+            ...shows.flatMap(extractIds),
+            ...movies.flatMap(extractIds),
+            ...(completedShowsRes.shows || []).flatMap(extractIds),
+            ...(completedMoviesRes.movies || []).flatMap(extractIds),
+          ]);
           const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
           const byRecent = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
           state.tvItems = [
@@ -1494,6 +1557,7 @@
                   </div>
                 </div>`;
               })()}
+            ${item.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>` : ""}
           </article>`;
       }
 
@@ -1559,8 +1623,10 @@
           const imgCode = m.poster || m.img || "";
           const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
           const simklId = m.ids?.simkl_id || m.ids?.simkl;
-          const url = m.url ? `https://simkl.com${m.url}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
-          return `<a class="item-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+          const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
+          const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
+          const watched = simklId && state.libraryIds.has(String(simklId));
+          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
             ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
             <div class="poster-top">
               <div class="poster-top-text">
@@ -1568,6 +1634,7 @@
                 ${year ? `<span class="poster-episode">${year}</span>` : ""}
               </div>
             </div>
+            ${m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
           </a>`;
         }).join("")}</div></div>`;
       }
