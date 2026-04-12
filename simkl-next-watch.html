@@ -587,51 +587,15 @@
         grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
       }
-      .trending-card {
-        position: relative;
-        border-radius: 10px;
-        overflow: hidden;
-        aspect-ratio: 2 / 3;
-        background: #0b1220;
-        display: block;
-        text-decoration: none;
-      }
-      .trending-card img {
-        width: 100%; height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-      .trending-card-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.85) 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 8px;
-      }
       .trending-rank {
-        font-size: 1rem;
+        font-size: 0.7rem;
         font-weight: 800;
         color: #fff;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        line-height: 1;
-      }
-      .trending-card-title {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: #f9fafb;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        line-height: 1.3;
-      }
-      .trending-card-year {
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.6);
-        margin-top: 2px;
+        background: rgba(0,0,0,0.55);
+        border-radius: 4px;
+        padding: 1px 5px;
+        flex-shrink: 0;
+        align-self: flex-start;
       }
 
       .range-tabs {
@@ -1715,28 +1679,28 @@
         const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "week";
         el.innerHTML = `<p class="empty">Loading…</p>`;
         try {
-          const data = await fetch(
+          const data = await simklFetch(
             `https://api.simkl.com/${encodeURIComponent(type)}/trending?client_id=${encodeURIComponent(getClientId())}&extended=full&period=${encodeURIComponent(period)}`
-          ).then((r) => r.json());
+          );
           const top6 = Array.isArray(data) ? data.slice(0, 6) : [];
           if (!top6.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
           const urlBase = type === "movies" ? "movies" : type === "tv" ? "tv" : "anime";
           el.innerHTML = `<div class="trending-grid">${top6.map((m, i) => {
             const media = m.movie || m.show || m.anime || m;
-            const title = escapeHtml(media.title || m.title || "");
-            const year = media.year || m.year || "";
-            const imgCode = media.poster || media.img || m.poster || m.img || "";
-            const poster = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-            const simklId = media.ids?.simkl || m.ids?.simkl;
+            const title = escapeHtml(media.title || "");
+            const year = media.year || "";
+            const imgCode = media.poster || media.img || "";
+            const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
+            const simklId = media.ids?.simkl;
             const url = simklId ? `https://simkl.com/${urlBase}/${simklId}` : "#";
-            return `<a class="trending-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
-              ${poster ? `<img src="${escapeHtml(poster)}" alt="${title}" loading="lazy" />` : ""}
-              <div class="trending-card-overlay">
-                <span class="trending-rank">#${i + 1}</span>
-                <div>
-                  <div class="trending-card-title">${title}</div>
-                  ${year ? `<div class="trending-card-year">${year}</div>` : ""}
+            return `<a class="item-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="text-decoration:none">
+              ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
+              <div class="poster-top">
+                <div class="poster-top-text">
+                  <span class="poster-title">${title}</span>
+                  ${year ? `<span class="poster-episode">${year}</span>` : ""}
                 </div>
+                <span class="trending-rank">#${i + 1}</span>
               </div>
             </a>`;
           }).join("")}</div>`;
