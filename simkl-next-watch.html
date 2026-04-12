@@ -968,7 +968,7 @@
           return {
             ...item, ...media,
             ids:          media.ids   || item.ids   || {},
-            title:        (media.title || item.title || "Unknown title").replace(/\\'/g, "'"),
+            title:        media.title || item.title || "Unknown title",
             year:         media.year  || item.year  || "",
             overview:     media.overview || item.overview || "",
             poster:       media.poster || item.poster || media.img || item.img || "",
@@ -2042,6 +2042,7 @@
 
       function escapeHtml(value) {
         return String(value)
+          .replace(/\\'/g, "'")
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
