@@ -309,6 +309,7 @@
         border-color: #22c55e;
         color: #86efac;
       }
+      .mark-watched-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(80deg) saturate(3); }
       .mark-watched-btn::after {
         content: "I've watched this";
         position: absolute;
@@ -1537,7 +1538,7 @@
             <div class="poster-bottom">
               ${item.watchAction ? `
                 <div class="poster-actions">
-                  <button class="mark-watched-btn" title="I've watched this">👁</button>
+                  <button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:20px;height:20px;display:block;opacity:0.5;filter:brightness(10)" /></button>
                 </div>` : ""}
             </div>
             ${(() => {
