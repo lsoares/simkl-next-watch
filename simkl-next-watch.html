@@ -225,7 +225,7 @@
       }
       .items-row::-webkit-scrollbar { display: none; }
       .row-item { flex-shrink: 0; width: min(72vw, 300px); }
-      .row-item .item-card { width: 100%; height: calc(min(72vw, 300px) * 3 / 2); aspect-ratio: unset; }
+      .row-item .item-card { width: 100%; aspect-ratio: 2/3; height: auto; }
 
       .nav-arrow {
         display: none;
@@ -369,24 +369,13 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 6px;
-        padding: 8px 8px 18px;
+        padding: 8px 10px 18px;
         background: linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 60%, rgba(0,0,0,0.2) 85%, transparent);
         border-radius: 10px 10px 0 0;
         pointer-events: none;
       }
       .poster-top > * { pointer-events: auto; }
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-      .poster-memo {
-        font-size: 0.72rem;
-        color: rgba(255,255,255,0.6);
-        font-style: italic;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        display: block;
-        margin-top: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
 
       .poster-remove {
         position: relative;
@@ -402,9 +391,15 @@
         line-height: 1;
         cursor: pointer;
         margin-left: auto;
+        margin-top: 2px;
+        flex-shrink: 0;
         transition: color 0.15s, background 0.15s;
       }
       .poster-remove:hover { color: #fca5a5; border-color: #fca5a5; background: rgba(239,68,68,0.25); }
+      @media (hover: hover) and (pointer: fine) {
+        .poster-remove { opacity: 0; }
+        .item-card:hover .poster-remove { opacity: 1; }
+      }
       .poster-remove::after {
         content: "Remove from list";
         position: absolute;
@@ -603,10 +598,33 @@
       /* inline views */
       #trendingView, #loginView { width: 100%; }
       #loginView { max-width: 400px; margin: 0 auto; }
-      .trending-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
+      .trending-carousel {
+        position: relative;
+      }
+      .trending-carousel::after {
+        content: "";
+        position: absolute;
+        top: 0; right: 0; bottom: 4px;
+        width: 40px;
+        background: linear-gradient(to right, transparent, #111827);
+        pointer-events: none;
+        z-index: 1;
+      }
+      .trending-row {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+      }
+      .trending-row::-webkit-scrollbar { display: none; }
+      .trending-row .item-card {
+        flex-shrink: 0;
+        width: calc((min(100vw, 680px) - 64px) / 3);
+        aspect-ratio: 2/3;
+        height: auto;
+        text-decoration: none;
       }
       .trending-rank {
         font-size: 0.7rem;
@@ -835,19 +853,13 @@
         <div id="statsContent"><p class="empty">Loading…</p></div>
       </div>
       <div id="trendingView" hidden>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px">
-          <div class="range-tabs" id="trendingTypeTabs">
-            <button class="range-tab active" data-type="movies">Movies</button>
-            <button class="range-tab" data-type="tv">TV</button>
-            <button class="range-tab" data-type="anime">Anime</button>
-          </div>
-          <div class="range-tabs" id="trendingPeriodTabs">
-            <button class="range-tab active" data-period="today">Today</button>
-            <button class="range-tab" data-period="week">Week</button>
-            <button class="range-tab" data-period="month">Month</button>
-          </div>
+        <div class="range-tabs" id="trendingPeriodTabs" style="margin:0 0 16px">
+          <button class="range-tab active" data-period="today">Today</button>
+          <button class="range-tab" data-period="week">Week</button>
+          <button class="range-tab" data-period="month">Month</button>
         </div>
-        <div id="trendingContent"><p class="empty">Loading…</p></div>
+        <div id="trendingMoviesContent"></div>
+        <div id="trendingTvContent" style="margin-top:20px"></div>
       </div>
       <div id="loginView" hidden>
         <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
@@ -953,7 +965,6 @@
             poster:       media.poster || item.poster || media.img || item.img || "",
             next_to_watch: item.next_to_watch || media.next_to_watch || "",
             url:          buildSimklUrl(media),
-            memo:         (() => { const m = item.memo || media.memo; return typeof m === "string" ? m : (m?.text || m?.note || m?.content || ""); })(),
           };
         }) : [];
       }
@@ -977,12 +988,14 @@
 
       function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
+        const byRecent = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
         const watching = shows
           .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-          .sort((a, b) => (b.watched_episodes_count ?? 0) - (a.watched_episodes_count ?? 0))
+          .sort(byRecent)
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
         const watchlisted = shows
           .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
+          .sort(byRecent)
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
         return [...watching, ...watchlisted];
       }
@@ -1004,6 +1017,7 @@
         });
         return queued
           .filter((m) => m.year < currentYear || releasedIds.has(m.ids?.simkl))
+          .sort((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0))
           .map((movie) => ({ ...movie, watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" } }));
       }
 
@@ -1147,13 +1161,6 @@
         showHomeView();
         loadSuggestions();
       });
-      document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          loadTrending();
-        });
-      });
       document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {
           document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
@@ -1173,11 +1180,9 @@
 
       hydrateCredentials();
       if (getAccessToken()) {
-        const [hashView, p1, p2] = location.hash.replace("#", "").split("/");
+        const [hashView, p1] = location.hash.replace("#", "").split("/");
         if (hashView === "trending") {
-          const typeBtn = document.querySelector(`#trendingTypeTabs [data-type="${p1}"]`);
-          const periodBtn = document.querySelector(`#trendingPeriodTabs [data-period="${p2}"]`);
-          if (typeBtn) { document.querySelectorAll("#trendingTypeTabs .range-tab").forEach(b => b.classList.remove("active")); typeBtn.classList.add("active"); }
+          const periodBtn = document.querySelector(`#trendingPeriodTabs [data-period="${p1}"]`);
           if (periodBtn) { document.querySelectorAll("#trendingPeriodTabs .range-tab").forEach(b => b.classList.remove("active")); periodBtn.classList.add("active"); }
           showTrendingView();
         } else if (hashView === "stats") {
@@ -1190,7 +1195,7 @@
         } else if (hashView === "login") {
           showLoginView();
         } else {
-          showView("home");
+          showView("next");
         }
         loadSuggestions();
       } else {
@@ -1315,17 +1320,19 @@
         loadingSpinner.hidden = false;
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes&memos=yes"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full&memos=yes"),
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
           ]);
           const shows = normalizeList(showsResponse.shows);
           const movies = normalizeList(moviesResponse.movies);
           const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
+          const byRecent = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
           state.tvItems = [
             ...shows.filter(s => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-                    .sort((a, b) => (b.watched_episodes_count || 0) - (a.watched_episodes_count || 0))
+                    .sort(byRecent)
                     .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s) })),
             ...shows.filter(s => normalizeStatus(s.status) === "plantowatch" && aired(s))
+                    .sort(byRecent)
                     .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s, true) })),
           ];
           state.movieItems = await buildMovieCandidates(movies);
@@ -1465,7 +1472,6 @@
                 ${episodeTitle && episodeUrl
                   ? `<a class="poster-episode" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a>`
                   : ""}
-                ${item.memo ? `<span class="poster-memo">${escapeHtml(item.memo)}</span>` : ""}
               </div>
               ${type === "movie" ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
             </div>
@@ -1524,17 +1530,17 @@
       }
 
       function showView(name, { updateHash = true } = {}) {
-        document.querySelector(".suggestions-grid").hidden = name !== "home";
+        document.querySelector(".suggestions-grid").hidden = name !== "next";
         document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
         document.getElementById("loginView").hidden = name !== "login";
-        const navMap = { home: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
+        const navMap = { next: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
         Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
         document.getElementById(navMap[name])?.classList.add("active-nav");
         if (updateHash) history.replaceState(null, "", "#" + name);
       }
 
-      function showHomeView() { showView("home"); }
+      function showHomeView() { showView("next"); }
 
       function showTrendingView() {
         showView("trending");
@@ -1546,38 +1552,42 @@
         document.getElementById("logoutAreaInline").hidden = !getAccessToken();
       }
 
-      async function loadTrending() {
-        const el = document.getElementById("trendingContent");
-        const type = document.getElementById("trendingTypeTabs").querySelector(".range-tab.active")?.dataset.type || "movies";
-        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
-        history.replaceState(null, "", `#trending/${type}/${period}`);
-        el.innerHTML = `<p class="empty">Loading…</p>`;
-        try {
-          const data = await fetch(
-            `https://data.simkl.in/discover/trending/${encodeURIComponent(type)}/${encodeURIComponent(period)}_100.json`
-          ).then((r) => r.json());
-          const top6 = Array.isArray(data) ? data.slice(0, 6) : [];
-          if (!top6.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
-          el.innerHTML = `<div class="trending-grid">${top6.map((m) => {
-            const title = escapeHtml(m.title || "");
-            const year = m.year || "";
-            const imgCode = m.poster || m.img || "";
-            const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-            const simklId = m.ids?.simkl_id || m.ids?.simkl;
-            const urlBase = type === "movies" ? "movies" : type === "tv" ? "tv" : "anime";
-            const url = m.url ? `https://simkl.com${m.url}` : simklId ? `https://simkl.com/${urlBase}/${simklId}` : "#";
-            return `<a class="item-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="text-decoration:none">
-              ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
-              <div class="poster-top">
-                <div class="poster-top-text">
-                  <span class="poster-title">${title}</span>
-                  ${year ? `<span class="poster-episode">${year}</span>` : ""}
-                </div>
+      function renderTrendingRow(items, urlBaseOverride) {
+        return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
+          const title = escapeHtml(m.title || "");
+          const year = m.year || "";
+          const imgCode = m.poster || m.img || "";
+          const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
+          const simklId = m.ids?.simkl_id || m.ids?.simkl;
+          const url = m.url ? `https://simkl.com${m.url}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
+          return `<a class="item-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+            ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
+            <div class="poster-top">
+              <div class="poster-top-text">
+                <span class="poster-title">${title}</span>
+                ${year ? `<span class="poster-episode">${year}</span>` : ""}
               </div>
-            </a>`;
-          }).join("")}</div>`;
+            </div>
+          </a>`;
+        }).join("")}</div></div>`;
+      }
+
+      async function loadTrending() {
+        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
+        history.replaceState(null, "", `#trending/${period}`);
+        const moviesEl = document.getElementById("trendingMoviesContent");
+        const tvEl = document.getElementById("trendingTvContent");
+        moviesEl.innerHTML = tvEl.innerHTML = `<p class="empty">Loading…</p>`;
+        const load = (type) => fetch(`https://data.simkl.in/discover/trending/${type}/${encodeURIComponent(period)}_100.json`).then(r => r.json());
+        try {
+          const [moviesData, tvData] = await Promise.all([load("movies"), load("tv")]);
+          const movies = Array.isArray(moviesData) ? moviesData.slice(0, 12) : [];
+          const tv = Array.isArray(tvData) ? tvData.slice(0, 12) : [];
+          moviesEl.innerHTML = movies.length ? renderTrendingRow(movies, "movies") : `<p class="empty">No results.</p>`;
+          tvEl.innerHTML = tv.length ? renderTrendingRow(tv, "tv") : `<p class="empty">No results.</p>`;
         } catch (err) {
-          el.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message || "Failed to load.")}</p>`;
+          const msg = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message || "Failed to load.")}</p>`;
+          moviesEl.innerHTML = tvEl.innerHTML = msg;
         }
       }
 
