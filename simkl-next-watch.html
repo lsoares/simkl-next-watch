@@ -363,36 +363,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .ep-remaining, .ep-watched {
-        font-size: 0.6rem;
-        font-weight: 600;
-        text-shadow: 0 0 4px rgba(0,0,0,1);
-        position: absolute;
-        bottom: 0;
-        line-height: 14px;
-        opacity: 0;
-        transition: opacity 0.15s;
-        pointer-events: none;
-      }
-      .ep-remaining { right: 6px; color: rgba(255,255,255,0.75); pointer-events: auto; }
-      .ep-watched   { left: 6px;  color: rgba(147,197,253,0.9);  pointer-events: auto; }
-      .ep-remaining::after, .ep-watched::after {
-        position: absolute;
-        bottom: calc(100% + 5px);
-        background: rgba(0,0,0,0.85);
-        color: #f9fafb;
-        font-size: 0.65rem;
-        white-space: nowrap;
-        padding: 3px 7px;
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.15s;
-        pointer-events: none;
-        font-weight: 400;
-      }
-      .ep-remaining::after { content: "episodes left"; right: 0; }
-      .ep-watched::after   { content: "episodes watched"; left: 0; }
-      .ep-remaining:hover::after, .ep-watched:hover::after { opacity: 1; }
+
       .poster-remove {
         position: relative;
         background: rgba(0,0,0,0.45);
@@ -431,23 +402,52 @@
       .season-bar-wrap {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        cursor: default;
+        padding: 8px 10px 10px;
+        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.88) 40%);
+        border-radius: 0 0 10px 10px;
         opacity: 0;
         transition: opacity 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        pointer-events: none;
       }
       .item-card:hover .season-bar-wrap { opacity: 1; }
-      .item-card:hover .ep-remaining,
-      .item-card:hover .ep-watched { opacity: 1; }
+      .season-bar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .season-bar-title {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .season-bar-pct {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #93c5fd;
+      }
       .season-bar {
-        height: 14px;
-        background: rgba(0,0,0,0.35);
-        border-radius: 0 0 10px 10px;
+        height: 4px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 2px;
         overflow: hidden;
       }
       .season-bar-fill {
         height: 100%;
-        background: rgba(96,165,250,0.55);
+        background: #60a5fa;
+        border-radius: 2px;
       }
+      .season-bar-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.6rem;
+        color: rgba(255,255,255,0.55);
+      }
+      .season-bar-details .ep-watched-text { color: #93c5fd; }
 
       /* watched fade-out */
       @keyframes watchedOut {
@@ -1538,7 +1538,7 @@
             <div class="poster-bottom">
               ${item.watchAction ? `
                 <div class="poster-actions">
-                  <button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:20px;height:20px;display:block;opacity:0.5;filter:brightness(10)" /></button>
+                  <button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:30px;height:30px;display:block;opacity:0.5;filter:brightness(10)" /></button>
                 </div>` : ""}
             </div>
             ${(() => {
@@ -1547,9 +1547,15 @@
                 if (type !== "tv" || total <= 0) return "";
                 const pct = Math.min(100, Math.round(watched / total * 100));
                 return `<div class="season-bar-wrap">
-                  ${watched > 0 ? `<span class="ep-watched">${watched}</span>` : ""}
-                  ${remaining > 0 ? `<span class="ep-remaining">${remaining}</span>` : ""}
+                  <div class="season-bar-header">
+                    <span class="season-bar-title">Watch Progress</span>
+                    <span class="season-bar-pct">${pct}%</span>
+                  </div>
                   <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div></div>
+                  <div class="season-bar-details">
+                    <span class="ep-watched-text">${watched} of ${total} episodes watched</span>
+                    ${remaining > 0 ? `<span>${remaining} eps left</span>` : ""}
+                  </div>
                 </div>`;
               })()}
           </article>`;
