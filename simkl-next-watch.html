@@ -232,7 +232,7 @@
       @media (max-width: 680px) {
         main { padding-bottom: 12px; }
         .suggestions-grid {
-          height: calc(100dvh - 80px - 12px);
+          height: calc(100dvh - max(68px, 52px + env(safe-area-inset-top)) - 12px);
           gap: 10px;
         }
         .media-section { flex: 1; min-height: 0; overflow: clip; }
@@ -244,7 +244,7 @@
         #trendingView {
           display: flex;
           flex-direction: column;
-          height: calc(100dvh - 80px - 12px);
+          height: calc(100dvh - max(68px, 52px + env(safe-area-inset-top)) - 12px);
         }
         #trendingPeriodTabs { flex-shrink: 0; margin-bottom: 10px; }
         .trending-grid { flex: 1; min-height: 0; gap: 10px; }
@@ -822,48 +822,50 @@
 
       .stats-row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 16px;
       }
 
       .stats-genres {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 16px;
       }
 
       .stats-status {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
         gap: 8px;
         margin-bottom: 20px;
       }
 
       .stats-status-item {
         display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: var(--muted);
-      }
-
-      .stats-status-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        flex-shrink: 0;
+        flex-direction: column;
+        gap: 4px;
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        padding: 10px 14px;
       }
 
       .stats-status-count {
-        font-weight: 600;
-        color: var(--text);
+        font-size: 1.3rem;
+        font-weight: 700;
+        line-height: 1.1;
       }
 
-      @media (max-width: 500px) {
-        .stats-row,
-        .stats-genres {
-          grid-template-columns: 1fr;
-        }
+      .stats-status-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+
+      .chart-scroll-x {
+        overflow-x: auto;
+      }
+
+      .chart-scroll-x canvas {
+        display: block;
+        height: 220px !important;
       }
 
       @media (max-width: 768px) {
@@ -1906,7 +1908,9 @@
             </div>
             <div class="stats-chart-wrap">
               <h3>Release year</h3>
-              <canvas id="chartYear"></canvas>
+              <div class="chart-scroll-x">
+                <canvas id="chartYear"></canvas>
+              </div>
             </div>
             <div class="stats-genres">
               <div class="stats-chart-wrap">
@@ -1956,7 +1960,7 @@
         return map;
       }
 
-      function makeBarChart(canvasId, labels, datasets) {
+      function makeBarChart(canvasId, labels, datasets, extraOptions = {}) {
         const canvas = document.getElementById(canvasId);
         Chart.getChart(canvas)?.destroy();
         return new Chart(canvas, {
@@ -1972,6 +1976,7 @@
               x: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
               y: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
             },
+            ...extraOptions,
           },
         });
       }
@@ -1991,11 +1996,10 @@
         statusEl.innerHTML = Object.entries(STATUS_META)
           .filter(([k]) => statusCounts[k])
           .map(([k, { label, color }]) => `
-            <span class="stats-status-item">
-              <span class="stats-status-dot" style="background:${color}"></span>
-              <span class="stats-status-count">${statusCounts[k]}</span>
-              ${escapeHtml(label)}
-            </span>`)
+            <div class="stats-status-item">
+              <span class="stats-status-count" style="color:${color}">${statusCounts[k]}</span>
+              <span class="stats-status-label">${escapeHtml(label)}</span>
+            </div>`)
           .join("");
 
         // Watch activity — buckets depend on selected range
@@ -2023,12 +2027,13 @@
             }};
           });
         } else {
-          // Monthly for last 12 months
-          buckets = Array.from({ length: 12 }, (_, i) => {
-            const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-            const label = d.toLocaleString("default", { month: "short", year: "2-digit" });
-            return { key, label, match: (item) => item.last_watched_at?.slice(0, 7) === key };
+          // Yearly buckets from earliest watched item to current year
+          const allWatched = [...shows, ...movies].map(i => i.last_watched_at).filter(Boolean);
+          const minYear = allWatched.length ? Math.min(...allWatched.map(d => new Date(d).getFullYear())) : now.getFullYear();
+          const maxYear = now.getFullYear();
+          buckets = Array.from({ length: maxYear - minYear + 1 }, (_, i) => {
+            const year = minYear + i;
+            return { key: String(year), label: String(year), match: (item) => item.last_watched_at && new Date(item.last_watched_at).getFullYear() === year };
           });
         }
         const bucketLabels = buckets.map(({ label }) => label);
@@ -2106,10 +2111,17 @@
         const showYears  = countBy(shows.map((s) => ({ y: s.year || null })), "y");
         const movieYears = countBy(movies.map((m) => ({ y: m.year || null })), "y");
         const allYears = [...new Set([...Object.keys(showYears), ...Object.keys(movieYears)])].filter(Boolean).sort();
+        const yearCanvas = document.getElementById("chartYear");
+        const yearScrollWrap = yearCanvas.closest(".chart-scroll-x");
+        if (yearScrollWrap) {
+          const minWidth = Math.max(allYears.length * 28, yearScrollWrap.parentElement.clientWidth - 32);
+          yearCanvas.style.width = minWidth + "px";
+          yearCanvas.style.height = "220px";
+        }
         makeBarChart("chartYear", allYears, [
           { label: "TV Shows", data: allYears.map((y) => showYears[y]  || 0), backgroundColor: "#22c55ecc", borderColor: "#22c55e", borderWidth: 1, borderRadius: 2 },
           { label: "Movies",   data: allYears.map((y) => movieYears[y] || 0), backgroundColor: "#60a5facc", borderColor: "#60a5fa", borderWidth: 1, borderRadius: 2 },
-        ]);
+        ], { responsive: false, maintainAspectRatio: false });
 
         // Genre pie charts (top 10)
         makePieChart("chartMovieGenres", topN(movieDetails.genres, 10));
