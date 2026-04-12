@@ -1634,11 +1634,17 @@
         });
       }
 
+      const scrollPositions = new Map();
+
       function showView(name, { updateHash = true } = {}) {
+        for (const row of document.querySelectorAll(".items-row, .trending-row"))
+          scrollPositions.set(row, row.scrollLeft);
         document.querySelector(".suggestions-grid").hidden = name !== "next";
         document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
         document.getElementById("loginView").hidden = name !== "login";
+        for (const row of document.querySelectorAll(".items-row, .trending-row"))
+          if (scrollPositions.has(row)) row.scrollLeft = scrollPositions.get(row);
         const navMap = { next: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
         Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
         document.getElementById(navMap[name])?.classList.add("active-nav");
