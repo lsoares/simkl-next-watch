@@ -379,26 +379,6 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-      }
-      .poster-memo:empty::before { content: "＋ note"; opacity: 0; transition: opacity 0.15s; }
-      .item-card:hover .poster-memo:empty::before { opacity: 1; }
-      .poster-memo-input {
-        font-size: 0.72rem;
-        font-style: italic;
-        background: rgba(0,0,0,0.6);
-        border: 1px solid rgba(255,255,255,0.3);
-        border-radius: 4px;
-        color: #fff;
-        padding: 1px 4px;
-        width: 100%;
-        outline: none;
-        margin-top: 2px;
       }
 
       .poster-remove {
@@ -1520,46 +1500,6 @@
         }
       }
 
-      function startMemoEdit(type, btn) {
-        const current = btn.textContent;
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "poster-memo-input";
-        input.value = current;
-        input.placeholder = "Add a note…";
-        input.maxLength = 255;
-        btn.replaceWith(input);
-        input.focus();
-        input.select();
-        const commit = async () => {
-          const newMemo = input.value.trim();
-          const restored = document.createElement("button");
-          restored.className = "poster-memo";
-          restored.title = "Edit note";
-          restored.textContent = newMemo;
-          input.replaceWith(restored);
-          restored.addEventListener("click", (e) => { e.preventDefault(); startMemoEdit(type, e.currentTarget); });
-          if (newMemo !== current) await saveMemo(type, newMemo);
-        };
-        input.addEventListener("blur", commit);
-        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } if (e.key === "Escape") { input.value = current; input.blur(); } });
-      }
-
-      async function saveMemo(type, memo) {
-        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        if (!suggestion) return;
-        const key = type === "tv" ? "shows" : "movies";
-        try {
-          await simklFetch("https://api.simkl.com/sync/add-to-list", {
-            method: "POST",
-            body: JSON.stringify({ [key]: [{ ids: suggestion.ids, memo }] }),
-          });
-          if (type === "tv") { state.tvSuggestion.memo = memo; } else { state.movieSuggestion.memo = memo; }
-        } catch (err) {
-          setGlobalStatus("Failed to save note.", true);
-        }
-      }
-
       function confirmRemove(type) {
         const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
         if (!suggestion) return;
@@ -1619,8 +1559,6 @@
           });
         container.querySelector(".poster-remove")
           ?.addEventListener("click", (e) => { e.preventDefault(); confirmRemove(type); });
-        container.querySelector(".poster-memo")
-          ?.addEventListener("click", (e) => { e.preventDefault(); startMemoEdit(type, e.currentTarget); });
         container.querySelectorAll(".nav-arrow").forEach((btn) => {
           btn.addEventListener("click", async () => {
             const t = btn.dataset.type;
@@ -1660,7 +1598,7 @@
                 ${episodeTitle && episodeUrl
                   ? `<a class="poster-episode" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeTitle)}</a>`
                   : ""}
-                <button class="poster-memo" title="Edit note">${escapeHtml(item.memo || "")}</button>
+                ${item.memo ? `<span class="poster-memo">${escapeHtml(item.memo)}</span>` : ""}
               </div>
               ${type === "movie" ? `<button class="poster-remove" title="Remove from list">🗑</button>` : ""}
             </div>
