@@ -658,27 +658,6 @@
       }
       .trending-watched { opacity: 0.35; }
       .trending-watched:hover { opacity: 0.75; }
-      .trending-watched::before {
-        content: "✓\AAlready watched";
-        white-space: pre;
-        text-align: center;
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        font-weight: 700;
-        line-height: 1.5;
-        color: #22c55e;
-        background: rgba(0,0,0,0.55);
-        border-radius: 10px;
-        opacity: 0;
-        transition: opacity 0.15s;
-        z-index: 3;
-        pointer-events: none;
-      }
-      .trending-watched:hover::before { opacity: 1; }
       .trending-rank {
         font-size: 0.7rem;
         font-weight: 800;
