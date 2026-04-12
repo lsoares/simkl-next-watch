@@ -968,7 +968,7 @@
           return {
             ...item, ...media,
             ids:          media.ids   || item.ids   || {},
-            title:        media.title || item.title || "Unknown title",
+            title:        (media.title || item.title || "Unknown title").replace(/\\'/g, "'"),
             year:         media.year  || item.year  || "",
             overview:     media.overview || item.overview || "",
             poster:       media.poster || item.poster || media.img || item.img || "",
