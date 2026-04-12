@@ -573,7 +573,7 @@
         background: #111827;
       }
 
-      #statsModalBackdrop .modal {
+      #statsView .modal {
         width: min(980px, 100%);
       }
 
@@ -835,7 +835,7 @@
 
       <div class="top-bar">
         <div class="top-bar-center">
-          <button id="goHomeButton" class="tiny-link" type="button">home</button>
+          <button id="goHomeButton" class="tiny-link" type="button">watching</button>
           <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
           <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
         </div>
@@ -843,6 +843,14 @@
           <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
           <button id="installButton" class="tiny-link" type="button">install</button>
         </div>
+      </div>
+      <div id="statsView" hidden>
+        <div class="range-tabs" style="margin:0 0 14px">
+          <button class="range-tab" data-range="30d">30d</button>
+          <button class="range-tab" data-range="6m">6m</button>
+          <button class="range-tab active" data-range="all">All</button>
+        </div>
+        <div id="statsContent"><p class="empty">Loading…</p></div>
       </div>
       <div id="trendingView" hidden>
         <div class="range-tabs" id="trendingTypeTabs" style="margin:0 0 14px">
@@ -874,20 +882,6 @@
 
 
 
-    <div id="statsModalBackdrop" class="modal-backdrop" hidden>
-      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="statsModalTitle">
-        <div class="modal-header">
-          <h2 id="statsModalTitle">My watching stats</h2>
-          <div class="range-tabs">
-            <button class="range-tab" data-range="30d">30d</button>
-            <button class="range-tab" data-range="6m">6m</button>
-            <button class="range-tab active" data-range="all">All</button>
-          </div>
-          <button id="closeStatsModalButton" class="secondary close-btn" type="button">&#x2715;</button>
-        </div>
-        <div id="statsContent"><p class="empty">Loading…</p></div>
-      </section>
-    </div>
 
     <script>
       let toastTimer;
@@ -1131,7 +1125,7 @@
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
         });
       });
-      const statsModalBackdrop = document.getElementById("statsModalBackdrop");
+      const statsView = document.getElementById("statsView");
       const loadingSpinner = document.getElementById("loadingSpinner");
       const statsContent = document.getElementById("statsContent");
 
@@ -1174,18 +1168,13 @@
           loadTrending();
         });
       });
-      document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
-      document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
+      document.getElementById("openStatsModalButton").addEventListener("click", showStatsView);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
       clientIdInput.addEventListener("input", () => {
         document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
       });
-      statsModalBackdrop.addEventListener("click", (event) => {
-        if (event.target === statsModalBackdrop) closeStatsModal();
-      });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
-          if (!statsModalBackdrop.hidden) closeStatsModal();
         }
       });
 
@@ -1634,13 +1623,12 @@
 
       function showView(name) {
         document.querySelector(".suggestions-grid").hidden = name !== "home";
+        document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
         document.getElementById("loginView").hidden = name !== "login";
-        ["goHomeButton", "openTrendingButton", "openAuthModalButton"].forEach((id) =>
-          document.getElementById(id)?.classList.remove("active-nav")
-        );
-        const activeId = name === "home" ? "goHomeButton" : name === "trending" ? "openTrendingButton" : "openAuthModalButton";
-        document.getElementById(activeId)?.classList.add("active-nav");
+        const navMap = { home: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
+        Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
+        document.getElementById(navMap[name])?.classList.add("active-nav");
       }
 
       function showHomeView() { showView("home"); }
@@ -1692,8 +1680,8 @@
 
       let statsRawData = null;
 
-      async function openStatsModal() {
-        statsModalBackdrop.hidden = false;
+      async function showStatsView() {
+        showView("stats");
 
         if (!statsRawData) {
           statsRawData = loadStatsCache();
@@ -1732,10 +1720,10 @@
 
         applyStatsRange();
 
-        statsModalBackdrop.querySelectorAll(".range-tab:not([data-wired])").forEach((btn) => {
+        statsView.querySelectorAll(".range-tab:not([data-wired])").forEach((btn) => {
           btn.dataset.wired = "1";
           btn.addEventListener("click", () => {
-            statsModalBackdrop.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+            statsView.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
             applyStatsRange();
           });
@@ -1743,7 +1731,7 @@
       }
 
       function applyStatsRange() {
-        const range = statsModalBackdrop.querySelector(".range-tab.active")?.dataset.range || "all";
+        const range = statsView.querySelector(".range-tab.active")?.dataset.range || "all";
         const { shows, movies, tvDetails, movieDetails, apiStats } = statsRawData;
 
         const cutoff = range === "30d" ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
@@ -1762,9 +1750,6 @@
         initStatsCharts(filtShows, filtMovies, tvDetails, movieDetails, range);
       }
 
-      function closeStatsModal() {
-        statsModalBackdrop.hidden = true;
-      }
 
       function minsToDaysHours(mins) {
         const totalHours = Math.floor(mins / 60);
