@@ -836,9 +836,9 @@
 
       <div class="top-bar">
         <div class="top-bar-center">
-          <button id="goHomeButton" class="tiny-link" type="button">watching</button>
-          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+          <button id="goHomeButton" class="tiny-link" type="button">next</button>
           <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
+          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         </div>
         <div class="top-bar-right">
           <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
@@ -854,10 +854,17 @@
         <div id="statsContent"><p class="empty">Loading…</p></div>
       </div>
       <div id="trendingView" hidden>
-        <div class="range-tabs" id="trendingTypeTabs" style="margin:0 0 14px">
-          <button class="range-tab active" data-type="movies">Movies</button>
-          <button class="range-tab" data-type="tv">TV</button>
-          <button class="range-tab" data-type="anime">Anime</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px">
+          <div class="range-tabs" id="trendingTypeTabs">
+            <button class="range-tab active" data-type="movies">Movies</button>
+            <button class="range-tab" data-type="tv">TV</button>
+            <button class="range-tab" data-type="anime">Anime</button>
+          </div>
+          <div class="range-tabs" id="trendingPeriodTabs">
+            <button class="range-tab active" data-period="today">Today</button>
+            <button class="range-tab" data-period="week">Week</button>
+            <button class="range-tab" data-period="month">Month</button>
+          </div>
         </div>
         <div id="trendingContent"><p class="empty">Loading…</p></div>
       </div>
@@ -1169,6 +1176,13 @@
           loadTrending();
         });
       });
+      document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          loadTrending();
+        });
+      });
       document.getElementById("openStatsModalButton").addEventListener("click", showStatsView);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
       clientIdInput.addEventListener("input", () => {
@@ -1181,6 +1195,7 @@
 
       hydrateCredentials();
       if (getAccessToken()) {
+        showView("home");
         loadSuggestions();
       } else {
         showLoginView();
@@ -1647,22 +1662,22 @@
       async function loadTrending() {
         const el = document.getElementById("trendingContent");
         const type = document.getElementById("trendingTypeTabs").querySelector(".range-tab.active")?.dataset.type || "movies";
+        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
         el.innerHTML = `<p class="empty">Loading…</p>`;
         try {
-          const data = await simklFetch(
-            `https://api.simkl.com/${encodeURIComponent(type)}/trending?client_id=${encodeURIComponent(getClientId())}&extended=full`
-          );
+          const data = await fetch(
+            `https://data.simkl.in/discover/trending/${encodeURIComponent(type)}/${encodeURIComponent(period)}_100.json`
+          ).then((r) => r.json());
           const top6 = Array.isArray(data) ? data.slice(0, 6) : [];
           if (!top6.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
-          const urlBase = type === "movies" ? "movies" : type === "tv" ? "tv" : "anime";
-          el.innerHTML = `<div class="trending-grid">${top6.map((m, i) => {
-            const media = m.movie || m.show || m.anime || m;
-            const title = escapeHtml(media.title || "");
-            const year = media.year || "";
-            const imgCode = media.poster || media.img || "";
+          el.innerHTML = `<div class="trending-grid">${top6.map((m) => {
+            const title = escapeHtml(m.title || "");
+            const year = m.year || "";
+            const imgCode = m.poster || m.img || "";
             const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-            const simklId = media.ids?.simkl;
-            const url = simklId ? `https://simkl.com/${urlBase}/${simklId}` : "#";
+            const simklId = m.ids?.simkl_id || m.ids?.simkl;
+            const urlBase = type === "movies" ? "movies" : type === "tv" ? "tv" : "anime";
+            const url = m.url ? `https://simkl.com${m.url}` : simklId ? `https://simkl.com/${urlBase}/${simklId}` : "#";
             return `<a class="item-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="text-decoration:none">
               ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
               <div class="poster-top">
