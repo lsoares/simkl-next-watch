@@ -1136,6 +1136,7 @@
       const statsView = document.getElementById("statsView");
       const loadingSpinner = document.getElementById("loadingSpinner");
       const statsContent = document.getElementById("statsContent");
+      let statsRawData = null;
 
       // PWA install
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
@@ -1713,7 +1714,6 @@
         }
       }
 
-      let statsRawData = null;
 
       async function showStatsView() {
         showView("stats");
