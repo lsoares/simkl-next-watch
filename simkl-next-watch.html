@@ -70,6 +70,22 @@
         pointer-events: none;
       }
       .top-bar > * { pointer-events: auto; }
+      .top-bar-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 20px;
+        pointer-events: auto;
+      }
+      .top-bar-right {
+        margin-left: auto;
+        display: flex;
+        gap: 20px;
+        padding-right: 16px;
+        pointer-events: auto;
+      }
+      .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
 
       .row {
         display: grid;
@@ -573,15 +589,9 @@
         margin: 0;
       }
 
-      /* trending grid */
-      .trending-filters {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        padding: 8px 0 4px;
-        border-bottom: 1px solid var(--panel-border);
-        margin-bottom: 12px;
-      }
+      /* inline views */
+      #trendingView, #loginView { width: 100%; }
+      #loginView { max-width: 400px; margin: 0 auto; }
       .trending-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -824,64 +834,45 @@
       </div>
 
       <div class="top-bar">
-        <button id="installButton" class="tiny-link" type="button">install</button>
-        <button id="openTrendingModalButton" class="tiny-link" type="button">trending</button>
-        <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
-        <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
+        <div class="top-bar-center">
+          <button id="goHomeButton" class="tiny-link" type="button">home</button>
+          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
+          <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
+        </div>
+        <div class="top-bar-right">
+          <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
+          <button id="installButton" class="tiny-link" type="button">install</button>
+        </div>
       </div>
-      <div id="loadingSpinner" class="spinner" hidden></div>
-      <div id="globalStatus" class="status toast" hidden></div>
-    </main>
-
-    <div id="authModalBackdrop" class="modal-backdrop" hidden>
-      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
-        <div class="modal-header">
-          <h2 id="authModalTitle">Connect to Simkl</h2>
-          <button id="closeAuthModalButton" class="secondary close-btn" type="button">&#x2715;</button>
+      <div id="trendingView" hidden>
+        <div class="range-tabs" id="trendingTypeTabs" style="margin:0 0 14px">
+          <button class="range-tab active" data-type="movies">Movies</button>
+          <button class="range-tab" data-type="tv">TV</button>
+          <button class="range-tab" data-type="anime">Anime</button>
         </div>
-
-        <div id="authStep1">
-          <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
-          <label for="clientId">Client ID</label>
-          <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
-          <div class="actions" style="margin-top:12px">
-            <button id="startPinButton" disabled>Connect with PIN</button>
-          </div>
+        <div id="trendingContent"><p class="empty">Loading…</p></div>
+      </div>
+      <div id="loginView" hidden>
+        <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
+        <label for="clientId">Client ID</label>
+        <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
+        <div class="actions" style="margin-top:12px">
+          <button id="startPinButton" disabled>Connect with PIN</button>
         </div>
-
         <div id="pinArea" class="pin-box" hidden>
           <p class="field-help">Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
           <div id="pinCode" class="pin-code"></div>
           <div id="pinStatus" class="status"></div>
         </div>
-
-        <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
+        <div id="logoutAreaInline" hidden style="margin-top:16px;text-align:center">
           <button id="logoutButton" class="tiny-link" type="button">logout</button>
         </div>
+      </div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
+      <div id="globalStatus" class="status toast" hidden></div>
+    </main>
 
-      </section>
-    </div>
 
-    <div id="trendingModalBackdrop" class="modal-backdrop" hidden>
-      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="trendingModalTitle">
-        <div class="modal-header">
-          <h2 id="trendingModalTitle">Trending</h2>
-          <button id="closeTrendingModalButton" class="secondary close-btn" type="button">&#x2715;</button>
-        </div>
-        <div class="trending-filters">
-          <div class="range-tabs" id="trendingTypeTabs" style="margin:0">
-            <button class="range-tab active" data-type="movies">Movies</button>
-            <button class="range-tab" data-type="tv">TV</button>
-            <button class="range-tab" data-type="anime">Anime</button>
-          </div>
-          <div class="range-tabs" id="trendingPeriodTabs" style="margin:0 0 0 auto">
-            <button class="range-tab active" data-period="week">Week</button>
-            <button class="range-tab" data-period="month">Month</button>
-          </div>
-        </div>
-        <div id="trendingContent"><p class="empty">Loading…</p></div>
-      </section>
-    </div>
 
     <div id="statsModalBackdrop" class="modal-backdrop" hidden>
       <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="statsModalTitle">
@@ -1132,7 +1123,6 @@
       const pinStatus = document.getElementById("pinStatus");
       const tvSuggestionContainer = document.getElementById("tvSuggestion");
       const movieSuggestionContainer = document.getElementById("movieSuggestion");
-      const authModalBackdrop = document.getElementById("authModalBackdrop");
       document.getElementById("currentUrl").textContent = window.location.href;
       document.getElementById("copyUrlButton").addEventListener("click", () => {
         navigator.clipboard.writeText(window.location.href).then(() => {
@@ -1169,26 +1159,17 @@
         }
       });
 
-      document.getElementById("openAuthModalButton").addEventListener("click", openAuthModal);
-      document.getElementById("closeAuthModalButton").addEventListener("click", closeAuthModal);
+      document.getElementById("goHomeButton").addEventListener("click", showHomeView);
+      document.getElementById("openTrendingButton").addEventListener("click", showTrendingView);
+      document.getElementById("openAuthModalButton").addEventListener("click", showLoginView);
       document.getElementById("logoutButton").addEventListener("click", () => {
         localStorage.removeItem(storageKeys.accessToken);
-        closeAuthModal();
+        showHomeView();
         loadSuggestions();
       });
-      document.getElementById("openTrendingModalButton").addEventListener("click", openTrendingModal);
-      document.getElementById("closeTrendingModalButton").addEventListener("click", closeTrendingModal);
-      document.getElementById("trendingModalBackdrop").addEventListener("click", (e) => { if (e.target === document.getElementById("trendingModalBackdrop")) closeTrendingModal(); });
       document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {
           document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          loadTrending();
-        });
-      });
-      document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           loadTrending();
         });
@@ -1199,17 +1180,12 @@
       clientIdInput.addEventListener("input", () => {
         document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
       });
-      authModalBackdrop.addEventListener("click", (event) => {
-        if (event.target === authModalBackdrop) closeAuthModal();
-      });
       statsModalBackdrop.addEventListener("click", (event) => {
         if (event.target === statsModalBackdrop) closeStatsModal();
       });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
-          if (!authModalBackdrop.hidden) closeAuthModal();
           if (!statsModalBackdrop.hidden) closeStatsModal();
-          if (!document.getElementById("trendingModalBackdrop").hidden) closeTrendingModal();
         }
       });
 
@@ -1217,7 +1193,7 @@
       if (getAccessToken()) {
         loadSuggestions();
       } else {
-        openAuthModal();
+        showLoginView();
       }
 
       if ("serviceWorker" in navigator) {
@@ -1257,14 +1233,6 @@
         document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
       }
 
-      function openAuthModal() {
-        authModalBackdrop.hidden = false;
-        document.getElementById("logoutArea").hidden = !getAccessToken();
-      }
-
-      function closeAuthModal() {
-        authModalBackdrop.hidden = true;
-      }
 
       function clearSavedAuth() {
         localStorage.removeItem(storageKeys.clientId);
@@ -1272,7 +1240,7 @@
         clientIdInput.value = "";
         pinArea.hidden = true;
         setGlobalStatus("Saved auth cleared.");
-        closeAuthModal();
+        showHomeView();
       }
 
       async function startPinFlow() {
@@ -1342,7 +1310,7 @@
             localStorage.setItem(storageKeys.accessToken, payload.access_token);
             pinStatus.textContent = "Connected.";
             setGlobalStatus("Simkl access token received.");
-            closeAuthModal();
+            showHomeView();
             await loadSuggestions();
             return;
           }
@@ -1664,23 +1632,36 @@
         });
       }
 
-      function openTrendingModal() {
-        document.getElementById("trendingModalBackdrop").hidden = false;
+      function showView(name) {
+        document.querySelector(".suggestions-grid").hidden = name !== "home";
+        document.getElementById("trendingView").hidden = name !== "trending";
+        document.getElementById("loginView").hidden = name !== "login";
+        ["goHomeButton", "openTrendingButton", "openAuthModalButton"].forEach((id) =>
+          document.getElementById(id)?.classList.remove("active-nav")
+        );
+        const activeId = name === "home" ? "goHomeButton" : name === "trending" ? "openTrendingButton" : "openAuthModalButton";
+        document.getElementById(activeId)?.classList.add("active-nav");
+      }
+
+      function showHomeView() { showView("home"); }
+
+      function showTrendingView() {
+        showView("trending");
         loadTrending();
       }
 
-      function closeTrendingModal() {
-        document.getElementById("trendingModalBackdrop").hidden = true;
+      function showLoginView() {
+        showView("login");
+        document.getElementById("logoutAreaInline").hidden = !getAccessToken();
       }
 
       async function loadTrending() {
         const el = document.getElementById("trendingContent");
         const type = document.getElementById("trendingTypeTabs").querySelector(".range-tab.active")?.dataset.type || "movies";
-        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "week";
         el.innerHTML = `<p class="empty">Loading…</p>`;
         try {
           const data = await simklFetch(
-            `https://api.simkl.com/${encodeURIComponent(type)}/trending?client_id=${encodeURIComponent(getClientId())}&extended=full&period=${encodeURIComponent(period)}`
+            `https://api.simkl.com/${encodeURIComponent(type)}/trending?client_id=${encodeURIComponent(getClientId())}&extended=full`
           );
           const top6 = Array.isArray(data) ? data.slice(0, 6) : [];
           if (!top6.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
