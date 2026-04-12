@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Simkl Next Watch</title>
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./icon.png" type="image/png" />
@@ -87,6 +87,7 @@
         pointer-events: auto;
       }
       .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
+      #openAuthModalButton.logged-in { opacity: 0.35; }
 
       .row {
         display: grid;
@@ -784,14 +785,16 @@
       }
 
       @media (max-width: 768px) {
-        body { height: 100dvh; overflow: hidden; }
+        body.is-home { height: 100dvh; overflow: hidden; }
         main {
-          height: 100%;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
+          padding: max(68px, 52px + env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+        }
+        body.is-home main {
+          height: 100%;
           overflow: hidden;
-          padding: max(56px, 44px + env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
         }
         .suggestions-grid {
           flex: 1;
@@ -1168,6 +1171,7 @@
       document.getElementById("openAuthModalButton").addEventListener("click", showLoginView);
       document.getElementById("logoutButton").addEventListener("click", () => {
         localStorage.removeItem(storageKeys.accessToken);
+        hydrateCredentials();
         showHomeView();
         loadSuggestions();
       });
@@ -1256,6 +1260,7 @@
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
         document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
+        document.getElementById("openAuthModalButton").classList.toggle("logged-in", !!getAccessToken());
       }
 
 
@@ -1335,6 +1340,7 @@
             localStorage.setItem(storageKeys.accessToken, payload.access_token);
             pinStatus.textContent = "Connected.";
             setGlobalStatus("Simkl access token received.");
+            hydrateCredentials();
             showHomeView();
             await loadSuggestions();
             return;
@@ -1364,8 +1370,8 @@
         loadingSpinner.hidden = false;
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
+            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes&memos=yes"),
+            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full&memos=yes"),
           ]);
 
           const shows = normalizeList(showsResponse.shows);
@@ -1445,8 +1451,11 @@
           });
           const simklId = suggestion.ids?.simkl;
           const key = type === "tv" ? "shows" : "movies";
+          const watchedLabel = type === "tv" && suggestion.next_to_watch
+            ? `${suggestion.next_to_watch} · ${suggestion.title}`
+            : suggestion.title;
           await loadSuggestions();
-          setGlobalStatus("Marked as watched.", false, simklId ? async () => {
+          setGlobalStatus(`Watched: ${watchedLabel}`, false, simklId ? async () => {
             try {
               await simklFetch("https://api.simkl.com/sync/history/remove", {
                 method: "POST",
@@ -1484,8 +1493,11 @@
             }));
           }
           await Promise.all(calls);
+          const watchedLabel2 = type === "tv" && suggestion.next_to_watch
+            ? `${suggestion.next_to_watch} · ${suggestion.title}`
+            : suggestion.title;
           await loadSuggestions();
-          setGlobalStatus("Marked as watched.", false, async () => {
+          setGlobalStatus(`Watched: ${watchedLabel2}`, false, async () => {
             try {
               await simklFetch("https://api.simkl.com/sync/history/remove", {
                 method: "POST",
@@ -1601,7 +1613,7 @@
                   : ""}
                 ${item.memo ? `<span class="poster-memo">${escapeHtml(item.memo)}</span>` : ""}
               </div>
-              ${type === "movie" ? `<button class="poster-remove" title="Remove from list">🗑</button>` : ""}
+              ${type === "movie" ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
             </div>
             <div class="poster-bottom">
               ${item.watchAction ? `
@@ -1662,6 +1674,7 @@
         document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
         document.getElementById("loginView").hidden = name !== "login";
+        document.body.classList.toggle("is-home", name === "home");
         const navMap = { home: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
         Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
         document.getElementById(navMap[name])?.classList.add("active-nav");
