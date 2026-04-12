@@ -236,6 +236,20 @@
         .items-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
+
+        /* Trending: 2 rows filling the viewport, matching suggestions layout */
+        #trendingView {
+          display: flex;
+          flex-direction: column;
+          height: calc(100dvh - 80px - 12px);
+        }
+        #trendingPeriodTabs { flex-shrink: 0; margin-bottom: 10px; }
+        .trending-grid { flex: 1; min-height: 0; gap: 10px; }
+        .trending-section { flex: 1; min-height: 0; overflow: hidden; }
+        .trending-carousel { height: 100%; }
+        .trending-carousel::after { bottom: 0; }
+        .trending-row { height: 100%; padding-bottom: 0; }
+        .trending-row .item-card { height: 100%; width: auto; }
       }
 
       .nav-arrow {
@@ -628,6 +642,12 @@
       /* inline views */
       #trendingView, #loginView { width: 100%; }
       #loginView { max-width: 400px; margin: 0 auto; }
+      #trendingPeriodTabs { margin: 0 0 16px; }
+      .trending-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
       .trending-carousel {
         position: relative;
       }
@@ -885,13 +905,15 @@
         <div id="statsContent"><p class="empty">Loading…</p></div>
       </div>
       <div id="trendingView" hidden>
-        <div class="range-tabs" id="trendingPeriodTabs" style="margin:0 0 16px">
+        <div class="range-tabs" id="trendingPeriodTabs">
           <button class="range-tab active" data-period="today">Today</button>
           <button class="range-tab" data-period="week">Week</button>
           <button class="range-tab" data-period="month">Month</button>
         </div>
-        <div id="trendingMoviesContent"></div>
-        <div id="trendingTvContent" style="margin-top:20px"></div>
+        <div class="trending-grid">
+          <div class="trending-section" id="trendingMoviesContent"></div>
+          <div class="trending-section" id="trendingTvContent"></div>
+        </div>
       </div>
       <div id="loginView" hidden>
         <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
