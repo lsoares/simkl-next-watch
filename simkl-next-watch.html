@@ -1195,8 +1195,26 @@
 
       hydrateCredentials();
       if (getAccessToken()) {
-        showView("home");
-        loadSuggestions();
+        const [hashView, p1, p2] = location.hash.replace("#", "").split("/");
+        if (hashView === "trending") {
+          const typeBtn = document.querySelector(`#trendingTypeTabs [data-type="${p1}"]`);
+          const periodBtn = document.querySelector(`#trendingPeriodTabs [data-period="${p2}"]`);
+          if (typeBtn) { document.querySelectorAll("#trendingTypeTabs .range-tab").forEach(b => b.classList.remove("active")); typeBtn.classList.add("active"); }
+          if (periodBtn) { document.querySelectorAll("#trendingPeriodTabs .range-tab").forEach(b => b.classList.remove("active")); periodBtn.classList.add("active"); }
+          showTrendingView();
+        } else if (hashView === "stats") {
+          showStatsView().then(() => {
+            if (p1) {
+              const btn = document.querySelector(`#statsView [data-range="${p1}"]`);
+              if (btn) { document.querySelectorAll("#statsView .range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
+            }
+          });
+        } else if (hashView === "login") {
+          showLoginView();
+        } else {
+          showView("home");
+          loadSuggestions();
+        }
       } else {
         showLoginView();
       }
@@ -1637,7 +1655,7 @@
         });
       }
 
-      function showView(name) {
+      function showView(name, { updateHash = true } = {}) {
         document.querySelector(".suggestions-grid").hidden = name !== "home";
         document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
@@ -1645,6 +1663,7 @@
         const navMap = { home: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
         Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
         document.getElementById(navMap[name])?.classList.add("active-nav");
+        if (updateHash) history.replaceState(null, "", "#" + name);
       }
 
       function showHomeView() { showView("home"); }
@@ -1663,6 +1682,7 @@
         const el = document.getElementById("trendingContent");
         const type = document.getElementById("trendingTypeTabs").querySelector(".range-tab.active")?.dataset.type || "movies";
         const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
+        history.replaceState(null, "", `#trending/${type}/${period}`);
         el.innerHTML = `<p class="empty">Loading…</p>`;
         try {
           const data = await fetch(
@@ -1740,6 +1760,7 @@
           btn.addEventListener("click", () => {
             statsView.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
+            history.replaceState(null, "", `#stats/${btn.dataset.range}`);
             applyStatsRange();
           });
         });
