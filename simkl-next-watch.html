@@ -573,6 +573,54 @@
         margin: 0;
       }
 
+      /* trending movie list */
+      .trending-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .trending-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 4px;
+        transition: background 0.15s;
+      }
+      .trending-item:hover { background: rgba(255,255,255,0.05); }
+      .trending-rank {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--muted);
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .trending-poster {
+        width: 52px;
+        height: 78px;
+        object-fit: cover;
+        border-radius: 6px;
+        background: #1e2d3d;
+        flex-shrink: 0;
+      }
+      .trending-info { flex: 1; min-width: 0; }
+      .trending-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .trending-meta {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
       .range-tabs {
         display: flex;
         gap: 4px;
@@ -800,6 +848,7 @@
 
       <div class="top-bar">
         <button id="installButton" class="tiny-link" type="button">install</button>
+        <button id="openTrendingModalButton" class="tiny-link" type="button">trending</button>
         <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
       </div>
@@ -833,6 +882,20 @@
           <button id="logoutButton" class="tiny-link" type="button">logout</button>
         </div>
 
+      </section>
+    </div>
+
+    <div id="trendingModalBackdrop" class="modal-backdrop" hidden>
+      <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="trendingModalTitle">
+        <div class="modal-header">
+          <h2 id="trendingModalTitle">Trending Movies</h2>
+          <div class="range-tabs">
+            <button class="range-tab active" data-period="week">Week</button>
+            <button class="range-tab" data-period="month">Month</button>
+          </div>
+          <button id="closeTrendingModalButton" class="secondary close-btn" type="button">&#x2715;</button>
+        </div>
+        <div id="trendingContent"><p class="empty">Loading…</p></div>
       </section>
     </div>
 
@@ -1129,6 +1192,16 @@
         closeAuthModal();
         loadSuggestions();
       });
+      document.getElementById("openTrendingModalButton").addEventListener("click", openTrendingModal);
+      document.getElementById("closeTrendingModalButton").addEventListener("click", closeTrendingModal);
+      document.getElementById("trendingModalBackdrop").addEventListener("click", (e) => { if (e.target === document.getElementById("trendingModalBackdrop")) closeTrendingModal(); });
+      document.getElementById("trendingModalBackdrop").querySelectorAll(".range-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("trendingModalBackdrop").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          loadTrending(btn.dataset.period);
+        });
+      });
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
       document.getElementById("closeStatsModalButton").addEventListener("click", closeStatsModal);
       document.getElementById("startPinButton").addEventListener("click", startPinFlow);
@@ -1145,6 +1218,7 @@
         if (event.key === "Escape") {
           if (!authModalBackdrop.hidden) closeAuthModal();
           if (!statsModalBackdrop.hidden) closeStatsModal();
+          if (!document.getElementById("trendingModalBackdrop").hidden) closeTrendingModal();
         }
       });
 
@@ -1597,6 +1671,46 @@
             { once: true },
           );
         });
+      }
+
+      function openTrendingModal() {
+        document.getElementById("trendingModalBackdrop").hidden = false;
+        const activePeriod = document.getElementById("trendingModalBackdrop").querySelector(".range-tab.active")?.dataset.period || "week";
+        loadTrending(activePeriod);
+      }
+
+      function closeTrendingModal() {
+        document.getElementById("trendingModalBackdrop").hidden = true;
+      }
+
+      async function loadTrending(period) {
+        const el = document.getElementById("trendingContent");
+        el.innerHTML = `<p class="empty">Loading…</p>`;
+        try {
+          const data = await fetch(
+            `https://api.simkl.com/movies/trending?client_id=${encodeURIComponent(getClientId())}&extended=full&period=${encodeURIComponent(period)}`
+          ).then((r) => r.json());
+          const top5 = Array.isArray(data) ? data.slice(0, 5) : [];
+          if (!top5.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
+          el.innerHTML = `<div class="trending-list">${top5.map((m, i) => {
+            const movie = m.movie || m;
+            const title = escapeHtml(movie.title || "Unknown");
+            const year = movie.year || "";
+            const poster = movie.poster ? `https://wsrv.nl/?url=https://simkl.in/posters/${movie.poster}_m.webp` : "";
+            const url = movie.ids?.simkl ? `https://simkl.com/movies/${movie.ids.simkl}` : "";
+            const img = poster ? `<img class="trending-poster" src="${escapeHtml(poster)}" alt="${title}" loading="lazy" />` : `<div class="trending-poster"></div>`;
+            return `<a class="trending-item" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+              <span class="trending-rank">${i + 1}</span>
+              ${img}
+              <div class="trending-info">
+                <div class="trending-title">${title}</div>
+                ${year ? `<div class="trending-meta">${year}</div>` : ""}
+              </div>
+            </a>`;
+          }).join("")}</div>`;
+        } catch (err) {
+          el.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message || "Failed to load.")}</p>`;
+        }
       }
 
       let statsRawData = null;
