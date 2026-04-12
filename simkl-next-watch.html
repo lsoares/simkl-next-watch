@@ -289,28 +289,30 @@
       .poster-episode:hover { color: #fff; }
       .mark-watched-btn {
         position: relative;
-        width: 100%;
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.12);
-        color: rgba(255,255,255,0.3);
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        padding: 7px 0;
+        width: 52px;
+        height: 52px;
+        background: rgba(0,0,0,0.45);
+        border: 2px solid rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.5);
+        border-radius: 50%;
+        font-size: 1.4rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         min-height: unset;
         cursor: pointer;
         transition: background 0.2s, border-color 0.2s, color 0.2s;
       }
       .mark-watched-btn:hover {
-        background: rgba(34,197,94,0.2);
+        background: rgba(34,197,94,0.35);
         border-color: #22c55e;
         color: #86efac;
-        font-weight: 600;
       }
       .mark-watched-btn::after {
         content: "I've watched this";
         position: absolute;
-        bottom: calc(100% + 5px);
+        bottom: calc(100% + 6px);
         left: 50%;
         transform: translateX(-50%);
         background: rgba(0,0,0,0.85);
@@ -330,7 +332,7 @@
       .poster-actions {
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: center;
         margin-top: 4px;
       }
 
@@ -744,34 +746,43 @@
         }
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
+        body { height: 100dvh; overflow: hidden; }
         main {
-          padding: max(16px, env(safe-area-inset-top)) 12px 72px;
+          height: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          padding: max(16px, env(safe-area-inset-top)) 12px max(72px, 56px + env(safe-area-inset-bottom));
         }
         .suggestions-grid {
+          flex: 1;
+          min-height: 0;
           flex-direction: column;
           flex-wrap: nowrap;
           gap: 10px;
-          height: calc(100dvh - max(110px, 94px + env(safe-area-inset-top)) - max(60px, 44px + env(safe-area-inset-bottom)));
         }
-        .poster-title { font-size: 1rem; }
-        .poster-episode { font-size: 0.8rem; }
         .suggestion-card {
           flex: 1;
-          min-width: 0;
+          min-height: 0;
           max-width: none;
           width: 100%;
           gap: 0;
         }
-        .card-nav-wrap,
-        .card-content-wrap,
-        .card-content {
-          height: 100%;
+        #tvSuggestion, #movieSuggestion {
+          flex: 1;
+          min-height: 0;
         }
+        .card-nav-wrap { height: 100%; }
+        .card-content-wrap { align-self: stretch; }
+        .card-content { height: 100%; }
         .item-card {
           aspect-ratio: unset;
           height: 100%;
         }
+        .poster-title { font-size: 1rem; }
+        .poster-episode { font-size: 0.8rem; }
       }
     </style>
   </head>
