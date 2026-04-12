@@ -974,6 +974,7 @@
             poster:       media.poster || item.poster || media.img || item.img || "",
             next_to_watch: item.next_to_watch || media.next_to_watch || "",
             url:          buildSimklUrl(media),
+            memo:         item.memo || media.memo || "",
           };
         }) : [];
       }
