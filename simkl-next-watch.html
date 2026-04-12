@@ -573,51 +573,64 @@
         margin: 0;
       }
 
-      /* trending movie list */
-      .trending-list {
+      /* trending grid */
+      .trending-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 8px 0 4px;
+        border-bottom: 1px solid var(--panel-border);
+        margin-bottom: 12px;
+      }
+      .trending-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .trending-card {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 2 / 3;
+        background: #0b1220;
+        display: block;
+        text-decoration: none;
+      }
+      .trending-card img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .trending-card-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.85) 100%);
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-top: 4px;
+        justify-content: space-between;
+        padding: 8px;
       }
-      .trending-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-decoration: none;
-        color: var(--text);
-        border-radius: 8px;
-        padding: 4px;
-        transition: background 0.15s;
-      }
-      .trending-item:hover { background: rgba(255,255,255,0.05); }
       .trending-rank {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--muted);
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        line-height: 1;
       }
-      .trending-poster {
-        width: 52px;
-        height: 78px;
-        object-fit: cover;
-        border-radius: 6px;
-        background: #1e2d3d;
-        flex-shrink: 0;
-      }
-      .trending-info { flex: 1; min-width: 0; }
-      .trending-title {
+      .trending-card-title {
+        font-size: 0.82rem;
         font-weight: 600;
-        font-size: 0.95rem;
-        white-space: nowrap;
+        color: #f9fafb;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.3;
       }
-      .trending-meta {
-        font-size: 0.78rem;
-        color: var(--muted);
+      .trending-card-year {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
         margin-top: 2px;
       }
 
@@ -888,12 +901,19 @@
     <div id="trendingModalBackdrop" class="modal-backdrop" hidden>
       <section class="panel modal" role="dialog" aria-modal="true" aria-labelledby="trendingModalTitle">
         <div class="modal-header">
-          <h2 id="trendingModalTitle">Trending Movies</h2>
-          <div class="range-tabs">
+          <h2 id="trendingModalTitle">Trending</h2>
+          <button id="closeTrendingModalButton" class="secondary close-btn" type="button">&#x2715;</button>
+        </div>
+        <div class="trending-filters">
+          <div class="range-tabs" id="trendingTypeTabs" style="margin:0">
+            <button class="range-tab active" data-type="movies">Movies</button>
+            <button class="range-tab" data-type="tv">TV</button>
+            <button class="range-tab" data-type="anime">Anime</button>
+          </div>
+          <div class="range-tabs" id="trendingPeriodTabs" style="margin:0 0 0 auto">
             <button class="range-tab active" data-period="week">Week</button>
             <button class="range-tab" data-period="month">Month</button>
           </div>
-          <button id="closeTrendingModalButton" class="secondary close-btn" type="button">&#x2715;</button>
         </div>
         <div id="trendingContent"><p class="empty">Loading…</p></div>
       </section>
@@ -1195,11 +1215,18 @@
       document.getElementById("openTrendingModalButton").addEventListener("click", openTrendingModal);
       document.getElementById("closeTrendingModalButton").addEventListener("click", closeTrendingModal);
       document.getElementById("trendingModalBackdrop").addEventListener("click", (e) => { if (e.target === document.getElementById("trendingModalBackdrop")) closeTrendingModal(); });
-      document.getElementById("trendingModalBackdrop").querySelectorAll(".range-tab").forEach((btn) => {
+      document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {
-          document.getElementById("trendingModalBackdrop").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+          document.getElementById("trendingTypeTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          loadTrending(btn.dataset.period);
+          loadTrending();
+        });
+      });
+      document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          loadTrending();
         });
       });
       document.getElementById("openStatsModalButton").addEventListener("click", openStatsModal);
@@ -1675,36 +1702,41 @@
 
       function openTrendingModal() {
         document.getElementById("trendingModalBackdrop").hidden = false;
-        const activePeriod = document.getElementById("trendingModalBackdrop").querySelector(".range-tab.active")?.dataset.period || "week";
-        loadTrending(activePeriod);
+        loadTrending();
       }
 
       function closeTrendingModal() {
         document.getElementById("trendingModalBackdrop").hidden = true;
       }
 
-      async function loadTrending(period) {
+      async function loadTrending() {
         const el = document.getElementById("trendingContent");
+        const type = document.getElementById("trendingTypeTabs").querySelector(".range-tab.active")?.dataset.type || "movies";
+        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "week";
         el.innerHTML = `<p class="empty">Loading…</p>`;
         try {
           const data = await fetch(
-            `https://api.simkl.com/movies/trending?client_id=${encodeURIComponent(getClientId())}&extended=full&period=${encodeURIComponent(period)}`
+            `https://api.simkl.com/${encodeURIComponent(type)}/trending?client_id=${encodeURIComponent(getClientId())}&extended=full&period=${encodeURIComponent(period)}`
           ).then((r) => r.json());
-          const top5 = Array.isArray(data) ? data.slice(0, 5) : [];
-          if (!top5.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
-          el.innerHTML = `<div class="trending-list">${top5.map((m, i) => {
-            const movie = m.movie || m;
-            const title = escapeHtml(movie.title || "Unknown");
-            const year = movie.year || "";
-            const poster = movie.poster ? `https://wsrv.nl/?url=https://simkl.in/posters/${movie.poster}_m.webp` : "";
-            const url = movie.ids?.simkl ? `https://simkl.com/movies/${movie.ids.simkl}` : "";
-            const img = poster ? `<img class="trending-poster" src="${escapeHtml(poster)}" alt="${title}" loading="lazy" />` : `<div class="trending-poster"></div>`;
-            return `<a class="trending-item" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
-              <span class="trending-rank">${i + 1}</span>
-              ${img}
-              <div class="trending-info">
-                <div class="trending-title">${title}</div>
-                ${year ? `<div class="trending-meta">${year}</div>` : ""}
+          const top6 = Array.isArray(data) ? data.slice(0, 6) : [];
+          if (!top6.length) { el.innerHTML = `<p class="empty">No results.</p>`; return; }
+          const urlBase = type === "movies" ? "movies" : type === "tv" ? "tv" : "anime";
+          el.innerHTML = `<div class="trending-grid">${top6.map((m, i) => {
+            const media = m.movie || m.show || m.anime || m;
+            const title = escapeHtml(media.title || m.title || "");
+            const year = media.year || m.year || "";
+            const imgCode = media.poster || media.img || m.poster || m.img || "";
+            const poster = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
+            const simklId = media.ids?.simkl || m.ids?.simkl;
+            const url = simklId ? `https://simkl.com/${urlBase}/${simklId}` : "#";
+            return `<a class="trending-card" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+              ${poster ? `<img src="${escapeHtml(poster)}" alt="${title}" loading="lazy" />` : ""}
+              <div class="trending-card-overlay">
+                <span class="trending-rank">#${i + 1}</span>
+                <div>
+                  <div class="trending-card-title">${title}</div>
+                  ${year ? `<div class="trending-card-year">${year}</div>` : ""}
+                </div>
               </div>
             </a>`;
           }).join("")}</div>`;
