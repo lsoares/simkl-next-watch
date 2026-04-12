@@ -192,40 +192,36 @@
 
       .suggestions-grid {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 24px;
-      }
-
-      .suggestion-card {
-        display: flex;
         flex-direction: column;
-        gap: 14px;
-        width: min(100%, 340px);
-        flex: 1 1 260px;
-        max-width: 340px;
+        gap: 28px;
       }
 
-      /* ── Card layout ── */
-      .card-nav-wrap {
+      .media-section {}
+      .section-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 8px;
+      }
+      .items-row {
         display: flex;
-        align-items: center;
-        gap: 4px;
+        gap: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
       }
-      .card-content-wrap {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-      }
-      .card-content {
-        /* animation classes applied here */
-      }
-      @keyframes fromRight { from { transform: translateX(24px); } to { transform: translateX(0); } }
-      @keyframes fromLeft  { from { transform: translateX(-24px); } to { transform: translateX(0); } }
-      .card-content.from-right { animation: fromRight 0.2s ease-out; }
-      .card-content.from-left  { animation: fromLeft  0.2s ease-out; }
+      .items-row::-webkit-scrollbar { display: none; }
+      .row-item { flex-shrink: 0; width: 130px; }
+      .row-item .item-card { width: 130px; height: 195px; aspect-ratio: unset; }
 
       .nav-arrow {
+        display: none;
+      }
+
+      .nav-arrow-hidden {
         background: transparent;
         border: none;
         color: #334155;
@@ -430,6 +426,8 @@
         gap: 4px;
         pointer-events: none;
       }
+      .item-card { transition: transform 0.15s, box-shadow 0.15s; }
+      .item-card:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(0,0,0,0.5); z-index: 2; }
       .item-card:hover .season-bar-wrap { opacity: 1; }
       .season-bar-header {
         display: flex;
@@ -509,7 +507,8 @@
       .rating-skip:hover { color: #94a3b8; }
 
 
-      /* install button */
+      /* install button — desktop hides it, only mobile/PWA context */
+      @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
       #installButton { display: inline-flex; }
 
       @keyframes spin { to { transform: rotate(360deg); } }
@@ -785,55 +784,28 @@
       }
 
       @media (max-width: 768px) {
-        body.is-home { height: 100dvh; overflow: hidden; }
         main {
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
           padding: max(68px, 52px + env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
         }
-        body.is-home main {
-          height: 100%;
-          overflow: hidden;
-        }
-        .suggestions-grid {
-          flex: 1;
-          min-height: 0;
-          flex-direction: column;
-          flex-wrap: nowrap;
-          gap: 10px;
-        }
-        .suggestion-card {
-          flex: 1;
-          min-height: 0;
-          max-width: none;
-          width: 100%;
-          gap: 0;
-        }
-        #tvSuggestion, #movieSuggestion {
-          flex: 1;
-          min-height: 0;
-        }
-        .card-nav-wrap { height: 100%; }
-        .card-content-wrap { align-self: stretch; }
-        .card-content { height: 100%; }
-        .item-card {
-          aspect-ratio: unset;
-          height: 100%;
-        }
-        .poster-title { font-size: 1rem; }
-        .poster-episode { font-size: 0.8rem; }
+        .row-item { width: 110px; }
+        .row-item .item-card { width: 110px; height: 165px; }
+        .poster-title { font-size: 0.85rem; }
       }
     </style>
   </head>
   <body>
     <main>
       <div class="suggestions-grid">
-        <div class="suggestion-card">
-          <div id="tvSuggestion"></div>
+        <div class="media-section">
+          <h2 class="section-label">Series</h2>
+          <div class="items-row" id="tvRow"></div>
         </div>
-        <div class="suggestion-card">
-          <div id="movieSuggestion"></div>
+        <div class="media-section">
+          <h2 class="section-label">Movies</h2>
+          <div class="items-row" id="movieRow"></div>
         </div>
       </div>
 
@@ -900,8 +872,6 @@
       const storageKeys = {
         clientId: "simkl-client-id",
         accessToken: "simkl-access-token",
-        tvPickId: "simkl-tv-pick-id",
-        moviePickId: "simkl-movie-pick-id",
         genreCache: "simkl-genre-cache",
         statsCache: "simkl-stats-cache",
       };
@@ -1112,12 +1082,8 @@
       ];
 
       const state = {
-        tvCandidates: [],
-        movieCandidates: [],
-        tvIndex: 0,
-        movieIndex: 0,
-        tvSuggestion: null,
-        movieSuggestion: null,
+        tvItems: [],
+        movieItems: [],
         pinPollAbortController: null,
       };
 
@@ -1127,8 +1093,8 @@
       const pinLink = document.getElementById("pinLink");
       const pinCode = document.getElementById("pinCode");
       const pinStatus = document.getElementById("pinStatus");
-      const tvSuggestionContainer = document.getElementById("tvSuggestion");
-      const movieSuggestionContainer = document.getElementById("movieSuggestion");
+      const tvRow = document.getElementById("tvRow");
+      const movieRow = document.getElementById("movieRow");
       document.getElementById("currentUrl").textContent = window.location.href;
       document.getElementById("copyUrlButton").addEventListener("click", () => {
         navigator.clipboard.writeText(window.location.href).then(() => {
@@ -1233,29 +1199,6 @@
         if (document.visibilityState === "visible" && getAccessToken()) loadSuggestions();
       });
 
-      addSwipe(tvSuggestionContainer.closest(".suggestion-card"), "tv");
-      addSwipe(movieSuggestionContainer.closest(".suggestion-card"), "movie");
-
-      function addSwipe(el, type) {
-        let startX = null, startY = null;
-        el.addEventListener("touchstart", (e) => {
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        }, { passive: true });
-        el.addEventListener("touchend", async (e) => {
-          if (startX === null) return;
-          const dx = e.changedTouches[0].clientX - startX;
-          const dy = e.changedTouches[0].clientY - startY;
-          startX = startY = null;
-          // Ignore if mostly vertical (scroll intent) or too short
-          if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-          e.preventDefault();
-          const d = dx < 0 ? 1 : -1;
-          const newIndex = (type === "tv" ? state.tvIndex : state.movieIndex) + d;
-          await selectCandidate(type, newIndex);
-          renderCard(type, d);
-        });
-      }
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
@@ -1359,71 +1302,58 @@
       }
 
       async function loadSuggestions() {
-        const clientId = getClientId();
-        const accessToken = getAccessToken();
-
-        if (!clientId || !accessToken) {
+        if (!getClientId() || !getAccessToken()) {
           setGlobalStatus("A client ID and access token are required.", true);
           return;
         }
-
         loadingSpinner.hidden = false;
         try {
           const [showsResponse, moviesResponse] = await Promise.all([
             simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes&memos=yes"),
             simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full&memos=yes"),
           ]);
-
           const shows = normalizeList(showsResponse.shows);
           const movies = normalizeList(moviesResponse.movies);
-
-          state.tvCandidates = buildTvCandidates(shows);
-          state.movieCandidates = await buildMovieCandidates(movies);
-
-          const savedTvId = localStorage.getItem(storageKeys.tvPickId);
-          const savedMovieId = localStorage.getItem(storageKeys.moviePickId);
-          const tvIdx = state.tvCandidates.findIndex((c) => String(c.ids?.simkl) === savedTvId);
-          const movieIdx = state.movieCandidates.findIndex((c) => String(c.ids?.simkl) === savedMovieId);
-
-          await Promise.all([
-            selectCandidate("tv", tvIdx >= 0 ? tvIdx : 0, false),
-            selectCandidate("movie", movieIdx >= 0 ? movieIdx : 0, false),
-          ]);
-
-          renderCard("tv");
-          renderCard("movie");
+          const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
+          state.tvItems = [
+            ...shows.filter(s => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
+                    .sort((a, b) => (b.watched_episodes_count || 0) - (a.watched_episodes_count || 0))
+                    .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s) })),
+            ...shows.filter(s => normalizeStatus(s.status) === "plantowatch" && aired(s))
+                    .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s, true) })),
+          ];
+          state.movieItems = await buildMovieCandidates(movies);
+          renderRow("tv");
+          renderRow("movie");
           setGlobalStatus("");
         } catch (error) {
-          setGlobalStatus(error.message || "Failed to load suggestions.", true);
+          setGlobalStatus(error.message || "Failed to load.", true);
         } finally {
           loadingSpinner.hidden = true;
         }
       }
 
-      async function selectCandidate(type, index, save = true) {
-        const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
-        const len = candidates.length;
-        const clamped = len === 0 ? 0 : ((index % len) + len) % len;
-
-        if (type === "tv") {
-          state.tvIndex = clamped;
-          const item = candidates[clamped] ?? null;
-          state.tvSuggestion = await enrichTvSuggestionWithEpisodeTitle(item);
-          if (save && item) localStorage.setItem(storageKeys.tvPickId, String(item.ids?.simkl ?? ""));
-        } else {
-          state.movieIndex = clamped;
-          state.movieSuggestion = candidates[clamped] ?? null;
-          if (save && state.movieSuggestion) localStorage.setItem(storageKeys.moviePickId, String(state.movieSuggestion.ids?.simkl ?? ""));
-        }
+      function renderRow(type) {
+        const el = type === "tv" ? tvRow : movieRow;
+        const items = type === "tv" ? state.tvItems : state.movieItems;
+        if (!items.length) { el.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+        el.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
+        el.querySelectorAll(".row-item").forEach((wrap, i) => {
+          const item = items[i];
+          wrap.innerHTML = renderItem(item, type);
+          wrap.querySelector(".mark-watched-btn")?.addEventListener("click", () => {
+            const card = wrap.querySelector(".item-card");
+            if (type === "tv") markItemWatched(item, type, card);
+            else promptRateItem(item, type, card);
+          });
+          wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); removeItem(item, type); });
+        });
       }
 
-      function promptRateAndWatch(type) {
-        const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
-        const card = container.querySelector(".item-card");
+      function promptRateItem(item, type, card) {
         if (!card) return;
-        // Inject rating prompt overlay
         const ratingBtns = Array.from({ length: 10 }, (_, i) => i + 1)
-          .map((n) => `<button class="rating-btn" data-rating="${n}">${n}</button>`).join("");
+          .map(n => `<button class="rating-btn" data-rating="${n}">${n}</button>`).join("");
         const prompt = document.createElement("div");
         prompt.className = "rating-prompt";
         prompt.innerHTML = `
@@ -1431,36 +1361,25 @@
           <div class="rating-prompt-row">${ratingBtns}</div>
           <button class="rating-skip">Skip rating</button>`;
         card.appendChild(prompt);
-        prompt.querySelectorAll(".rating-btn").forEach((btn) => {
-          btn.addEventListener("click", () => rateAndMarkWatched(type, Number(btn.dataset.rating), card));
+        prompt.querySelectorAll(".rating-btn").forEach(btn => {
+          btn.addEventListener("click", () => rateItemWatched(item, type, Number(btn.dataset.rating), card));
         });
-        prompt.querySelector(".rating-skip").addEventListener("click", () => markSuggestionWatched(type, card));
+        prompt.querySelector(".rating-skip").addEventListener("click", () => markItemWatched(item, type, card));
       }
 
-      async function markSuggestionWatched(type, card) {
-        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        if (!suggestion?.watchAction) {
-          setGlobalStatus("This suggestion cannot be marked watched from the available API data.", true);
-          return;
-        }
+      async function markItemWatched(item, type, card) {
+        if (!item?.watchAction) { setGlobalStatus("Cannot mark as watched.", true); return; }
         if (card) card.classList.add("marking-watched");
         try {
-          await simklFetch("https://api.simkl.com/sync/history", {
-            method: "POST",
-            body: JSON.stringify(suggestion.watchAction.payload),
-          });
-          const simklId = suggestion.ids?.simkl;
+          await simklFetch("https://api.simkl.com/sync/history", { method: "POST", body: JSON.stringify(item.watchAction.payload) });
+          const simklId = item.ids?.simkl;
           const key = type === "tv" ? "shows" : "movies";
-          const watchedLabel = type === "tv" && suggestion.next_to_watch
-            ? `${suggestion.next_to_watch} · ${suggestion.title}`
-            : suggestion.title;
+          const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
+          const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
           await loadSuggestions();
-          setGlobalStatus(`Watched: ${watchedLabel}`, false, simklId ? async () => {
+          setGlobalStatus(`Watched: ${label}`, false, simklId ? async () => {
             try {
-              await simklFetch("https://api.simkl.com/sync/history/remove", {
-                method: "POST",
-                body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
-              });
+              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
@@ -1471,38 +1390,22 @@
         }
       }
 
-      async function rateAndMarkWatched(type, rating, card) {
-        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        if (!suggestion) return;
-        const simklId = suggestion.ids?.simkl;
+      async function rateItemWatched(item, type, rating, card) {
+        const simklId = item.ids?.simkl;
         if (!simklId) { setGlobalStatus("Cannot rate: missing Simkl ID.", true); return; }
         if (card) card.classList.add("marking-watched");
         try {
           const key = type === "tv" ? "shows" : "movies";
           const ratedAt = new Date().toISOString();
-          const calls = [
-            simklFetch("https://api.simkl.com/ratings", {
-              method: "POST",
-              body: JSON.stringify({ [key]: [{ ids: { simkl: simklId }, rating, rated_at: ratedAt }] }),
-            }),
-          ];
-          if (suggestion.watchAction) {
-            calls.push(simklFetch("https://api.simkl.com/sync/history", {
-              method: "POST",
-              body: JSON.stringify(suggestion.watchAction.payload),
-            }));
-          }
+          const calls = [simklFetch("https://api.simkl.com/ratings", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId }, rating, rated_at: ratedAt }] }) })];
+          if (item.watchAction) calls.push(simklFetch("https://api.simkl.com/sync/history", { method: "POST", body: JSON.stringify(item.watchAction.payload) }));
           await Promise.all(calls);
-          const watchedLabel2 = type === "tv" && suggestion.next_to_watch
-            ? `${suggestion.next_to_watch} · ${suggestion.title}`
-            : suggestion.title;
+          const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
+          const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
           await loadSuggestions();
-          setGlobalStatus(`Watched: ${watchedLabel2}`, false, async () => {
+          setGlobalStatus(`Watched: ${label}`, false, async () => {
             try {
-              await simklFetch("https://api.simkl.com/sync/history/remove", {
-                method: "POST",
-                body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
-              });
+              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
@@ -1513,74 +1416,19 @@
         }
       }
 
-      function confirmRemove(type) {
-        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        if (!suggestion) return;
-        if (!confirm(`Remove "${suggestion.title}" from your watchlist?`)) return;
-        removeFromWatchlist(type);
-      }
-
-      async function removeFromWatchlist(type) {
-        const suggestion = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        if (!suggestion) return;
-        const simklId = suggestion.ids?.simkl;
-        if (!simklId) { setGlobalStatus("Cannot remove: missing Simkl ID.", true); return; }
-
+      async function removeItem(item, type) {
+        const simklId = item.ids?.simkl;
+        if (!simklId) { setGlobalStatus("Cannot remove: missing ID.", true); return; }
+        if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
         try {
-          setGlobalStatus(`Removing ${suggestion.title}…`);
+          setGlobalStatus(`Removing ${item.title}…`);
           const key = type === "tv" ? "shows" : "movies";
-          await simklFetch("https://api.simkl.com/sync/history/remove", {
-            method: "POST",
-            body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }),
-          });
-          setGlobalStatus("Removed from watchlist.");
+          await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
+          setGlobalStatus("Removed.");
           await loadSuggestions();
         } catch (error) {
           setGlobalStatus(error.message || "Failed to remove.", true);
         }
-      }
-
-      function renderCard(type, dir = 0) {
-        const container = type === "tv" ? tvSuggestionContainer : movieSuggestionContainer;
-        const candidates = type === "tv" ? state.tvCandidates : state.movieCandidates;
-        const index = type === "tv" ? state.tvIndex : state.movieIndex;
-        const item = type === "tv" ? state.tvSuggestion : state.movieSuggestion;
-        const total = candidates.length;
-
-        const animClass = dir > 0 ? "from-right" : dir < 0 ? "from-left" : "";
-        const leftBtn  = total > 1 ? `<button class="nav-arrow" data-type="${type}" data-dir="-1">&#8249;</button>` : "";
-        const rightBtn = total > 1 ? `<button class="nav-arrow" data-type="${type}" data-dir="1">&#8250;</button>` : "";
-
-        container.innerHTML = `
-          <div class="card-nav-wrap">
-            ${leftBtn}
-            <div class="card-content-wrap">
-              <div class="card-content ${animClass}">${renderItem(item, type)}</div>
-            </div>
-            ${rightBtn}
-          </div>
-          `;
-
-        container.querySelector(".mark-watched-btn")
-          ?.addEventListener("click", () => {
-            if (type === "tv") {
-              const card = container.querySelector(".item-card");
-              markSuggestionWatched(type, card);
-            } else {
-              promptRateAndWatch(type);
-            }
-          });
-        container.querySelector(".poster-remove")
-          ?.addEventListener("click", (e) => { e.preventDefault(); confirmRemove(type); });
-        container.querySelectorAll(".nav-arrow").forEach((btn) => {
-          btn.addEventListener("click", async () => {
-            const t = btn.dataset.type;
-            const d = Number(btn.dataset.dir);
-            const newIndex = (t === "tv" ? state.tvIndex : state.movieIndex) + d;
-            await selectCandidate(t, newIndex);
-            renderCard(t, d);
-          });
-        });
       }
 
       function renderItem(item, type) {
@@ -1674,7 +1522,6 @@
         document.getElementById("statsView").hidden = name !== "stats";
         document.getElementById("trendingView").hidden = name !== "trending";
         document.getElementById("loginView").hidden = name !== "login";
-        document.body.classList.toggle("is-home", name === "home");
         const navMap = { home: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
         Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
         document.getElementById(navMap[name])?.classList.add("active-nav");
