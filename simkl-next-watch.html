@@ -459,9 +459,10 @@
         z-index: 4;
         opacity: 0;
         transition: opacity 0.15s;
-        pointer-events: none;
         white-space: nowrap;
+        text-decoration: none;
       }
+      span.imdb-badge { pointer-events: none; }
       .item-card:hover .imdb-badge { opacity: 1; }
 
       /* season progress bar */
@@ -1091,21 +1092,25 @@
         const today = new Date().toISOString().slice(0, 10);
         const currentYear = new Date().getFullYear();
         const queued = movies.filter((m) => ["plantowatch", "watching"].includes(normalizeStatus(m.status)));
-        const ambiguous = queued.filter((m) => m.year >= currentYear);
-        const settled = await Promise.allSettled(ambiguous.map((m) => {
+        const settled = await Promise.allSettled(queued.map((m) => {
           const id = m.ids?.simkl;
           if (!id) return Promise.resolve(null);
           return simklFetch(`https://api.simkl.com/movies/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`);
         }));
         const releasedIds = new Set();
-        ambiguous.forEach((m, i) => {
+        const detailBySimkl = {};
+        queued.forEach((m, i) => {
           const detail = settled[i].status === "fulfilled" ? settled[i].value : null;
-          if (!detail || !detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
+          if (detail && m.ids?.simkl) detailBySimkl[m.ids.simkl] = detail;
+          if (m.year < currentYear || !detail || !detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
         });
         return queued
-          .filter((m) => m.year < currentYear || releasedIds.has(m.ids?.simkl))
+          .filter((m) => releasedIds.has(m.ids?.simkl))
           .sort((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0))
-          .map((movie) => ({ ...movie, watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" } }));
+          .map((movie) => {
+            const detail = detailBySimkl[movie.ids?.simkl];
+            return { ...movie, ...(detail?.ratings ? { ratings: detail.ratings } : {}), watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" } };
+          });
       }
 
       async function simklFetch(url, options = {}) {
@@ -1610,7 +1615,7 @@
                   </div>
                 </div>`;
               })()}
-            ${item.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>` : ""}
+            ${item.ratings?.imdb?.rating ? (item.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(item.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${item.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>`) : ""}
           </article>`;
       }
 
@@ -1740,7 +1745,7 @@
                 ${year ? `<span class="poster-episode">${year}</span>` : ""}
               </div>
             </div>
-            ${m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
+            ${m.ratings?.imdb?.rating ? (m.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(m.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${m.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>`) : ""}
           </a>`;
         }).join("")}</div></div>`;
       }
