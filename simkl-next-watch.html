@@ -1547,9 +1547,6 @@
                 if (type !== "tv" || total <= 0) return "";
                 const pct = Math.min(100, Math.round(watched / total * 100));
                 return `<div class="season-bar-wrap">
-                  <div class="season-bar-header">
-                    <span class="season-bar-pct">${pct}%</span>
-                  </div>
                   <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div></div>
                   <div class="season-bar-details">
                     <span class="ep-watched-text">${watched} of ${total} episodes watched</span>
