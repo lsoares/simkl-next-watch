@@ -1470,7 +1470,14 @@
           `;
 
         container.querySelector(".mark-watched-btn")
-          ?.addEventListener("click", () => promptRateAndWatch(type));
+          ?.addEventListener("click", () => {
+            if (type === "tv") {
+              const card = container.querySelector(".item-card");
+              markSuggestionWatched(type, card);
+            } else {
+              promptRateAndWatch(type);
+            }
+          });
         container.querySelector(".poster-remove")
           ?.addEventListener("click", (e) => { e.preventDefault(); confirmRemove(type); });
         container.querySelectorAll(".nav-arrow").forEach((btn) => {
