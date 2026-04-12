@@ -1549,8 +1549,8 @@
                 return `<div class="season-bar-wrap">
                   <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div></div>
                   <div class="season-bar-details">
-                    <span class="ep-watched-text">${watched} of ${total} episodes watched</span>
-                    ${remaining > 0 ? `<span>${remaining} eps left</span>` : ""}
+                    <span class="ep-watched-text">${watched} / ${total} watched</span>
+                    ${remaining > 0 ? `<span>${remaining} left</span>` : ""}
                   </div>
                 </div>`;
               })()}
