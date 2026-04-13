@@ -462,7 +462,7 @@
         transition: opacity 0.2s;
         pointer-events: none;
       }
-      .item-card { transition: box-shadow 0.15s, outline-color 0.15s; touch-action: pan-x; outline: 2px solid transparent; outline-offset: 2px; }
+      .item-card { transition: box-shadow 0.15s, outline-color 0.15s, opacity 0.45s ease; touch-action: pan-x; outline: 2px solid transparent; outline-offset: 2px; }
       .item-card:hover { outline-color: rgba(255,255,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 2; }
       .item-card:hover .season-bar-wrap { opacity: 1; }
       .season-bar-header {
@@ -970,8 +970,8 @@
           <button class="range-tab" data-period="month">Month</button>
         </div>
         <div class="trending-grid">
-          <div class="trending-section" id="trendingMoviesContent"></div>
           <div class="trending-section" id="trendingTvContent"></div>
+          <div class="trending-section" id="trendingMoviesContent"></div>
         </div>
       </div>
       <div id="loginView" hidden>
@@ -1635,6 +1635,7 @@
           setGlobalStatus(`Removing ${item.title}…`);
           const key = type === "tv" ? "shows" : "movies";
           await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
+          restoreTrendingCards(simklId);
           setGlobalStatus("Removed.");
           await loadSuggestions();
         } catch (error) {
@@ -1673,7 +1674,7 @@
                 ${episodeName ? `<span class="poster-episode">${escapeHtml(episodeName)}</span>` : ""}
                 ${episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : ""}
               </div>
-              ${type === "movie" ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
+              ${(type === "movie" || isUnstartedShow) ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
             </div>
             <div class="poster-bottom"></div>
             ${item.watchAction ? `<button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
@@ -1813,13 +1814,13 @@
           const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
           const watched = simklId && state.libraryIds.has(String(simklId));
           const loggedIn = !!getAccessToken();
-          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}">
+          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}">
             ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
             <div class="poster-top">
               <div class="poster-top-text">
                 <span class="poster-title">${title}</span>
                 ${year ? `<span class="poster-episode">${year}</span>` : ""}
-                ${m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
+                ${!watched && m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
               </div>
             </div>
             ${loggedIn && simklId && !watched ? `<button class="add-watchlist-btn" title="Add ${title} to watchlist" data-title="${title}" data-year="${year}"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAArCAMAAAAHZIWCAAAAM1BMVEX+/v7////////////////5+fn////y8vLv7+/////////////19fX///8AAADw8PD///9qscvVAAAAD3RSTlOhUEBwkLUg3O8wgGDIEAAqdR4JAAABw0lEQVR42qWX25aDIAxFUS7FhED+/2tnudpOtAnRzpxHhW1uhBj6XGWB3Aa/NVqGpTjrZyzCPNhSDUhfsTCzp7zcZRFUvlKNdINFafAdDaALFoEmPTIAhObTNGtRpIYk2VCeLlNWaYq09u4uyEWxbKNGVOGNytHFYgW1bOtam4pCUix6zFFlXcmBNTqzikLx+t68hzweQqETTcKyPsbwPgK8C7soadgmLANVTyg+5pOqLjV6sXSsxJDCTwlJ+MrNnSUoZVZ+hbefVFmpPVmJteLZrKSqTAl21sqGytmbeGYVNrT1IB4aLoLUx5WT/OgBWUni0w52FQwN5bkWBrPvpY89A0I9fiPZ3ZstwWRPEt8N2XbBJGHg2uXHa1O5cuNl58ROWHXzOKsvMpsC+vVl1730hcyi7BxIhtl5lANIWbWp6YZgNhGpdMl/+kWtVp9w+lc7jhappVjkgTZrFLevxj5T1CjpqzusGu9tbbaD/j1UbNSYoITV6a/3Y7DubVT3NioUDvfeFm3fzxOtTOec+N2cM9Cfv/jf85eoBL6lkejWvDouSRXo5hxN2FxSxq/m+xLzsH3Lznw/14bQPv47sDjrfwC+y7YtuwdeggAAAABJRU5ErkJggg==" alt="" style="width:20px;height:auto;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
@@ -1860,11 +1861,56 @@
           if (!detail?.ratings?.imdb?.rating) return;
           const simklId = items[i].ids?.simkl_id || items[i].ids?.simkl;
           const card = containerEl.querySelector(`[data-simkl-id="${simklId}"]`);
-          if (!card || card.querySelector(".imdb-badge")) return;
+          if (!card || card.classList.contains("trending-watched") || card.querySelector(".imdb-badge")) return;
           const badge = `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
           const textContainer = card.querySelector(".poster-top-text");
           (textContainer || card).insertAdjacentHTML("beforeend", badge);
         });
+      }
+
+      const ADD_WATCHLIST_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAArCAMAAAAHZIWCAAAAM1BMVEX+/v7////////////////5+fn////y8vLv7+/////////////19fX///8AAADw8PD///9qscvVAAAAD3RSTlOhUEBwkLUg3O8wgGDIEAAqdR4JAAABw0lEQVR42qWX25aDIAxFUS7FhED+/2tnudpOtAnRzpxHhW1uhBj6XGWB3Aa/NVqGpTjrZyzCPNhSDUhfsTCzp7zcZRFUvlKNdINFafAdDaALFoEmPTIAhObTNGtRpIYk2VCeLlNWaYq09u4uyEWxbKNGVOGNytHFYgW1bOtam4pCUix6zFFlXcmBNTqzikLx+t68hzweQqETTcKyPsbwPgK8C7soadgmLANVTyg+5pOqLjV6sXSsxJDCTwlJ+MrNnSUoZVZ+hbefVFmpPVmJteLZrKSqTAl21sqGytmbeGYVNrT1IB4aLoLUx5WT/OgBWUni0w52FQwN5bkWBrPvpY89A0I9fiPZ3ZstwWRPEt8N2XbBJGHg2uXHa1O5cuNl58ROWHXzOKsvMpsC+vVl1730hcyi7BxIhtl5lANIWbWp6YZgNhGpdMl/+kWtVp9w+lc7jhappVjkgTZrFLevxj5T1CjpqzusGu9tbbaD/j1UbNSYoITV6a/3Y7DubVT3NioUDvfeFm3fzxOtTOec+N2cM9Cfv/jf85eoBL6lkejWvDouSRXo5hxN2FxSxq/m+xLzsH3Lznw/14bQPv47sDjrfwC+y7YtuwdeggAAAABJRU5ErkJggg==" alt="" style="width:20px;height:auto;display:block;opacity:0.55;filter:brightness(10)" />`;
+
+      function setupWatchlistBtn(btn) {
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const card = btn.closest(".item-card");
+          const simklId = card?.dataset.simklId;
+          const urlBase = card?.dataset.urlBase;
+          const title = btn.dataset.title;
+          const year = btn.dataset.year;
+          if (!simklId || !urlBase) return;
+          btn.disabled = true;
+          const key = urlBase === "movies" ? "movies" : "shows";
+          try {
+            await simklFetch("https://api.simkl.com/sync/add-to-list", {
+              method: "POST",
+              body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(simklId) } }] }),
+            });
+            state.libraryIds.add(simklId);
+            btn.remove();
+            card.classList.add("trending-watched");
+            setGlobalStatus(`Added "${title}" to watchlist.`);
+            loadSuggestions();
+          } catch (err) {
+            btn.disabled = false;
+            setGlobalStatus(err.message || "Failed to add to watchlist.", true);
+          }
+        });
+      }
+
+      function restoreTrendingCards(simklId) {
+        state.libraryIds.delete(String(simklId));
+        if (!getAccessToken()) return;
+        for (const card of document.querySelectorAll(`#trendingMoviesContent [data-simkl-id="${simklId}"], #trendingTvContent [data-simkl-id="${simklId}"]`)) {
+          card.classList.remove("trending-watched");
+          if (!card.querySelector(".add-watchlist-btn")) {
+            const title = card.dataset.title || "";
+            const year = card.dataset.year || "";
+            card.insertAdjacentHTML("beforeend", `<button class="add-watchlist-btn" title="Add ${escapeHtml(title)} to watchlist" data-title="${escapeHtml(title)}" data-year="${escapeHtml(year)}">${ADD_WATCHLIST_BTN_IMG}</button>`);
+            setupWatchlistBtn(card.querySelector(".add-watchlist-btn"));
+          }
+        }
       }
 
       async function loadTrending() {
@@ -1886,32 +1932,7 @@
             initDockEffect(row);
           }
           for (const btn of document.querySelectorAll("#trendingMoviesContent .add-watchlist-btn, #trendingTvContent .add-watchlist-btn")) {
-            btn.addEventListener("click", async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-
-              const card = btn.closest(".item-card");
-              const simklId = card?.dataset.simklId;
-              const urlBase = card?.dataset.urlBase;
-              const title = btn.dataset.title;
-              const year = btn.dataset.year;
-              if (!simklId || !urlBase) return;
-              btn.disabled = true;
-              const key = urlBase === "movies" ? "movies" : "shows";
-              try {
-                await simklFetch("https://api.simkl.com/sync/add-to-list", {
-                  method: "POST",
-                  body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(simklId) } }] }),
-                });
-                state.libraryIds.add(simklId);
-                btn.remove();
-                card.classList.add("trending-watched");
-                setGlobalStatus(`Added "${title}" to watchlist.`);
-              } catch (err) {
-                btn.disabled = false;
-                setGlobalStatus(err.message || "Failed to add to watchlist.", true);
-              }
-            });
+            setupWatchlistBtn(btn);
           }
           trendingLoadedPeriod = period;
         } catch (err) {
