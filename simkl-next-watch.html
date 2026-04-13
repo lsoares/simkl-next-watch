@@ -1746,9 +1746,9 @@
               <div class="poster-top-text">
                 <span class="poster-title">${title}</span>
                 ${year ? `<span class="poster-episode">${year}</span>` : ""}
+                ${m.ratings?.imdb?.rating ? (m.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(m.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${m.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>`) : ""}
               </div>
             </div>
-            ${m.ratings?.imdb?.rating ? (m.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(m.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${m.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>`) : ""}
           </a>`;
         }).join("")}</div></div>`;
       }
@@ -1791,7 +1791,8 @@
           const badge = imdbId
             ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${detail.ratings.imdb.rating}</a>`
             : `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
-          card.insertAdjacentHTML("beforeend", badge);
+          const textContainer = card.querySelector(".poster-top-text");
+          (textContainer || card).insertAdjacentHTML("beforeend", badge);
         });
       }
 
