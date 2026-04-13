@@ -1656,6 +1656,43 @@
         }
       }
 
+      const REMOVE_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
+      const MARK_WATCHED_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" />`;
+
+      function renderPosterMedia({ posterUrl, href, title, loading = "eager", extraAttrs = "" }) {
+        const posterImg = posterUrl
+          ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${escapeHtml(title)}" loading="${loading}" draggable="false" ${extraAttrs} />`
+          : "";
+        return href
+          ? `<a class="poster-anchor" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${posterImg}</a>`
+          : posterImg;
+      }
+
+      function renderPosterTopText({ title, titleUrl, imdbRating, imdbId, subtext = "", codeHtml = "" }) {
+        return `<div class="poster-top-text">
+          ${titleUrl
+            ? `<a class="poster-title" href="${escapeHtml(titleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>`
+            : `<span class="poster-title">${escapeHtml(title)}</span>`}
+          ${imdbRating ? (imdbId ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${imdbRating}</a>` : `<span class="imdb-badge">IMDb ${imdbRating}</span>`) : ""}
+          ${subtext ? `<span class="poster-episode">${escapeHtml(subtext)}</span>` : ""}
+          ${codeHtml || ""}
+        </div>`;
+      }
+
+      function renderPosterCard({ cardTag = "article", cardClass = "", cardAttrs = "", media = "", topText = "", topAction = "", body = "", footer = "" }) {
+        return `
+          <${cardTag} class="item-card${cardClass ? ` ${cardClass}` : ""}"${cardAttrs ? ` ${cardAttrs}` : ""}>
+            ${media}
+            <div class="poster-top">
+              ${topText}
+              ${topAction}
+            </div>
+            <div class="poster-bottom"></div>
+            ${body}
+            ${footer}
+          </${cardTag}>`;
+      }
+
       function renderItem(item, type) {
         if (!item) return "";
 
@@ -1668,44 +1705,37 @@
         const remaining = type === "tv" && item.total_episodes_count > 0
           ? item.total_episodes_count - (item.watched_episodes_count || 0) - (item.not_aired_episodes_count || 0)
           : null;
-        const posterImg = posterUrl
-          ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${escapeHtml(item.title)}" draggable="false" />`
+        const media = renderPosterMedia({ posterUrl, href: episodeUrl || item.url, title: item.title });
+        const topText = renderPosterTopText({
+          title: item.title,
+          titleUrl: item.url,
+          imdbRating: item.ratings?.imdb?.rating,
+          imdbId: item.ids?.imdb,
+          subtext: episodeName,
+          codeHtml: episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : "",
+        });
+        const topAction = (type === "movie" || isUnstartedShow)
+          ? `<button class="poster-remove" title="Remove from list">${REMOVE_BTN_IMG}</button>`
           : "";
-        const posterInner = episodeUrl || item.url
-          ? `<a class="poster-anchor" href="${escapeHtml(episodeUrl || item.url)}" target="_blank" rel="noreferrer">${posterImg}</a>`
-          : posterImg;
+        const body = item.watchAction
+          ? `<button class="mark-watched-btn" title="I've watched this">${MARK_WATCHED_BTN_IMG}</button>`
+          : "";
+        const footer = (() => {
+          const total = (item.total_episodes_count || 0) - (item.not_aired_episodes_count || 0);
+          const watched = item.watched_episodes_count || 0;
+          if (type !== "tv" || total <= 0 || remaining <= 0) return "";
+          if (watched === 0) {
+            return `<div class="season-bar-wrap">
+              <div class="season-bar"><div class="season-bar-label">${remaining} left</div></div>
+            </div>`;
+          }
+          const pct = Math.min(100, Math.round(watched / total * 100));
+          return `<div class="season-bar-wrap">
+            <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div><div class="season-bar-label">${remaining} left</div></div>
+          </div>`;
+        })();
 
-        return `
-          <article class="item-card">
-            ${posterInner}
-            <div class="poster-top">
-              <div class="poster-top-text">
-                ${item.url
-                  ? `<a class="poster-title" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>`
-                  : `<span class="poster-title">${escapeHtml(item.title)}</span>`}
-                ${item.ratings?.imdb?.rating ? (item.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(item.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${item.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>`) : ""}
-                ${episodeName ? `<span class="poster-episode">${escapeHtml(episodeName)}</span>` : ""}
-                ${episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : ""}
-              </div>
-              ${(type === "movie" || isUnstartedShow) ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
-            </div>
-            <div class="poster-bottom"></div>
-            ${item.watchAction ? `<button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
-            ${(() => {
-                const total = (item.total_episodes_count || 0) - (item.not_aired_episodes_count || 0);
-                const watched = item.watched_episodes_count || 0;
-                if (type !== "tv" || total <= 0 || remaining <= 0) return "";
-                if (watched === 0) {
-                  return `<div class="season-bar-wrap">
-                  <div class="season-bar"><div class="season-bar-label">${remaining} left</div></div>
-                </div>`;
-                }
-                const pct = Math.min(100, Math.round(watched / total * 100));
-                return `<div class="season-bar-wrap">
-                  <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div><div class="season-bar-label">${remaining} left</div></div>
-                </div>`;
-              })()}
-          </article>`;
+        return renderPosterCard({ media, topText, topAction, body, footer });
       }
 
       function setGlobalStatus(message, isError = false, undoFn = null) {
@@ -1818,26 +1848,32 @@
 
       function renderTrendingRow(items, urlBaseOverride) {
         return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
-          const title = escapeHtml(m.title || "");
+          const title = m.title || "";
           const year = m.year || "";
           const imgCode = m.poster || m.img || "";
           const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-          const simklId = m.ids?.simkl_id || m.ids?.simkl;
+          const simklId = getSimklId(m);
           const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
           const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
           const watched = simklId && state.libraryIds.has(String(simklId));
           const loggedIn = !!getAccessToken();
-          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}">
-            ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
-            <div class="poster-top">
-              <div class="poster-top-text">
-                <span class="poster-title">${title}</span>
-                ${year ? `<span class="poster-episode">${year}</span>` : ""}
-                ${!watched && m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
-              </div>
-            </div>
-            ${loggedIn && simklId && !watched ? `<button class="add-watchlist-btn" title="Add ${title} to watchlist" data-title="${title}" data-year="${year}"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAArCAMAAAAHZIWCAAAAM1BMVEX+/v7////////////////5+fn////y8vLv7+/////////////19fX///8AAADw8PD///9qscvVAAAAD3RSTlOhUEBwkLUg3O8wgGDIEAAqdR4JAAABw0lEQVR42qWX25aDIAxFUS7FhED+/2tnudpOtAnRzpxHhW1uhBj6XGWB3Aa/NVqGpTjrZyzCPNhSDUhfsTCzp7zcZRFUvlKNdINFafAdDaALFoEmPTIAhObTNGtRpIYk2VCeLlNWaYq09u4uyEWxbKNGVOGNytHFYgW1bOtam4pCUix6zFFlXcmBNTqzikLx+t68hzweQqETTcKyPsbwPgK8C7soadgmLANVTyg+5pOqLjV6sXSsxJDCTwlJ+MrNnSUoZVZ+hbefVFmpPVmJteLZrKSqTAl21sqGytmbeGYVNrT1IB4aLoLUx5WT/OgBWUni0w52FQwN5bkWBrPvpY89A0I9fiPZ3ZstwWRPEt8N2XbBJGHg2uXHa1O5cuNl58ROWHXzOKsvMpsC+vVl1730hcyi7BxIhtl5lANIWbWp6YZgNhGpdMl/+kWtVp9w+lc7jhappVjkgTZrFLevxj5T1CjpqzusGu9tbbaD/j1UbNSYoITV6a/3Y7DubVT3NioUDvfeFm3fzxOtTOec+N2cM9Cfv/jf85eoBL6lkejWvDouSRXo5hxN2FxSxq/m+xLzsH3Lznw/14bQPv47sDjrfwC+y7YtuwdeggAAAABJRU5ErkJggg==" alt="" style="width:20px;height:auto;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
-          </a>`;
+          const media = renderPosterMedia({ posterUrl, title, loading: "lazy" });
+          const topText = renderPosterTopText({
+            title,
+            imdbRating: !watched ? m.ratings?.imdb?.rating : "",
+            subtext: year ? String(year) : "",
+          });
+          const body = loggedIn && simklId && !watched
+            ? `<button class="add-watchlist-btn" title="Add ${escapeHtml(title)} to watchlist" data-title="${escapeHtml(title)}" data-year="${year}">${ADD_WATCHLIST_BTN_IMG}</button>`
+            : "";
+          return renderPosterCard({
+            cardTag: "a",
+            cardClass: watched ? "trending-watched" : "",
+            cardAttrs: `href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}"`,
+            media,
+            topText,
+            body,
+          });
         }).join("")}</div></div>`;
       }
 
