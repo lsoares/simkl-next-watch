@@ -196,7 +196,7 @@
         gap: 28px;
       }
 
-      .media-section { position: relative; }
+      .media-section { position: relative; timeline-scope: --media-scroll; }
       .section-label {
         font-size: 0.72rem;
         font-weight: 600;
@@ -213,20 +213,22 @@
         width: 60px;
         pointer-events: none;
         z-index: 1;
-        transition: opacity 0.2s;
+        animation-timeline: --media-scroll;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
       }
       .media-section::after {
         right: 0;
         background: linear-gradient(to right, transparent, #111827);
-        opacity: 0;
+        animation-name: right-edge-fade;
+        animation-range: 99% 100%;
       }
       .media-section::before {
         left: 0;
         background: linear-gradient(to left, transparent, #111827);
-        opacity: 0;
+        animation-name: left-edge-fade;
+        animation-range: 0% 1%;
       }
-      .media-section.show-left-fade::before { opacity: 1; }
-      .media-section.show-right-fade::after { opacity: 1; }
       .items-row {
         display: flex;
         gap: 10px;
@@ -235,6 +237,7 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         touch-action: pan-x;
+        scroll-timeline: --media-scroll inline;
       }
       .items-row::-webkit-scrollbar { display: none; }
       .row-item {
@@ -586,6 +589,8 @@
       @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
 
       @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes left-edge-fade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes right-edge-fade { from { opacity: 1; } to { opacity: 0; } }
       .spinner {
         position: fixed;
         top: 50%;
@@ -675,6 +680,7 @@
       }
       .trending-carousel {
         position: relative;
+        timeline-scope: --trending-scroll;
       }
       .trending-carousel::after,
       .trending-carousel::before {
@@ -684,20 +690,22 @@
         width: 60px;
         pointer-events: none;
         z-index: 1;
-        transition: opacity 0.2s;
+        animation-timeline: --trending-scroll;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
       }
       .trending-carousel::after {
         right: 0;
         background: linear-gradient(to right, transparent, #111827);
-        opacity: 0;
+        animation-name: right-edge-fade;
+        animation-range: 99% 100%;
       }
       .trending-carousel::before {
         left: 0;
         background: linear-gradient(to left, transparent, #111827);
-        opacity: 0;
+        animation-name: left-edge-fade;
+        animation-range: 0% 1%;
       }
-      .trending-carousel.show-left-fade::before { opacity: 1; }
-      .trending-carousel.show-right-fade::after { opacity: 1; }
       .trending-row {
         display: flex;
         gap: 10px;
@@ -706,6 +714,7 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         touch-action: pan-x;
+        scroll-timeline: --trending-scroll inline;
       }
       .trending-row::-webkit-scrollbar { display: none; }
       .trending-row .item-card {
@@ -1501,12 +1510,7 @@
         if (!items.length) { el.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
         el.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
         if (el._scrollSave) el.removeEventListener("scroll", el._scrollSave);
-        const section = el.closest(".media-section");
-        const updateFades = () => {
-          section?.classList.toggle("show-left-fade", el.scrollLeft > 0);
-          section?.classList.toggle("show-right-fade", el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-        };
-        el._scrollSave = () => { sessionStorage.setItem(key, el.scrollLeft); updateFades(); };
+        el._scrollSave = () => { sessionStorage.setItem(key, el.scrollLeft); };
         el.addEventListener("scroll", el._scrollSave, { passive: true });
         el.querySelectorAll(".row-item").forEach((wrap, i) => {
           const item = items[i];
@@ -1519,7 +1523,6 @@
           wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); removeItem(item, type); });
         });
         el.scrollLeft = +(sessionStorage.getItem(key) || 0);
-        updateFades();
       }
 
       function promptRateItem(item, type, card) {
@@ -1852,15 +1855,6 @@
           if (tv.length) enrichTrendingRatings(tv, "tv", tvEl);
           for (const row of document.querySelectorAll("#trendingMoviesContent .trending-row, #trendingTvContent .trending-row")) {
             initDockEffect(row);
-            const carousel = row.closest(".trending-carousel");
-            if (carousel) {
-              const updateTrendingFades = () => {
-                carousel.classList.toggle("show-left-fade", row.scrollLeft > 0);
-                carousel.classList.toggle("show-right-fade", row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
-              };
-              row.addEventListener("scroll", updateTrendingFades, { passive: true });
-              updateTrendingFades();
-            }
           }
           trendingLoadedPeriod = period;
         } catch (err) {
