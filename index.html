@@ -91,6 +91,7 @@
         accessToken: "simkl-access-token",
         genreCache: "simkl-genre-cache",
         statsCache: "simkl-stats-cache",
+        trendingPeriod: "simkl-trending-period",
       };
 
       const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -101,6 +102,15 @@
 
       function getClientId()    { return localStorage.getItem(storageKeys.clientId)    || ""; }
       function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || ""; }
+      function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || "today"; }
+
+      function setActiveTrendingPeriod(period) {
+        if (!period) return;
+        const periodBtn = els.trendingPeriodTabs.querySelector(`[data-period="${period}"]`);
+        if (!periodBtn) return;
+        els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+        periodBtn.classList.add("active");
+      }
 
       function normalizeStatus(status) {
         return String(status || "").toLowerCase().replace(/\s+/g, "");
@@ -476,8 +486,7 @@
       });
       els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {
-          els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
+          setActiveTrendingPeriod(btn.dataset.period);
           loadTrending();
         });
       });
@@ -495,11 +504,11 @@
       });
 
       hydrateCredentials();
+      setActiveTrendingPeriod(getTrendingPeriod());
       if (getAccessToken()) {
         const [hashView, p1] = location.hash.replace("#", "").split("/");
         if (hashView === "trending") {
-          const periodBtn = els.trendingPeriodTabs.querySelector(`[data-period="${p1}"]`);
-          if (periodBtn) { els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); periodBtn.classList.add("active"); }
+          setActiveTrendingPeriod(p1 || getTrendingPeriod());
           showTrendingView();
         } else if (hashView === "stats") {
           showStatsView().then(() => {
@@ -808,13 +817,13 @@
           : posterImg;
       }
 
-      function renderPosterTopText({ title, titleUrl, imdbRating, imdbId, subtext = "", codeHtml = "" }) {
+      function renderPosterTopText({ title, titleUrl, imdbRating, imdbId, subtext = "", subtextUrl = "", codeHtml = "" }) {
         return `<div class="poster-top-text">
           ${titleUrl
             ? `<a class="poster-title" href="${escapeHtml(titleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>`
             : `<span class="poster-title">${escapeHtml(title)}</span>`}
           ${imdbRating ? (imdbId ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${imdbRating}</a>` : `<span class="imdb-badge">IMDb ${imdbRating}</span>`) : ""}
-          ${subtext ? `<span class="poster-episode">${escapeHtml(subtext)}</span>` : ""}
+          ${subtext ? (subtextUrl ? `<a class="poster-episode" href="${escapeHtml(subtextUrl)}" target="_blank" rel="noreferrer">${escapeHtml(subtext)}</a>` : `<span class="poster-episode">${escapeHtml(subtext)}</span>`) : ""}
           ${codeHtml || ""}
         </div>`;
       }
@@ -853,6 +862,7 @@
           imdbRating: showImdbBadge ? item.ratings?.imdb?.rating : "",
           imdbId: showImdbBadge ? item.ids?.imdb : "",
           subtext: episodeName,
+          subtextUrl: episodeUrl,
           codeHtml: episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : "",
         });
         const topAction = (type === "movie" || isUnstartedShow)

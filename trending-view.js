@@ -120,6 +120,7 @@ window.createTrendingFeature = function createTrendingFeature({
 
   async function loadTrending() {
     const period = els.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
+    try { localStorage.setItem("simkl-trending-period", period); } catch {}
     history.replaceState(null, "", `#trending/${period}`);
     const moviesEl = document.getElementById("trendingMoviesContent");
     const tvEl = document.getElementById("trendingTvContent");

@@ -197,30 +197,6 @@
         letter-spacing: 0.06em;
         margin: 0 0 8px;
       }
-      .media-section::after,
-      .media-section::before {
-        content: "";
-        position: absolute;
-        top: 0; bottom: 0;
-        width: 60px;
-        pointer-events: none;
-        z-index: 1;
-        animation-timeline: --media-scroll;
-        animation-fill-mode: both;
-        animation-timing-function: linear;
-      }
-      .media-section::after {
-        right: 0;
-        background: linear-gradient(to right, transparent, #111827);
-        animation-name: right-edge-fade;
-        animation-range: 99% 100%;
-      }
-      .media-section::before {
-        left: 0;
-        background: linear-gradient(to left, transparent, #111827);
-        animation-name: left-edge-fade;
-        animation-range: 0% 1%;
-      }
       .items-row {
         display: flex;
         gap: 10px;
@@ -301,7 +277,6 @@
         .trending-grid { flex: 1; min-height: 0; gap: 10px; }
         .trending-section { flex: 1; min-height: 0; overflow: hidden; }
         .trending-carousel { height: 100%; }
-        .trending-carousel::after { bottom: 0; }
         .trending-row { height: 100%; padding-bottom: 0; }
         .trending-row .item-card { height: 100%; width: calc(var(--dock-h, 80px) * 2 / 3 * var(--dock-scale, 1)); }
       }
@@ -393,8 +368,8 @@
       .poster-episode-code { font-size: 0.85rem; font-style: normal; color: rgba(255,255,255,0.5); margin-top: 0; }
       .mark-watched-btn {
         position: absolute;
-        bottom: 8px;
-        right: 8px;
+        bottom: 28px;
+        left: 8px;
         width: 34px;
         height: 34px;
         background: rgba(0,0,0,0.55);
@@ -412,7 +387,7 @@
       .mark-watched-btn:hover { background: rgba(34,197,94,0.4); border-color: #22c55e; }
       .mark-watched-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(80deg) saturate(3); }
 
-      /* top strip: title (left) + remove X (right, movies only) */
+      /* top strip: title + remove action */
       .poster-top {
         position: absolute;
         top: 0; left: 0; right: 0;
@@ -488,8 +463,8 @@
       /* season progress bar */
       .season-bar-wrap {
         position: absolute;
-        bottom: 0; left: 0; right: 50px;
-        padding: 8px 10px 10px;
+        bottom: 0; left: 0; right: 0;
+        padding: 0;
         border-radius: 0 0 10px 10px;
         opacity: 0;
         transition: opacity 0.2s;
@@ -528,15 +503,15 @@
       }
       .season-bar {
         position: relative;
-        height: 14px;
-        background: rgba(0,0,0,0.45);
-        border-radius: 7px;
+        height: 18px;
+        background: rgba(0,0,0,0.68);
+        border-radius: 0 0 10px 10px;
         overflow: hidden;
       }
       .season-bar-fill {
         height: 100%;
         background: #60a5fa;
-        border-radius: 7px;
+        border-radius: 0 0 0 10px;
       }
       .season-bar-label {
         position: absolute;
@@ -598,8 +573,6 @@
       @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
 
       @keyframes spin { to { transform: rotate(360deg); } }
-      @keyframes left-edge-fade { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes right-edge-fade { from { opacity: 1; } to { opacity: 0; } }
       .spinner {
         position: fixed;
         top: 50%;
@@ -673,30 +646,6 @@
       .trending-carousel {
         position: relative;
         timeline-scope: --trending-scroll;
-      }
-      .trending-carousel::after,
-      .trending-carousel::before {
-        content: "";
-        position: absolute;
-        top: 0; bottom: 0;
-        width: 60px;
-        pointer-events: none;
-        z-index: 1;
-        animation-timeline: --trending-scroll;
-        animation-fill-mode: both;
-        animation-timing-function: linear;
-      }
-      .trending-carousel::after {
-        right: 0;
-        background: linear-gradient(to right, transparent, #111827);
-        animation-name: right-edge-fade;
-        animation-range: 99% 100%;
-      }
-      .trending-carousel::before {
-        left: 0;
-        background: linear-gradient(to left, transparent, #111827);
-        animation-name: left-edge-fade;
-        animation-range: 0% 1%;
       }
       .trending-row {
         display: flex;
