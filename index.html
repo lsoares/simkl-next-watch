@@ -480,7 +480,7 @@
       els.openTrendingButton.addEventListener("click", showTrendingView);
       els.openAuthModalButton.addEventListener("click", showLoginView);
       els.logoutButton.addEventListener("click", () => {
-        localStorage.removeItem(storageKeys.accessToken);
+        Object.values(storageKeys).forEach((key) => localStorage.removeItem(key));
         hydrateCredentials();
         showHomeView();
         loadSuggestions();
