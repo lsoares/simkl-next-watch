@@ -747,6 +747,9 @@
           applySuggestionsModel(await buildSuggestionsModel());
           setGlobalStatus("");
           enrichRenderedTvItems();
+          if (!state.tvItems.length && !state.movieItems.length && !els.suggestionsGrid.hidden) {
+            showTrendingView();
+          }
         } catch (error) {
           setGlobalStatus(error.message || "Failed to load.", true);
         } finally {
