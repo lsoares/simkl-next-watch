@@ -1516,6 +1516,65 @@
         throw new Error("PIN code expired before authorization completed.");
       }
 
+      function extractMediaIds(item) {
+        const ids = (item.show || item.movie || item)?.ids || item.ids || {};
+        return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
+      }
+
+      async function fetchSuggestionLists() {
+        const [showsResponse, moviesResponse, completedShowsRes, completedMoviesRes] = await Promise.all([
+          simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
+          simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
+          simklFetch("https://api.simkl.com/sync/all-items/shows/?status=completed").catch(() => ({})),
+          simklFetch("https://api.simkl.com/sync/all-items/movies/?status=completed").catch(() => ({})),
+        ]);
+
+        return {
+          shows: normalizeList(showsResponse.shows),
+          movies: normalizeList(moviesResponse.movies),
+          completedShows: completedShowsRes.shows || [],
+          completedMovies: completedMoviesRes.movies || [],
+        };
+      }
+
+      async function buildSuggestionsModel() {
+        const { shows, movies, completedShows, completedMovies } = await fetchSuggestionLists();
+        const libraryIds = new Set([
+          ...shows.flatMap(extractMediaIds),
+          ...movies.flatMap(extractMediaIds),
+          ...completedShows.flatMap(extractMediaIds),
+          ...completedMovies.flatMap(extractMediaIds),
+        ]);
+
+        const [tvItems, movieItems] = await Promise.all([
+          buildTvCandidates(shows),
+          buildMovieCandidates(movies),
+        ]);
+
+        return { libraryIds, tvItems, movieItems };
+      }
+
+      function applySuggestionsModel({ libraryIds, tvItems, movieItems }) {
+        state.libraryIds = libraryIds;
+        state.tvItems = tvItems;
+        state.movieItems = movieItems;
+        renderRow("tv");
+        renderRow("movie");
+      }
+
+      function enrichRenderedTvItems() {
+        Promise.allSettled(state.tvItems.map(item => enrichWithEpisodeTitle(item))).then(results => {
+          let changed = false;
+          results.forEach((r, i) => {
+            if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
+              state.tvItems[i] = { ...state.tvItems[i], nextEpisodeTitle: r.value.nextEpisodeTitle, nextSeasonImg: r.value.nextSeasonImg };
+              changed = true;
+            }
+          });
+          if (changed) renderRow("tv");
+        });
+      }
+
       async function loadSuggestions() {
         if (!getClientId() || !getAccessToken()) {
           setGlobalStatus("A client ID and access token are required.", true);
@@ -1523,39 +1582,9 @@
         }
         loadingSpinner.hidden = false;
         try {
-          const [showsResponse, moviesResponse, completedShowsRes, completedMoviesRes] = await Promise.all([
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
-            simklFetch("https://api.simkl.com/sync/all-items/shows/?status=completed").catch(() => ({})),
-            simklFetch("https://api.simkl.com/sync/all-items/movies/?status=completed").catch(() => ({})),
-          ]);
-          const shows = normalizeList(showsResponse.shows);
-          const movies = normalizeList(moviesResponse.movies);
-          const extractIds = (item) => {
-            const ids = (item.show || item.movie || item)?.ids || item.ids || {};
-            return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
-          };
-          state.libraryIds = new Set([
-            ...shows.flatMap(extractIds),
-            ...movies.flatMap(extractIds),
-            ...(completedShowsRes.shows || []).flatMap(extractIds),
-            ...(completedMoviesRes.movies || []).flatMap(extractIds),
-          ]);
-          state.tvItems = await buildTvCandidates(shows);
-          state.movieItems = await buildMovieCandidates(movies);
-          renderRow("tv");
-          renderRow("movie");
+          applySuggestionsModel(await buildSuggestionsModel());
           setGlobalStatus("");
-          Promise.allSettled(state.tvItems.map(item => enrichWithEpisodeTitle(item))).then(results => {
-            let changed = false;
-            results.forEach((r, i) => {
-              if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
-                state.tvItems[i] = { ...state.tvItems[i], nextEpisodeTitle: r.value.nextEpisodeTitle, nextSeasonImg: r.value.nextSeasonImg };
-                changed = true;
-              }
-            });
-            if (changed) renderRow("tv");
-          });
+          enrichRenderedTvItems();
         } catch (error) {
           setGlobalStatus(error.message || "Failed to load.", true);
         } finally {
