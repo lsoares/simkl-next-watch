@@ -21,6 +21,10 @@
         --muted: #94a3b8;
         --accent: #22c55e;
         --danger: #ef4444;
+        --app-height: 100dvh;
+        --top-bar-height: 68px;
+        --main-bottom-gap: 12px;
+        --mobile-content-height: calc(var(--app-height) - var(--top-bar-height) - var(--main-bottom-gap));
       }
 
       * {
@@ -33,7 +37,7 @@
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: var(--bg);
         color: var(--text);
-        min-height: 100dvh;
+        min-height: var(--app-height);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -248,9 +252,9 @@
 
       /* Mobile: fit both rows on screen without vertical scroll */
       @media (max-width: 680px) {
-        main { padding-top: max(68px, 52px + env(safe-area-inset-top)); padding-bottom: 12px; }
+        main { padding-top: var(--top-bar-height); padding-bottom: var(--main-bottom-gap); }
         .suggestions-grid {
-          height: calc(100dvh - max(68px, 52px + env(safe-area-inset-top)) - 12px);
+          height: var(--mobile-content-height);
           gap: 10px;
         }
         .media-section { flex: 1; min-height: 0; overflow: clip; }
@@ -262,7 +266,7 @@
         #trendingView {
           display: flex;
           flex-direction: column;
-          height: calc(100dvh - max(68px, 52px + env(safe-area-inset-top)) - 12px);
+          height: var(--mobile-content-height);
         }
         #trendingPeriodTabs { flex-shrink: 0; margin-bottom: 10px; }
         .trending-grid { flex: 1; min-height: 0; gap: 10px; }
@@ -1107,7 +1111,7 @@
         };
       }
 
-      function buildTvCandidates(shows) {
+      async function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
         const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
         // 0 = mid-season (started), 1 = season not started, 2 = show not started (plantowatch)
@@ -1123,13 +1127,29 @@
           if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
           return (episodesLeft(a) - episodesLeft(b)) || (ga - gb) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
         };
-        const watching = shows
+        const queued = [
+          ...shows
           .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
-        const watchlisted = shows
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) })),
+          ...shows
           .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
-          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
-        return [...watching, ...watchlisted].sort(byTvOrder);
+          .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) })),
+        ];
+        const settled = await Promise.allSettled(queued.map((show) => {
+          const id = show.ids?.simkl || show.ids?.simkl_id;
+          if (!id) return Promise.resolve(null);
+          return simklFetch(`https://api.simkl.com/tv/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`);
+        }));
+        return queued
+          .map((show, i) => {
+            const detail = settled[i].status === "fulfilled" ? settled[i].value : null;
+            return {
+              ...show,
+              ...(detail?.ratings ? { ratings: detail.ratings } : {}),
+              ids: { ...show.ids, ...(detail?.ids || {}) },
+            };
+          })
+          .sort(byTvOrder);
       }
 
       async function buildMovieCandidates(movies) {
@@ -1165,21 +1185,6 @@
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
         return payload;
-      }
-
-
-      async function enrichWithShowDetail(item) {
-        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
-        if (!simklId) return item;
-        try {
-          const detail = await simklFetch(`https://api.simkl.com/tv/${encodeURIComponent(simklId)}?client_id=${encodeURIComponent(getClientId())}`);
-          if (!detail) return item;
-          return {
-            ...item,
-            ...(detail.ratings ? { ratings: detail.ratings } : {}),
-            ids: { ...item.ids, ...(detail.ids || {}) },
-          };
-        } catch { return item; }
       }
 
       async function enrichWithEpisodeTitle(item) {
@@ -1260,6 +1265,7 @@
       const pinStatus = document.getElementById("pinStatus");
       const tvRow = document.getElementById("tvRow");
       const movieRow = document.getElementById("movieRow");
+      const topBar = document.querySelector(".top-bar");
       document.getElementById("currentUrl").textContent = window.location.href;
       document.getElementById("copyUrlButton").addEventListener("click", () => {
         navigator.clipboard.writeText(window.location.href).then(() => {
@@ -1273,6 +1279,23 @@
       const statsContent = document.getElementById("statsContent");
       let statsRawData = null;
       let trendingLoadedPeriod = null;
+
+      function syncViewportMetrics() {
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        document.documentElement.style.setProperty("--app-height", `${Math.round(viewportHeight)}px`);
+        if (topBar) {
+          document.documentElement.style.setProperty("--top-bar-height", `${Math.ceil(topBar.getBoundingClientRect().height)}px`);
+        }
+      }
+
+      syncViewportMetrics();
+      window.addEventListener("resize", syncViewportMetrics, { passive: true });
+      window.addEventListener("pageshow", syncViewportMetrics, { passive: true });
+      window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true });
+      window.visualViewport?.addEventListener("scroll", syncViewportMetrics, { passive: true });
+      if ("ResizeObserver" in window && topBar) {
+        new ResizeObserver(syncViewportMetrics).observe(topBar);
+      }
 
       // PWA install
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
@@ -1488,26 +1511,7 @@
             ...(completedShowsRes.shows || []).flatMap(extractIds),
             ...(completedMoviesRes.movies || []).flatMap(extractIds),
           ]);
-          const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
-          const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
-          const tvGroup = (s) => {
-            if (normalizeStatus(s.status) === "plantowatch") return 2;
-            const ep = parseNextEpisode(s.next_to_watch);
-            return (ep && ep.episode === 1) ? 1 : 0;
-          };
-          const byTvOrder = (a, b) => {
-            const ga = tvGroup(a), gb = tvGroup(b);
-            const aLast = ga === 2, bLast = gb === 2;
-            if (aLast !== bLast) return aLast ? 1 : -1;
-            if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
-            return (episodesLeft(a) - episodesLeft(b)) || (ga - gb) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
-          };
-          state.tvItems = [
-            ...shows.filter(s => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-                    .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s) })),
-            ...shows.filter(s => normalizeStatus(s.status) === "plantowatch" && aired(s))
-                    .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s, true) })),
-          ].sort(byTvOrder);
+          state.tvItems = await buildTvCandidates(shows);
           state.movieItems = await buildMovieCandidates(movies);
           renderRow("tv");
           renderRow("movie");
@@ -1517,16 +1521,6 @@
             results.forEach((r, i) => {
               if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
                 state.tvItems[i] = { ...state.tvItems[i], nextEpisodeTitle: r.value.nextEpisodeTitle, nextSeasonImg: r.value.nextSeasonImg };
-                changed = true;
-              }
-            });
-            if (changed) renderRow("tv");
-          });
-          Promise.allSettled(state.tvItems.map(item => normalizeStatus(item.status) === "plantowatch" ? enrichWithShowDetail(item) : Promise.resolve(item))).then(results => {
-            let changed = false;
-            results.forEach((r, i) => {
-              if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
-                state.tvItems[i] = { ...state.tvItems[i], ratings: r.value.ratings, ids: r.value.ids };
                 changed = true;
               }
             });
