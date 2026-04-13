@@ -359,54 +359,25 @@
       .poster-episode:hover { color: #fff; }
       .poster-episode-code { font-size: 0.85rem; font-style: normal; color: rgba(255,255,255,0.5); margin-top: 0; }
       .mark-watched-btn {
-        position: relative;
-        width: 72px;
-        height: 72px;
-        background: rgba(0,0,0,0.45);
-        border: 2px solid rgba(255,255,255,0.2);
-        color: rgba(255,255,255,0.5);
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 34px;
+        height: 34px;
+        background: rgba(0,0,0,0.55);
+        border: 1.5px solid rgba(255,255,255,0.22);
         border-radius: 50%;
-        font-size: 1.4rem;
-        line-height: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: unset;
         cursor: pointer;
-        transition: background 0.2s, border-color 0.2s, color 0.2s;
+        transition: background 0.2s, border-color 0.2s;
+        padding: 0;
+        z-index: 5;
       }
-      .mark-watched-btn:hover {
-        background: rgba(34,197,94,0.35);
-        border-color: #22c55e;
-        color: #86efac;
-      }
+      .mark-watched-btn:hover { background: rgba(34,197,94,0.4); border-color: #22c55e; }
       .mark-watched-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(80deg) saturate(3); }
-      .mark-watched-btn::after {
-        content: "I've watched this";
-        position: absolute;
-        bottom: calc(100% + 6px);
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.85);
-        color: #f9fafb;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        padding: 3px 7px;
-        border-radius: 4px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.15s;
-        font-weight: 400;
-      }
-      .mark-watched-btn:hover::after { opacity: 1; }
-
-      /* bottom action row */
-      .poster-actions {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 4px;
-      }
 
       /* top strip: title (left) + remove X (right, movies only) */
       .poster-top {
@@ -466,45 +437,33 @@
 
       /* IMDb rating badge */
       .imdb-badge {
-        position: absolute;
-        bottom: 8px;
-        right: 8px;
+        display: inline-flex;
+        align-items: center;
         background: #f5c518;
         color: #000;
         font-size: 0.6rem;
         font-weight: 800;
-        padding: 2px 5px;
+        padding: 1px 4px;
         border-radius: 3px;
-        z-index: 4;
-        opacity: 0;
-        transition: opacity 0.15s;
         white-space: nowrap;
         text-decoration: none;
+        align-self: flex-start;
+        margin-top: 1px;
       }
       span.imdb-badge { pointer-events: none; }
-      @media (hover: hover) and (pointer: fine) {
-        .item-card:hover .imdb-badge { opacity: 1; }
-      }
-      @media not all and (hover: hover) {
-        .imdb-badge { opacity: 1; }
-      }
 
       /* season progress bar */
       .season-bar-wrap {
         position: absolute;
-        bottom: 0; left: 0; right: 0;
+        bottom: 0; left: 0; right: 50px;
         padding: 8px 10px 10px;
-        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.88) 40%);
         border-radius: 0 0 10px 10px;
         opacity: 0;
         transition: opacity 0.2s;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
         pointer-events: none;
       }
-      .item-card { transition: transform 0.15s, box-shadow 0.15s; touch-action: pan-x; }
-      .item-card:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(0,0,0,0.5); z-index: 2; }
+      .item-card { transition: box-shadow 0.15s, outline-color 0.15s; touch-action: pan-x; outline: 2px solid transparent; outline-offset: 2px; }
+      .item-card:hover { outline-color: rgba(255,255,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 2; }
       .item-card:hover .season-bar-wrap { opacity: 1; }
       .season-bar-header {
         display: flex;
@@ -524,23 +483,29 @@
         color: #93c5fd;
       }
       .season-bar {
-        height: 4px;
-        background: rgba(255,255,255,0.15);
-        border-radius: 2px;
+        position: relative;
+        height: 14px;
+        background: rgba(0,0,0,0.45);
+        border-radius: 7px;
         overflow: hidden;
       }
       .season-bar-fill {
         height: 100%;
         background: #60a5fa;
-        border-radius: 2px;
+        border-radius: 7px;
       }
-      .season-bar-details {
+      .season-bar-label {
+        position: absolute;
+        inset: 0;
         display: flex;
-        justify-content: space-between;
-        font-size: 0.6rem;
-        color: rgba(255,255,255,0.55);
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 6px;
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.85);
+        pointer-events: none;
       }
-      .season-bar-details .ep-watched-text { color: #93c5fd; }
 
       /* watched fade-out */
       @keyframes watchedOut {
@@ -1632,36 +1597,28 @@
                 ${item.url
                   ? `<a class="poster-title" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>`
                   : `<span class="poster-title">${escapeHtml(item.title)}</span>`}
+                ${item.ratings?.imdb?.rating ? (item.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(item.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${item.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>`) : ""}
                 ${episodeName ? `<span class="poster-episode">${escapeHtml(episodeName)}</span>` : ""}
                 ${episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : ""}
               </div>
               ${type === "movie" ? `<button class="poster-remove" title="Remove from list"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" /></button>` : ""}
             </div>
-            <div class="poster-bottom">
-              ${item.watchAction ? `
-                <div class="poster-actions">
-                  <button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:30px;height:30px;display:block;opacity:0.5;filter:brightness(10)" /></button>
-                </div>` : ""}
-            </div>
+            <div class="poster-bottom"></div>
+            ${item.watchAction ? `<button class="mark-watched-btn" title="I've watched this"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
             ${(() => {
                 const total = (item.total_episodes_count || 0) - (item.not_aired_episodes_count || 0);
                 const watched = item.watched_episodes_count || 0;
-                if (type !== "tv" || total <= 0) return "";
+                if (type !== "tv" || total <= 0 || remaining <= 0) return "";
                 if (watched === 0) {
-                  return remaining > 0 ? `<div class="season-bar-wrap">
-                  <div class="season-bar-details" style="justify-content:flex-end"><span>${remaining} left</span></div>
-                </div>` : "";
+                  return `<div class="season-bar-wrap">
+                  <div class="season-bar"><div class="season-bar-label">${remaining} left</div></div>
+                </div>`;
                 }
                 const pct = Math.min(100, Math.round(watched / total * 100));
                 return `<div class="season-bar-wrap">
-                  <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div></div>
-                  <div class="season-bar-details">
-                    <span class="ep-watched-text">${watched} / ${total} watched</span>
-                    ${remaining > 0 ? `<span>${remaining} left</span>` : ""}
-                  </div>
+                  <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div><div class="season-bar-label">${remaining} left</div></div>
                 </div>`;
               })()}
-            ${item.ratings?.imdb?.rating ? (item.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(item.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${item.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${item.ratings.imdb.rating}</span>`) : ""}
           </article>`;
       }
 
