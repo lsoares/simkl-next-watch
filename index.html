@@ -64,7 +64,7 @@
         <div id="authSetup" hidden>
           <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
           <ol class="setup-steps">
-            <li><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> — set its redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></li>
+            <li><a id="createSimklAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> — set its redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></li>
             <li id="clientIdStep" hidden>
               <label for="clientId">Paste the client ID</label>
               <input id="clientId" placeholder="Client ID from your Simkl app" style="width:100%;box-sizing:border-box" />
@@ -394,6 +394,7 @@
         appIntro: document.getElementById("appIntro"),
         authSetup: document.getElementById("authSetup"),
         clientId: document.getElementById("clientId"),
+        createSimklAppLink: document.getElementById("createSimklAppLink"),
         copyUrlButton: document.getElementById("copyUrlButton"),
         currentUrl: document.getElementById("currentUrl"),
         getStartedBtn: document.getElementById("getStartedBtn"),
@@ -441,12 +442,14 @@
       const statsContent = els.statsContent;
       const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
       els.currentUrl.textContent = baseUrl.replace(/^https:\/\//, "").replace(/\/$/, "");
+      els.createSimklAppLink.addEventListener("click", () => {
+        els.clientIdStep.hidden = false;
+      });
       els.copyUrlButton.addEventListener("click", () => {
         navigator.clipboard.writeText(baseUrl).then(() => {
           const btn = els.copyUrlButton;
           btn.textContent = "Copied!";
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
-          els.clientIdStep.hidden = false;
         });
       });
       els.copyPinButton.addEventListener("click", () => {
@@ -518,6 +521,10 @@
       els.getStartedBtn.addEventListener("click", () => {
         els.appIntro.hidden = true;
         els.authSetup.hidden = false;
+        if (clientIdInput.value.trim()) {
+          els.clientIdStep.hidden = false;
+          els.getPinStep.hidden = false;
+        }
         els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
         els.clientId.focus();
       });
@@ -623,6 +630,7 @@
         els.startPinButton.disabled = !clientIdInput.value.trim();
         els.openAuthModalButton.classList.toggle("logged-in", !!getAccessToken());
         els.topBar.hidden = !getAccessToken();
+        syncViewportMetrics();
       }
 
       async function startPinFlow() {
@@ -1043,6 +1051,12 @@
         els.appIntro.hidden = loggedIn;
         els.authSetup.hidden = !loggedIn;
         els.loginStatusNote.hidden = !loggedIn;
+        els.pinArea.hidden = true;
+        els.connectStep.hidden = true;
+        if (clientIdInput.value.trim()) {
+          els.clientIdStep.hidden = false;
+          els.getPinStep.hidden = false;
+        }
       }
 
       function initDockEffect(row) {
