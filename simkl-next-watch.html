@@ -963,9 +963,9 @@
         <div class="top-bar-center">
           <button id="goHomeButton" class="tiny-link" type="button">next</button>
           <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
-          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
         </div>
         <div class="top-bar-right">
+          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
           <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
           <button id="installButton" class="tiny-link" type="button">install</button>
         </div>
@@ -1516,11 +1516,6 @@
         throw new Error("PIN code expired before authorization completed.");
       }
 
-      function extractMediaIds(item) {
-        const ids = (item.show || item.movie || item)?.ids || item.ids || {};
-        return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
-      }
-
       async function fetchSuggestionLists() {
         const [showsResponse, moviesResponse, completedShowsRes, completedMoviesRes] = await Promise.all([
           simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
@@ -1552,6 +1547,11 @@
         ]);
 
         return { libraryIds, tvItems, movieItems };
+      }
+
+      function extractMediaIds(item) {
+        const ids = (item.show || item.movie || item)?.ids || item.ids || {};
+        return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
       }
 
       function applySuggestionsModel({ libraryIds, tvItems, movieItems }) {
@@ -1925,13 +1925,9 @@
             simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch,completed").catch(() => ({})),
             simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
           ]);
-          const extractIds = (item) => {
-            const ids = (item.show || item.movie || item)?.ids || item.ids || {};
-            return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
-          };
           state.libraryIds = new Set([
-            ...(sRes.shows || []).flatMap(extractIds),
-            ...(mRes.movies || []).flatMap(extractIds),
+            ...(sRes.shows || []).flatMap(extractMediaIds),
+            ...(mRes.movies || []).flatMap(extractMediaIds),
           ]);
         } catch (_) {}
       }
