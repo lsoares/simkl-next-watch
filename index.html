@@ -62,27 +62,15 @@
           <button class="app-intro-cta" id="getStartedBtn">Get started</button>
         </div>
         <div id="authSetup" hidden>
-          <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
-          <ol class="setup-steps">
-            <li><a id="createSimklAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> — set its redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></li>
-            <li id="clientIdStep" hidden>
-              <label for="clientId">Paste the client ID</label>
-              <input id="clientId" placeholder="Client ID from your Simkl app" style="width:100%;box-sizing:border-box" />
-            </li>
-            <li id="getPinStep" hidden>
-              <button id="startPinButton" class="secondary" disabled>Get PIN</button>
-              <div id="pinArea" hidden>
-                <div class="pin-code-row">
-                  <div id="pinCode" class="pin-code"></div>
-                  <button id="copyPinButton" class="tiny-link" type="button">Copy</button>
-                </div>
-              </div>
-            </li>
-            <li id="connectStep" hidden>
-              <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer" class="pin-cta">Connect</a>
-              <div id="pinStatus" class="status"></div>
-            </li>
-          </ol>
+          <p id="loginStatusNote" class="field-help" hidden>You're already connected. Update the client ID or token here if you need to switch accounts.</p>
+          <p class="field-help">Paste your Simkl app client ID and an access token. Manage your apps at <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
+          <label for="clientId">Client ID</label>
+          <input id="clientId" placeholder="Client ID from your Simkl app" style="width:100%;box-sizing:border-box" />
+          <label for="accessToken" style="margin-top:14px">Access token</label>
+          <input id="accessToken" placeholder="Simkl access token" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box" />
+          <div class="actions" style="margin-top:12px">
+            <button id="saveCredentialsButton" class="secondary" type="button">Save</button>
+          </div>
         </div>
         <div id="logoutAreaInline" hidden style="margin-top:16px;text-align:center">
           <button id="logoutButton" class="tiny-link" type="button">logout</button>
@@ -306,10 +294,21 @@
           });
       }
 
-      async function simklFetch(url, options = {}) {
+      function buildSimklHeaders(optionsHeaders = {}, credentials = {}) {
+        const clientId = credentials.clientId ?? getClientId();
+        const accessToken = credentials.accessToken ?? getAccessToken();
+        return {
+          "Content-Type": "application/json",
+          "simkl-api-key": clientId,
+          Authorization: `Bearer ${accessToken}`,
+          ...optionsHeaders,
+        };
+      }
+
+      async function simklFetch(url, options = {}, credentials) {
         const response = await fetch(url, {
           ...options,
-          headers: { "Content-Type": "application/json", "simkl-api-key": getClientId(), Authorization: `Bearer ${getAccessToken()}`, ...(options.headers || {}) },
+          headers: buildSimklHeaders(options.headers || {}, credentials),
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
@@ -387,16 +386,13 @@
         tvItems: [],
         movieItems: [],
         libraryIds: new Set(),
-        pinPollAbortController: null,
       };
 
       const els = {
+        accessToken: document.getElementById("accessToken"),
         appIntro: document.getElementById("appIntro"),
         authSetup: document.getElementById("authSetup"),
         clientId: document.getElementById("clientId"),
-        createSimklAppLink: document.getElementById("createSimklAppLink"),
-        copyUrlButton: document.getElementById("copyUrlButton"),
-        currentUrl: document.getElementById("currentUrl"),
         getStartedBtn: document.getElementById("getStartedBtn"),
         globalStatus: document.getElementById("globalStatus"),
         goHomeButton: document.getElementById("goHomeButton"),
@@ -410,15 +406,7 @@
         openAuthModalButton: document.getElementById("openAuthModalButton"),
         openStatsModalButton: document.getElementById("openStatsModalButton"),
         openTrendingButton: document.getElementById("openTrendingButton"),
-        pinArea: document.getElementById("pinArea"),
-        connectStep: document.getElementById("connectStep"),
-        clientIdStep: document.getElementById("clientIdStep"),
-        getPinStep: document.getElementById("getPinStep"),
-        pinCode: document.getElementById("pinCode"),
-        copyPinButton: document.getElementById("copyPinButton"),
-        pinLink: document.getElementById("pinLink"),
-        pinStatus: document.getElementById("pinStatus"),
-        startPinButton: document.getElementById("startPinButton"),
+        saveCredentialsButton: document.getElementById("saveCredentialsButton"),
         statsContent: document.getElementById("statsContent"),
         statsView: document.getElementById("statsView"),
         suggestionsGrid: document.querySelector(".suggestions-grid"),
@@ -429,38 +417,14 @@
       };
 
       const clientIdInput = els.clientId;
+      const accessTokenInput = els.accessToken;
       const globalStatus = els.globalStatus;
-      const pinArea = els.pinArea;
-      const pinLink = els.pinLink;
-      const pinCode = els.pinCode;
-      const pinStatus = els.pinStatus;
       const tvRow = els.tvRow;
       const movieRow = els.movieRow;
       const topBar = els.topBar;
       const statsView = els.statsView;
       const loadingSpinner = els.loadingSpinner;
       const statsContent = els.statsContent;
-      const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
-      els.currentUrl.textContent = baseUrl.replace(/^https:\/\//, "").replace(/\/$/, "");
-      els.createSimklAppLink.addEventListener("click", () => {
-        els.clientIdStep.hidden = false;
-      });
-      els.copyUrlButton.addEventListener("click", () => {
-        navigator.clipboard.writeText(baseUrl).then(() => {
-          const btn = els.copyUrlButton;
-          btn.textContent = "Copied!";
-          setTimeout(() => { btn.textContent = "Copy"; }, 1500);
-        });
-      });
-      els.copyPinButton.addEventListener("click", () => {
-        const pin = els.pinCode.textContent.trim();
-        if (!pin) return;
-        navigator.clipboard.writeText(pin).then(() => {
-          els.copyPinButton.textContent = "Copied!";
-          setTimeout(() => { els.copyPinButton.textContent = "Copy"; }, 1500);
-          els.connectStep.hidden = false;
-        });
-      });
       function syncViewportMetrics() {
         const viewportHeight = window.visualViewport?.height || window.innerHeight;
         document.documentElement.style.setProperty("--app-height", `${Math.round(viewportHeight)}px`);
@@ -521,19 +485,10 @@
       els.getStartedBtn.addEventListener("click", () => {
         els.appIntro.hidden = true;
         els.authSetup.hidden = false;
-        if (clientIdInput.value.trim()) {
-          els.clientIdStep.hidden = false;
-          els.getPinStep.hidden = false;
-        }
         els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
         els.clientId.focus();
       });
-      els.startPinButton.addEventListener("click", startPinFlow);
-      clientIdInput.addEventListener("input", () => {
-        const hasValue = !!clientIdInput.value.trim();
-        els.startPinButton.disabled = !hasValue;
-        if (hasValue) els.getPinStep.hidden = false;
-      });
+      els.saveCredentialsButton.addEventListener("click", saveCredentials);
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
         }
@@ -553,6 +508,8 @@
               if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
             }
           });
+        } else if (hashView === "login") {
+          showLoginView();
         } else {
           showView("next");
         }
@@ -627,100 +584,36 @@
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
-        els.startPinButton.disabled = !clientIdInput.value.trim();
+        accessTokenInput.value = localStorage.getItem(storageKeys.accessToken) || "";
         els.openAuthModalButton.classList.toggle("logged-in", !!getAccessToken());
         els.topBar.hidden = !getAccessToken();
         syncViewportMetrics();
       }
 
-      async function startPinFlow() {
+      async function saveCredentials() {
         const clientId = clientIdInput.value.trim();
+        const accessToken = accessTokenInput.value.trim();
         if (!clientId) {
-          setGlobalStatus("Add a Simkl client ID first.", true);
+          setGlobalStatus("Enter your Simkl client ID.", true);
+          return;
+        }
+        if (!accessToken) {
+          setGlobalStatus("Enter your Simkl access token.", true);
           return;
         }
 
-        localStorage.setItem(storageKeys.clientId, clientId);
-        state.pinPollAbortController?.abort();
-        state.pinPollAbortController = new AbortController();
-
         try {
-          setGlobalStatus("Requesting Simkl PIN...");
-          pinStatus.textContent = "";
-
-          const response = await fetch(
-            `https://api.simkl.com/oauth/pin?client_id=${encodeURIComponent(clientId)}&redirect=${encodeURIComponent(window.location.origin + window.location.pathname.replace("index.html", ""))}`,
-          );
-          const pinPayload = await response.json();
-
-          if (!response.ok || pinPayload.result !== "OK") {
-            throw new Error(pinPayload.error || pinPayload.message || "Failed to request PIN.");
-          }
-
-          pinArea.hidden = false;
-          pinCode.textContent = pinPayload.user_code;
-          pinLink.href = pinPayload.verification_url || "https://simkl.com/pin/";
-          pinStatus.textContent = "Waiting for authorization…";
-          navigator.clipboard.writeText(pinPayload.user_code).then(() => {
-            els.copyPinButton.textContent = "Copied!";
-            setTimeout(() => { els.copyPinButton.textContent = "Copy"; }, 2000);
-            els.connectStep.hidden = false;
-          }).catch(() => { els.connectStep.hidden = false; });
-
-          await pollForAccessToken({
-            clientId,
-            userCode: pinPayload.user_code,
-            intervalSeconds: pinPayload.interval || 5,
-            expiresInSeconds: pinPayload.expires_in || 900,
-            signal: state.pinPollAbortController.signal,
-          });
+          await simklFetch("https://api.simkl.com/sync/activities", {}, { clientId, accessToken });
+          localStorage.setItem(storageKeys.clientId, clientId);
+          localStorage.setItem(storageKeys.accessToken, accessToken);
+          hydrateCredentials();
+          setGlobalStatus("Connected to Simkl.");
+          showHomeView();
+          await loadSuggestions({ preserveStatus: true });
         } catch (error) {
-          if (error.name === "AbortError") {
-            return;
-          }
-
-          setGlobalStatus(error.message || "PIN auth failed.", true);
-          pinStatus.textContent = error.message || "PIN auth failed.";
+          setGlobalStatus(error.message || "That client ID or token didn’t work. Check both values and try again.", true);
+          showLoginView();
         }
-      }
-
-      async function pollForAccessToken({ clientId, userCode, intervalSeconds, expiresInSeconds, signal }) {
-        const deadline = Date.now() + expiresInSeconds * 1000;
-
-        while (Date.now() < deadline) {
-          if (signal.aborted) {
-            throw new DOMException("Aborted", "AbortError");
-          }
-
-          await sleep(intervalSeconds * 1000, signal);
-
-          const response = await fetch(
-            `https://api.simkl.com/oauth/pin/${encodeURIComponent(userCode)}?client_id=${encodeURIComponent(clientId)}`,
-            { signal },
-          );
-          const payload = await response.json();
-
-          if (payload.result === "OK" && payload.access_token) {
-            localStorage.setItem(storageKeys.clientId, clientId);
-            localStorage.setItem(storageKeys.accessToken, payload.access_token);
-            pinStatus.textContent = "Connected.";
-            setGlobalStatus("Simkl access token received.");
-            hydrateCredentials();
-            showHomeView();
-            await loadSuggestions();
-            return;
-          }
-
-          if (payload.message === "Slow down") {
-            pinStatus.textContent = "Simkl asked this page to slow down. Waiting a bit longer.";
-            intervalSeconds += 2;
-            continue;
-          }
-
-          pinStatus.textContent = payload.message || "Waiting for authorization...";
-        }
-
-        throw new Error("PIN code expired before authorization completed.");
       }
 
       async function fetchSuggestionLists() {
@@ -777,7 +670,7 @@
         });
       }
 
-      async function loadSuggestions() {
+      async function loadSuggestions({ preserveStatus = false } = {}) {
         if (!getClientId() || !getAccessToken()) {
           setGlobalStatus("A client ID and access token are required.", true);
           return;
@@ -785,7 +678,7 @@
         loadingSpinner.hidden = false;
         try {
           applySuggestionsModel(await buildSuggestionsModel());
-          setGlobalStatus("");
+          if (!preserveStatus) setGlobalStatus("");
           enrichRenderedTvItems();
           if (!state.tvItems.length && !state.movieItems.length && !els.suggestionsGrid.hidden) {
             showTrendingView();
@@ -1001,21 +894,7 @@
           globalStatus.textContent = message;
         }
         globalStatus.hidden = false;
-        toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 5000);
-      }
-
-      function sleep(ms, signal) {
-        return new Promise((resolve, reject) => {
-          const timer = setTimeout(resolve, ms);
-          signal?.addEventListener(
-            "abort",
-            () => {
-              clearTimeout(timer);
-              reject(new DOMException("Aborted", "AbortError"));
-            },
-            { once: true },
-          );
-        });
+        toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 8000);
       }
 
       function showView(name, { updateHash = true } = {}) {
@@ -1035,7 +914,7 @@
         };
         Object.values(navMap).forEach((el) => el?.classList.remove("active-nav"));
         navMap[name]?.classList.add("active-nav");
-        if (updateHash && name !== "login") history.replaceState(null, "", "#" + name);
+        if (updateHash) history.replaceState(null, "", "#" + name);
       }
 
       function showHomeView() { showView("next"); }
@@ -1049,14 +928,8 @@
         const loggedIn = !!getAccessToken();
         els.logoutAreaInline.hidden = !loggedIn;
         els.appIntro.hidden = loggedIn;
-        els.authSetup.hidden = !loggedIn;
+        els.authSetup.hidden = false;
         els.loginStatusNote.hidden = !loggedIn;
-        els.pinArea.hidden = true;
-        els.connectStep.hidden = true;
-        if (clientIdInput.value.trim()) {
-          els.clientIdStep.hidden = false;
-          els.getPinStep.hidden = false;
-        }
       }
 
       function initDockEffect(row) {

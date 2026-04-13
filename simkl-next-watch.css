@@ -150,21 +150,17 @@
         margin-top: 28px;
       }
 
-      .setup-steps {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        padding-left: 1.4em;
-        margin: 0;
+      #authSetup label {
+        font-size: 0.74rem;
       }
 
-      .setup-steps li { display: list-item; }
+      #authSetup input {
+        font-size: 0.78rem;
+      }
 
-      .setup-steps label { display: block; margin-bottom: 4px; }
-
-      #startPinButton { min-height: unset; padding: 5px 12px; font-size: 0.85rem; font-weight: 600; }
-
-      .setup-steps input, .setup-steps #pinArea { width: 100%; box-sizing: border-box; }
+      #authSetup input::placeholder {
+        font-size: 0.74rem;
+      }
 
       .status {
         color: var(--muted);
@@ -624,27 +620,6 @@
       .empty {
         color: var(--muted);
       }
-
-
-
-      .pin-code-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .pin-code {
-        font-size: 2rem;
-        font-weight: 800;
-        letter-spacing: 0.2em;
-      }
-
-      .pin-cta {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-top: 8px;
-      }
-
       .modal-backdrop {
         position: fixed;
         inset: 0;
