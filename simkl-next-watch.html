@@ -1302,26 +1302,58 @@
         pinPollAbortController: null,
       };
 
-      const clientIdInput = document.getElementById("clientId");
-      const globalStatus = document.getElementById("globalStatus");
-      const pinArea = document.getElementById("pinArea");
-      const pinLink = document.getElementById("pinLink");
-      const pinCode = document.getElementById("pinCode");
-      const pinStatus = document.getElementById("pinStatus");
-      const tvRow = document.getElementById("tvRow");
-      const movieRow = document.getElementById("movieRow");
-      const topBar = document.querySelector(".top-bar");
-      document.getElementById("currentUrl").textContent = window.location.href;
-      document.getElementById("copyUrlButton").addEventListener("click", () => {
+      const els = {
+        appIntro: document.getElementById("appIntro"),
+        authSetup: document.getElementById("authSetup"),
+        clientId: document.getElementById("clientId"),
+        copyUrlButton: document.getElementById("copyUrlButton"),
+        currentUrl: document.getElementById("currentUrl"),
+        getStartedBtn: document.getElementById("getStartedBtn"),
+        globalStatus: document.getElementById("globalStatus"),
+        goHomeButton: document.getElementById("goHomeButton"),
+        installButton: document.getElementById("installButton"),
+        loadingSpinner: document.getElementById("loadingSpinner"),
+        loginView: document.getElementById("loginView"),
+        logoutAreaInline: document.getElementById("logoutAreaInline"),
+        logoutButton: document.getElementById("logoutButton"),
+        movieRow: document.getElementById("movieRow"),
+        openAuthModalButton: document.getElementById("openAuthModalButton"),
+        openStatsModalButton: document.getElementById("openStatsModalButton"),
+        openTrendingButton: document.getElementById("openTrendingButton"),
+        pinArea: document.getElementById("pinArea"),
+        pinCode: document.getElementById("pinCode"),
+        pinLink: document.getElementById("pinLink"),
+        pinStatus: document.getElementById("pinStatus"),
+        startPinButton: document.getElementById("startPinButton"),
+        statsContent: document.getElementById("statsContent"),
+        statsView: document.getElementById("statsView"),
+        suggestionsGrid: document.querySelector(".suggestions-grid"),
+        topBar: document.querySelector(".top-bar"),
+        trendingPeriodTabs: document.getElementById("trendingPeriodTabs"),
+        trendingView: document.getElementById("trendingView"),
+        tvRow: document.getElementById("tvRow"),
+      };
+
+      const clientIdInput = els.clientId;
+      const globalStatus = els.globalStatus;
+      const pinArea = els.pinArea;
+      const pinLink = els.pinLink;
+      const pinCode = els.pinCode;
+      const pinStatus = els.pinStatus;
+      const tvRow = els.tvRow;
+      const movieRow = els.movieRow;
+      const topBar = els.topBar;
+      const statsView = els.statsView;
+      const loadingSpinner = els.loadingSpinner;
+      const statsContent = els.statsContent;
+      els.currentUrl.textContent = window.location.href;
+      els.copyUrlButton.addEventListener("click", () => {
         navigator.clipboard.writeText(window.location.href).then(() => {
-          const btn = document.getElementById("copyUrlButton");
+          const btn = els.copyUrlButton;
           btn.textContent = "Copied!";
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
         });
       });
-      const statsView = document.getElementById("statsView");
-      const loadingSpinner = document.getElementById("loadingSpinner");
-      const statsContent = document.getElementById("statsContent");
       let statsRawData = null;
       let trendingLoadedPeriod = null;
 
@@ -1344,7 +1376,7 @@
 
       // PWA install
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-      if (isStandalone) document.getElementById("installButton").classList.add("hidden");
+      if (isStandalone) els.installButton.classList.add("hidden");
 
       let deferredInstall;
       window.addEventListener("beforeinstallprompt", (e) => {
@@ -1352,44 +1384,44 @@
         deferredInstall = e;
       });
       window.addEventListener("appinstalled", () => {
-        document.getElementById("installButton").style.display = "none";
+        els.installButton.style.display = "none";
       });
-      document.getElementById("installButton").addEventListener("click", async () => {
+      els.installButton.addEventListener("click", async () => {
         if (deferredInstall) {
           deferredInstall.prompt();
           const { outcome } = await deferredInstall.userChoice;
           deferredInstall = null;
-          if (outcome === "accepted") document.getElementById("installButton").style.display = "none";
+          if (outcome === "accepted") els.installButton.style.display = "none";
         } else {
           // iOS / already installed fallback
           setGlobalStatus("On iOS: tap Share → Add to Home Screen");
         }
       });
 
-      document.getElementById("goHomeButton").addEventListener("click", showHomeView);
-      document.getElementById("openTrendingButton").addEventListener("click", showTrendingView);
-      document.getElementById("openAuthModalButton").addEventListener("click", showLoginView);
-      document.getElementById("logoutButton").addEventListener("click", () => {
+      els.goHomeButton.addEventListener("click", showHomeView);
+      els.openTrendingButton.addEventListener("click", showTrendingView);
+      els.openAuthModalButton.addEventListener("click", showLoginView);
+      els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem(storageKeys.accessToken);
         hydrateCredentials();
         showHomeView();
         loadSuggestions();
       });
-      document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((btn) => {
+      els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {
-          document.getElementById("trendingPeriodTabs").querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
+          els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           loadTrending();
         });
       });
-      document.getElementById("openStatsModalButton").addEventListener("click", showStatsView);
-      document.getElementById("getStartedBtn").addEventListener("click", () => {
-        document.getElementById("clientId").scrollIntoView({ behavior: "smooth", block: "center" });
-        document.getElementById("clientId").focus();
+      els.openStatsModalButton.addEventListener("click", showStatsView);
+      els.getStartedBtn.addEventListener("click", () => {
+        els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
+        els.clientId.focus();
       });
-      document.getElementById("startPinButton").addEventListener("click", startPinFlow);
+      els.startPinButton.addEventListener("click", startPinFlow);
       clientIdInput.addEventListener("input", () => {
-        document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
+        els.startPinButton.disabled = !clientIdInput.value.trim();
       });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -1400,14 +1432,14 @@
       if (getAccessToken()) {
         const [hashView, p1] = location.hash.replace("#", "").split("/");
         if (hashView === "trending") {
-          const periodBtn = document.querySelector(`#trendingPeriodTabs [data-period="${p1}"]`);
-          if (periodBtn) { document.querySelectorAll("#trendingPeriodTabs .range-tab").forEach(b => b.classList.remove("active")); periodBtn.classList.add("active"); }
+          const periodBtn = els.trendingPeriodTabs.querySelector(`[data-period="${p1}"]`);
+          if (periodBtn) { els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); periodBtn.classList.add("active"); }
           showTrendingView();
         } else if (hashView === "stats") {
           showStatsView().then(() => {
             if (p1) {
-              const btn = document.querySelector(`#statsView [data-range="${p1}"]`);
-              if (btn) { document.querySelectorAll("#statsView .range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
+              const btn = statsView.querySelector(`[data-range="${p1}"]`);
+              if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
             }
           });
         } else if (hashView === "login") {
@@ -1432,8 +1464,8 @@
 
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
-        document.getElementById("startPinButton").disabled = !clientIdInput.value.trim();
-        document.getElementById("openAuthModalButton").classList.toggle("logged-in", !!getAccessToken());
+        els.startPinButton.disabled = !clientIdInput.value.trim();
+        els.openAuthModalButton.classList.toggle("logged-in", !!getAccessToken());
       }
 
 
@@ -1824,15 +1856,20 @@
       function showView(name, { updateHash = true } = {}) {
         for (const row of document.querySelectorAll(".items-row, .trending-row"))
           scrollPositions.set(row, row.scrollLeft);
-        document.querySelector(".suggestions-grid").hidden = name !== "next";
-        document.getElementById("statsView").hidden = name !== "stats";
-        document.getElementById("trendingView").hidden = name !== "trending";
-        document.getElementById("loginView").hidden = name !== "login";
+        els.suggestionsGrid.hidden = name !== "next";
+        els.statsView.hidden = name !== "stats";
+        els.trendingView.hidden = name !== "trending";
+        els.loginView.hidden = name !== "login";
         for (const row of document.querySelectorAll(".items-row, .trending-row"))
           if (scrollPositions.has(row)) row.scrollLeft = scrollPositions.get(row);
-        const navMap = { next: "goHomeButton", stats: "openStatsModalButton", trending: "openTrendingButton", login: "openAuthModalButton" };
-        Object.values(navMap).forEach((id) => document.getElementById(id)?.classList.remove("active-nav"));
-        document.getElementById(navMap[name])?.classList.add("active-nav");
+        const navMap = {
+          next: els.goHomeButton,
+          stats: els.openStatsModalButton,
+          trending: els.openTrendingButton,
+          login: els.openAuthModalButton,
+        };
+        Object.values(navMap).forEach((el) => el?.classList.remove("active-nav"));
+        navMap[name]?.classList.add("active-nav");
         if (updateHash) history.replaceState(null, "", "#" + name);
       }
 
@@ -1840,16 +1877,16 @@
 
       function showTrendingView() {
         showView("trending");
-        const period = document.getElementById("trendingPeriodTabs").querySelector(".range-tab.active")?.dataset.period || "today";
+        const period = els.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
         if (trendingLoadedPeriod !== period) loadTrending();
       }
 
       function showLoginView() {
         showView("login");
         const loggedIn = !!getAccessToken();
-        document.getElementById("logoutAreaInline").hidden = !loggedIn;
-        document.getElementById("appIntro").hidden = loggedIn;
-        document.getElementById("authSetup").hidden = loggedIn;
+        els.logoutAreaInline.hidden = !loggedIn;
+        els.appIntro.hidden = loggedIn;
+        els.authSetup.hidden = loggedIn;
       }
 
       function initDockEffect(row) {
