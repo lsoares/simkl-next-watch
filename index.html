@@ -65,22 +65,24 @@
           <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
           <ol class="setup-steps">
             <li><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> — set its redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></li>
-            <li>
+            <li id="clientIdStep" hidden>
               <label for="clientId">Paste the client ID</label>
               <input id="clientId" placeholder="Client ID from your Simkl app" style="width:100%;box-sizing:border-box" />
             </li>
-            <li>
-              <button id="startPinButton" disabled>Connect with PIN</button>
+            <li id="getPinStep" hidden>
+              <button id="startPinButton" class="secondary" disabled>Get PIN</button>
+              <div id="pinArea" hidden>
+                <div class="pin-code-row">
+                  <div id="pinCode" class="pin-code"></div>
+                  <button id="copyPinButton" class="tiny-link" type="button">Copy</button>
+                </div>
+              </div>
+            </li>
+            <li id="connectStep" hidden>
+              <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer" class="pin-cta">Connect</a>
+              <div id="pinStatus" class="status"></div>
             </li>
           </ol>
-          <div id="pinArea" class="pin-box" hidden>
-            <div class="pin-code-row">
-              <div id="pinCode" class="pin-code"></div>
-              <button id="copyPinButton" class="tiny-link" type="button" title="Copy PIN">Copy</button>
-            </div>
-            <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer" class="pin-cta">Connect</a>
-            <div id="pinStatus" class="status"></div>
-          </div>
         </div>
         <div id="logoutAreaInline" hidden style="margin-top:16px;text-align:center">
           <button id="logoutButton" class="tiny-link" type="button">logout</button>
@@ -408,6 +410,9 @@
         openStatsModalButton: document.getElementById("openStatsModalButton"),
         openTrendingButton: document.getElementById("openTrendingButton"),
         pinArea: document.getElementById("pinArea"),
+        connectStep: document.getElementById("connectStep"),
+        clientIdStep: document.getElementById("clientIdStep"),
+        getPinStep: document.getElementById("getPinStep"),
         pinCode: document.getElementById("pinCode"),
         copyPinButton: document.getElementById("copyPinButton"),
         pinLink: document.getElementById("pinLink"),
@@ -441,6 +446,7 @@
           const btn = els.copyUrlButton;
           btn.textContent = "Copied!";
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+          els.clientIdStep.hidden = false;
         });
       });
       els.copyPinButton.addEventListener("click", () => {
@@ -449,6 +455,7 @@
         navigator.clipboard.writeText(pin).then(() => {
           els.copyPinButton.textContent = "Copied!";
           setTimeout(() => { els.copyPinButton.textContent = "Copy"; }, 1500);
+          els.connectStep.hidden = false;
         });
       });
       function syncViewportMetrics() {
@@ -516,7 +523,9 @@
       });
       els.startPinButton.addEventListener("click", startPinFlow);
       clientIdInput.addEventListener("input", () => {
-        els.startPinButton.disabled = !clientIdInput.value.trim();
+        const hasValue = !!clientIdInput.value.trim();
+        els.startPinButton.disabled = !hasValue;
+        if (hasValue) els.getPinStep.hidden = false;
       });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -644,6 +653,11 @@
           pinCode.textContent = pinPayload.user_code;
           pinLink.href = pinPayload.verification_url || "https://simkl.com/pin/";
           pinStatus.textContent = "Waiting for authorization…";
+          navigator.clipboard.writeText(pinPayload.user_code).then(() => {
+            els.copyPinButton.textContent = "Copied!";
+            setTimeout(() => { els.copyPinButton.textContent = "Copy"; }, 2000);
+            els.connectStep.hidden = false;
+          }).catch(() => { els.connectStep.hidden = false; });
 
           await pollForAccessToken({
             clientId,

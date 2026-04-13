@@ -134,6 +134,8 @@
       }
 
       .tiny-link {
+        display: inline;
+        min-height: unset;
         padding: 0;
         border: 0;
         background: transparent;
@@ -144,22 +146,25 @@
         text-decoration: underline;
       }
 
+      #authSetup {
+        margin-top: 28px;
+      }
+
       .setup-steps {
-        padding-left: 1.4rem;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 18px;
+        padding-left: 1.4em;
         margin: 0;
       }
 
-      .setup-steps li {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-      }
+      .setup-steps li { display: list-item; }
 
-      .setup-steps li input { align-self: stretch; }
+      .setup-steps label { display: block; margin-bottom: 4px; }
+
+      #startPinButton { min-height: unset; padding: 5px 12px; font-size: 0.85rem; font-weight: 600; }
+
+      .setup-steps input, .setup-steps #pinArea { width: 100%; box-sizing: border-box; }
 
       .status {
         color: var(--muted);
@@ -622,10 +627,6 @@
 
 
 
-      .pin-box {
-        padding: 0;
-      }
-
       .pin-code-row {
         display: flex;
         align-items: center;
@@ -981,4 +982,3 @@
         font-size: 1rem;
         padding: 12px 28px;
       }
-      #authSetup { margin-top: 28px; }
