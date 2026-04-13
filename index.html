@@ -494,6 +494,7 @@
       });
       els.openStatsModalButton.addEventListener("click", showStatsView);
       els.getStartedBtn.addEventListener("click", () => {
+        els.authSetup.hidden = false;
         els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
         els.clientId.focus();
       });
@@ -596,6 +597,7 @@
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
         els.startPinButton.disabled = !clientIdInput.value.trim();
         els.openAuthModalButton.classList.toggle("logged-in", !!getAccessToken());
+        els.topBar.hidden = !getAccessToken();
       }
 
       async function startPinFlow() {
@@ -1009,7 +1011,7 @@
         const loggedIn = !!getAccessToken();
         els.logoutAreaInline.hidden = !loggedIn;
         els.appIntro.hidden = loggedIn;
-        els.authSetup.hidden = false;
+        els.authSetup.hidden = !loggedIn;
         els.loginStatusNote.hidden = !loggedIn;
       }
 
