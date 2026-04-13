@@ -15,6 +15,7 @@ window.createTrendingFeature = function createTrendingFeature({
   state,
 }) {
   const ADD_WATCHLIST_BTN_IMG = `+`;
+  const VISIBLE_TRENDING_SLOTS = 12;
 
   let trendingLoadedPeriod = null;
 
@@ -96,12 +97,24 @@ window.createTrendingFeature = function createTrendingFeature({
         btn.remove();
         card.classList.add("trending-watched");
         setGlobalStatus(`Added "${title}" to watchlist.`);
-        loadSuggestions();
+        await loadSuggestions();
+        if (els.hideTrendingWatched?.checked) loadTrending();
       } catch (err) {
         btn.disabled = false;
         setGlobalStatus(err.message || "Failed to add to watchlist.", true);
       }
     });
+  }
+
+  function selectTrendingItems(items) {
+    const list = Array.isArray(items) ? items : [];
+    if (!els.hideTrendingWatched?.checked) return list.slice(0, VISIBLE_TRENDING_SLOTS);
+    return list
+      .filter((item) => {
+        const simklId = getSimklId(item);
+        return !simklId || !state.libraryIds.has(String(simklId));
+      })
+      .slice(0, VISIBLE_TRENDING_SLOTS);
   }
 
   function restoreTrendingCards(simklId) {
@@ -128,8 +141,8 @@ window.createTrendingFeature = function createTrendingFeature({
     const load = (type) => fetch(`https://data.simkl.in/discover/trending/${type}/${encodeURIComponent(period)}_100.json`).then((r) => r.json());
     try {
       const [moviesData, tvData] = await Promise.all([load("movies"), load("tv"), ensureLibraryIds()]);
-      const movies = Array.isArray(moviesData) ? moviesData.slice(0, 12) : [];
-      const tv = Array.isArray(tvData) ? tvData.slice(0, 12) : [];
+      const movies = selectTrendingItems(moviesData);
+      const tv = selectTrendingItems(tvData);
       moviesEl.innerHTML = movies.length ? renderTrendingRow(movies, "movies") : `<p class="empty">No results.</p>`;
       tvEl.innerHTML = tv.length ? renderTrendingRow(tv, "tv") : `<p class="empty">No results.</p>`;
       if (movies.length) enrichTrendingRatings(movies, "movies", moviesEl);

@@ -637,7 +637,14 @@
       /* inline views */
       #trendingView, #loginView { width: 100%; }
       #loginView { max-width: 400px; margin: 0 auto; }
-      #trendingPeriodTabs { margin: 0 0 16px; }
+      .trending-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 16px;
+      }
+      #trendingPeriodTabs { margin: 0; }
       .trending-grid {
         display: flex;
         flex-direction: column;
@@ -723,6 +730,22 @@
         border-color: var(--accent);
         color: #000;
         font-weight: 600;
+      }
+
+      .trending-filter-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .trending-filter-toggle input {
+        width: 14px;
+        height: 14px;
+        margin: 0;
       }
 
       .close-btn {

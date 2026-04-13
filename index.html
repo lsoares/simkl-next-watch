@@ -45,10 +45,16 @@
         <div id="statsContent"><p class="empty">Loading…</p></div>
       </div>
       <div id="trendingView" hidden>
-        <div class="range-tabs" id="trendingPeriodTabs">
-          <button class="range-tab active" data-period="today">Today</button>
-          <button class="range-tab" data-period="week">Week</button>
-          <button class="range-tab" data-period="month">Month</button>
+        <div class="trending-toolbar">
+          <div class="range-tabs" id="trendingPeriodTabs">
+            <button class="range-tab active" data-period="today">Today</button>
+            <button class="range-tab" data-period="week">Week</button>
+            <button class="range-tab" data-period="month">Month</button>
+          </div>
+          <label class="trending-filter-toggle" for="hideTrendingWatched">
+            <input id="hideTrendingWatched" type="checkbox" />
+            <span>Hide added/watched</span>
+          </label>
         </div>
         <div class="trending-grid">
           <div class="trending-section" id="trendingTvContent"></div>
@@ -92,6 +98,7 @@
         genreCache: "simkl-genre-cache",
         statsCache: "simkl-stats-cache",
         trendingPeriod: "simkl-trending-period",
+        trendingHideWatched: "simkl-trending-hide-watched",
       };
 
       const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -103,6 +110,7 @@
       function getClientId()    { return localStorage.getItem(storageKeys.clientId)    || ""; }
       function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || ""; }
       function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || "today"; }
+      function getHideTrendingWatched() { return localStorage.getItem(storageKeys.trendingHideWatched) === "true"; }
 
       function setActiveTrendingPeriod(period) {
         if (!period) return;
@@ -417,6 +425,7 @@
         openStatsModalButton: document.getElementById("openStatsModalButton"),
         openTrendingButton: document.getElementById("openTrendingButton"),
         saveCredentialsButton: document.getElementById("saveCredentialsButton"),
+        hideTrendingWatched: document.getElementById("hideTrendingWatched"),
         statsContent: document.getElementById("statsContent"),
         statsView: document.getElementById("statsView"),
         suggestionsGrid: document.querySelector(".suggestions-grid"),
@@ -489,6 +498,11 @@
           setActiveTrendingPeriod(btn.dataset.period);
           loadTrending();
         });
+      });
+      els.hideTrendingWatched.checked = getHideTrendingWatched();
+      els.hideTrendingWatched.addEventListener("change", () => {
+        try { localStorage.setItem(storageKeys.trendingHideWatched, String(els.hideTrendingWatched.checked)); } catch {}
+        loadTrending();
       });
       els.openStatsModalButton.addEventListener("click", showStatsView);
       els.getStartedBtn.addEventListener("click", () => {
