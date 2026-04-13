@@ -1111,6 +1111,32 @@
         };
       }
 
+      function getSimklId(item) {
+        return item?.ids?.simkl || item?.ids?.simkl_id || null;
+      }
+
+      function mergeSimklDetail(item, detail, { includeRatings = true, includeIds = true } = {}) {
+        if (!detail) return item;
+        return {
+          ...item,
+          ...(includeRatings && detail.ratings ? { ratings: detail.ratings } : {}),
+          ...(includeIds && detail.ids ? { ids: { ...item.ids, ...detail.ids } } : {}),
+        };
+      }
+
+      async function fetchSimklDetail(type, simklId) {
+        if (!simklId) return null;
+        try {
+          return await simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(simklId)}?client_id=${encodeURIComponent(getClientId())}`);
+        } catch {
+          return null;
+        }
+      }
+
+      async function fetchSimklDetails(type, items) {
+        return Promise.all(items.map((item) => fetchSimklDetail(type, getSimklId(item))));
+      }
+
       async function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
         const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
@@ -1135,20 +1161,9 @@
           .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) })),
         ];
-        const settled = await Promise.allSettled(queued.map((show) => {
-          const id = show.ids?.simkl || show.ids?.simkl_id;
-          if (!id) return Promise.resolve(null);
-          return simklFetch(`https://api.simkl.com/tv/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`);
-        }));
+        const details = await fetchSimklDetails("tv", queued);
         return queued
-          .map((show, i) => {
-            const detail = settled[i].status === "fulfilled" ? settled[i].value : null;
-            return {
-              ...show,
-              ...(detail?.ratings ? { ratings: detail.ratings } : {}),
-              ids: { ...show.ids, ...(detail?.ids || {}) },
-            };
-          })
+          .map((show, i) => mergeSimklDetail(show, details[i]))
           .sort(byTvOrder);
       }
 
@@ -1156,24 +1171,24 @@
         const today = new Date().toISOString().slice(0, 10);
         const currentYear = new Date().getFullYear();
         const queued = movies.filter((m) => ["plantowatch", "watching"].includes(normalizeStatus(m.status)));
-        const settled = await Promise.allSettled(queued.map((m) => {
-          const id = m.ids?.simkl;
-          if (!id) return Promise.resolve(null);
-          return simklFetch(`https://api.simkl.com/movies/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`);
-        }));
+        const details = await fetchSimklDetails("movies", queued);
         const releasedIds = new Set();
         const detailBySimkl = {};
         queued.forEach((m, i) => {
-          const detail = settled[i].status === "fulfilled" ? settled[i].value : null;
-          if (detail && m.ids?.simkl) detailBySimkl[m.ids.simkl] = detail;
-          if (m.year < currentYear || !detail || !detail.released || detail.released <= today) releasedIds.add(m.ids?.simkl);
+          const simklId = getSimklId(m);
+          const detail = details[i];
+          if (detail && simklId) detailBySimkl[simklId] = detail;
+          if (m.year < currentYear || !detail || !detail.released || detail.released <= today) releasedIds.add(simklId);
         });
         return queued
-          .filter((m) => releasedIds.has(m.ids?.simkl))
+          .filter((m) => releasedIds.has(getSimklId(m)))
           .sort((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0))
           .map((movie) => {
-            const detail = detailBySimkl[movie.ids?.simkl];
-            return { ...movie, ...(detail?.ratings ? { ratings: detail.ratings } : {}), watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" } };
+            const detail = detailBySimkl[getSimklId(movie)];
+            return {
+              ...mergeSimklDetail(movie, detail, { includeIds: false }),
+              watchAction: { payload: { movies: [{ title: movie.title, year: movie.year, ids: movie.ids, watched_at: new Date().toISOString() }] }, label: "Mark movie watched" },
+            };
           });
       }
 
@@ -1189,7 +1204,7 @@
 
       async function enrichWithEpisodeTitle(item) {
         const nextEpisode = parseNextEpisode(item?.next_to_watch);
-        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
+        const simklId = getSimklId(item);
         if (!nextEpisode || !simklId) return item;
         try {
           const episodes = await simklFetch(`https://api.simkl.com/tv/episodes/${encodeURIComponent(simklId)}`);
@@ -1224,13 +1239,17 @@
           .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
           .slice(0, 50);
         const settled = await Promise.allSettled(subset.map((item) => {
-          const id = item.ids?.simkl;
+          const id = getSimklId(item);
           if (!id) return Promise.resolve(null);
           const key = `${type}:${id}`;
           const cached = cache[key];
           if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve(cached);
-          return simklFetch(`https://api.simkl.com/${type}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(getClientId())}`)
-            .then((data) => { const entry = { genres: data?.genres || [], network: data?.network || null, ts: now }; cache[key] = entry; return entry; });
+          return fetchSimklDetail(type, id).then((data) => {
+            if (!data) return null;
+            const entry = { genres: data?.genres || [], network: data?.network || null, ts: now };
+            cache[key] = entry;
+            return entry;
+          });
         }));
         try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch {}
         const genres = {}, networks = {};
@@ -1841,19 +1860,10 @@
       }
 
       async function enrichTrendingRatings(items, apiType, containerEl) {
-        const clientId = getClientId();
-        if (!clientId) return;
-        const results = await Promise.allSettled(
-          items.map(item => {
-            const id = item.ids?.simkl_id || item.ids?.simkl;
-            if (!id) return Promise.resolve(null);
-            return fetch(`https://api.simkl.com/${apiType}/${encodeURIComponent(id)}?client_id=${encodeURIComponent(clientId)}`).then(r => r.json()).catch(() => null);
-          })
-        );
-        results.forEach((r, i) => {
-          const detail = r.status === "fulfilled" ? r.value : null;
+        const details = await fetchSimklDetails(apiType, items);
+        details.forEach((detail, i) => {
           if (!detail?.ratings?.imdb?.rating) return;
-          const simklId = items[i].ids?.simkl_id || items[i].ids?.simkl;
+          const simklId = getSimklId(items[i]);
           const card = containerEl.querySelector(`[data-simkl-id="${simklId}"]`);
           if (!card || card.classList.contains("trending-watched") || card.querySelector(".imdb-badge")) return;
           const badge = `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
