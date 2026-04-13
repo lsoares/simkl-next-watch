@@ -192,6 +192,25 @@
         };
       }
 
+      function stripHistoryTimestamps(value) {
+        if (Array.isArray(value)) return value.map(stripHistoryTimestamps);
+        if (!value || typeof value !== "object") return value;
+        const next = {};
+        for (const [key, entry] of Object.entries(value)) {
+          if (key === "watched_at" || key === "rated_at") continue;
+          next[key] = stripHistoryTimestamps(entry);
+        }
+        return next;
+      }
+
+      function buildUndoHistoryPayload(item, type) {
+        if (item?.watchAction?.payload) return stripHistoryTimestamps(item.watchAction.payload);
+        const simklId = item?.ids?.simkl;
+        if (!simklId) return null;
+        const key = type === "tv" ? "shows" : "movies";
+        return { [key]: [{ ids: { simkl: simklId } }] };
+      }
+
       function getSimklId(item) {
         const ids = getItemIds(item);
         return ids.simkl || ids.simkl_id || null;
@@ -779,10 +798,11 @@
           const key = type === "tv" ? "shows" : "movies";
           const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
           const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
+          const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
           setGlobalStatus(`Watched: ${label}`, false, simklId ? async () => {
             try {
-              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
+              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify(undoPayload || { [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
@@ -805,10 +825,11 @@
           await Promise.all(calls);
           const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
           const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
+          const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
           setGlobalStatus(`Watched: ${label}`, false, async () => {
             try {
-              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId } }] }) });
+              await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify(undoPayload || { [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
