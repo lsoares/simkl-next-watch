@@ -231,8 +231,10 @@
         display: flex;
         gap: 10px;
         overflow-x: auto;
+        overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        touch-action: pan-x;
       }
       .items-row::-webkit-scrollbar { display: none; }
       .row-item {
@@ -322,6 +324,7 @@
         justify-content: flex-end;
         padding: 8px 8px 72px;
         pointer-events: none;
+        overflow: hidden;
       }
       .poster-bottom > * { pointer-events: auto; }
       .poster-title {
@@ -497,7 +500,7 @@
         gap: 4px;
         pointer-events: none;
       }
-      .item-card { transition: transform 0.15s, box-shadow 0.15s; }
+      .item-card { transition: transform 0.15s, box-shadow 0.15s; touch-action: pan-x; }
       .item-card:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(0,0,0,0.5); z-index: 2; }
       .item-card:hover .season-bar-wrap { opacity: 1; }
       .season-bar-header {
@@ -579,8 +582,8 @@
 
 
       /* install button — desktop hides it, only mobile/PWA context */
-      @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
       #installButton { display: inline-flex; }
+      @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
 
       @keyframes spin { to { transform: rotate(360deg); } }
       .spinner {
@@ -699,8 +702,10 @@
         display: flex;
         gap: 10px;
         overflow-x: auto;
+        overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        touch-action: pan-x;
       }
       .trending-row::-webkit-scrollbar { display: none; }
       .trending-row .item-card {
