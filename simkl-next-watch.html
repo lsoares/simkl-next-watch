@@ -248,7 +248,7 @@
 
       /* Mobile: fit both rows on screen without vertical scroll */
       @media (max-width: 680px) {
-        main { padding-bottom: 12px; }
+        main { padding-top: max(68px, 52px + env(safe-area-inset-top)); padding-bottom: 12px; }
         .suggestions-grid {
           height: calc(100dvh - max(68px, 52px + env(safe-area-inset-top)) - 12px);
           gap: 10px;
@@ -1901,7 +1901,7 @@
               try {
                 await simklFetch("https://api.simkl.com/sync/add-to-list", {
                   method: "POST",
-                  body: JSON.stringify({ [key]: [{ ids: { simkl: Number(simklId) } }] }),
+                  body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(simklId) } }] }),
                 });
                 state.libraryIds.add(simklId);
                 btn.remove();
