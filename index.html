@@ -28,11 +28,9 @@
       </div>
 
       <div class="top-bar">
-        <div class="top-bar-center">
+        <div class="top-bar-scroll">
           <button id="goHomeButton" class="tiny-link" type="button">next</button>
           <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
-        </div>
-        <div class="top-bar-right">
           <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
           <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
           <button id="installButton" class="tiny-link" type="button">install</button>
@@ -64,6 +62,7 @@
           <button class="app-intro-cta" id="getStartedBtn">Get started</button>
         </div>
         <div id="authSetup">
+          <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
           <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
           <label for="clientId">Client ID</label>
           <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
@@ -393,6 +392,7 @@
         goHomeButton: document.getElementById("goHomeButton"),
         installButton: document.getElementById("installButton"),
         loadingSpinner: document.getElementById("loadingSpinner"),
+        loginStatusNote: document.getElementById("loginStatusNote"),
         loginView: document.getElementById("loginView"),
         logoutAreaInline: document.getElementById("logoutAreaInline"),
         logoutButton: document.getElementById("logoutButton"),
@@ -563,29 +563,34 @@
         return statsFeature.applyStatsRange(...args);
       }
 
-      const trendingFeature = window.createTrendingFeature({
-        els,
-        escapeHtml,
-        fetchSimklDetails,
-        getAccessToken,
-        getAllSimklIds,
-        getSimklId,
-        initDockEffect,
-        loadSuggestions,
-        renderPosterCard,
-        renderPosterMedia,
-        renderPosterTopText,
-        setGlobalStatus,
-        simklFetch,
-        state,
-      });
+      function getTrendingFeature() {
+        if (!window.__simklTrendingFeature) {
+          window.__simklTrendingFeature = window.createTrendingFeature({
+            els,
+            escapeHtml,
+            fetchSimklDetails,
+            getAccessToken,
+            getAllSimklIds,
+            getSimklId,
+            initDockEffect,
+            loadSuggestions,
+            renderPosterCard,
+            renderPosterMedia,
+            renderPosterTopText,
+            setGlobalStatus,
+            simklFetch,
+            state,
+          });
+        }
+        return window.__simklTrendingFeature;
+      }
 
       function loadTrending(...args) {
-        return trendingFeature.loadTrending(...args);
+        return getTrendingFeature().loadTrending(...args);
       }
 
       function restoreTrendingCards(...args) {
-        return trendingFeature.restoreTrendingCards(...args);
+        return getTrendingFeature().restoreTrendingCards(...args);
       }
 
       function hydrateCredentials() {
@@ -994,7 +999,7 @@
       function showHomeView() { showView("next"); }
 
       function showTrendingView() {
-        return trendingFeature.showTrendingView(showView);
+        return getTrendingFeature().showTrendingView(showView);
       }
 
       function showLoginView() {
@@ -1002,7 +1007,8 @@
         const loggedIn = !!getAccessToken();
         els.logoutAreaInline.hidden = !loggedIn;
         els.appIntro.hidden = loggedIn;
-        els.authSetup.hidden = loggedIn;
+        els.authSetup.hidden = false;
+        els.loginStatusNote.hidden = !loggedIn;
       }
 
       function initDockEffect(row) {

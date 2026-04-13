@@ -60,20 +60,12 @@
         pointer-events: none;
       }
       .top-bar > * { pointer-events: auto; }
-      .top-bar-center {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
+      .top-bar-scroll {
         display: flex;
-        gap: 20px;
+        gap: 28px;
+        align-items: center;
         pointer-events: auto;
-      }
-      .top-bar-right {
-        margin-left: auto;
-        display: flex;
-        gap: 20px;
         padding-right: 16px;
-        pointer-events: auto;
       }
       .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
       #openAuthModalButton.logged-in { opacity: 0.35; }
@@ -237,6 +229,47 @@
 
       /* Mobile: fit both rows on screen without vertical scroll */
       @media (max-width: 680px) {
+        .top-bar {
+          padding:
+            max(10px, env(safe-area-inset-top))
+            0
+            10px;
+          background: linear-gradient(to bottom, rgba(17,24,39,0.96), rgba(17,24,39,0.72) 72%, transparent);
+        }
+        .top-bar-scroll {
+          width: 100%;
+          gap: 20px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 0 12px;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          justify-content: flex-start;
+          touch-action: pan-x;
+        }
+        .top-bar-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .top-bar .tiny-link {
+          flex: 0 0 auto;
+          min-height: 28px;
+          padding: 4px 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          color: var(--muted);
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-decoration: underline;
+          text-decoration-color: rgba(148,163,184,0.35);
+          text-underline-offset: 0.16em;
+          justify-content: center;
+          transition: color 0.15s, text-decoration-color 0.15s, opacity 0.15s;
+        }
+        .top-bar .active-nav {
+          color: var(--text);
+          text-decoration-color: rgba(249,250,251,0.7);
+        }
         main { padding-top: var(--top-bar-height); padding-bottom: var(--main-bottom-gap); }
         .suggestions-grid {
           height: var(--mobile-content-height);
