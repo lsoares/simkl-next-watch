@@ -61,9 +61,9 @@
           <p class="app-intro-desc">Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies — no browsing, no thinking.</p>
           <button class="app-intro-cta" id="getStartedBtn">Get started</button>
         </div>
-        <div id="authSetup">
+        <div id="authSetup" hidden>
           <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
-          <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> and set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></p>
+          <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a>, set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button>, then copy and paste the client ID below.</p>
           <label for="clientId">Client ID</label>
           <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
           <div class="actions" style="margin-top:12px">
@@ -427,7 +427,7 @@
       const loadingSpinner = els.loadingSpinner;
       const statsContent = els.statsContent;
       const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
-      els.currentUrl.textContent = baseUrl;
+      els.currentUrl.textContent = baseUrl.replace(/^https:\/\//, "").replace(/\/$/, "");
       els.copyUrlButton.addEventListener("click", () => {
         navigator.clipboard.writeText(baseUrl).then(() => {
           const btn = els.copyUrlButton;
@@ -494,6 +494,7 @@
       });
       els.openStatsModalButton.addEventListener("click", showStatsView);
       els.getStartedBtn.addEventListener("click", () => {
+        els.appIntro.hidden = true;
         els.authSetup.hidden = false;
         els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
         els.clientId.focus();
