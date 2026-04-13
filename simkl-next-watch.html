@@ -1089,12 +1089,21 @@
         return slug ? `https://simkl.com/tv/${simklId}/${slug}` : `https://simkl.com/tv/${simklId}`;
       }
 
+      function getMediaPayload(item) {
+        return item?.show || item?.movie || item || {};
+      }
+
+      function getItemIds(item) {
+        const media = getMediaPayload(item);
+        return media.ids || item?.ids || {};
+      }
+
       function normalizeList(items) {
         return Array.isArray(items) ? items.map((item) => {
-          const media = item.show || item.movie || item;
+          const media = getMediaPayload(item);
           return {
             ...item, ...media,
-            ids:          media.ids   || item.ids   || {},
+            ids:          getItemIds(item),
             title:        media.title || item.title || "Unknown title",
             year:         media.year  || item.year  || "",
             overview:     media.overview || item.overview || "",
@@ -1123,7 +1132,13 @@
       }
 
       function getSimklId(item) {
-        return item?.ids?.simkl || item?.ids?.simkl_id || null;
+        const ids = getItemIds(item);
+        return ids.simkl || ids.simkl_id || null;
+      }
+
+      function getAllSimklIds(item) {
+        const ids = getItemIds(item);
+        return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
       }
 
       function mergeSimklDetail(item, detail, { includeRatings = true, includeIds = true } = {}) {
@@ -1535,10 +1550,10 @@
       async function buildSuggestionsModel() {
         const { shows, movies, completedShows, completedMovies } = await fetchSuggestionLists();
         const libraryIds = new Set([
-          ...shows.flatMap(extractMediaIds),
-          ...movies.flatMap(extractMediaIds),
-          ...completedShows.flatMap(extractMediaIds),
-          ...completedMovies.flatMap(extractMediaIds),
+          ...shows.flatMap(getAllSimklIds),
+          ...movies.flatMap(getAllSimklIds),
+          ...completedShows.flatMap(getAllSimklIds),
+          ...completedMovies.flatMap(getAllSimklIds),
         ]);
 
         const [tvItems, movieItems] = await Promise.all([
@@ -1547,11 +1562,6 @@
         ]);
 
         return { libraryIds, tvItems, movieItems };
-      }
-
-      function extractMediaIds(item) {
-        const ids = (item.show || item.movie || item)?.ids || item.ids || {};
-        return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
       }
 
       function applySuggestionsModel({ libraryIds, tvItems, movieItems }) {
@@ -1926,8 +1936,8 @@
             simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
           ]);
           state.libraryIds = new Set([
-            ...(sRes.shows || []).flatMap(extractMediaIds),
-            ...(mRes.movies || []).flatMap(extractMediaIds),
+            ...(sRes.shows || []).flatMap(getAllSimklIds),
+            ...(mRes.movies || []).flatMap(getAllSimklIds),
           ]);
         } catch (_) {}
       }
