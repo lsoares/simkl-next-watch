@@ -426,9 +426,10 @@
       const statsView = els.statsView;
       const loadingSpinner = els.loadingSpinner;
       const statsContent = els.statsContent;
-      els.currentUrl.textContent = window.location.href;
+      const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "");
+      els.currentUrl.textContent = baseUrl;
       els.copyUrlButton.addEventListener("click", () => {
-        navigator.clipboard.writeText(window.location.href).then(() => {
+        navigator.clipboard.writeText(baseUrl).then(() => {
           const btn = els.copyUrlButton;
           btn.textContent = "Copied!";
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
@@ -519,8 +520,6 @@
               if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
             }
           });
-        } else if (hashView === "login") {
-          showLoginView();
         } else {
           showView("next");
         }
@@ -615,7 +614,7 @@
           pinStatus.textContent = "";
 
           const response = await fetch(
-            `https://api.simkl.com/oauth/pin?client_id=${encodeURIComponent(clientId)}&redirect=${encodeURIComponent(window.location.href)}`,
+            `https://api.simkl.com/oauth/pin?client_id=${encodeURIComponent(clientId)}&redirect=${encodeURIComponent(window.location.origin + window.location.pathname.replace("index.html", ""))}`,
           );
           const pinPayload = await response.json();
 
@@ -993,7 +992,7 @@
         };
         Object.values(navMap).forEach((el) => el?.classList.remove("active-nav"));
         navMap[name]?.classList.add("active-nav");
-        if (updateHash) history.replaceState(null, "", "#" + name);
+        if (updateHash && name !== "login") history.replaceState(null, "", "#" + name);
       }
 
       function showHomeView() { showView("next"); }
