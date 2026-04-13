@@ -63,15 +63,22 @@
         </div>
         <div id="authSetup" hidden>
           <p id="loginStatusNote" class="field-help" hidden>You're already connected. Reconnect with PIN to switch accounts or refresh access.</p>
-          <p class="field-help"><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a>, set the redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button>, then copy and paste the client ID below.</p>
-          <label for="clientId">Client ID</label>
-          <input id="clientId" placeholder="Paste your Simkl app client ID" style="width:100%;box-sizing:border-box" />
-          <div class="actions" style="margin-top:12px">
-            <button id="startPinButton" disabled>Connect with PIN</button>
-          </div>
+          <ol class="setup-steps">
+            <li><a href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">Create a Simkl app</a> — set its redirect URL to <strong id="currentUrl"></strong> <button id="copyUrlButton" class="tiny-link" type="button">Copy</button></li>
+            <li>
+              <label for="clientId">Paste the client ID</label>
+              <input id="clientId" placeholder="Client ID from your Simkl app" style="width:100%;box-sizing:border-box" />
+            </li>
+            <li>
+              <button id="startPinButton" disabled>Connect with PIN</button>
+            </li>
+          </ol>
           <div id="pinArea" class="pin-box" hidden>
-            <p class="field-help">Enter this code at <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer">simkl.com/pin</a></p>
-            <div id="pinCode" class="pin-code"></div>
+            <div class="pin-code-row">
+              <div id="pinCode" class="pin-code"></div>
+              <button id="copyPinButton" class="tiny-link" type="button" title="Copy PIN">Copy</button>
+            </div>
+            <a id="pinLink" href="https://simkl.com/pin/" target="_blank" rel="noreferrer" class="pin-cta">Connect</a>
             <div id="pinStatus" class="status"></div>
           </div>
         </div>
@@ -402,6 +409,7 @@
         openTrendingButton: document.getElementById("openTrendingButton"),
         pinArea: document.getElementById("pinArea"),
         pinCode: document.getElementById("pinCode"),
+        copyPinButton: document.getElementById("copyPinButton"),
         pinLink: document.getElementById("pinLink"),
         pinStatus: document.getElementById("pinStatus"),
         startPinButton: document.getElementById("startPinButton"),
@@ -433,6 +441,14 @@
           const btn = els.copyUrlButton;
           btn.textContent = "Copied!";
           setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+        });
+      });
+      els.copyPinButton.addEventListener("click", () => {
+        const pin = els.pinCode.textContent.trim();
+        if (!pin) return;
+        navigator.clipboard.writeText(pin).then(() => {
+          els.copyPinButton.textContent = "Copied!";
+          setTimeout(() => { els.copyPinButton.textContent = "Copy"; }, 1500);
         });
       });
       function syncViewportMetrics() {
@@ -482,8 +498,7 @@
       els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem(storageKeys.accessToken);
         hydrateCredentials();
-        showHomeView();
-        loadSuggestions();
+        showLoginView();
       });
       els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((btn) => {
         btn.addEventListener("click", () => {

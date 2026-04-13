@@ -144,12 +144,22 @@
         text-decoration: underline;
       }
 
-      .actions {
+      .setup-steps {
+        padding-left: 1.4rem;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 12px;
+        flex-direction: column;
+        gap: 14px;
+        margin: 0;
       }
+
+      .setup-steps li {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .setup-steps li input { align-self: stretch; }
 
       .status {
         color: var(--muted);
@@ -613,17 +623,25 @@
 
 
       .pin-box {
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px dashed #4b5563;
-        background: transparent;
+        padding: 0;
+      }
+
+      .pin-code-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
 
       .pin-code {
         font-size: 2rem;
         font-weight: 800;
         letter-spacing: 0.2em;
-        margin: 8px 0;
+      }
+
+      .pin-cta {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 8px;
       }
 
       .modal-backdrop {
@@ -742,8 +760,8 @@
         padding: 0;
         z-index: 5;
       }
-      .add-watchlist-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; }
-      .add-watchlist-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(220deg) saturate(3); }
+      .add-watchlist-btn { color: rgba(255,255,255,0.7); font-size: 1.3rem; line-height: 1; }
+      .add-watchlist-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; color: #fff; }
 
       .trending-rank {
         font-size: 0.7rem;
@@ -963,4 +981,4 @@
         font-size: 1rem;
         padding: 12px 28px;
       }
-      #authSetup { margin-top: 28px; border-top: 1px solid var(--panel-border); padding-top: 20px; }
+      #authSetup { margin-top: 28px; }

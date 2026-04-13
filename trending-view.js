@@ -14,7 +14,7 @@ window.createTrendingFeature = function createTrendingFeature({
   simklFetch,
   state,
 }) {
-  const ADD_WATCHLIST_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAArCAMAAAAHZIWCAAAAM1BMVEX+/v7////////////////5+fn////y8vLv7+/////////////19fX///8AAADw8PD///9qscvVAAAAD3RSTlOhUEBwkLUg3O8wgGDIEAAqdR4JAAABw0lEQVR42qWX25aDIAxFUS7FhED+/2tnudpOtAnRzpxHhW1uhBj6XGWB3Aa/NVqGpTjrZyzCPNhSDUhfsTCzp7zcZRFUvlKNdINFafAdDaALFoEmPTIAhObTNGtRpIYk2VCeLlNWaYq09u4uyEWxbKNGVOGNytHFYgW1bOtam4pCUix6zFFlXcmBNTqzikLx+t68hzweQqETTcKyPsbwPgK8C7soadgmLANVTyg+5pOqLjV6sXSsxJDCTwlJ+MrNnSUoZVZ+hbefVFmpPVmJteLZrKSqTAl21sqGytmbeGYVNrT1IB4aLoLUx5WT/OgBWUni0w52FQwN5bkWBrPvpY89A0I9fiPZ3ZstwWRPEt8N2XbBJGHg2uXHa1O5cuNl58ROWHXzOKsvMpsC+vVl1730hcyi7BxIhtl5lANIWbWp6YZgNhGpdMl/+kWtVp9w+lc7jhappVjkgTZrFLevxj5T1CjpqzusGu9tbbaD/j1UbNSYoITV6a/3Y7DubVT3NioUDvfeFm3fzxOtTOec+N2cM9Cfv/jf85eoBL6lkejWvDouSRXo5hxN2FxSxq/m+xLzsH3Lznw/14bQPv47sDjrfwC+y7YtuwdeggAAAABJRU5ErkJggg==" alt="" style="width:20px;height:auto;display:block;opacity:0.55;filter:brightness(10)" />`;
+  const ADD_WATCHLIST_BTN_IMG = `+`;
 
   let trendingLoadedPeriod = null;
 
