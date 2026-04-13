@@ -691,6 +691,27 @@
       }
       .trending-watched { opacity: 0.35; }
       .trending-watched:hover { opacity: 0.75; }
+      .add-watchlist-btn {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 34px;
+        height: 34px;
+        background: rgba(0,0,0,0.55);
+        border: 1.5px solid rgba(255,255,255,0.22);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: unset;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+        padding: 0;
+        z-index: 5;
+      }
+      .add-watchlist-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; }
+      .add-watchlist-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(220deg) saturate(3); }
+
       .trending-rank {
         font-size: 0.7rem;
         font-weight: 800;
@@ -1493,12 +1514,22 @@
           setGlobalStatus("");
           Promise.allSettled(state.tvItems.map(item => enrichWithEpisodeTitle(item))).then(results => {
             let changed = false;
-            results.forEach((r, i) => { if (r.status === "fulfilled" && r.value !== state.tvItems[i]) { state.tvItems[i] = r.value; changed = true; } });
+            results.forEach((r, i) => {
+              if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
+                state.tvItems[i] = { ...state.tvItems[i], nextEpisodeTitle: r.value.nextEpisodeTitle, nextSeasonImg: r.value.nextSeasonImg };
+                changed = true;
+              }
+            });
             if (changed) renderRow("tv");
           });
           Promise.allSettled(state.tvItems.map(item => normalizeStatus(item.status) === "plantowatch" ? enrichWithShowDetail(item) : Promise.resolve(item))).then(results => {
             let changed = false;
-            results.forEach((r, i) => { if (r.status === "fulfilled" && r.value !== state.tvItems[i]) { state.tvItems[i] = r.value; changed = true; } });
+            results.forEach((r, i) => {
+              if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
+                state.tvItems[i] = { ...state.tvItems[i], ratings: r.value.ratings, ids: r.value.ids };
+                changed = true;
+              }
+            });
             if (changed) renderRow("tv");
           });
         } catch (error) {
@@ -1781,7 +1812,8 @@
           const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
           const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
           const watched = simklId && state.libraryIds.has(String(simklId));
-          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}">
+          const loggedIn = !!getAccessToken();
+          return `<a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}">
             ${posterUrl ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${title}" loading="lazy" draggable="false" />` : ""}
             <div class="poster-top">
               <div class="poster-top-text">
@@ -1790,6 +1822,7 @@
                 ${m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
               </div>
             </div>
+            ${loggedIn && simklId && !watched ? `<button class="add-watchlist-btn" title="Add ${title} to watchlist" data-title="${title}" data-year="${year}"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAArCAMAAAAHZIWCAAAAM1BMVEX+/v7////////////////5+fn////y8vLv7+/////////////19fX///8AAADw8PD///9qscvVAAAAD3RSTlOhUEBwkLUg3O8wgGDIEAAqdR4JAAABw0lEQVR42qWX25aDIAxFUS7FhED+/2tnudpOtAnRzpxHhW1uhBj6XGWB3Aa/NVqGpTjrZyzCPNhSDUhfsTCzp7zcZRFUvlKNdINFafAdDaALFoEmPTIAhObTNGtRpIYk2VCeLlNWaYq09u4uyEWxbKNGVOGNytHFYgW1bOtam4pCUix6zFFlXcmBNTqzikLx+t68hzweQqETTcKyPsbwPgK8C7soadgmLANVTyg+5pOqLjV6sXSsxJDCTwlJ+MrNnSUoZVZ+hbefVFmpPVmJteLZrKSqTAl21sqGytmbeGYVNrT1IB4aLoLUx5WT/OgBWUni0w52FQwN5bkWBrPvpY89A0I9fiPZ3ZstwWRPEt8N2XbBJGHg2uXHa1O5cuNl58ROWHXzOKsvMpsC+vVl1730hcyi7BxIhtl5lANIWbWp6YZgNhGpdMl/+kWtVp9w+lc7jhappVjkgTZrFLevxj5T1CjpqzusGu9tbbaD/j1UbNSYoITV6a/3Y7DubVT3NioUDvfeFm3fzxOtTOec+N2cM9Cfv/jf85eoBL6lkejWvDouSRXo5hxN2FxSxq/m+xLzsH3Lznw/14bQPv47sDjrfwC+y7YtuwdeggAAAABJRU5ErkJggg==" alt="" style="width:20px;height:auto;display:block;opacity:0.55;filter:brightness(10)" /></button>` : ""}
           </a>`;
         }).join("")}</div></div>`;
       }
@@ -1851,6 +1884,34 @@
           if (tv.length) enrichTrendingRatings(tv, "tv", tvEl);
           for (const row of document.querySelectorAll("#trendingMoviesContent .trending-row, #trendingTvContent .trending-row")) {
             initDockEffect(row);
+          }
+          for (const btn of document.querySelectorAll("#trendingMoviesContent .add-watchlist-btn, #trendingTvContent .add-watchlist-btn")) {
+            btn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              const card = btn.closest(".item-card");
+              const simklId = card?.dataset.simklId;
+              const urlBase = card?.dataset.urlBase;
+              const title = btn.dataset.title;
+              const year = btn.dataset.year;
+              if (!simklId || !urlBase) return;
+              btn.disabled = true;
+              const key = urlBase === "movies" ? "movies" : "shows";
+              try {
+                await simklFetch("https://api.simkl.com/sync/add-to-list", {
+                  method: "POST",
+                  body: JSON.stringify({ [key]: [{ ids: { simkl: Number(simklId) } }] }),
+                });
+                state.libraryIds.add(simklId);
+                btn.remove();
+                card.classList.add("trending-watched");
+                setGlobalStatus(`Added "${title}" to watchlist.`);
+              } catch (err) {
+                btn.disabled = false;
+                setGlobalStatus(err.message || "Failed to add to watchlist.", true);
+              }
+            });
           }
           trendingLoadedPeriod = period;
         } catch (err) {
