@@ -135,13 +135,6 @@
         return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
       }
 
-      function getEpisodeDisplayTitle(item, nextEpisode) {
-        const title = item?.nextEpisodeTitle || item?.next_to_watch?.title || item?.next_to_watch?.name
-          || item?.next_episode?.title || item?.next_episode?.name || item?.next_episode_title || item?.next_to_watch_title;
-        const code = formatEpisode(nextEpisode);
-        return title ? `${title} · ${code}` : code;
-      }
-
       function buildEpisodeUrl(item, nextEpisode) {
         if (!item?.url || !nextEpisode) return "";
         return `${item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/")}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
@@ -568,14 +561,6 @@
         state,
       });
 
-      function ensureLibraryIds(...args) {
-        return trendingFeature.ensureLibraryIds(...args);
-      }
-
-      function enrichTrendingRatings(...args) {
-        return trendingFeature.enrichTrendingRatings(...args);
-      }
-
       function loadTrending(...args) {
         return trendingFeature.loadTrending(...args);
       }
@@ -584,26 +569,10 @@
         return trendingFeature.restoreTrendingCards(...args);
       }
 
-      function setupWatchlistBtn(...args) {
-        return trendingFeature.setupWatchlistBtn(...args);
-      }
-
-
-
       function hydrateCredentials() {
         clientIdInput.value = localStorage.getItem(storageKeys.clientId) || "";
         els.startPinButton.disabled = !clientIdInput.value.trim();
         els.openAuthModalButton.classList.toggle("logged-in", !!getAccessToken());
-      }
-
-
-      function clearSavedAuth() {
-        localStorage.removeItem(storageKeys.clientId);
-        localStorage.removeItem(storageKeys.accessToken);
-        clientIdInput.value = "";
-        pinArea.hidden = true;
-        setGlobalStatus("Saved auth cleared.");
-        showHomeView();
       }
 
       async function startPinFlow() {

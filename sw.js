@@ -1,6 +1,6 @@
 const CACHE = "simkl-nw-v1";
 const SHELL = [
-  "./simkl-next-watch.html",
+  "./index.html",
   "./icon.svg",
   "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js",
 ];
