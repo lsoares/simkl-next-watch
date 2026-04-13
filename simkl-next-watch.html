@@ -1088,16 +1088,27 @@
 
       function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
-        const byRecent = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
+        const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
+        // 0 = mid-season (started), 1 = season not started, 2 = show not started (plantowatch)
+        const tvGroup = (s) => {
+          if (normalizeStatus(s.status) === "plantowatch") return 2;
+          const ep = parseNextEpisode(s.next_to_watch);
+          return (ep && ep.episode === 1) ? 1 : 0;
+        };
+        const byTvOrder = (a, b) => {
+          const ga = tvGroup(a), gb = tvGroup(b);
+          const aLast = ga === 2, bLast = gb === 2;
+          if (aLast !== bLast) return aLast ? 1 : -1;
+          if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
+          return (episodesLeft(a) - episodesLeft(b)) || (ga - gb) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
+        };
         const watching = shows
           .filter((s) => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-          .sort(byRecent)
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show) }));
         const watchlisted = shows
           .filter((s) => normalizeStatus(s.status) === "plantowatch" && aired(s))
-          .sort(byRecent)
           .map((show) => ({ ...show, watchAction: buildEpisodeWatchAction(show, true) }));
-        return [...watching, ...watchlisted];
+        return [...watching, ...watchlisted].sort(byTvOrder);
       }
 
       async function buildMovieCandidates(movies) {
@@ -1135,6 +1146,20 @@
         return payload;
       }
 
+
+      async function enrichWithShowDetail(item) {
+        const simklId = item?.ids?.simkl || item?.ids?.simkl_id;
+        if (!simklId) return item;
+        try {
+          const detail = await simklFetch(`https://api.simkl.com/tv/${encodeURIComponent(simklId)}?client_id=${encodeURIComponent(getClientId())}`);
+          if (!detail) return item;
+          return {
+            ...item,
+            ...(detail.ratings ? { ratings: detail.ratings } : {}),
+            ids: { ...item.ids, ...(detail.ids || {}) },
+          };
+        } catch { return item; }
+      }
 
       async function enrichWithEpisodeTitle(item) {
         const nextEpisode = parseNextEpisode(item?.next_to_watch);
@@ -1443,20 +1468,35 @@
             ...(completedMoviesRes.movies || []).flatMap(extractIds),
           ]);
           const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
-          const byRecent = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
+          const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
+          const tvGroup = (s) => {
+            if (normalizeStatus(s.status) === "plantowatch") return 2;
+            const ep = parseNextEpisode(s.next_to_watch);
+            return (ep && ep.episode === 1) ? 1 : 0;
+          };
+          const byTvOrder = (a, b) => {
+            const ga = tvGroup(a), gb = tvGroup(b);
+            const aLast = ga === 2, bLast = gb === 2;
+            if (aLast !== bLast) return aLast ? 1 : -1;
+            if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
+            return (episodesLeft(a) - episodesLeft(b)) || (ga - gb) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
+          };
           state.tvItems = [
             ...shows.filter(s => normalizeStatus(s.status) === "watching" && Boolean(parseNextEpisode(s.next_to_watch)) && aired(s))
-                    .sort(byRecent)
                     .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s) })),
             ...shows.filter(s => normalizeStatus(s.status) === "plantowatch" && aired(s))
-                    .sort(byRecent)
                     .map(s => ({ ...s, watchAction: buildEpisodeWatchAction(s, true) })),
-          ];
+          ].sort(byTvOrder);
           state.movieItems = await buildMovieCandidates(movies);
           renderRow("tv");
           renderRow("movie");
           setGlobalStatus("");
           Promise.allSettled(state.tvItems.map(item => enrichWithEpisodeTitle(item))).then(results => {
+            let changed = false;
+            results.forEach((r, i) => { if (r.status === "fulfilled" && r.value !== state.tvItems[i]) { state.tvItems[i] = r.value; changed = true; } });
+            if (changed) renderRow("tv");
+          });
+          Promise.allSettled(state.tvItems.map(item => normalizeStatus(item.status) === "plantowatch" ? enrichWithShowDetail(item) : Promise.resolve(item))).then(results => {
             let changed = false;
             results.forEach((r, i) => { if (r.status === "fulfilled" && r.value !== state.tvItems[i]) { state.tvItems[i] = r.value; changed = true; } });
             if (changed) renderRow("tv");
@@ -1574,11 +1614,12 @@
       function renderItem(item, type) {
         if (!item) return "";
 
+        const isUnstartedShow = type === "tv" && normalizeStatus(item.status) === "plantowatch";
         const posterUrl = getPosterUrl(item);
         const nextEpisode = parseNextEpisode(item.next_to_watch);
-        const episodeName = nextEpisode ? (item.nextEpisodeTitle || null) : null;
-        const episodeCode = nextEpisode ? formatEpisode(nextEpisode) : "";
-        const episodeUrl = nextEpisode ? buildEpisodeUrl(item, nextEpisode) : "";
+        const episodeName = (!isUnstartedShow && nextEpisode) ? (item.nextEpisodeTitle || null) : null;
+        const episodeCode = (!isUnstartedShow && nextEpisode) ? formatEpisode(nextEpisode) : "";
+        const episodeUrl = (!isUnstartedShow && nextEpisode) ? buildEpisodeUrl(item, nextEpisode) : "";
         const remaining = type === "tv" && item.total_episodes_count > 0
           ? item.total_episodes_count - (item.watched_episodes_count || 0) - (item.not_aired_episodes_count || 0)
           : null;
@@ -1746,7 +1787,7 @@
               <div class="poster-top-text">
                 <span class="poster-title">${title}</span>
                 ${year ? `<span class="poster-episode">${year}</span>` : ""}
-                ${m.ratings?.imdb?.rating ? (m.ids?.imdb ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(m.ids.imdb)}/" target="_blank" rel="noreferrer">IMDb ${m.ratings.imdb.rating}</a>` : `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>`) : ""}
+                ${m.ratings?.imdb?.rating ? `<span class="imdb-badge">IMDb ${m.ratings.imdb.rating}</span>` : ""}
               </div>
             </div>
           </a>`;
@@ -1787,10 +1828,7 @@
           const simklId = items[i].ids?.simkl_id || items[i].ids?.simkl;
           const card = containerEl.querySelector(`[data-simkl-id="${simklId}"]`);
           if (!card || card.querySelector(".imdb-badge")) return;
-          const imdbId = detail.ids?.imdb || items[i].ids?.imdb;
-          const badge = imdbId
-            ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${detail.ratings.imdb.rating}</a>`
-            : `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
+          const badge = `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
           const textContainer = card.querySelector(".poster-top-text");
           (textContainer || card).insertAdjacentHTML("beforeend", badge);
         });
