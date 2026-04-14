@@ -26,8 +26,10 @@ window.createTrendingFeature = function createTrendingFeature({
     return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
       const title = m.title || "";
       const year = getTrendingYear(m);
-      const imgCode = m.poster || m.img || "";
-      const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
+      const posterSource = m.poster || m.img || "";
+      const posterUrl = /^https?:\/\//i.test(String(posterSource || ""))
+        ? posterSource
+        : posterSource ? `https://wsrv.nl/?url=https://simkl.in/posters/${posterSource}_m.webp` : "";
       const itemId = provider.getPrimaryId(m);
       const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
       const url = fixedPath ? `https://simkl.com${fixedPath}` : itemId ? `https://simkl.com/${urlBaseOverride}/${itemId}` : "#";

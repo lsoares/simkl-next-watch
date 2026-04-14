@@ -315,6 +315,11 @@ window.createTraktProvider = function createTraktProvider({
     return Number.isFinite(numericId) ? { trakt: numericId } : { slug: String(id) };
   }
 
+  function buildPosterUrl(ids = {}) {
+    if (ids.imdb) return `https://images.metahub.space/poster/medium/${encodeURIComponent(ids.imdb)}/img`;
+    return "";
+  }
+
   async function exchangeCodeForToken(code, clientId, clientSecret, redirectUri) {
     const response = await fetch("https://api.trakt.tv/oauth/token", {
       method: "POST",
@@ -330,6 +335,10 @@ window.createTraktProvider = function createTraktProvider({
     return fetchTrakt("https://api.trakt.tv/sync/watched/shows?extended=noseasons");
   }
 
+  async function fetchWatchlistMovies() {
+    return fetchTrakt("https://api.trakt.tv/sync/watchlist/movies");
+  }
+
   async function fetchShowProgress(showId) {
     try {
       return await fetchTrakt(`https://api.trakt.tv/shows/${encodeURIComponent(showId)}/progress/watched`);
@@ -339,7 +348,10 @@ window.createTraktProvider = function createTraktProvider({
   }
 
   async function buildSuggestionsModel() {
-    const watched = await fetchWatchedShows();
+    const [watched, watchlistMovies] = await Promise.all([
+      fetchWatchedShows(),
+      fetchWatchlistMovies().catch(() => []),
+    ]);
 
     const sorted = [...watched]
       .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
@@ -361,7 +373,7 @@ window.createTraktProvider = function createTraktProvider({
           last_watched_at: w.last_watched_at,
           next_to_watch: { season: nextEp.season, episode: nextEp.number },
           url: `https://trakt.tv/shows/${show.ids.slug}`,
-          poster: show.ids.trakt ? `https://images.metahub.space/poster/medium/${show.ids.trakt}/img` : "",
+          poster: buildPosterUrl(show.ids),
           watchAction: {
             payload: {
               shows: [{ ids: show.ids, seasons: [{ number: nextEp.season, episodes: [{ number: nextEp.number, watched_at: new Date().toISOString() }] }] }],
@@ -372,9 +384,35 @@ window.createTraktProvider = function createTraktProvider({
       })
       .filter(Boolean);
 
-    const libraryIds = new Set(watched.flatMap(w => getAllIds({ ids: w.show.ids })));
+    const movieItems = [...watchlistMovies]
+      .sort((a, b) => new Date(a.listed_at || 0) - new Date(b.listed_at || 0))
+      .slice(0, 20)
+      .map((entry) => {
+        const movie = entry.movie || {};
+        return {
+          title: movie.title,
+          year: movie.year,
+          ids: movie.ids || {},
+          status: "plantowatch",
+          added_at: entry.listed_at || null,
+          url: movie.ids?.slug ? `https://trakt.tv/movies/${movie.ids.slug}` : "",
+          poster: buildPosterUrl(movie.ids || {}),
+          watchAction: {
+            payload: {
+              movies: [{ ids: movie.ids, watched_at: new Date().toISOString() }],
+            },
+            label: "Mark movie watched",
+          },
+        };
+      })
+      .filter((movie) => movie.title && (movie.ids?.trakt || movie.ids?.slug || movie.ids?.imdb));
 
-    return { libraryIds, tvItems, movieItems: [] };
+    const libraryIds = new Set([
+      ...watched.flatMap(w => getAllIds({ ids: w.show.ids })),
+      ...movieItems.flatMap(getAllIds),
+    ]);
+
+    return { libraryIds, tvItems, movieItems };
   }
 
   async function enrichWithEpisodeTitle(item) {
@@ -399,6 +437,14 @@ window.createTraktProvider = function createTraktProvider({
 
   function removeHistory(payload) {
     return fetchTrakt("https://api.trakt.tv/sync/history/remove", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  function rate(type, id, rating, ratedAt) {
+    const key = type === "tv" ? "shows" : "movies";
+    return fetchTrakt("https://api.trakt.tv/sync/ratings", {
+      method: "POST",
+      body: JSON.stringify({ [key]: [{ ids: buildIdPayload(id), rating, rated_at: ratedAt }] }),
+    });
   }
 
   function notReady() {
@@ -427,6 +473,6 @@ window.createTraktProvider = function createTraktProvider({
     addToWatchlist: notReady,
     addHistory,
     removeHistory,
-    rate: notReady,
+    rate,
   };
 };
