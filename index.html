@@ -260,18 +260,24 @@
       async function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
         const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
-        // 0 = mid-season (started), 1 = season not started, 2 = show not started (plantowatch)
+        const RECENTLY_ACTIVE_MS = 10 * 24 * 60 * 60 * 1000;
+        const hasRecentActivity = (s) => {
+          const lastWatched = new Date(s.last_watched_at || 0).getTime();
+          return Number.isFinite(lastWatched) && lastWatched > 0 && (Date.now() - lastWatched) <= RECENTLY_ACTIVE_MS;
+        };
+        // 0 = actively watching now, 1 = mid-season, 2 = season not started, 3 = plantowatch
         const tvGroup = (s) => {
-          if (normalizeStatus(s.status) === "plantowatch") return 2;
+          if (normalizeStatus(s.status) === "plantowatch") return 3;
           const ep = parseNextEpisode(s.next_to_watch);
-          return (ep && ep.episode === 1) ? 1 : 0;
+          if (ep && ep.episode !== 1 && hasRecentActivity(s)) return 0;
+          return (ep && ep.episode === 1) ? 2 : 1;
         };
         const byTvOrder = (a, b) => {
           const ga = tvGroup(a), gb = tvGroup(b);
-          const aLast = ga === 2, bLast = gb === 2;
+          const aLast = ga === 3, bLast = gb === 3;
           if (aLast !== bLast) return aLast ? 1 : -1;
           if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
-          return (episodesLeft(a) - episodesLeft(b)) || (ga - gb) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
+          return (ga - gb) || (episodesLeft(a) - episodesLeft(b)) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
         };
         const queued = [
           ...shows
