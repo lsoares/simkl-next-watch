@@ -518,18 +518,25 @@
         transform: translateY(0);
         will-change: transform, box-shadow, filter;
       }
-      .item-card:hover {
-        transform: translateY(-3px);
+      .item-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
         box-shadow:
-          0 18px 36px rgba(0,0,0,0.42),
-          0 0 0 1px rgba(255,255,255,0.08),
-          0 0 22px rgba(148,163,184,0.14);
-        filter: brightness(1.03);
-        z-index: 2;
+          inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, white 45%),
+          inset 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+        transition: opacity 0.22s ease;
       }
-      .item-card:hover .poster {
-        transform: scale(1.035);
-        filter: saturate(1.05);
+      @media (hover: hover) and (pointer: fine) {
+        .item-card:hover {
+          box-shadow: 0 18px 36px rgba(0,0,0,0.42);
+          filter: brightness(1.03);
+          z-index: 2;
+        }
+        .item-card:hover::after { opacity: 1; }
       }
       /* watched fade-out */
       @keyframes watchedOut {
