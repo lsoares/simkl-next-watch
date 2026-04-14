@@ -77,19 +77,26 @@
               </span>
               <span class="provider-option-label">Simkl</span>
             </button>
-            <button class="provider-option provider-option-disabled" type="button" data-provider="trakt" aria-pressed="false" disabled>
+            <button class="provider-option" type="button" data-provider="trakt" aria-pressed="false">
               <span class="provider-option-icon" aria-hidden="true">
                 <img class="provider-option-logo provider-option-logo-trakt" src="https://trakt.tv/favicon.ico" alt="" />
               </span>
               <span class="provider-option-label">Trakt</span>
-              <span class="provider-option-badge">Soon</span>
             </button>
           </div>
           <p class="field-help" id="providerHelpText">Paste your app client ID and an access token.</p>
-          <p class="field-help" id="providerCreateAppHelp">1. Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
+          <p class="field-help" id="providerCreateAppHelp">Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
           <p class="field-help" id="providerListAppsHelp" hidden><a id="providerListAppsLink" href="https://simkl.com/settings/developer" target="_blank" rel="noreferrer">View apps</a></p>
           <label for="clientId">Client ID</label>
           <input id="clientId" placeholder="Client ID" style="width:100%;box-sizing:border-box" />
+          <div id="traktSecretArea" hidden>
+            <label for="clientSecret" style="margin-top:14px">Client secret</label>
+            <input id="clientSecret" placeholder="Client secret" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box" />
+            <p class="field-help" id="traktRedirectUriHelp" style="margin-top:8px"></p>
+            <div class="actions" style="margin-top:12px">
+              <button id="traktAuthorizeButton" class="secondary" type="button">Authorize with Trakt</button>
+            </div>
+          </div>
           <label for="accessToken" style="margin-top:14px">Access token</label>
           <input id="accessToken" placeholder="Access token" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box" />
           <div class="actions" style="margin-top:12px">
@@ -112,24 +119,26 @@
 
       const storageKeys = {
         provider: "next-watch-provider",
-        clientId: "next-watch-client-id",
-        accessToken: "next-watch-access-token",
-        genreCache: "next-watch-genre-cache",
-        statsCache: "next-watch-stats-cache",
+        clientId: "client-id",
+        accessToken: "access-token",
+        clientSecret: "client-secret",
         trendingPeriod: "next-watch-trending-period",
         trendingHideWatched: "next-watch-trending-hide-watched",
       };
-      const legacyStorageKeys = {
-        clientId: "simkl-client-id",
-        accessToken: "simkl-access-token",
-        genreCache: "simkl-genre-cache",
-        statsCache: "simkl-stats-cache",
-        trendingPeriod: "simkl-trending-period",
-        trendingHideWatched: "simkl-trending-hide-watched",
+      const sharedStorageFallbackKeys = {
+        clientId: "next-watch-client-id",
+        accessToken: "next-watch-access-token",
       };
-
-      const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
-      const STATS_CACHE_TTL = 15 * 60 * 1000;           // 15 min
+      const legacyStorageKeys = {
+        simkl: {
+          clientId: "simkl-client-id",
+          accessToken: "simkl-access-token",
+        },
+        shared: {
+          trendingPeriod: "simkl-trending-period",
+          trendingHideWatched: "simkl-trending-hide-watched",
+        },
+      };
       const scrollPositions = new Map();
       const providerMeta = {
         simkl: {
@@ -145,34 +154,58 @@
         trakt: {
           name: "Trakt",
           introText: "Connect your Simkl or Trakt account and Next Watch surfaces what to watch next across all your shows and movies — no browsing, no thinking.",
-          helpText: "Paste your app client ID and an access token.",
+          helpText: "Paste your Trakt app client ID and secret, then authorize.",
           createAppUrl: "https://trakt.tv/oauth/applications/new",
           listAppsUrl: "https://trakt.tv/oauth/applications",
           clientIdPlaceholder: "Client ID",
           accessTokenPlaceholder: "Access token",
-          available: false,
+          available: true,
         },
       };
 
       // ── Repo layer (API, cache, data transforms — no DOM) ───────────────────
 
       function getStoredProviderId() { return localStorage.getItem(storageKeys.provider) || "simkl"; }
-      function getClientId()    { return localStorage.getItem(storageKeys.clientId) || localStorage.getItem(legacyStorageKeys.clientId) || ""; }
-      function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || localStorage.getItem(legacyStorageKeys.accessToken) || ""; }
-      function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || localStorage.getItem(legacyStorageKeys.trendingPeriod) || "today"; }
+      function getProviderStorageKey(key, providerId = getStoredProviderId()) {
+        return `next-watch-${providerId}-${storageKeys[key]}`;
+      }
+      function getStoredProviderValue(key, providerId = getStoredProviderId()) {
+        const scopedValue = localStorage.getItem(getProviderStorageKey(key, providerId));
+        if (scopedValue != null) return scopedValue;
+        const sharedFallback = sharedStorageFallbackKeys[key] ? localStorage.getItem(sharedStorageFallbackKeys[key]) : null;
+        if (sharedFallback != null) return sharedFallback;
+        const legacyFallback = legacyStorageKeys[providerId]?.[key] ? localStorage.getItem(legacyStorageKeys[providerId][key]) : null;
+        return legacyFallback ?? "";
+      }
+      function setStoredProviderValue(key, value, providerId = getStoredProviderId()) {
+        localStorage.setItem(getProviderStorageKey(key, providerId), value);
+      }
+      function removeStoredProviderValue(key, providerId = getStoredProviderId()) {
+        localStorage.removeItem(getProviderStorageKey(key, providerId));
+      }
+      function getClientId()     { return getStoredProviderValue("clientId"); }
+      function getAccessToken()  { return getStoredProviderValue("accessToken"); }
+      function getClientSecret() { return getStoredProviderValue("clientSecret"); }
+      function getTraktRedirectUri() { return window.location.origin + window.location.pathname; }
+      function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || localStorage.getItem(legacyStorageKeys.shared.trendingPeriod) || "today"; }
       function getHideTrendingWatched() {
-        const value = localStorage.getItem(storageKeys.trendingHideWatched) ?? localStorage.getItem(legacyStorageKeys.trendingHideWatched);
+        const value = localStorage.getItem(storageKeys.trendingHideWatched) ?? localStorage.getItem(legacyStorageKeys.shared.trendingHideWatched);
         return value === "true";
       }
 
       function migrateLegacyStorage() {
-        for (const [key, nextKey] of Object.entries(storageKeys)) {
-          if (key === "provider") continue;
-          if (localStorage.getItem(nextKey) != null) continue;
-          const legacyKey = legacyStorageKeys[key];
-          if (!legacyKey) continue;
-          const legacyValue = localStorage.getItem(legacyKey);
-          if (legacyValue != null) localStorage.setItem(nextKey, legacyValue);
+        for (const providerId of Object.keys(providerMeta)) {
+          for (const key of ["clientId", "accessToken"]) {
+            const scopedKey = getProviderStorageKey(key, providerId);
+            if (localStorage.getItem(scopedKey) != null) continue;
+            const sharedValue = sharedStorageFallbackKeys[key] ? localStorage.getItem(sharedStorageFallbackKeys[key]) : null;
+            const legacyKey = legacyStorageKeys[providerId]?.[key];
+            const legacyValue = legacyKey ? localStorage.getItem(legacyKey) : null;
+            const value = providerId === "simkl" ? (sharedValue ?? legacyValue) : null;
+            if (value != null) {
+              try { localStorage.setItem(scopedKey, value); } catch {}
+            }
+          }
         }
       }
 
@@ -218,7 +251,12 @@
         return `${item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/")}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
       }
 
-      function buildSimklUrl(media) {
+      function getPrimaryItemId(item) {
+        const ids = getItemIds(item);
+        return ids.simkl || ids.simkl_id || ids.trakt || ids.trakt_id || ids.slug || null;
+      }
+
+      function buildProviderUrl(media) {
         if (media?.url && /^https?:\/\//i.test(media.url)) return media.url.replace(/\/+$/, "");
         const simklId = media?.ids?.simkl;
         if (!simklId) return "";
@@ -248,7 +286,7 @@
             overview:     media.overview || item.overview || "",
             poster:       media.poster || item.poster || media.img || item.img || "",
             next_to_watch: item.next_to_watch || media.next_to_watch || "",
-            url:          buildSimklUrl(media),
+            url:          buildProviderUrl(media),
           };
         }) : [];
       }
@@ -283,10 +321,11 @@
 
       function buildUndoHistoryPayload(item, type) {
         if (item?.watchAction?.payload) return stripHistoryTimestamps(item.watchAction.payload);
-        const simklId = item?.ids?.simkl;
-        if (!simklId) return null;
+        const provider = getCurrentProvider();
+        const itemId = provider.getPrimaryId?.(item) ?? getPrimaryItemId(item);
+        if (!itemId) return null;
         const key = type === "tv" ? "shows" : "movies";
-        return { [key]: [{ ids: { simkl: simklId } }] };
+        return { [key]: [{ ids: provider.buildIdPayload(itemId) }] };
       }
 
       function getWatchedToastMessage(item, type) {
@@ -299,17 +338,29 @@
         return total > 0 ? `Watched: ${label} · ${remainingAfter} left` : `Watched: ${label}`;
       }
 
+      function getProviderUnavailableMessage(provider = getCurrentProvider()) {
+        return provider.id === "trakt"
+          ? "Connected to Trakt. Library sync and browsing are not implemented yet."
+          : "This provider feature is not available yet.";
+      }
+
+      function providerSupportsSuggestions(provider = getCurrentProvider()) {
+        return provider.supportsSuggestions !== false;
+      }
+
       const providers = {
         simkl: window.createSimklProvider({
-          storageKeys,
-          GENRE_CACHE_TTL,
-          STATS_CACHE_TTL,
           getClientId,
           getAccessToken,
           normalizeList,
           normalizeStatus,
           parseNextEpisode,
           buildEpisodeWatchAction,
+          getItemIds,
+        }),
+        trakt: window.createTraktProvider({
+          getClientId,
+          getAccessToken,
           getItemIds,
         }),
       };
@@ -322,8 +373,6 @@
         const meta = providerMeta[providerId];
         localStorage.setItem(storageKeys.provider, meta?.available && providers[providerId] ? providerId : "simkl");
       }
-
-      const provider = getCurrentProvider();
 
       // ── UI layer (DOM, events, rendering) ───────────────────────────────────
 
@@ -342,6 +391,10 @@
       const els = {
         accessToken: document.getElementById("accessToken"),
         appIntro: document.getElementById("appIntro"),
+        clientSecret: document.getElementById("clientSecret"),
+        traktSecretArea: document.getElementById("traktSecretArea"),
+        traktAuthorizeButton: document.getElementById("traktAuthorizeButton"),
+        traktRedirectUriHelp: document.getElementById("traktRedirectUriHelp"),
         appIntroDesc: document.getElementById("appIntroDesc"),
         authSetup: document.getElementById("authSetup"),
         clientId: document.getElementById("clientId"),
@@ -426,18 +479,26 @@
       });
 
       els.goHomeButton.addEventListener("click", showHomeView);
-      els.openTrendingButton.addEventListener("click", showTrendingView);
+      els.openTrendingButton.addEventListener("click", () => {
+        const provider = getCurrentProvider();
+        if (provider.supportsTrending === false) {
+          setGlobalStatus(getProviderUnavailableMessage(provider), true);
+          return;
+        }
+        showTrendingView();
+      });
       els.openAuthModalButton.addEventListener("click", showLoginView);
       els.providerPicker.querySelectorAll(".provider-option").forEach((button) => {
         button.addEventListener("click", () => {
           const providerId = button.dataset.provider;
           if (!providerMeta[providerId]?.available) return;
           setCurrentProviderId(providerId);
-          updateProviderUi();
+          hydrateCredentials();
+          if (!getAccessToken()) showLoginView();
         });
       });
       els.logoutButton.addEventListener("click", () => {
-        localStorage.removeItem(storageKeys.accessToken);
+        removeStoredProviderValue("accessToken");
         setCurrentProviderId(getCurrentProvider().id);
         hydrateCredentials();
         showLoginView();
@@ -461,60 +522,104 @@
         els.clientId.focus();
       });
       els.saveCredentialsButton.addEventListener("click", saveCredentials);
+      els.traktAuthorizeButton.addEventListener("click", () => {
+        const clientId = clientIdInput.value.trim();
+        const clientSecret = els.clientSecret.value.trim();
+        if (!clientId) { setGlobalStatus("Enter a client ID.", true); return; }
+        if (!clientSecret) { setGlobalStatus("Enter a client secret.", true); return; }
+        setStoredProviderValue("clientId", clientId, "trakt");
+        setStoredProviderValue("clientSecret", clientSecret, "trakt");
+        const redirectUri = getTraktRedirectUri();
+        const url = `https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        window.location.href = url;
+      });
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
         }
       });
 
-      hydrateCredentials();
-      setCurrentProviderId(getCurrentProvider().id);
-      setActiveTrendingPeriod(getTrendingPeriod());
-      if (getAccessToken()) {
-        const [hashView, p1] = location.hash.replace("#", "").split("/");
-        if (hashView === "trending") {
-          setActiveTrendingPeriod(p1 || getTrendingPeriod());
-          showTrendingView();
-        } else if (hashView === "stats") {
-          showStatsView().then(() => {
-            if (p1) {
-              const btn = statsView.querySelector(`[data-range="${p1}"]`);
-              if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
+      migrateLegacyStorage();
+      let statsFeature;
+
+      (async () => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code && getStoredProviderId() === "trakt") {
+          history.replaceState(null, "", window.location.pathname + window.location.hash);
+          const clientId = getStoredProviderValue("clientId", "trakt");
+          const clientSecret = getStoredProviderValue("clientSecret", "trakt");
+          if (clientId && clientSecret) {
+            try {
+              const token = await providers.trakt.exchangeCodeForToken(code, clientId, clientSecret, getTraktRedirectUri());
+              setStoredProviderValue("accessToken", token.access_token, "trakt");
+            } catch (e) {
+              setGlobalStatus("Trakt authorization failed: " + (e.message || "unknown error"), true);
             }
-          });
-        } else if (hashView === "login") {
-          showLoginView();
-        } else {
-          showView("next");
+          }
         }
-        loadSuggestions();
-      } else {
-        showLoginView();
-      }
+
+        hydrateCredentials();
+        setCurrentProviderId(getCurrentProvider().id);
+        setActiveTrendingPeriod(getTrendingPeriod());
+
+        statsFeature = window.createStatsFeature({
+          Chart,
+          countBy,
+          escapeHtml,
+          getProvider: getCurrentProvider,
+          genreColors: GENRE_COLORS,
+          makeBarChart,
+          makePieChart,
+          normalizeList,
+          normalizeStatus,
+          showView,
+          statsContent,
+          statsView,
+        });
+
+        if (getAccessToken()) {
+          const provider = getCurrentProvider();
+          if (!providerSupportsSuggestions(provider)) {
+            showLoginView();
+            setGlobalStatus(getProviderUnavailableMessage(provider));
+          } else {
+            const [hashView, p1] = location.hash.replace("#", "").split("/");
+            if (hashView === "trending") {
+              setActiveTrendingPeriod(p1 || getTrendingPeriod());
+              showTrendingView();
+            } else if (hashView === "stats") {
+              showStatsView().then(() => {
+                if (p1) {
+                  const btn = statsView.querySelector(`[data-range="${p1}"]`);
+                  if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
+                }
+              });
+            } else if (hashView === "login") {
+              showLoginView();
+            } else {
+              showView("next");
+            }
+            loadSuggestions();
+          }
+        } else {
+          showLoginView();
+        }
+      })();
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js").catch(() => {});
       }
 
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && getAccessToken()) loadSuggestions();
-      });
-
-      const statsFeature = window.createStatsFeature({
-        Chart,
-        countBy,
-        escapeHtml,
-        genreColors: GENRE_COLORS,
-        makeBarChart,
-        makePieChart,
-        normalizeList,
-        normalizeStatus,
-        provider,
-        showView,
-        statsContent,
-        statsView,
+        if (document.visibilityState === "visible" && getAccessToken() && providerSupportsSuggestions()) loadSuggestions();
       });
 
       function showStatsView(...args) {
+        const provider = getCurrentProvider();
+        if (provider.supportsStats === false) {
+          setGlobalStatus(getProviderUnavailableMessage(provider), true);
+          return Promise.resolve();
+        }
         return statsFeature.showStatsView(...args);
       }
 
@@ -527,9 +632,9 @@
           window.__trendingFeature = window.createTrendingFeature({
             els,
             escapeHtml,
+            getProvider: getCurrentProvider,
             initDockEffect,
             loadSuggestions,
-            provider,
             renderPosterEntry,
             setGlobalStatus,
             state,
@@ -555,6 +660,11 @@
         els.providerListAppsLink.href = meta.listAppsUrl;
         clientIdInput.placeholder = meta.clientIdPlaceholder;
         accessTokenInput.placeholder = meta.accessTokenPlaceholder;
+        const isTrakt = providerId === "trakt";
+        els.traktSecretArea.hidden = !isTrakt;
+        if (isTrakt) {
+          els.traktRedirectUriHelp.textContent = `Set this redirect URI in your Trakt app: ${getTraktRedirectUri()}`;
+        }
         els.providerPicker.querySelectorAll(".provider-option").forEach((button) => {
           const isActive = button.dataset.provider === providerId;
           button.classList.toggle("provider-option-active", isActive);
@@ -566,6 +676,7 @@
         const loggedIn = !!getAccessToken();
         clientIdInput.value = getClientId();
         accessTokenInput.value = getAccessToken();
+        if (els.clientSecret) els.clientSecret.value = getClientSecret();
         els.openAuthModalButton.classList.toggle("logged-in", loggedIn);
         els.topBar.hidden = !loggedIn;
         els.appIntro.hidden = loggedIn;
@@ -582,6 +693,7 @@
       async function saveCredentials() {
         const clientId = clientIdInput.value.trim();
         const accessToken = accessTokenInput.value.trim();
+        const provider = getCurrentProvider();
         if (!clientId) {
           setGlobalStatus("Enter a client ID.", true);
           return;
@@ -594,10 +706,15 @@
         try {
           await provider.validateCredentials({ clientId, accessToken });
           setCurrentProviderId(provider.id);
-          localStorage.setItem(storageKeys.clientId, clientId);
-          localStorage.setItem(storageKeys.accessToken, accessToken);
-      migrateLegacyStorage();
-      hydrateCredentials();
+          setStoredProviderValue("clientId", clientId);
+          setStoredProviderValue("accessToken", accessToken);
+          migrateLegacyStorage();
+          hydrateCredentials();
+          if (!providerSupportsSuggestions(provider)) {
+            showLoginView();
+            setGlobalStatus(getProviderUnavailableMessage(provider));
+            return;
+          }
           setGlobalStatus(`Connected to ${providerMeta[provider.id]?.name || "provider"}.`);
           showHomeView();
           await loadSuggestions({ preserveStatus: true });
@@ -613,6 +730,7 @@
       }
 
       async function buildSuggestionsModel() {
+        const provider = getCurrentProvider();
         return provider.buildSuggestionsModel();
       }
 
@@ -625,6 +743,7 @@
       }
 
       function enrichRenderedTvItems() {
+        const provider = getCurrentProvider();
         Promise.allSettled(state.tvItems.map(item => provider.enrichWithEpisodeTitle(item))).then(results => {
           let changed = false;
           results.forEach((r, i) => {
@@ -638,8 +757,18 @@
       }
 
       async function loadSuggestions({ preserveStatus = false } = {}) {
+        const provider = getCurrentProvider();
         if (!getClientId() || !getAccessToken()) {
           setGlobalStatus("A client ID and access token are required.", true);
+          return;
+        }
+        if (!providerSupportsSuggestions(provider)) {
+          state.libraryIds = new Set();
+          state.tvItems = [];
+          state.movieItems = [];
+          renderRow("tv");
+          renderRow("movie");
+          if (!preserveStatus) setGlobalStatus(getProviderUnavailableMessage(provider));
           return;
         }
         loadingSpinner.hidden = false;
@@ -700,14 +829,15 @@
         if (!item?.watchAction) { setGlobalStatus("Cannot mark as watched.", true); return; }
         if (card) card.classList.add("marking-watched");
         try {
+          const provider = getCurrentProvider();
           await provider.addHistory(item.watchAction.payload);
-          const simklId = item.ids?.simkl;
+          const itemId = provider.getPrimaryId?.(item) ?? getPrimaryItemId(item);
           const key = type === "tv" ? "shows" : "movies";
           const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
-          setGlobalStatus(getWatchedToastMessage(item, type), false, simklId ? async () => {
+          setGlobalStatus(getWatchedToastMessage(item, type), false, itemId ? async () => {
             try {
-              await provider.removeHistory(undoPayload || { [key]: [{ ids: { simkl: simklId } }] });
+              await provider.removeHistory(undoPayload || { [key]: [{ ids: provider.buildIdPayload(itemId) }] });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
@@ -719,20 +849,21 @@
       }
 
       async function rateItemWatched(item, type, rating, card) {
-        const simklId = item.ids?.simkl;
-        if (!simklId) { setGlobalStatus("Cannot rate: missing Simkl ID.", true); return; }
+        const provider = getCurrentProvider();
+        const itemId = provider.getPrimaryId?.(item) ?? getPrimaryItemId(item);
+        if (!itemId) { setGlobalStatus("Cannot rate: missing provider ID.", true); return; }
         if (card) card.classList.add("marking-watched");
         try {
           const key = type === "tv" ? "shows" : "movies";
           const ratedAt = new Date().toISOString();
-          const calls = [provider.rate(type, simklId, rating, ratedAt)];
+          const calls = [provider.rate(type, itemId, rating, ratedAt)];
           if (item.watchAction) calls.push(provider.addHistory(item.watchAction.payload));
           await Promise.all(calls);
           const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
           setGlobalStatus(getWatchedToastMessage(item, type), false, async () => {
             try {
-              await provider.removeHistory(undoPayload || { [key]: [{ ids: { simkl: simklId } }] });
+              await provider.removeHistory(undoPayload || { [key]: [{ ids: provider.buildIdPayload(itemId) }] });
               await loadSuggestions();
               setGlobalStatus("Undone.");
             } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
@@ -744,14 +875,15 @@
       }
 
       async function removeItem(item, type) {
-        const simklId = item.ids?.simkl;
-        if (!simklId) { setGlobalStatus("Cannot remove: missing ID.", true); return; }
+        const provider = getCurrentProvider();
+        const itemId = provider.getPrimaryId?.(item) ?? getPrimaryItemId(item);
+        if (!itemId) { setGlobalStatus("Cannot remove: missing ID.", true); return; }
         if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
         try {
           setGlobalStatus(`Removing ${item.title}…`);
           const key = type === "tv" ? "shows" : "movies";
-          await provider.removeHistory({ [key]: [{ ids: { simkl: simklId } }] });
-          restoreTrendingCards(simklId);
+          await provider.removeHistory({ [key]: [{ ids: provider.buildIdPayload(itemId) }] });
+          restoreTrendingCards(itemId);
           setGlobalStatus("Removed.");
           await loadSuggestions();
         } catch (error) {

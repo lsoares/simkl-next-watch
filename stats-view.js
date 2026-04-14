@@ -2,10 +2,10 @@ window.createStatsFeature = function createStatsFeature({
   Chart,
   countBy,
   escapeHtml,
+  getProvider,
   makeBarChart,
   normalizeList,
   normalizeStatus,
-  provider,
   showView,
   statsContent,
   statsView,
@@ -238,9 +238,8 @@ window.createStatsFeature = function createStatsFeature({
   }
 
   async function showStatsView() {
+    const provider = getProvider();
     showView("stats");
-
-    if (!statsRawData) statsRawData = provider.loadStatsCache();
 
     if (!statsRawData) {
       statsContent.innerHTML = `<p class="empty">Loading…</p>`;
@@ -265,7 +264,6 @@ window.createStatsFeature = function createStatsFeature({
         ]);
 
         statsRawData = { shows, movies, tvDetails, movieDetails, apiStats };
-        provider.saveStatsCache(statsRawData);
       } catch (error) {
         statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
         return;

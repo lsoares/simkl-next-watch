@@ -1,9 +1,9 @@
 window.createTrendingFeature = function createTrendingFeature({
   els,
   escapeHtml,
+  getProvider,
   initDockEffect,
   loadSuggestions,
-  provider,
   renderPosterEntry,
   setGlobalStatus,
   state,
@@ -22,15 +22,16 @@ window.createTrendingFeature = function createTrendingFeature({
   }
 
   function renderTrendingRow(items, urlBaseOverride) {
+    const provider = getProvider();
     return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
       const title = m.title || "";
       const year = getTrendingYear(m);
       const imgCode = m.poster || m.img || "";
       const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-      const simklId = provider.getSimklId(m);
+      const itemId = provider.getPrimaryId(m);
       const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
-      const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
-      const watched = simklId && state.libraryIds.has(String(simklId));
+      const url = fixedPath ? `https://simkl.com${fixedPath}` : itemId ? `https://simkl.com/${urlBaseOverride}/${itemId}` : "#";
+      const watched = itemId && state.libraryIds.has(String(itemId));
       const loggedIn = !!provider.getAccessToken();
       return renderPosterEntry({
         title,
@@ -40,8 +41,8 @@ window.createTrendingFeature = function createTrendingFeature({
         imdbRating: !watched ? m.ratings?.imdb?.rating : "",
         cardTag: "a",
         cardClass: watched ? "trending-watched" : "",
-        cardAttrs: `href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}"`,
-        body: loggedIn && simklId && !watched
+        cardAttrs: `href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-item-id="${itemId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}"`,
+        body: loggedIn && itemId && !watched
           ? `<button class="add-watchlist-btn" title="Add ${escapeHtml(title)} to watchlist" data-title="${escapeHtml(title)}" data-year="${year}">${ADD_WATCHLIST_BTN_IMG}</button>`
           : "",
       });
@@ -49,6 +50,7 @@ window.createTrendingFeature = function createTrendingFeature({
   }
 
   async function ensureLibraryIds() {
+    const provider = getProvider();
     if (state.libraryIds.size > 0 || !provider.getAccessToken()) return;
     try {
       const [sRes, mRes] = await Promise.all([
@@ -63,11 +65,12 @@ window.createTrendingFeature = function createTrendingFeature({
   }
 
   async function enrichTrendingRatings(items, apiType, containerEl) {
+    const provider = getProvider();
     const details = await provider.fetchDetails(apiType, items);
     details.forEach((detail, i) => {
       if (!detail?.ratings?.imdb?.rating) return;
-      const simklId = provider.getSimklId(items[i]);
-      const card = containerEl.querySelector(`[data-simkl-id="${simklId}"]`);
+      const itemId = provider.getPrimaryId(items[i]);
+      const card = containerEl.querySelector(`[data-item-id="${itemId}"]`);
       if (!card || card.classList.contains("trending-watched") || card.querySelector(".imdb-badge")) return;
       const badge = `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
       const textContainer = card.querySelector(".poster-top-text");
@@ -77,17 +80,18 @@ window.createTrendingFeature = function createTrendingFeature({
 
   function setupWatchlistBtn(btn) {
     btn.addEventListener("click", async (e) => {
+      const provider = getProvider();
       e.preventDefault();
       e.stopPropagation();
       const card = btn.closest(".item-card");
-      const simklId = card?.dataset.simklId;
+      const itemId = card?.dataset.itemId;
       const urlBase = card?.dataset.urlBase;
       const title = btn.dataset.title;
-      if (!simklId || !urlBase) return;
+      if (!itemId || !urlBase) return;
       btn.disabled = true;
       try {
-        await provider.addToWatchlist(urlBase === "movies" ? "movie" : "tv", simklId);
-        state.libraryIds.add(simklId);
+        await provider.addToWatchlist(urlBase === "movies" ? "movie" : "tv", itemId);
+        state.libraryIds.add(itemId);
         btn.remove();
         card.classList.add("trending-watched");
         setGlobalStatus(`Added "${title}" to watchlist.`);
@@ -101,20 +105,22 @@ window.createTrendingFeature = function createTrendingFeature({
   }
 
   function selectTrendingItems(items) {
+    const provider = getProvider();
     const list = Array.isArray(items) ? items : [];
     if (!els.hideTrendingWatched?.checked) return list.slice(0, VISIBLE_TRENDING_SLOTS);
     return list
       .filter((item) => {
-        const simklId = provider.getSimklId(item);
-        return !simklId || !state.libraryIds.has(String(simklId));
+        const itemId = provider.getPrimaryId(item);
+        return !itemId || !state.libraryIds.has(String(itemId));
       })
       .slice(0, VISIBLE_TRENDING_SLOTS);
   }
 
-  function restoreTrendingCards(simklId) {
-    state.libraryIds.delete(String(simklId));
+  function restoreTrendingCards(itemId) {
+    const provider = getProvider();
+    state.libraryIds.delete(String(itemId));
     if (!provider.getAccessToken()) return;
-    for (const card of document.querySelectorAll(`#trendingMoviesContent [data-simkl-id="${simklId}"], #trendingTvContent [data-simkl-id="${simklId}"]`)) {
+    for (const card of document.querySelectorAll(`#trendingMoviesContent [data-item-id="${itemId}"], #trendingTvContent [data-item-id="${itemId}"]`)) {
       card.classList.remove("trending-watched");
       if (!card.querySelector(".add-watchlist-btn")) {
         const title = card.dataset.title || "";

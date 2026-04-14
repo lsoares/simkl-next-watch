@@ -1,7 +1,4 @@
 window.createSimklProvider = function createSimklProvider({
-  storageKeys,
-  GENRE_CACHE_TTL,
-  STATS_CACHE_TTL,
   getClientId,
   getAccessToken,
   normalizeList,
@@ -18,6 +15,10 @@ window.createSimklProvider = function createSimklProvider({
   function getAllSimklIds(item) {
     const ids = getItemIds(item);
     return [ids.simkl, ids.simkl_id].filter(Boolean).map(String);
+  }
+
+  function buildIdPayload(id) {
+    return { simkl: Number(id) };
   }
 
   function mergeSimklDetail(item, detail, { includeRatings = true, includeIds = true } = {}) {
@@ -180,45 +181,18 @@ window.createSimklProvider = function createSimklProvider({
     }
   }
 
-  function loadGenreCache() {
-    try { return JSON.parse(localStorage.getItem(storageKeys.genreCache) || "{}"); } catch { return {}; }
-  }
-
-  function loadStatsCache() {
-    try {
-      const raw = localStorage.getItem(storageKeys.statsCache);
-      if (!raw) return null;
-      const cached = JSON.parse(raw);
-      return Date.now() - cached.ts > STATS_CACHE_TTL ? null : cached.data;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveStatsCache(data) {
-    try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), data })); } catch {}
-  }
-
   async function fetchItemDetails(items, type) {
-    const cache = loadGenreCache();
-    const now = Date.now();
     const subset = [...items]
       .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
       .slice(0, 50);
     const settled = await Promise.allSettled(subset.map((item) => {
       const id = getSimklId(item);
       if (!id) return Promise.resolve(null);
-      const key = `${type}:${id}`;
-      const cached = cache[key];
-      if (cached && now - cached.ts < GENRE_CACHE_TTL) return Promise.resolve(cached);
       return fetchDetail(type, id).then((data) => {
         if (!data) return null;
-        const entry = { genres: data?.genres || [], network: data?.network || null, ts: now };
-        cache[key] = entry;
-        return entry;
+        return { genres: data?.genres || [], network: data?.network || null };
       });
     }));
-    try { localStorage.setItem(storageKeys.genreCache, JSON.stringify(cache)); } catch {}
     const genres = {}, networks = {};
     for (const r of settled) {
       const val = r.status === "fulfilled" ? r.value : null;
@@ -232,7 +206,7 @@ window.createSimklProvider = function createSimklProvider({
     const key = type === "movie" ? "movies" : "shows";
     return fetchSimkl("https://api.simkl.com/sync/add-to-list", {
       method: "POST",
-      body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(simklId) } }] }),
+      body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: buildIdPayload(simklId) }] }),
     });
   }
 
@@ -254,7 +228,7 @@ window.createSimklProvider = function createSimklProvider({
     const key = type === "tv" ? "shows" : "movies";
     return fetchSimkl("https://api.simkl.com/ratings", {
       method: "POST",
-      body: JSON.stringify({ [key]: [{ ids: { simkl: simklId }, rating, rated_at: ratedAt }] }),
+      body: JSON.stringify({ [key]: [{ ids: buildIdPayload(simklId), rating, rated_at: ratedAt }] }),
     });
   }
 
@@ -262,8 +236,10 @@ window.createSimklProvider = function createSimklProvider({
     id: "simkl",
     getClientId,
     getAccessToken,
+    getPrimaryId: getSimklId,
     getSimklId,
     getAllIds: getAllSimklIds,
+    buildIdPayload,
     fetch: fetchSimkl,
     fetchDetail,
     fetchDetails,
@@ -273,11 +249,184 @@ window.createSimklProvider = function createSimklProvider({
     buildSuggestionsModel,
     enrichWithEpisodeTitle,
     fetchItemDetails,
-    loadStatsCache,
-    saveStatsCache,
     addToWatchlist,
     addHistory,
     removeHistory,
     rate,
+  };
+};
+
+window.createTraktProvider = function createTraktProvider({
+  getClientId,
+  getAccessToken,
+  getItemIds,
+}) {
+  const NOT_READY_MESSAGE = "Trakt login works, but library sync is not implemented yet.";
+
+  function buildHeaders(optionsHeaders = {}, credentials = {}) {
+    const clientId = credentials.clientId ?? getClientId();
+    const accessToken = credentials.accessToken ?? getAccessToken();
+    return {
+      "Content-Type": "application/json",
+      "trakt-api-key": clientId,
+      "trakt-api-version": "2",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...optionsHeaders,
+    };
+  }
+
+  async function fetchTrakt(url, options = {}, credentials) {
+    const response = await fetch(url, {
+      ...options,
+      headers: buildHeaders(options.headers || {}, credentials),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(payload.error || payload.message || `Trakt request failed with ${response.status}.`);
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
+  }
+
+  async function validateCredentials({ clientId, accessToken }) {
+    await fetchTrakt("https://api.trakt.tv/users/settings", {}, { clientId, accessToken });
+  }
+
+  function getAuthErrorMessage(error) {
+    if (error?.status === 401) return "Trakt rejected that access token. Use a valid user access token for this app.";
+    if (error?.status === 403) return "Trakt rejected that client ID or token scope. Check the app client ID and token.";
+    const raw = String(error?.message || "").trim();
+    return raw || "That client ID or token didn’t work. Check both values and try again.";
+  }
+
+  function getPrimaryId(item) {
+    const ids = getItemIds(item);
+    return ids.trakt || ids.slug || ids.imdb || null;
+  }
+
+  function getAllIds(item) {
+    const ids = getItemIds(item);
+    return [ids.trakt, ids.slug, ids.imdb].filter(Boolean).map(String);
+  }
+
+  function buildIdPayload(id) {
+    const numericId = Number(id);
+    return Number.isFinite(numericId) ? { trakt: numericId } : { slug: String(id) };
+  }
+
+  async function exchangeCodeForToken(code, clientId, clientSecret, redirectUri) {
+    const response = await fetch("https://api.trakt.tv/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code" }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error_description || data.error || `Token exchange failed (${response.status}).`);
+    return data; // { access_token, refresh_token, ... }
+  }
+
+  async function fetchWatchedShows() {
+    return fetchTrakt("https://api.trakt.tv/sync/watched/shows?extended=noseasons");
+  }
+
+  async function fetchShowProgress(showId) {
+    try {
+      return await fetchTrakt(`https://api.trakt.tv/shows/${encodeURIComponent(showId)}/progress/watched`);
+    } catch {
+      return null;
+    }
+  }
+
+  async function buildSuggestionsModel() {
+    const watched = await fetchWatchedShows();
+
+    const sorted = [...watched]
+      .sort((a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0))
+      .slice(0, 20);
+
+    const progresses = await Promise.all(sorted.map(w => fetchShowProgress(w.show.ids.trakt)));
+
+    const tvItems = sorted
+      .map((w, i) => {
+        const progress = progresses[i];
+        if (!progress?.next_episode) return null;
+        const { show } = w;
+        const nextEp = progress.next_episode;
+        return {
+          title: show.title,
+          year: show.year,
+          ids: show.ids,
+          status: "watching",
+          last_watched_at: w.last_watched_at,
+          next_to_watch: { season: nextEp.season, episode: nextEp.number },
+          url: `https://trakt.tv/shows/${show.ids.slug}`,
+          poster: show.ids.trakt ? `https://images.metahub.space/poster/medium/${show.ids.trakt}/img` : "",
+          watchAction: {
+            payload: {
+              shows: [{ ids: show.ids, seasons: [{ number: nextEp.season, episodes: [{ number: nextEp.number, watched_at: new Date().toISOString() }] }] }],
+            },
+            label: "Mark episode watched",
+          },
+        };
+      })
+      .filter(Boolean);
+
+    const libraryIds = new Set(watched.flatMap(w => getAllIds({ ids: w.show.ids })));
+
+    return { libraryIds, tvItems, movieItems: [] };
+  }
+
+  async function enrichWithEpisodeTitle(item) {
+    const next = item?.next_to_watch;
+    if (!next || typeof next !== "object") return item;
+    const season = Number(next.season);
+    const episode = Number(next.episode ?? next.number);
+    if (!Number.isFinite(season) || !Number.isFinite(episode)) return item;
+    const traktId = item.ids?.trakt;
+    if (!traktId) return item;
+    try {
+      const ep = await fetchTrakt(`https://api.trakt.tv/shows/${encodeURIComponent(traktId)}/seasons/${season}/episodes/${episode}?extended=full`);
+      return { ...item, nextEpisodeTitle: ep?.title || null };
+    } catch {
+      return item;
+    }
+  }
+
+  function addHistory(payload) {
+    return fetchTrakt("https://api.trakt.tv/sync/history", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  function removeHistory(payload) {
+    return fetchTrakt("https://api.trakt.tv/sync/history/remove", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  function notReady() {
+    throw new Error(NOT_READY_MESSAGE);
+  }
+
+  return {
+    id: "trakt",
+    supportsTrending: false,
+    supportsStats: false,
+    getClientId,
+    getAccessToken,
+    getPrimaryId,
+    getAllIds,
+    buildIdPayload,
+    fetch: fetchTrakt,
+    exchangeCodeForToken,
+    validateCredentials,
+    getAuthErrorMessage,
+    fetchDetail: notReady,
+    fetchDetails: notReady,
+    fetchSuggestionLists: notReady,
+    buildSuggestionsModel,
+    enrichWithEpisodeTitle,
+    fetchItemDetails: notReady,
+    addToWatchlist: notReady,
+    addHistory,
+    removeHistory,
+    rate: notReady,
   };
 };
