@@ -4,7 +4,7 @@ const SHELL = [
   "./provider.js",
   "./trending-view.js",
   "./stats-view.js",
-  "./icon.svg",
+  "./icon.png",
   "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js",
 ];
 

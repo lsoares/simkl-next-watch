@@ -70,21 +70,7 @@
         </div>
         <div id="authSetup" hidden>
           <p id="loginStatusNote" class="field-help" hidden>You're already connected. Update the client ID or token here if you need to switch accounts.</p>
-          <div class="provider-picker" id="providerPicker" role="tablist" aria-label="Provider">
-            <button class="provider-option" type="button" data-provider="simkl" aria-pressed="false">
-              <span class="provider-option-icon" aria-hidden="true">
-                <img class="provider-option-logo provider-option-logo-simkl" src="https://eu.simkl.in/img_passport/login_logo_white.png" alt="" />
-              </span>
-              <span class="provider-option-label">Simkl</span>
-            </button>
-            <button class="provider-option provider-option-disabled" type="button" data-provider="trakt" aria-pressed="false" disabled>
-              <span class="provider-option-icon" aria-hidden="true">
-                <img class="provider-option-logo provider-option-logo-trakt" src="https://trakt.tv/favicon.ico" alt="" />
-              </span>
-              <span class="provider-option-label">Trakt</span>
-              <span class="provider-option-badge">Soon</span>
-            </button>
-          </div>
+          <p class="field-help">Connect your Simkl account.</p>
           <p class="field-help" id="providerHelpText">Paste your app client ID and an access token.</p>
           <p class="field-help" id="providerCreateAppHelp">1. Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
           <p class="field-help" id="providerListAppsHelp" hidden><a id="providerListAppsLink" href="https://simkl.com/settings/developer" target="_blank" rel="noreferrer">View apps</a></p>
@@ -111,7 +97,6 @@
       let toastTimer;
 
       const storageKeys = {
-        provider: "next-watch-provider",
         clientId: "next-watch-client-id",
         accessToken: "next-watch-access-token",
         genreCache: "next-watch-genre-cache",
@@ -132,31 +117,17 @@
       const STATS_CACHE_TTL = 15 * 60 * 1000;           // 15 min
       const scrollPositions = new Map();
       const providerMeta = {
-        simkl: {
-          name: "Simkl",
-          introText: "Connect your Simkl or Trakt account and Next Watch surfaces what to watch next across all your shows and movies — no browsing, no thinking.",
-          helpText: "Paste your app client ID and an access token.",
-          createAppUrl: "https://simkl.com/settings/developer/new",
-          listAppsUrl: "https://simkl.com/settings/developer",
-          clientIdPlaceholder: "Client ID",
-          accessTokenPlaceholder: "Access token",
-          available: true,
-        },
-        trakt: {
-          name: "Trakt",
-          introText: "Connect your Simkl or Trakt account and Next Watch surfaces what to watch next across all your shows and movies — no browsing, no thinking.",
-          helpText: "Paste your app client ID and an access token.",
-          createAppUrl: "https://trakt.tv/oauth/applications/new",
-          listAppsUrl: "https://trakt.tv/oauth/applications",
-          clientIdPlaceholder: "Client ID",
-          accessTokenPlaceholder: "Access token",
-          available: false,
-        },
+        name: "Simkl",
+        introText: "Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies.",
+        helpText: "Paste your app client ID and an access token.",
+        createAppUrl: "https://simkl.com/settings/developer/new",
+        listAppsUrl: "https://simkl.com/settings/developer",
+        clientIdPlaceholder: "Client ID",
+        accessTokenPlaceholder: "Access token",
       };
 
       // ── Repo layer (API, cache, data transforms — no DOM) ───────────────────
 
-      function getStoredProviderId() { return localStorage.getItem(storageKeys.provider) || "simkl"; }
       function getClientId()    { return localStorage.getItem(storageKeys.clientId) || localStorage.getItem(legacyStorageKeys.clientId) || ""; }
       function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || localStorage.getItem(legacyStorageKeys.accessToken) || ""; }
       function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || localStorage.getItem(legacyStorageKeys.trendingPeriod) || "today"; }
@@ -167,7 +138,6 @@
 
       function migrateLegacyStorage() {
         for (const [key, nextKey] of Object.entries(storageKeys)) {
-          if (key === "provider") continue;
           if (localStorage.getItem(nextKey) != null) continue;
           const legacyKey = legacyStorageKeys[key];
           if (!legacyKey) continue;
@@ -299,31 +269,18 @@
         return total > 0 ? `Watched: ${label} · ${remainingAfter} left` : `Watched: ${label}`;
       }
 
-      const providers = {
-        simkl: window.createSimklProvider({
-          storageKeys,
-          GENRE_CACHE_TTL,
-          STATS_CACHE_TTL,
-          getClientId,
-          getAccessToken,
-          normalizeList,
-          normalizeStatus,
-          parseNextEpisode,
-          buildEpisodeWatchAction,
-          getItemIds,
-        }),
-      };
-
-      function getCurrentProvider() {
-        return providers[getStoredProviderId()] || providers.simkl;
-      }
-
-      function setCurrentProviderId(providerId) {
-        const meta = providerMeta[providerId];
-        localStorage.setItem(storageKeys.provider, meta?.available && providers[providerId] ? providerId : "simkl");
-      }
-
-      const provider = getCurrentProvider();
+      const provider = window.createSimklProvider({
+        storageKeys,
+        GENRE_CACHE_TTL,
+        STATS_CACHE_TTL,
+        getClientId,
+        getAccessToken,
+        normalizeList,
+        normalizeStatus,
+        parseNextEpisode,
+        buildEpisodeWatchAction,
+        getItemIds,
+      });
 
       // ── UI layer (DOM, events, rendering) ───────────────────────────────────
 
@@ -359,7 +316,6 @@
         openStatsModalButton: document.getElementById("openStatsModalButton"),
         openTrendingButton: document.getElementById("openTrendingButton"),
         providerHelpText: document.getElementById("providerHelpText"),
-        providerPicker: document.getElementById("providerPicker"),
         providerCreateAppLink: document.getElementById("providerCreateAppLink"),
         providerCreateAppHelp: document.getElementById("providerCreateAppHelp"),
         providerListAppsHelp: document.getElementById("providerListAppsHelp"),
@@ -428,17 +384,8 @@
       els.goHomeButton.addEventListener("click", showHomeView);
       els.openTrendingButton.addEventListener("click", showTrendingView);
       els.openAuthModalButton.addEventListener("click", showLoginView);
-      els.providerPicker.querySelectorAll(".provider-option").forEach((button) => {
-        button.addEventListener("click", () => {
-          const providerId = button.dataset.provider;
-          if (!providerMeta[providerId]?.available) return;
-          setCurrentProviderId(providerId);
-          updateProviderUi();
-        });
-      });
       els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem(storageKeys.accessToken);
-        setCurrentProviderId(getCurrentProvider().id);
         hydrateCredentials();
         showLoginView();
       });
@@ -467,7 +414,6 @@
       });
 
       hydrateCredentials();
-      setCurrentProviderId(getCurrentProvider().id);
       setActiveTrendingPeriod(getTrendingPeriod());
       if (getAccessToken()) {
         const [hashView, p1] = location.hash.replace("#", "").split("/");
@@ -547,19 +493,12 @@
       }
 
       function updateProviderUi() {
-        const providerId = getStoredProviderId();
-        const meta = providerMeta[providerId] || providerMeta.simkl;
-        els.appIntroDesc.textContent = meta.introText;
-        els.providerHelpText.textContent = meta.helpText;
-        els.providerCreateAppLink.href = meta.createAppUrl;
-        els.providerListAppsLink.href = meta.listAppsUrl;
-        clientIdInput.placeholder = meta.clientIdPlaceholder;
-        accessTokenInput.placeholder = meta.accessTokenPlaceholder;
-        els.providerPicker.querySelectorAll(".provider-option").forEach((button) => {
-          const isActive = button.dataset.provider === providerId;
-          button.classList.toggle("provider-option-active", isActive);
-          button.setAttribute("aria-pressed", isActive ? "true" : "false");
-        });
+        els.appIntroDesc.textContent = providerMeta.introText;
+        els.providerHelpText.textContent = providerMeta.helpText;
+        els.providerCreateAppLink.href = providerMeta.createAppUrl;
+        els.providerListAppsLink.href = providerMeta.listAppsUrl;
+        clientIdInput.placeholder = providerMeta.clientIdPlaceholder;
+        accessTokenInput.placeholder = providerMeta.accessTokenPlaceholder;
       }
 
       function hydrateCredentials() {
@@ -593,12 +532,11 @@
 
         try {
           await provider.validateCredentials({ clientId, accessToken });
-          setCurrentProviderId(provider.id);
           localStorage.setItem(storageKeys.clientId, clientId);
           localStorage.setItem(storageKeys.accessToken, accessToken);
-      migrateLegacyStorage();
-      hydrateCredentials();
-          setGlobalStatus(`Connected to ${providerMeta[provider.id]?.name || "provider"}.`);
+          migrateLegacyStorage();
+          hydrateCredentials();
+          setGlobalStatus(`Connected to ${providerMeta.name}.`);
           showHomeView();
           await loadSuggestions({ preserveStatus: true });
         } catch (error) {
