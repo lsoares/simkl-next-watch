@@ -2,14 +2,11 @@ window.createStatsFeature = function createStatsFeature({
   Chart,
   countBy,
   escapeHtml,
-  fetchItemDetails,
-  loadStatsCache,
   makeBarChart,
   normalizeList,
   normalizeStatus,
-  saveStatsCache,
+  provider,
   showView,
-  simklFetch,
   statsContent,
   statsView,
   makePieChart,
@@ -243,15 +240,15 @@ window.createStatsFeature = function createStatsFeature({
   async function showStatsView() {
     showView("stats");
 
-    if (!statsRawData) statsRawData = loadStatsCache();
+    if (!statsRawData) statsRawData = provider.loadStatsCache();
 
     if (!statsRawData) {
       statsContent.innerHTML = `<p class="empty">Loading…</p>`;
       try {
         const [showsResponse, moviesResponse, settings] = await Promise.all([
-          simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
-          simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
-          simklFetch("https://api.simkl.com/users/settings"),
+          provider.fetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
+          provider.fetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
+          provider.fetch("https://api.simkl.com/users/settings"),
         ]);
 
         const shows = normalizeList(showsResponse.shows);
@@ -262,13 +259,13 @@ window.createStatsFeature = function createStatsFeature({
         statsContent.innerHTML = `<p class="empty">Loading details…</p>`;
         const watched = (s) => normalizeStatus(s.status) !== "plantowatch";
         const [apiStats, tvDetails, movieDetails] = await Promise.all([
-          simklFetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
-          fetchItemDetails(shows.filter(watched), "tv"),
-          fetchItemDetails(movies.filter(watched), "movies"),
+          provider.fetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
+          provider.fetchItemDetails(shows.filter(watched), "tv"),
+          provider.fetchItemDetails(movies.filter(watched), "movies"),
         ]);
 
         statsRawData = { shows, movies, tvDetails, movieDetails, apiStats };
-        saveStatsCache(statsRawData);
+        provider.saveStatsCache(statsRawData);
       } catch (error) {
         statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
         return;

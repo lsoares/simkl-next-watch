@@ -1,15 +1,11 @@
 window.createTrendingFeature = function createTrendingFeature({
   els,
   escapeHtml,
-  fetchSimklDetails,
-  getAccessToken,
-  getAllSimklIds,
-  getSimklId,
   initDockEffect,
   loadSuggestions,
+  provider,
   renderPosterEntry,
   setGlobalStatus,
-  simklFetch,
   state,
 }) {
   const ADD_WATCHLIST_BTN_IMG = `+`;
@@ -31,11 +27,11 @@ window.createTrendingFeature = function createTrendingFeature({
       const year = getTrendingYear(m);
       const imgCode = m.poster || m.img || "";
       const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
-      const simklId = getSimklId(m);
+      const simklId = provider.getSimklId(m);
       const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
       const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
       const watched = simklId && state.libraryIds.has(String(simklId));
-      const loggedIn = !!getAccessToken();
+      const loggedIn = !!provider.getAccessToken();
       return renderPosterEntry({
         title,
         titleMeta: !watched && year ? String(year) : "",
@@ -53,24 +49,24 @@ window.createTrendingFeature = function createTrendingFeature({
   }
 
   async function ensureLibraryIds() {
-    if (state.libraryIds.size > 0 || !getAccessToken()) return;
+    if (state.libraryIds.size > 0 || !provider.getAccessToken()) return;
     try {
       const [sRes, mRes] = await Promise.all([
-        simklFetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch,completed").catch(() => ({})),
-        simklFetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
+        provider.fetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch,completed").catch(() => ({})),
+        provider.fetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
       ]);
       state.libraryIds = new Set([
-        ...(sRes.shows || []).flatMap(getAllSimklIds),
-        ...(mRes.movies || []).flatMap(getAllSimklIds),
+        ...(sRes.shows || []).flatMap(provider.getAllIds),
+        ...(mRes.movies || []).flatMap(provider.getAllIds),
       ]);
     } catch (_) {}
   }
 
   async function enrichTrendingRatings(items, apiType, containerEl) {
-    const details = await fetchSimklDetails(apiType, items);
+    const details = await provider.fetchDetails(apiType, items);
     details.forEach((detail, i) => {
       if (!detail?.ratings?.imdb?.rating) return;
-      const simklId = getSimklId(items[i]);
+      const simklId = provider.getSimklId(items[i]);
       const card = containerEl.querySelector(`[data-simkl-id="${simklId}"]`);
       if (!card || card.classList.contains("trending-watched") || card.querySelector(".imdb-badge")) return;
       const badge = `<span class="imdb-badge">IMDb ${detail.ratings.imdb.rating}</span>`;
@@ -89,12 +85,8 @@ window.createTrendingFeature = function createTrendingFeature({
       const title = btn.dataset.title;
       if (!simklId || !urlBase) return;
       btn.disabled = true;
-      const key = urlBase === "movies" ? "movies" : "shows";
       try {
-        await simklFetch("https://api.simkl.com/sync/add-to-list", {
-          method: "POST",
-          body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(simklId) } }] }),
-        });
+        await provider.addToWatchlist(urlBase === "movies" ? "movie" : "tv", simklId);
         state.libraryIds.add(simklId);
         btn.remove();
         card.classList.add("trending-watched");
@@ -113,7 +105,7 @@ window.createTrendingFeature = function createTrendingFeature({
     if (!els.hideTrendingWatched?.checked) return list.slice(0, VISIBLE_TRENDING_SLOTS);
     return list
       .filter((item) => {
-        const simklId = getSimklId(item);
+        const simklId = provider.getSimklId(item);
         return !simklId || !state.libraryIds.has(String(simklId));
       })
       .slice(0, VISIBLE_TRENDING_SLOTS);
@@ -121,7 +113,7 @@ window.createTrendingFeature = function createTrendingFeature({
 
   function restoreTrendingCards(simklId) {
     state.libraryIds.delete(String(simklId));
-    if (!getAccessToken()) return;
+    if (!provider.getAccessToken()) return;
     for (const card of document.querySelectorAll(`#trendingMoviesContent [data-simkl-id="${simklId}"], #trendingTvContent [data-simkl-id="${simklId}"]`)) {
       card.classList.remove("trending-watched");
       if (!card.querySelector(".add-watchlist-btn")) {
