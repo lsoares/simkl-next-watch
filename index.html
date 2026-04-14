@@ -259,25 +259,13 @@
 
       async function buildTvCandidates(shows) {
         const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
-        const episodesLeft = (s) => s.total_episodes_count > 0 ? s.total_episodes_count - (s.watched_episodes_count || 0) - (s.not_aired_episodes_count || 0) : Infinity;
-        const RECENTLY_ACTIVE_MS = 10 * 24 * 60 * 60 * 1000;
-        const hasRecentActivity = (s) => {
-          const lastWatched = new Date(s.last_watched_at || 0).getTime();
-          return Number.isFinite(lastWatched) && lastWatched > 0 && (Date.now() - lastWatched) <= RECENTLY_ACTIVE_MS;
-        };
-        // 0 = actively watching now, 1 = mid-season, 2 = season not started, 3 = plantowatch
-        const tvGroup = (s) => {
-          if (normalizeStatus(s.status) === "plantowatch") return 3;
-          const ep = parseNextEpisode(s.next_to_watch);
-          if (ep && ep.episode !== 1 && hasRecentActivity(s)) return 0;
-          return (ep && ep.episode === 1) ? 2 : 1;
-        };
+        // watching first (most recently watched first), then plantowatch (oldest added first)
         const byTvOrder = (a, b) => {
-          const ga = tvGroup(a), gb = tvGroup(b);
-          const aLast = ga === 3, bLast = gb === 3;
-          if (aLast !== bLast) return aLast ? 1 : -1;
-          if (aLast) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
-          return (ga - gb) || (episodesLeft(a) - episodesLeft(b)) || (new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0));
+          const aPlanning = normalizeStatus(a.status) === "plantowatch";
+          const bPlanning = normalizeStatus(b.status) === "plantowatch";
+          if (aPlanning !== bPlanning) return aPlanning ? 1 : -1;
+          if (aPlanning) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
+          return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
         };
         const queued = [
           ...shows
