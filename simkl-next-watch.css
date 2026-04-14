@@ -203,9 +203,9 @@
         position: absolute;
         top: 0;
         right: 0;
-        width: 48px;
+        width: var(--row-fade, 32px);
         height: 100%;
-        background: linear-gradient(to right, transparent, var(--bg));
+        background: linear-gradient(to right, color-mix(in srgb, var(--fade-bg, var(--bg)) 0%, transparent), var(--fade-bg, var(--bg)));
         pointer-events: none;
       }
       .media-section { timeline-scope: --media-scroll; }
@@ -226,7 +226,7 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         touch-action: pan-x;
-        padding-right: 48px;
+        padding-right: var(--row-fade, 32px);
       }
       .items-row::-webkit-scrollbar,
       .trending-row::-webkit-scrollbar { display: none; }
