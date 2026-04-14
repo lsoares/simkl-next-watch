@@ -83,10 +83,24 @@ window.createSimklProvider = function createSimklProvider({
 
   async function buildTvCandidates(shows) {
     const aired = (s) => (s.total_episodes_count ?? 0) === 0 || (s.total_episodes_count ?? 0) > (s.not_aired_episodes_count ?? 0);
+    const availableEpisodesLeft = (show) => {
+      const total = Number(show?.total_episodes_count ?? 0);
+      const notAired = Number(show?.not_aired_episodes_count ?? 0);
+      const watched = Number(show?.watched_episodes_count ?? 0);
+      if (!Number.isFinite(total) || total <= 0) return Number.POSITIVE_INFINITY;
+      return Math.max(0, total - notAired - watched);
+    };
+    const hasOnlyOneEpisodeToWatch = (show) => {
+      if (normalizeStatus(show.status) !== "watching") return false;
+      return availableEpisodesLeft(show) === 1;
+    };
     const byTvOrder = (a, b) => {
       const aPlanning = normalizeStatus(a.status) === "plantowatch";
       const bPlanning = normalizeStatus(b.status) === "plantowatch";
       if (aPlanning !== bPlanning) return aPlanning ? 1 : -1;
+      const aOneLeft = hasOnlyOneEpisodeToWatch(a);
+      const bOneLeft = hasOnlyOneEpisodeToWatch(b);
+      if (aOneLeft !== bOneLeft) return aOneLeft ? -1 : 1;
       if (aPlanning) return new Date(a.added_at || 0) - new Date(b.added_at || 0);
       return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
     };
