@@ -1,7 +1,7 @@
 {
-  "name": "Simkl Watch Next",
+  "name": "Next Watch",
   "short_name": "Watch Next",
-  "description": "Your personalized next episode and movie picker from Simkl",
+  "description": "Your personalized next episode and movie picker",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#111827",

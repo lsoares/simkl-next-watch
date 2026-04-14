@@ -1,7 +1,7 @@
-const CACHE = "simkl-nw-v3";
+const CACHE = "next-watch-v4";
 const SHELL = [
   "./index.html",
-  "./simkl-provider.js",
+  "./provider.js",
   "./trending-view.js",
   "./stats-view.js",
   "./icon.svg",

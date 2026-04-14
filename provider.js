@@ -54,6 +54,20 @@ window.createSimklProvider = function createSimklProvider({
     await fetchSimkl("https://api.simkl.com/sync/activities", {}, { clientId, accessToken });
   }
 
+  function getAuthErrorMessage(error) {
+    const raw = String(error?.message || "").trim();
+    if (raw === "user_token_failed") {
+      return "Simkl rejected that access token. Use a valid user access token for this app.";
+    }
+    if (raw === "api_key_failed") {
+      return "Simkl rejected that client ID. Check that the app client ID is correct.";
+    }
+    if (raw === "auth_failed") {
+      return "Simkl rejected those credentials. Check the client ID and access token.";
+    }
+    return raw || "That client ID or token didn’t work. Check both values and try again.";
+  }
+
   async function fetchDetail(type, simklId) {
     if (!simklId) return null;
     try {
@@ -254,6 +268,7 @@ window.createSimklProvider = function createSimklProvider({
     fetchDetail,
     fetchDetails,
     validateCredentials,
+    getAuthErrorMessage,
     fetchSuggestionLists,
     buildSuggestionsModel,
     enrichWithEpisodeTitle,
