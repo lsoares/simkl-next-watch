@@ -86,8 +86,8 @@
             </button>
           </div>
           <p class="field-help" id="providerHelpText">Paste your app client ID and an access token.</p>
-          <p class="field-help">1. Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
-          <p class="field-help" id="providerListAppsHelp" hidden>2. List your apps at <a id="providerListAppsLink" href="https://simkl.com/settings/developer" target="_blank" rel="noreferrer">apps</a>.</p>
+          <p class="field-help" id="providerCreateAppHelp">1. Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
+          <p class="field-help" id="providerListAppsHelp" hidden><a id="providerListAppsLink" href="https://simkl.com/settings/developer" target="_blank" rel="noreferrer">View apps</a></p>
           <label for="clientId">Client ID</label>
           <input id="clientId" placeholder="Client ID" style="width:100%;box-sizing:border-box" />
           <label for="accessToken" style="margin-top:14px">Access token</label>
@@ -361,6 +361,7 @@
         providerHelpText: document.getElementById("providerHelpText"),
         providerPicker: document.getElementById("providerPicker"),
         providerCreateAppLink: document.getElementById("providerCreateAppLink"),
+        providerCreateAppHelp: document.getElementById("providerCreateAppHelp"),
         providerListAppsHelp: document.getElementById("providerListAppsHelp"),
         providerListAppsLink: document.getElementById("providerListAppsLink"),
         saveCredentialsButton: document.getElementById("saveCredentialsButton"),
@@ -571,6 +572,8 @@
         els.authSetup.hidden = !loggedIn;
         els.logoutAreaInline.hidden = !loggedIn;
         els.loginStatusNote.hidden = !loggedIn;
+        els.providerHelpText.hidden = loggedIn;
+        els.providerCreateAppHelp.hidden = loggedIn;
         els.providerListAppsHelp.hidden = !loggedIn;
         updateProviderUi();
         syncViewportMetrics();
@@ -603,6 +606,8 @@
           showView("login");
           els.appIntro.hidden = true;
           els.authSetup.hidden = false;
+          els.providerHelpText.hidden = false;
+          els.providerCreateAppHelp.hidden = false;
           els.providerListAppsHelp.hidden = !getAccessToken();
         }
       }
@@ -900,6 +905,8 @@
         els.appIntro.hidden = loggedIn;
         els.authSetup.hidden = !loggedIn;
         els.loginStatusNote.hidden = !loggedIn;
+        els.providerHelpText.hidden = loggedIn;
+        els.providerCreateAppHelp.hidden = loggedIn;
         els.providerListAppsHelp.hidden = !loggedIn;
       }
 
