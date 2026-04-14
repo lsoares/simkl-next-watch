@@ -7,9 +7,7 @@ window.createTrendingFeature = function createTrendingFeature({
   getSimklId,
   initDockEffect,
   loadSuggestions,
-  renderPosterCard,
-  renderPosterMedia,
-  renderPosterTopText,
+  renderPosterEntry,
   setGlobalStatus,
   simklFetch,
   state,
@@ -19,10 +17,18 @@ window.createTrendingFeature = function createTrendingFeature({
 
   let trendingLoadedPeriod = null;
 
+  function getTrendingYear(item) {
+    const directYear = item?.year ?? item?.release_year ?? item?.start_year;
+    if (directYear) return String(directYear);
+    const datedValue = item?.released || item?.release_date || item?.first_aired || item?.aired || item?.premiered;
+    const match = String(datedValue || "").match(/\b(\d{4})\b/);
+    return match ? match[1] : "";
+  }
+
   function renderTrendingRow(items, urlBaseOverride) {
     return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
       const title = m.title || "";
-      const year = m.year || "";
+      const year = getTrendingYear(m);
       const imgCode = m.poster || m.img || "";
       const posterUrl = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
       const simklId = getSimklId(m);
@@ -30,22 +36,18 @@ window.createTrendingFeature = function createTrendingFeature({
       const url = fixedPath ? `https://simkl.com${fixedPath}` : simklId ? `https://simkl.com/${urlBaseOverride}/${simklId}` : "#";
       const watched = simklId && state.libraryIds.has(String(simklId));
       const loggedIn = !!getAccessToken();
-      const media = renderPosterMedia({ posterUrl, title, loading: "lazy" });
-      const topText = renderPosterTopText({
+      return renderPosterEntry({
         title,
+        titleMeta: !watched && year ? String(year) : "",
+        posterUrl,
+        loading: "lazy",
         imdbRating: !watched ? m.ratings?.imdb?.rating : "",
-        subtext: year ? String(year) : "",
-      });
-      const body = loggedIn && simklId && !watched
-        ? `<button class="add-watchlist-btn" title="Add ${escapeHtml(title)} to watchlist" data-title="${escapeHtml(title)}" data-year="${year}">${ADD_WATCHLIST_BTN_IMG}</button>`
-        : "";
-      return renderPosterCard({
         cardTag: "a",
         cardClass: watched ? "trending-watched" : "",
         cardAttrs: `href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${simklId || ""}" data-url-base="${escapeHtml(urlBaseOverride)}" data-title="${escapeHtml(title)}" data-year="${year || ""}"`,
-        media,
-        topText,
-        body,
+        body: loggedIn && simklId && !watched
+          ? `<button class="add-watchlist-btn" title="Add ${escapeHtml(title)} to watchlist" data-title="${escapeHtml(title)}" data-year="${year}">${ADD_WATCHLIST_BTN_IMG}</button>`
+          : "",
       });
     }).join("")}</div></div>`;
   }

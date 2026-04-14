@@ -225,6 +225,16 @@
         return { [key]: [{ ids: { simkl: simklId } }] };
       }
 
+      function getWatchedToastMessage(item, type) {
+        const ep = type === "tv" ? parseNextEpisode(item?.next_to_watch) : null;
+        const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item?.title || "Unknown title";
+        if (type !== "tv") return `Watched: ${label}`;
+        const total = (item?.total_episodes_count || 0) - (item?.not_aired_episodes_count || 0);
+        const watchedAfter = (item?.watched_episodes_count || 0) + 1;
+        const remainingAfter = Math.max(0, total - watchedAfter);
+        return total > 0 ? `Watched: ${label} · ${remainingAfter} left` : `Watched: ${label}`;
+      }
+
       function getSimklId(item) {
         const ids = getItemIds(item);
         return ids.simkl || ids.simkl_id || null;
@@ -580,9 +590,7 @@
             getSimklId,
             initDockEffect,
             loadSuggestions,
-            renderPosterCard,
-            renderPosterMedia,
-            renderPosterTopText,
+            renderPosterEntry,
             setGlobalStatus,
             simklFetch,
             state,
@@ -753,11 +761,9 @@
           await simklFetch("https://api.simkl.com/sync/history", { method: "POST", body: JSON.stringify(item.watchAction.payload) });
           const simklId = item.ids?.simkl;
           const key = type === "tv" ? "shows" : "movies";
-          const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
-          const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
           const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
-          setGlobalStatus(`Watched: ${label}`, false, simklId ? async () => {
+          setGlobalStatus(getWatchedToastMessage(item, type), false, simklId ? async () => {
             try {
               await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify(undoPayload || { [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
@@ -780,11 +786,9 @@
           const calls = [simklFetch("https://api.simkl.com/ratings", { method: "POST", body: JSON.stringify({ [key]: [{ ids: { simkl: simklId }, rating, rated_at: ratedAt }] }) })];
           if (item.watchAction) calls.push(simklFetch("https://api.simkl.com/sync/history", { method: "POST", body: JSON.stringify(item.watchAction.payload) }));
           await Promise.all(calls);
-          const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
-          const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item.title;
           const undoPayload = buildUndoHistoryPayload(item, type);
           await loadSuggestions();
-          setGlobalStatus(`Watched: ${label}`, false, async () => {
+          setGlobalStatus(getWatchedToastMessage(item, type), false, async () => {
             try {
               await simklFetch("https://api.simkl.com/sync/history/remove", { method: "POST", body: JSON.stringify(undoPayload || { [key]: [{ ids: { simkl: simklId } }] }) });
               await loadSuggestions();
@@ -825,11 +829,11 @@
           : posterImg;
       }
 
-      function renderPosterTopText({ title, titleUrl, imdbRating, imdbId, subtext = "", subtextUrl = "", codeHtml = "" }) {
+      function renderPosterTopText({ title, titleUrl, titleMeta = "", imdbRating, imdbId, subtext = "", subtextUrl = "", codeHtml = "" }) {
         return `<div class="poster-top-text">
-          ${titleUrl
-            ? `<a class="poster-title" href="${escapeHtml(titleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>`
-            : `<span class="poster-title">${escapeHtml(title)}</span>`}
+          <div class="poster-title">${titleUrl
+            ? `<a class="poster-title-link" href="${escapeHtml(titleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>`
+            : `<span class="poster-title-link">${escapeHtml(title)}</span>`}${titleMeta ? `<span class="poster-title-meta">(${escapeHtml(titleMeta)})</span>` : ""}</div>
           ${imdbRating ? (imdbId ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${imdbRating}</a>` : `<span class="imdb-badge">IMDb ${imdbRating}</span>`) : ""}
           ${subtext ? (subtextUrl ? `<a class="poster-episode" href="${escapeHtml(subtextUrl)}" target="_blank" rel="noreferrer">${escapeHtml(subtext)}</a>` : `<span class="poster-episode">${escapeHtml(subtext)}</span>`) : ""}
           ${codeHtml || ""}
@@ -850,51 +854,62 @@
           </${cardTag}>`;
       }
 
+      function renderPosterEntry({
+        title = "",
+        titleUrl = "",
+        titleMeta = "",
+        posterUrl = "",
+        mediaHref = "",
+        loading = "eager",
+        imdbRating = "",
+        imdbId = "",
+        subtext = "",
+        subtextUrl = "",
+        codeHtml = "",
+        cardTag = "article",
+        cardClass = "",
+        cardAttrs = "",
+        topAction = "",
+        body = "",
+        footer = "",
+      }) {
+        const media = renderPosterMedia({ posterUrl, href: mediaHref, title, loading });
+        const topText = renderPosterTopText({ title, titleUrl, titleMeta, imdbRating, imdbId, subtext, subtextUrl, codeHtml });
+        return renderPosterCard({ cardTag, cardClass, cardAttrs, media, topText, topAction, body, footer });
+      }
+
       function renderItem(item, type) {
         if (!item) return "";
 
-        const isUnstartedShow = type === "tv" && normalizeStatus(item.status) === "plantowatch";
+        const nextEpisode = parseNextEpisode(item.next_to_watch);
+        const isUnstartedShow = type === "tv" && (
+          normalizeStatus(item.status) === "plantowatch" ||
+          ((item.watched_episodes_count || 0) === 0 && nextEpisode?.episode === 1)
+        );
+        const isUnstartedMovie = type === "movie" && normalizeStatus(item.status) === "plantowatch";
         const showImdbBadge = type === "movie" || isUnstartedShow;
         const posterUrl = getPosterUrl(item);
-        const nextEpisode = parseNextEpisode(item.next_to_watch);
         const episodeName = (!isUnstartedShow && nextEpisode) ? (item.nextEpisodeTitle || null) : null;
         const episodeCode = (!isUnstartedShow && nextEpisode) ? formatEpisode(nextEpisode) : "";
         const episodeUrl = (!isUnstartedShow && nextEpisode) ? buildEpisodeUrl(item, nextEpisode) : "";
-        const remaining = type === "tv" && item.total_episodes_count > 0
-          ? item.total_episodes_count - (item.watched_episodes_count || 0) - (item.not_aired_episodes_count || 0)
-          : null;
-        const media = renderPosterMedia({ posterUrl, href: episodeUrl || item.url, title: item.title });
-        const topText = renderPosterTopText({
+        return renderPosterEntry({
           title: item.title,
           titleUrl: item.url,
+          titleMeta: (isUnstartedShow || isUnstartedMovie) && item.year ? String(item.year) : "",
+          posterUrl,
+          mediaHref: episodeUrl || item.url,
           imdbRating: showImdbBadge ? item.ratings?.imdb?.rating : "",
           imdbId: showImdbBadge ? item.ids?.imdb : "",
           subtext: episodeName,
           subtextUrl: episodeUrl,
           codeHtml: episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : "",
+          topAction: (type === "movie" || isUnstartedShow)
+            ? `<button class="poster-remove" title="Remove from list">${REMOVE_BTN_IMG}</button>`
+            : "",
+          body: item.watchAction
+            ? `<button class="mark-watched-btn" title="I've watched this">${MARK_WATCHED_BTN_IMG}</button>`
+            : "",
         });
-        const topAction = (type === "movie" || isUnstartedShow)
-          ? `<button class="poster-remove" title="Remove from list">${REMOVE_BTN_IMG}</button>`
-          : "";
-        const body = item.watchAction
-          ? `<button class="mark-watched-btn" title="I've watched this">${MARK_WATCHED_BTN_IMG}</button>`
-          : "";
-        const footer = (() => {
-          const total = (item.total_episodes_count || 0) - (item.not_aired_episodes_count || 0);
-          const watched = item.watched_episodes_count || 0;
-          if (type !== "tv" || total <= 0 || remaining <= 0) return "";
-          if (watched === 0) {
-            return `<div class="season-bar-wrap">
-              <div class="season-bar"><div class="season-bar-label">${remaining} left</div></div>
-            </div>`;
-          }
-          const pct = Math.min(100, Math.round(watched / total * 100));
-          return `<div class="season-bar-wrap">
-            <div class="season-bar"><div class="season-bar-fill" style="width:${pct}%"></div><div class="season-bar-label">${remaining} left</div></div>
-          </div>`;
-        })();
-
-        return renderPosterCard({ media, topText, topAction, body, footer });
       }
 
       function setGlobalStatus(message, isError = false, undoFn = null) {
