@@ -193,7 +193,22 @@
         gap: 28px;
       }
 
-      .media-section { position: relative; timeline-scope: --media-scroll; }
+      .media-section,
+      .trending-carousel {
+        position: relative;
+      }
+      .media-section::after,
+      .trending-carousel::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 48px;
+        height: 100%;
+        background: linear-gradient(to right, transparent, var(--bg));
+        pointer-events: none;
+      }
+      .media-section { timeline-scope: --media-scroll; }
       .section-label {
         font-size: 0.72rem;
         font-weight: 600;
@@ -202,7 +217,8 @@
         letter-spacing: 0.06em;
         margin: 0 0 8px;
       }
-      .items-row {
+      .items-row,
+      .trending-row {
         display: flex;
         gap: 10px;
         overflow-x: auto;
@@ -210,9 +226,11 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         touch-action: pan-x;
-        scroll-timeline: --media-scroll inline;
+        padding-right: 48px;
       }
-      .items-row::-webkit-scrollbar { display: none; }
+      .items-row::-webkit-scrollbar,
+      .trending-row::-webkit-scrollbar { display: none; }
+      .items-row { scroll-timeline: --media-scroll inline; }
       .row-item {
         flex-shrink: 0;
         width: calc((min(100vw, 680px) - 68px) / 3.2);
@@ -637,21 +655,8 @@
         flex-direction: column;
         gap: 20px;
       }
-      .trending-carousel {
-        position: relative;
-        timeline-scope: --trending-scroll;
-      }
-      .trending-row {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        touch-action: pan-x;
-        scroll-timeline: --trending-scroll inline;
-      }
-      .trending-row::-webkit-scrollbar { display: none; }
+      .trending-carousel { timeline-scope: --trending-scroll; }
+      .trending-row { scroll-timeline: --trending-scroll inline; }
       .trending-row .item-card {
         flex-shrink: 0;
         width: calc((min(100vw, 680px) - 64px) / 3);
