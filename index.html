@@ -380,6 +380,7 @@
                 <div class="poster-title">
                   ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>` : `<span class="poster-title-link">${escapeHtml(item.title)}</span>`}${isUnstarted && item.year ? `<span class="poster-title-meta">(${escapeHtml(String(item.year))})</span>` : ""}
                 </div>
+                ${!isUnstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
                 ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
               </div>
               ${type === "movie" || isUnstarted ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
@@ -470,6 +471,40 @@
         } catch (err) { showToast(err.message, true); }
       }
 
+      // ── Enrich episode titles (separate API call per show, cached) ──
+      function loadEpisodeCache() {
+        try { return JSON.parse(localStorage.getItem("next-watch-episode-cache")) || {}; } catch { return {}; }
+      }
+      function saveEpisodeCache(cache) {
+        try { localStorage.setItem("next-watch-episode-cache", JSON.stringify(cache)); } catch {}
+      }
+
+      async function enrichEpisodeTitles() {
+        const cache = loadEpisodeCache();
+        const results = await Promise.allSettled(tvItems.map(async (item) => {
+          const ep = parseNextEpisode(item.next_to_watch);
+          const id = simklId(item);
+          if (!ep || !id || item.status === "plantowatch") return null;
+          const cacheKey = `${id}:${ep.season}:${ep.episode}`;
+          if (cache[cacheKey]) return cache[cacheKey];
+          const episodes = await apiFetch(`/tv/episodes/${encodeURIComponent(id)}`);
+          if (!Array.isArray(episodes)) return null;
+          const match = episodes.find((e) => Number(e.season) === ep.season && Number(e.episode) === ep.episode && e.type === "episode");
+          const title = match?.title || null;
+          if (title) cache[cacheKey] = title;
+          return title;
+        }));
+        saveEpisodeCache(cache);
+        let changed = false;
+        results.forEach((r, i) => {
+          if (r.status === "fulfilled" && r.value) {
+            tvItems[i] = { ...tvItems[i], episodeTitle: r.value };
+            changed = true;
+          }
+        });
+        if (changed) renderRow(tvRow, tvItems, "tv");
+      }
+
       // ── Load suggestions ──
       async function loadSuggestions() {
         if (!getClientId() || !getAccessToken()) return;
@@ -485,6 +520,7 @@
           ].filter(Boolean));
           renderRow(tvRow, tvItems, "tv");
           renderRow(movieRow, movieItems, "movie");
+          enrichEpisodeTitles();
           if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
         } catch (err) {
           showToast(err.message || "Failed to load.", true);
