@@ -629,6 +629,7 @@
             renderRow(el.movieRow, movieItems, "movie");
             enrichEpisodeTitles();
             if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
+            else if (currentView === "trending") loadTrending();
           } catch (err) {
             handleError(err, "Failed to load.");
           } finally {
