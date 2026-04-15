@@ -670,18 +670,11 @@
           });
         }
 
-        const trendingCache = {};
-        const TRENDING_TTL = 5 * 60 * 1000;
-
         async function fetchTrending(period) {
-          const cached = trendingCache[period];
-          if (cached && Date.now() - cached.ts < TRENDING_TTL) return cached.data;
-          const data = await Promise.all([
+          return Promise.all([
             fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
             fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
           ]);
-          trendingCache[period] = { ts: Date.now(), data };
-          return data;
         }
 
         async function loadTrending() {
