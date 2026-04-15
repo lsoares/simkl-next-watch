@@ -294,18 +294,14 @@
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
 
-        /* Trending: 2 rows filling the viewport, matching suggestions layout */
+        /* Trending: reuse suggestions-grid layout */
         #trendingView {
           display: flex;
           flex-direction: column;
           height: var(--mobile-content-height);
         }
-        #trendingPeriodTabs { flex-shrink: 0; margin-bottom: 10px; }
-        .trending-grid { flex: 1; min-height: 0; gap: 10px; }
-        .trending-section { flex: 1; min-height: 0; overflow: hidden; }
-        .trending-carousel { height: 100%; }
-        .trending-row { height: 100%; padding-bottom: 0; }
-        .trending-row .item-card { height: 100%; width: calc(var(--dock-h, 80px) * 2 / 3 * var(--dock-scale, 1)); }
+        .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
+        #trendingGrid { flex: 1; min-height: 0; }
       }
 
       .nav-arrow {
@@ -648,8 +644,8 @@
       }
 
       /* inline views */
-      #trendingView, #loginView { width: 100%; }
-      #loginView { max-width: 400px; margin: 0 auto; }
+      #trendingView, #loginView { width: 100%; box-sizing: border-box; }
+      #loginView { max-width: 400px; margin: 0 auto; padding: 0 4px; }
       .trending-toolbar {
         display: flex;
         align-items: center;
@@ -658,21 +654,10 @@
         margin: 0 0 16px;
       }
       #trendingPeriodTabs { margin: 0; }
-      .trending-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-      .trending-carousel { timeline-scope: --trending-scroll; }
-      .trending-row { scroll-timeline: --trending-scroll inline; }
-      .trending-row .item-card {
-        flex-shrink: 0;
-        width: calc((min(100vw, 680px) - 64px) / 3);
-        aspect-ratio: 2/3;
-        height: auto;
+      #trendingGrid .item-card {
         text-decoration: none;
       }
-      .trending-row .poster-title {
+      #trendingGrid .poster-title {
         -webkit-line-clamp: 3;
       }
       .trending-watched { opacity: 0.35; }

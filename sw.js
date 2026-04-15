@@ -1,11 +1,7 @@
-const CACHE = "next-watch-v4";
+const CACHE = "next-watch-v5";
 const SHELL = [
   "./index.html",
-  "./provider.js",
-  "./trending-view.js",
-  "./stats-view.js",
   "./icon.png",
-  "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js",
 ];
 
 self.addEventListener("install", (e) => {
