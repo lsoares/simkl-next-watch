@@ -2,7 +2,7 @@
 
 ## Overview
 
-A new "ai" screen in Next Watch that uses OpenAI or Claude to suggest 3 movies/shows based on the user's ratings and a selected mood/genre prompt. Results display as poster cards. Requires an API key configured in-screen.
+A new "ai" screen in Next Watch that uses Gemini (free), OpenAI, or Claude to suggest 3 movies/shows based on the user's ratings and a selected mood/genre prompt. Results display as poster cards. Requires an API key configured in-screen.
 
 ## Navigation
 
@@ -14,7 +14,7 @@ A new "ai" screen in Next Watch that uses OpenAI or Claude to suggest 3 movies/s
 
 Blocks the screen until configured (same pattern as login/auth setup).
 
-- **Provider dropdown:** OpenAI / Claude
+- **Provider dropdown:** Gemini (free) / OpenAI / Claude
 - **API key input:** password field
 - **Storage:** `localStorage` keys `next-watch-ai-provider` and `next-watch-ai-key`
 - **Cleared on logout** (add to `clearAllStorage` / `logout` function)
@@ -66,6 +66,14 @@ You suggest movies and TV shows. Return exactly 3 suggestions as a JSON array: [
 ```
 My ratings: Breaking Bad:9,The Office:8,...
 Mood: Edge of my seat
+```
+
+**Gemini adapter (free tier: 15 RPM, 1M tokens/day):**
+```js
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=KEY
+Headers: Content-Type: application/json
+Body: { contents: [{ parts: [{ text: SYSTEM + "\n\n" + USER }] }], generationConfig: { temperature: 0.9 } }
+Response: data.candidates[0].content.parts[0].text
 ```
 
 **OpenAI adapter:**
