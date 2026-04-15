@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Next Watch</title>
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./icon.png" type="image/png" />
@@ -67,7 +67,7 @@
             <button class="range-tab" data-period="month" type="button">Month</button>
           </div>
           <label class="trending-filter-toggle">
-            <input type="checkbox" id="hideTrendingWatched" /> Hide watched
+            <input type="checkbox" id="hideTrendingWatched" /> Hide listed
           </label>
         </div>
         <div class="suggestions-grid" id="trendingGrid">
@@ -336,6 +336,7 @@
         accessToken: "next-watch-access-token",
         syncCache: "next-watch-sync-cache",
         trendingPeriod: "next-watch-trending-period",
+        hideWatched: "next-watch-hide-watched",
         episodeCache: "next-watch-episode-cache",
       };
 
@@ -649,15 +650,26 @@
           });
         }
 
+        const trendingCache = {};
+        const TRENDING_TTL = 5 * 60 * 1000;
+
+        async function fetchTrending(period) {
+          const cached = trendingCache[period];
+          if (cached && Date.now() - cached.ts < TRENDING_TTL) return cached.data;
+          const data = await Promise.all([
+            fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
+            fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
+          ]);
+          trendingCache[period] = { ts: Date.now(), data };
+          return data;
+        }
+
         async function loadTrending() {
           const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
           writeStorage(STORAGE.trendingPeriod, period);
           el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty">Loading...</p>`;
           try {
-            const [tvData, movieData] = await Promise.all([
-              fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
-              fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
-            ]);
+            const [tvData, movieData] = await fetchTrending(period);
             const hideWatched = el.hideTrendingWatched.checked;
             const filterFn = (item) => !hideWatched || !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             const tv = tvData.filter(filterFn).slice(0, 12);
@@ -773,7 +785,7 @@
         el.navNext.addEventListener("click", () => showView("next"));
         el.navTrending.addEventListener("click", () => showView("trending"));
         el.navLogin.addEventListener("click", () => showView("login"));
-        el.hideTrendingWatched.addEventListener("change", loadTrending);
+        el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.trendingPeriodTabs.addEventListener("click", (e) => {
           const tab = e.target.closest(".range-tab");
           if (!tab) return;
@@ -796,6 +808,11 @@
         // ── Boot ──
 
         hydrateUI();
+        el.hideTrendingWatched.checked = readStorage(STORAGE.hideWatched) === "true";
+        const savedPeriod = readStorage(STORAGE.trendingPeriod);
+        if (savedPeriod) {
+          el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod));
+        }
         handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
