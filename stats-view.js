@@ -240,32 +240,13 @@ window.createStatsFeature = function createStatsFeature({
   async function showStatsView() {
     showView("stats");
 
-    if (!statsRawData) statsRawData = provider.loadStatsCache();
+    if (!statsRawData) statsRawData = provider.loadStatsCache()?.data || null;
 
     if (!statsRawData) {
       statsContent.innerHTML = `<p class="empty">Loading…</p>`;
       try {
-        const [showsResponse, moviesResponse, settings] = await Promise.all([
-          provider.fetch("https://api.simkl.com/sync/all-items/shows/?status=watching,completed,hold,dropped&extended=full"),
-          provider.fetch("https://api.simkl.com/sync/all-items/movies/?status=watching,completed,hold,dropped&extended=full"),
-          provider.fetch("https://api.simkl.com/users/settings"),
-        ]);
-
-        const shows = normalizeList(showsResponse.shows);
-        const movies = normalizeList(moviesResponse.movies);
-        const userId = settings?.account?.id;
-        if (!userId) throw new Error("Could not determine user ID.");
-
         statsContent.innerHTML = `<p class="empty">Loading details…</p>`;
-        const watched = (s) => normalizeStatus(s.status) !== "plantowatch";
-        const [apiStats, tvDetails, movieDetails] = await Promise.all([
-          provider.fetch(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
-          provider.fetchItemDetails(shows.filter(watched), "tv"),
-          provider.fetchItemDetails(movies.filter(watched), "movies"),
-        ]);
-
-        statsRawData = { shows, movies, tvDetails, movieDetails, apiStats };
-        provider.saveStatsCache(statsRawData);
+        statsRawData = await provider.fetchStatsSourceData();
       } catch (error) {
         statsContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(error.message || "Failed to load stats.")}</p>`;
         return;

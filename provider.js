@@ -3,6 +3,7 @@ window.createSimklProvider = function createSimklProvider({
   GENRE_CACHE_TTL,
   STATS_CACHE_TTL,
   getClientId,
+  getClientSecret,
   getAccessToken,
   normalizeList,
   normalizeStatus,
@@ -10,6 +11,9 @@ window.createSimklProvider = function createSimklProvider({
   buildEpisodeWatchAction,
   getItemIds,
 }) {
+  const APP_NAME = "next-watch";
+  const APP_VERSION = "1.0";
+
   function getSimklId(item) {
     const ids = getItemIds(item);
     return ids.simkl || ids.simkl_id || null;
@@ -29,24 +33,64 @@ window.createSimklProvider = function createSimklProvider({
     };
   }
 
+  function appendRequiredParams(rawUrl, credentials = {}) {
+    const clientId = credentials.clientId ?? getClientId();
+    const url = new URL(rawUrl);
+    if (clientId && !url.searchParams.has("client_id")) url.searchParams.set("client_id", clientId);
+    if (!url.searchParams.has("app-name")) url.searchParams.set("app-name", APP_NAME);
+    if (!url.searchParams.has("app-version")) url.searchParams.set("app-version", APP_VERSION);
+    return url.toString();
+  }
+
   function buildHeaders(optionsHeaders = {}, credentials = {}) {
     const clientId = credentials.clientId ?? getClientId();
     const accessToken = credentials.accessToken ?? getAccessToken();
-    return {
+    const headers = {
       "Content-Type": "application/json",
       "simkl-api-key": clientId,
-      Authorization: `Bearer ${accessToken}`,
       ...optionsHeaders,
     };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    return headers;
   }
 
-  async function fetchSimkl(url, options = {}, credentials) {
-    const response = await fetch(url, {
+  async function fetchSimkl(rawUrl, options = {}, credentials = {}) {
+    const response = await fetch(appendRequiredParams(rawUrl, credentials), {
       ...options,
       headers: buildHeaders(options.headers || {}, credentials),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || payload.message || `Simkl request failed with ${response.status}.`);
+    return payload;
+  }
+
+  function buildAuthorizeUrl({ clientId, redirectUri, state = "" }) {
+    const url = new URL("https://simkl.com/oauth/authorize");
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("client_id", clientId);
+    url.searchParams.set("redirect_uri", redirectUri);
+    if (state) url.searchParams.set("state", state);
+    return url.toString();
+  }
+
+  async function exchangeAuthorizationCode({ clientId, clientSecret, code, redirectUri }) {
+    const response = await fetch(appendRequiredParams("https://api.simkl.com/oauth/token", { clientId, accessToken: "" }), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.access_token) {
+      throw new Error(payload.error || payload.message || `Simkl token exchange failed with ${response.status}.`);
+    }
     return payload;
   }
 
@@ -57,21 +101,164 @@ window.createSimklProvider = function createSimklProvider({
   function getAuthErrorMessage(error) {
     const raw = String(error?.message || "").trim();
     if (raw === "user_token_failed") {
-      return "Simkl rejected that access token. Use a valid user access token for this app.";
+      return "Simkl rejected the stored user access token. Reconnect this app to fetch a fresh token.";
     }
     if (raw === "api_key_failed") {
       return "Simkl rejected that client ID. Check that the app client ID is correct.";
     }
     if (raw === "auth_failed") {
-      return "Simkl rejected those credentials. Check the client ID and access token.";
+      return "Simkl rejected those credentials. Check the client ID and app secret, then reconnect.";
     }
-    return raw || "That client ID or token didn’t work. Check both values and try again.";
+    return raw || "That client ID or app secret didn’t work. Check both values and try again.";
+  }
+
+  function loadSyncCache() {
+    try { return JSON.parse(localStorage.getItem(storageKeys.syncCache) || "null"); } catch { return null; }
+  }
+
+  function saveSyncCache(data) {
+    try { localStorage.setItem(storageKeys.syncCache, JSON.stringify(data)); } catch {}
+  }
+
+  function projectCachedItem(item) {
+    return {
+      ids: item.ids || {},
+      title: item.title || "Unknown title",
+      year: item.year || "",
+      overview: item.overview || "",
+      poster: item.poster || "",
+      next_to_watch: item.next_to_watch || "",
+      url: item.url || "",
+      status: item.status || "",
+      added_at: item.added_at || null,
+      last_watched_at: item.last_watched_at || null,
+      total_episodes_count: item.total_episodes_count ?? 0,
+      not_aired_episodes_count: item.not_aired_episodes_count ?? 0,
+      watched_episodes_count: item.watched_episodes_count ?? 0,
+      runtime: item.runtime ?? 0,
+      user_rating: item.user_rating ?? null,
+      release_date: item.release_date || null,
+      nextSeasonImg: item.nextSeasonImg || null,
+      type: item.type || null,
+    };
+  }
+
+  function mergeCachedItems(existingItems, nextItems) {
+    const merged = new Map();
+    for (const item of existingItems || []) {
+      const id = getSimklId(item);
+      if (!id) continue;
+      merged.set(String(id), item);
+    }
+    for (const item of nextItems || []) {
+      const id = getSimklId(item);
+      if (!id) continue;
+      merged.set(String(id), item);
+    }
+    return [...merged.values()];
+  }
+
+  function removeItemsMissingFromDelta(existingItems, deltaItems) {
+    const removals = new Set(
+      (deltaItems || [])
+        .filter((item) => normalizeStatus(item.status) === "deleted")
+        .map((item) => String(getSimklId(item)))
+        .filter(Boolean)
+    );
+    if (!removals.size) return existingItems || [];
+    return (existingItems || []).filter((item) => !removals.has(String(getSimklId(item))));
+  }
+
+  async function fetchActivities() {
+    return fetchSimkl("https://api.simkl.com/sync/activities");
+  }
+
+  function getActivitiesSignature(activities) {
+    try { return JSON.stringify(activities || {}); } catch { return ""; }
+  }
+
+  function extractLatestActivityTimestamp(value) {
+    let latest = "";
+    (function walk(node) {
+      if (!node) return;
+      if (typeof node === "string" && /^\d{4}-\d{2}-\d{2}T/.test(node)) {
+        if (!latest || node > latest) latest = node;
+        return;
+      }
+      if (Array.isArray(node)) {
+        for (const item of node) walk(item);
+        return;
+      }
+      if (typeof node === "object") {
+        for (const entry of Object.values(node)) walk(entry);
+      }
+    })(value);
+    return latest;
+  }
+
+  async function fetchInitialLibrary(type) {
+    const response = await fetchSimkl(`https://api.simkl.com/sync/all-items/${type}/?extended=full&episode_watched_at=yes`);
+    return normalizeList(response?.[type] || response || []).map(projectCachedItem);
+  }
+
+  async function performInitialSync(activities) {
+    const shows = await fetchInitialLibrary("shows");
+    const movies = await fetchInitialLibrary("movies");
+    const anime = await fetchInitialLibrary("anime").catch(() => []);
+    const cache = {
+      activitiesSignature: getActivitiesSignature(activities),
+      lastActivityAt: extractLatestActivityTimestamp(activities),
+      syncedAt: new Date().toISOString(),
+      shows: { items: shows },
+      movies: { items: movies },
+      anime: { items: anime },
+    };
+    saveSyncCache(cache);
+    return cache;
+  }
+
+  async function performDeltaSync(cache, activities) {
+    const dateFrom = cache?.lastActivityAt;
+    if (!dateFrom) return performInitialSync(activities);
+    const response = await fetchSimkl(`https://api.simkl.com/sync/all-items/?date_from=${encodeURIComponent(dateFrom)}`);
+    const deltaShows = normalizeList(response?.shows || []).map(projectCachedItem);
+    const deltaMovies = normalizeList(response?.movies || []).map(projectCachedItem);
+    const deltaAnime = normalizeList(response?.anime || []).map(projectCachedItem);
+    const nextCache = {
+      activitiesSignature: getActivitiesSignature(activities),
+      lastActivityAt: extractLatestActivityTimestamp(activities) || dateFrom,
+      syncedAt: new Date().toISOString(),
+      shows: {
+        items: mergeCachedItems(removeItemsMissingFromDelta(cache?.shows?.items, deltaShows), deltaShows),
+      },
+      movies: {
+        items: mergeCachedItems(removeItemsMissingFromDelta(cache?.movies?.items, deltaMovies), deltaMovies),
+      },
+      anime: {
+        items: mergeCachedItems(removeItemsMissingFromDelta(cache?.anime?.items, deltaAnime), deltaAnime),
+      },
+    };
+    saveSyncCache(nextCache);
+    return nextCache;
+  }
+
+  async function getSyncedMasterData({ forceFull = false } = {}) {
+    const activities = await fetchActivities();
+    const activitiesSignature = getActivitiesSignature(activities);
+    const cache = loadSyncCache();
+    if (!forceFull && cache?.activitiesSignature && cache.activitiesSignature === activitiesSignature) {
+      return cache;
+    }
+    if (forceFull || !cache?.shows?.items || !cache?.movies?.items || !cache?.lastActivityAt) {
+      return performInitialSync(activities);
+    }
+    return performDeltaSync(cache, activities);
   }
 
   async function fetchDetail(type, simklId) {
     if (!simklId) return null;
     try {
-      return await fetchSimkl(`https://api.simkl.com/${type}/${encodeURIComponent(simklId)}?client_id=${encodeURIComponent(getClientId())}`);
+      return await fetchSimkl(`https://api.simkl.com/${type}/${encodeURIComponent(simklId)}`);
     } catch {
       return null;
     }
@@ -147,18 +334,19 @@ window.createSimklProvider = function createSimklProvider({
   }
 
   async function fetchSuggestionLists() {
-    const [showsResponse, moviesResponse, completedShowsRes, completedMoviesRes] = await Promise.all([
-      fetchSimkl("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch&extended=full&episode_watched_at=yes"),
-      fetchSimkl("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch&extended=full"),
-      fetchSimkl("https://api.simkl.com/sync/all-items/shows/?status=completed").catch(() => ({})),
-      fetchSimkl("https://api.simkl.com/sync/all-items/movies/?status=completed").catch(() => ({})),
-    ]);
-
+    const synced = await getSyncedMasterData();
+    const shows = synced.shows?.items || [];
+    const movies = synced.movies?.items || [];
+    const anime = synced.anime?.items || [];
+    const activeShows = shows.filter((item) => ["watching", "plantowatch"].includes(normalizeStatus(item.status)));
+    const activeMovies = movies.filter((item) => ["watching", "plantowatch"].includes(normalizeStatus(item.status)));
+    const activeAnime = anime.filter((item) => ["watching", "plantowatch"].includes(normalizeStatus(item.status)));
     return {
-      shows: normalizeList(showsResponse.shows),
-      movies: normalizeList(moviesResponse.movies),
-      completedShows: completedShowsRes.shows || [],
-      completedMovies: completedMoviesRes.movies || [],
+      shows: activeShows.concat(activeAnime),
+      movies: activeMovies,
+      completedShows: shows.filter((item) => normalizeStatus(item.status) === "completed")
+        .concat(anime.filter((item) => normalizeStatus(item.status) === "completed")),
+      completedMovies: movies.filter((item) => normalizeStatus(item.status) === "completed"),
     };
   }
 
@@ -203,14 +391,14 @@ window.createSimklProvider = function createSimklProvider({
       const raw = localStorage.getItem(storageKeys.statsCache);
       if (!raw) return null;
       const cached = JSON.parse(raw);
-      return Date.now() - cached.ts > STATS_CACHE_TTL ? null : cached.data;
+      return Date.now() - cached.ts > STATS_CACHE_TTL ? null : cached;
     } catch {
       return null;
     }
   }
 
-  function saveStatsCache(data) {
-    try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), data })); } catch {}
+  function saveStatsCache(data, activitiesSignature = "") {
+    try { localStorage.setItem(storageKeys.statsCache, JSON.stringify({ ts: Date.now(), activitiesSignature, data })); } catch {}
   }
 
   async function fetchItemDetails(items, type) {
@@ -240,6 +428,29 @@ window.createSimklProvider = function createSimklProvider({
       if (val?.network) networks[val.network] = (networks[val.network] || 0) + 1;
     }
     return { genres, networks };
+  }
+
+  async function fetchStatsSourceData() {
+    const syncCache = await getSyncedMasterData();
+    const statsCache = loadStatsCache();
+    if (statsCache?.activitiesSignature && statsCache.activitiesSignature === syncCache.activitiesSignature) return statsCache.data;
+
+    const settings = await fetchSimkl("https://api.simkl.com/users/settings");
+    const userId = settings?.account?.id;
+    if (!userId) throw new Error("Could not determine user ID.");
+    const shows = (syncCache.shows?.items || []).concat(syncCache.anime?.items || [])
+      .filter((item) => ["watching", "completed", "hold", "dropped"].includes(normalizeStatus(item.status)));
+    const movies = (syncCache.movies?.items || [])
+      .filter((item) => ["watching", "completed", "hold", "dropped"].includes(normalizeStatus(item.status)));
+    const watched = (item) => normalizeStatus(item.status) !== "plantowatch";
+    const [apiStats, tvDetails, movieDetails] = await Promise.all([
+      fetchSimkl(`https://api.simkl.com/users/${encodeURIComponent(userId)}/stats`, { method: "POST" }),
+      fetchItemDetails(shows.filter(watched), "tv"),
+      fetchItemDetails(movies.filter(watched), "movies"),
+    ]);
+    const data = { shows, movies, tvDetails, movieDetails, apiStats };
+    saveStatsCache(data, syncCache.activitiesSignature || "");
+    return data;
   }
 
   function addToWatchlist(type, simklId) {
@@ -279,6 +490,10 @@ window.createSimklProvider = function createSimklProvider({
     getSimklId,
     getAllIds: getAllSimklIds,
     fetch: fetchSimkl,
+    fetchActivities,
+    getSyncedMasterData,
+    buildAuthorizeUrl,
+    exchangeAuthorizationCode,
     fetchDetail,
     fetchDetails,
     validateCredentials,
@@ -287,6 +502,7 @@ window.createSimklProvider = function createSimklProvider({
     buildSuggestionsModel,
     enrichWithEpisodeTitle,
     fetchItemDetails,
+    fetchStatsSourceData,
     loadStatsCache,
     saveStatsCache,
     addToWatchlist,

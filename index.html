@@ -1,858 +1,577 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Next Watch</title>
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./icon.png" type="image/png" />
     <link rel="apple-touch-icon" href="./icon.png" />
-    <meta name="theme-color" content="#111827" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Next Watch" />
     <link rel="stylesheet" href="./next-watch.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="./trending-view.js"></script>
-    <script src="./stats-view.js"></script>
-    <script src="./provider.js"></script>
   </head>
   <body>
+    <nav class="top-bar" id="topBar" hidden>
+      <div class="top-bar-scroll">
+        <button id="navNext" class="tiny-link active-nav" type="button">next</button>
+        <button id="navTrending" class="tiny-link" type="button">trending</button>
+        <button id="navLogin" class="tiny-link" type="button">login</button>
+        <button id="installButton" class="tiny-link hidden" type="button">install</button>
+      </div>
+    </nav>
+
     <main>
-      <div class="suggestions-grid">
-        <div class="media-section">
-          <div class="items-row" id="tvRow"></div>
+      <!-- Login view -->
+      <div id="loginView" hidden>
+        <div class="app-intro" id="appIntro">
+          <p class="app-intro-tagline">Your next episode or movie, at a glance.</p>
+          <p class="app-intro-desc">Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies &mdash; no browsing, no thinking.</p>
+          <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
         </div>
-        <div class="media-section">
-          <div class="items-row" id="movieRow"></div>
+        <div id="authSetup" hidden>
+          <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials here if you need to switch accounts.</p>
+          <p class="field-help">Paste your app client ID and app secret from <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">simkl.com/settings/developer</a>.</p>
+          <div style="margin-bottom:12px">
+            <label for="clientIdInput">Client ID</label>
+            <input id="clientIdInput" type="text" autocomplete="off" />
+          </div>
+          <div style="margin-bottom:12px">
+            <label for="clientSecretInput">App Secret</label>
+            <input id="clientSecretInput" type="password" autocomplete="off" />
+          </div>
+          <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
+          <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
+            <button class="tiny-link" id="logoutBtn" type="button">logout</button>
+          </div>
         </div>
       </div>
 
-      <div class="top-bar">
-        <div class="top-bar-scroll">
-          <button id="goHomeButton" class="tiny-link" type="button">next</button>
-          <button id="openTrendingButton" class="tiny-link" type="button">trending</button>
-          <button id="openStatsModalButton" class="tiny-link" type="button">stats</button>
-          <button id="openAuthModalButton" class="tiny-link" type="button">login</button>
-          <button id="installButton" class="tiny-link" type="button">install</button>
+      <!-- Next view -->
+      <div id="nextView" class="suggestions-grid" hidden>
+        <div class="media-section">
+          <div id="tvRow" class="items-row"></div>
+        </div>
+        <div class="media-section">
+          <div id="movieRow" class="items-row"></div>
         </div>
       </div>
-      <div id="statsView" hidden>
-        <div class="range-tabs" style="margin:0 0 14px">
-          <button class="range-tab" data-range="30d">30d</button>
-          <button class="range-tab" data-range="6m">6m</button>
-          <button class="range-tab active" data-range="all">All</button>
-        </div>
-        <div id="statsContent"><p class="empty">Loading…</p></div>
-      </div>
+
+      <!-- Trending view -->
       <div id="trendingView" hidden>
-        <div class="trending-toolbar">
+        <div class="trending-toolbar" id="trendingToolbar">
           <div class="range-tabs" id="trendingPeriodTabs">
-            <button class="range-tab active" data-period="today">Today</button>
-            <button class="range-tab" data-period="week">Week</button>
-            <button class="range-tab" data-period="month">Month</button>
+            <button class="range-tab active" data-period="today" type="button">Today</button>
+            <button class="range-tab" data-period="week" type="button">Week</button>
+            <button class="range-tab" data-period="month" type="button">Month</button>
           </div>
-          <label class="trending-filter-toggle" for="hideTrendingWatched">
-            <input id="hideTrendingWatched" type="checkbox" />
-            <span>Hide added/watched</span>
+          <label class="trending-filter-toggle">
+            <input type="checkbox" id="hideTrendingWatched" /> Hide watched
           </label>
         </div>
         <div class="trending-grid">
-          <div class="trending-section" id="trendingTvContent"></div>
-          <div class="trending-section" id="trendingMoviesContent"></div>
-        </div>
-      </div>
-      <div id="loginView" hidden>
-        <div id="appIntro" class="app-intro">
-          <p class="app-intro-tagline">Your next episode or movie, at a glance.</p>
-          <p class="app-intro-desc" id="appIntroDesc">Connect your account and Next Watch surfaces what to watch next across all your shows and movies — no browsing, no thinking.</p>
-          <button class="app-intro-cta" id="getStartedBtn">Get started</button>
-        </div>
-        <div id="authSetup" hidden>
-          <p id="loginStatusNote" class="field-help" hidden>You're already connected. Update the client ID or token here if you need to switch accounts.</p>
-          <p class="field-help">Connect your Simkl account.</p>
-          <p class="field-help" id="providerHelpText">Paste your app client ID and an access token.</p>
-          <p class="field-help" id="providerCreateAppHelp">1. Create a new app at <a id="providerCreateAppLink" href="https://simkl.com/settings/developer/new" target="_blank" rel="noreferrer">new app</a>.</p>
-          <p class="field-help" id="providerListAppsHelp" hidden><a id="providerListAppsLink" href="https://simkl.com/settings/developer" target="_blank" rel="noreferrer">View apps</a></p>
-          <label for="clientId">Client ID</label>
-          <input id="clientId" placeholder="Client ID" style="width:100%;box-sizing:border-box" />
-          <label for="accessToken" style="margin-top:14px">Access token</label>
-          <input id="accessToken" placeholder="Access token" autocapitalize="off" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box" />
-          <div class="actions" style="margin-top:12px">
-            <button id="saveCredentialsButton" class="secondary" type="button">Connect</button>
+          <div class="trending-section">
+            <div id="trendingTvContent"></div>
+          </div>
+          <div class="trending-section">
+            <div id="trendingMoviesContent"></div>
           </div>
         </div>
-        <div id="logoutAreaInline" hidden style="margin-top:16px;text-align:center">
-          <button id="logoutButton" class="tiny-link" type="button">logout</button>
-        </div>
       </div>
-      <div id="loadingSpinner" class="spinner" hidden></div>
-      <div id="globalStatus" class="status toast" hidden></div>
     </main>
 
-
-
+    <div class="spinner" id="loadingSpinner" hidden></div>
+    <div class="toast" id="toast" hidden></div>
 
     <script>
-      let toastTimer;
-
-      const storageKeys = {
+      // ── Storage keys ──
+      const STORAGE = {
         clientId: "next-watch-client-id",
+        clientSecret: "next-watch-client-secret",
         accessToken: "next-watch-access-token",
-        genreCache: "next-watch-genre-cache",
-        statsCache: "next-watch-stats-cache",
+        syncCache: "next-watch-sync-cache",
         trendingPeriod: "next-watch-trending-period",
-        trendingHideWatched: "next-watch-trending-hide-watched",
-      };
-      const legacyStorageKeys = {
-        clientId: "simkl-client-id",
-        accessToken: "simkl-access-token",
-        genreCache: "simkl-genre-cache",
-        statsCache: "simkl-stats-cache",
-        trendingPeriod: "simkl-trending-period",
-        trendingHideWatched: "simkl-trending-hide-watched",
       };
 
-      const GENRE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
-      const STATS_CACHE_TTL = 15 * 60 * 1000;           // 15 min
-      const scrollPositions = new Map();
-      const providerMeta = {
-        name: "Simkl",
-        introText: "Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies.",
-        helpText: "Paste your app client ID and an access token.",
-        createAppUrl: "https://simkl.com/settings/developer/new",
-        listAppsUrl: "https://simkl.com/settings/developer",
-        clientIdPlaceholder: "Client ID",
-        accessTokenPlaceholder: "Access token",
-      };
+      // ── DOM refs ──
+      const $ = (id) => document.getElementById(id);
+      const topBar = $("topBar");
+      const navNext = $("navNext");
+      const navTrending = $("navTrending");
+      const navLogin = $("navLogin");
+      const loginView = $("loginView");
+      const appIntro = $("appIntro");
+      const authSetup = $("authSetup");
+      const loginStatusNote = $("loginStatusNote");
+      const clientIdInput = $("clientIdInput");
+      const clientSecretInput = $("clientSecretInput");
+      const connectBtn = $("connectBtn");
+      const logoutArea = $("logoutArea");
+      const logoutBtn = $("logoutBtn");
+      const getStartedBtn = $("getStartedBtn");
+      const nextView = $("nextView");
+      const tvRow = $("tvRow");
+      const movieRow = $("movieRow");
+      const trendingView = $("trendingView");
+      const trendingPeriodTabs = $("trendingPeriodTabs");
+      const hideTrendingWatched = $("hideTrendingWatched");
+      const trendingTvContent = $("trendingTvContent");
+      const trendingMoviesContent = $("trendingMoviesContent");
+      const loadingSpinner = $("loadingSpinner");
+      const toast = $("toast");
+      const installButton = $("installButton");
 
-      // ── Repo layer (API, cache, data transforms — no DOM) ───────────────────
+      // ── Icons (base64) ──
+      const ICON_CHECK = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" />`;
+      const ICON_REMOVE = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
 
-      function getClientId()    { return localStorage.getItem(storageKeys.clientId) || localStorage.getItem(legacyStorageKeys.clientId) || ""; }
-      function getAccessToken() { return localStorage.getItem(storageKeys.accessToken) || localStorage.getItem(legacyStorageKeys.accessToken) || ""; }
-      function getTrendingPeriod() { return localStorage.getItem(storageKeys.trendingPeriod) || localStorage.getItem(legacyStorageKeys.trendingPeriod) || "today"; }
-      function getHideTrendingWatched() {
-        const value = localStorage.getItem(storageKeys.trendingHideWatched) ?? localStorage.getItem(legacyStorageKeys.trendingHideWatched);
-        return value === "true";
+      // ── State ──
+      let currentView = null;
+      let toastTimer = null;
+      let libraryIds = new Set();
+      let tvItems = [];
+      let movieItems = [];
+
+      // ── Helpers ──
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
       }
 
-      function migrateLegacyStorage() {
-        for (const [key, nextKey] of Object.entries(storageKeys)) {
-          if (localStorage.getItem(nextKey) != null) continue;
-          const legacyKey = legacyStorageKeys[key];
-          if (!legacyKey) continue;
-          const legacyValue = localStorage.getItem(legacyKey);
-          if (legacyValue != null) localStorage.setItem(nextKey, legacyValue);
+      function getClientId() { return localStorage.getItem(STORAGE.clientId) || ""; }
+      function getClientSecret() { return localStorage.getItem(STORAGE.clientSecret) || ""; }
+      function getAccessToken() { return localStorage.getItem(STORAGE.accessToken) || ""; }
+
+      // ── Toast ──
+      function showToast(msg, isError = false, undoFn = null) {
+        clearTimeout(toastTimer);
+        toast.hidden = false;
+        toast.style.color = isError ? "#fca5a5" : "";
+        toast.innerHTML = escapeHtml(msg) + (undoFn ? ` <button class="tiny-link" id="undoBtn" style="color:inherit;margin-left:8px">Undo</button>` : "");
+        if (undoFn) $("undoBtn").addEventListener("click", () => { toast.hidden = true; undoFn(); });
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 8000);
+      }
+
+      // ── Viewport metrics ──
+      function syncViewportMetrics() {
+        const h = window.visualViewport?.height || window.innerHeight;
+        document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
+        if (topBar) document.documentElement.style.setProperty("--top-bar-height", `${Math.ceil(topBar.getBoundingClientRect().height)}px`);
+      }
+      syncViewportMetrics();
+      window.addEventListener("resize", syncViewportMetrics, { passive: true });
+      window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true });
+
+      // ── API layer ──
+      const API_BASE = "https://api.simkl.com";
+
+      function apiHeaders() {
+        const headers = { "Content-Type": "application/json", "simkl-api-key": getClientId() };
+        const token = getAccessToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+        return headers;
+      }
+
+      async function apiFetch(path, options = {}) {
+        const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...apiHeaders(), ...options.headers } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`);
+        return data;
+      }
+
+      // ── Sync (following https://simkl.docs.apiary.io/#reference/sync/how-to-use-sync) ──
+      function loadSyncCache() {
+        try { return JSON.parse(localStorage.getItem(STORAGE.syncCache)) || null; } catch { return null; }
+      }
+
+      function saveSyncCache(cache) {
+        try { localStorage.setItem(STORAGE.syncCache, JSON.stringify(cache)); } catch {}
+      }
+
+      async function fetchActivities() {
+        return apiFetch("/sync/activities", { method: "POST" });
+      }
+
+      function activitiesSignature(activities) {
+        try { return JSON.stringify(activities); } catch { return ""; }
+      }
+
+      function latestTimestamp(obj) {
+        let latest = "";
+        (function walk(node) {
+          if (!node) return;
+          if (typeof node === "string" && /^\d{4}-\d{2}-\d{2}T/.test(node)) { if (node > latest) latest = node; return; }
+          if (typeof node === "object") for (const v of Object.values(node)) walk(v);
+        })(obj);
+        return latest;
+      }
+
+      function normalizeStatus(s) { return String(s || "").toLowerCase().replace(/\s+/g, ""); }
+
+      function normalizeItem(item) {
+        const media = item.show || item.movie || item;
+        const ids = media.ids || item.ids || {};
+        return {
+          ids,
+          title: media.title || "Unknown",
+          year: media.year || "",
+          poster: media.poster || media.img || "",
+          runtime: media.runtime || 0,
+          url: media.url || "",
+          status: normalizeStatus(item.status),
+          next_to_watch: item.next_to_watch || "",
+          added_at: item.added_to_watchlist_at || item.added_at || null,
+          last_watched_at: item.last_watched_at || null,
+          watched_episodes_count: item.watched_episodes_count ?? 0,
+          total_episodes_count: item.total_episodes_count ?? 0,
+          not_aired_episodes_count: item.not_aired_episodes_count ?? 0,
+          user_rating: item.user_rating ?? null,
+          type: item.show ? "tv" : item.movie ? "movie" : (item.anime_type ? "tv" : null),
+        };
+      }
+
+      async function fetchAllItems(type, dateFrom) {
+        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" });
+        if (dateFrom) params.set("date_from", dateFrom);
+        const data = await apiFetch(`/sync/all-items/${type}/?${params}`);
+        return (data?.[type] || data || []).map(normalizeItem);
+      }
+
+      async function sync() {
+        // Step 1: Always fetch activities first (per API rules)
+        const activities = await fetchActivities();
+        const sig = activitiesSignature(activities);
+        const cache = loadSyncCache();
+
+        // Step 2: If nothing changed, return cached data
+        if (cache?.sig === sig && cache.shows && cache.movies) return cache;
+
+        // Step 3: Fetch items (full or delta)
+        const dateFrom = cache?.lastActivity || null;
+        const needsFull = !cache?.shows || !cache?.movies || !dateFrom;
+
+        let shows, movies, anime;
+        if (needsFull) {
+          [shows, movies, anime] = await Promise.all([
+            fetchAllItems("shows"),
+            fetchAllItems("movies"),
+            fetchAllItems("anime").catch(() => []),
+          ]);
+        } else {
+          // Delta sync: only items changed since last activity
+          [shows, movies, anime] = await Promise.all([
+            fetchAllItems("shows", dateFrom),
+            fetchAllItems("movies", dateFrom),
+            fetchAllItems("anime", dateFrom).catch(() => []),
+          ]);
+          // Merge with existing cache
+          shows = mergeItems(cache.shows, shows);
+          movies = mergeItems(cache.movies, movies);
+          anime = mergeItems(cache.anime || [], anime);
         }
+
+        const next = { sig, lastActivity: latestTimestamp(activities), shows, movies, anime };
+        saveSyncCache(next);
+        return next;
       }
 
-      function setActiveTrendingPeriod(period) {
-        if (!period) return;
-        const periodBtn = els.trendingPeriodTabs.querySelector(`[data-period="${period}"]`);
-        if (!periodBtn) return;
-        els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((b) => b.classList.remove("active"));
-        periodBtn.classList.add("active");
+      function mergeItems(existing, updated) {
+        const map = new Map();
+        for (const item of existing) { const id = simklId(item); if (id) map.set(id, item); }
+        for (const item of updated) {
+          const id = simklId(item);
+          if (!id) continue;
+          if (item.status === "deleted") map.delete(id);
+          else map.set(id, item);
+        }
+        return [...map.values()];
       }
 
-      function normalizeStatus(status) {
-        return String(status || "").toLowerCase().replace(/\s+/g, "");
+      function simklId(item) {
+        const ids = item?.ids || {};
+        return String(ids.simkl || ids.simkl_id || "");
       }
 
-      function slugifyTitle(value) {
-        return String(value || "")
-          .toLowerCase()
-          .normalize("NFKD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-      }
-
+      // ── Next episode parsing ──
       function parseNextEpisode(value) {
         if (!value) return null;
         if (typeof value === "object") {
-          const season  = Number(value.season  ?? value.season_number  ?? value.seasonNumber);
-          const episode = Number(value.episode ?? value.episode_number ?? value.episodeNumber ?? value.number);
-          return Number.isFinite(season) && Number.isFinite(episode) ? { season, episode } : null;
+          const s = Number(value.season ?? value.season_number);
+          const e = Number(value.episode ?? value.episode_number ?? value.number);
+          return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null;
         }
-        if (typeof value !== "string") return null;
-        const match = value.match(/S(\d+)E(\d+)/i);
-        return match ? { season: Number(match[1]), episode: Number(match[2]) } : null;
+        const m = String(value).match(/S(\d+)E(\d+)/i);
+        return m ? { season: Number(m[1]), episode: Number(m[2]) } : null;
       }
 
       function formatEpisode({ season, episode }) {
         return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
       }
 
-      function buildEpisodeUrl(item, nextEpisode) {
-        if (!item?.url || !nextEpisode) return "";
-        return `${item.url.replace(/\/+$/, "").replace(/\/movies\//, "/tv/")}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/`;
+      // ── Build suggestions ──
+      function buildTvSuggestions(shows) {
+        const aired = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count;
+
+        const watching = shows
+          .filter((s) => s.status === "watching" && parseNextEpisode(s.next_to_watch) && aired(s))
+          .sort((a, b) => {
+            // Shows with only 1 episode left go first, sorted by least recently watched
+            const aLeft = availableLeft(a), bLeft = availableLeft(b);
+            if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1;
+            if (aLeft === 1) return new Date(a.last_watched_at || 0) - new Date(b.last_watched_at || 0);
+            return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
+          });
+
+        const planToWatch = shows
+          .filter((s) => s.status === "plantowatch" && aired(s))
+          .sort((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0));
+
+        return [...watching, ...planToWatch];
       }
 
-      function buildSimklUrl(media) {
-        if (media?.url && /^https?:\/\//i.test(media.url)) return media.url.replace(/\/+$/, "");
-        const simklId = media?.ids?.simkl;
-        if (!simklId) return "";
-        const slug = slugifyTitle(media.title);
-        if (media.type === "movie" || media.release_date || (media.runtime && !media.aired_episodes))
-          return slug ? `https://simkl.com/movies/${simklId}/${slug}` : `https://simkl.com/movies/${simklId}`;
-        return slug ? `https://simkl.com/tv/${simklId}/${slug}` : `https://simkl.com/tv/${simklId}`;
+      function availableLeft(show) {
+        const total = show.total_episodes_count || 0;
+        const notAired = show.not_aired_episodes_count || 0;
+        const watched = show.watched_episodes_count || 0;
+        return total > 0 ? Math.max(0, total - notAired - watched) : Infinity;
       }
 
-      function getMediaPayload(item) {
-        return item?.show || item?.movie || item || {};
+      function buildMovieSuggestions(movies) {
+        return movies
+          .filter((m) => m.status === "plantowatch" || m.status === "watching")
+          .sort((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0));
       }
 
-      function getItemIds(item) {
-        const media = getMediaPayload(item);
-        return media.ids || item?.ids || {};
+      // ── Poster rendering ──
+      function posterUrl(code) {
+        if (!code) return "";
+        if (code.startsWith("http")) return code;
+        return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_c.webp`;
       }
 
-      function normalizeList(items) {
-        return Array.isArray(items) ? items.map((item) => {
-          const media = getMediaPayload(item);
-          return {
-            ...item, ...media,
-            ids:          getItemIds(item),
-            title:        media.title || item.title || "Unknown title",
-            year:         media.year  || item.year  || "",
-            overview:     media.overview || item.overview || "",
-            poster:       media.poster || item.poster || media.img || item.img || "",
-            next_to_watch: item.next_to_watch || media.next_to_watch || "",
-            url:          buildSimklUrl(media),
-          };
-        }) : [];
+      function simklUrl(item) {
+        const id = simklId(item);
+        if (!id) return "";
+        const slug = String(item.title || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        const prefix = item.type === "movie" ? "movies" : "tv";
+        return `https://simkl.com/${prefix}/${id}/${slug}`;
       }
 
-      function getPosterUrl(item) {
-        // Season poster → series poster (episode stills are low quality, skipped)
-        if (item.nextSeasonImg) return `https://wsrv.nl/?url=https://simkl.in/posters/${item.nextSeasonImg}_c.webp`;
-        if (!item.poster) return "";
-        if (String(item.poster).startsWith("http")) return item.poster;
-        return `https://wsrv.nl/?url=https://simkl.in/posters/${item.poster}_c.webp`;
+      function episodeUrl(item, ep) {
+        const base = simklUrl(item);
+        return base && ep ? `${base}/season-${ep.season}/episode-${ep.episode}/` : "";
       }
 
-      function buildEpisodeWatchAction(show, allowFallbackToPilot = false) {
-        const episodeInfo = parseNextEpisode(show.next_to_watch) || (allowFallbackToPilot ? { season: 1, episode: 1 } : null);
-        if (!episodeInfo) return null;
-        return {
-          payload: { shows: [{ title: show.title, year: show.year, ids: show.ids, seasons: [{ number: episodeInfo.season, episodes: [{ number: episodeInfo.episode, watched_at: new Date().toISOString() }] }] }] },
-          label: "Mark episode watched",
-        };
+      function renderCard(item, type) {
+        const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
+        const isUnstarted = type === "tv"
+          ? (item.status === "plantowatch" || (item.watched_episodes_count === 0 && ep?.episode === 1))
+          : item.status === "plantowatch";
+        const img = posterUrl(item.poster);
+        const url = simklUrl(item);
+        const epUrl = !isUnstarted && ep ? episodeUrl(item, ep) : "";
+        const epCode = !isUnstarted && ep ? formatEpisode(ep) : "";
+
+        return `
+          <article class="item-card" data-simkl-id="${simklId(item)}" data-type="${type}">
+            ${img ? `<a class="poster-anchor" href="${escapeHtml(epUrl || url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(item.title)}" draggable="false" /></a>` : ""}
+            <div class="poster-top">
+              <div class="poster-top-text">
+                <div class="poster-title">
+                  ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>` : `<span class="poster-title-link">${escapeHtml(item.title)}</span>`}${isUnstarted && item.year ? `<span class="poster-title-meta">(${escapeHtml(String(item.year))})</span>` : ""}
+                </div>
+                ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
+              </div>
+              ${type === "movie" || isUnstarted ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
+            </div>
+            <div class="poster-bottom"></div>
+            <button class="mark-watched-btn" title="I've watched this">${ICON_CHECK}</button>
+          </article>`;
       }
 
-      function stripHistoryTimestamps(value) {
-        if (Array.isArray(value)) return value.map(stripHistoryTimestamps);
-        if (!value || typeof value !== "object") return value;
-        const next = {};
-        for (const [key, entry] of Object.entries(value)) {
-          if (key === "watched_at" || key === "rated_at") continue;
-          next[key] = stripHistoryTimestamps(entry);
-        }
-        return next;
-      }
-
-      function buildUndoHistoryPayload(item, type) {
-        if (item?.watchAction?.payload) return stripHistoryTimestamps(item.watchAction.payload);
-        const simklId = item?.ids?.simkl;
-        if (!simklId) return null;
-        const key = type === "tv" ? "shows" : "movies";
-        return { [key]: [{ ids: { simkl: simklId } }] };
-      }
-
-      function getWatchedToastMessage(item, type) {
-        const ep = type === "tv" ? parseNextEpisode(item?.next_to_watch) : null;
-        const label = ep ? `${formatEpisode(ep)} · ${item.title}` : item?.title || "Unknown title";
-        if (type !== "tv") return `Watched: ${label}`;
-        const total = (item?.total_episodes_count || 0) - (item?.not_aired_episodes_count || 0);
-        const watchedAfter = (item?.watched_episodes_count || 0) + 1;
-        const remainingAfter = Math.max(0, total - watchedAfter);
-        return total > 0 ? `Watched: ${label} · ${remainingAfter} left` : `Watched: ${label}`;
-      }
-
-      const provider = window.createSimklProvider({
-        storageKeys,
-        GENRE_CACHE_TTL,
-        STATS_CACHE_TTL,
-        getClientId,
-        getAccessToken,
-        normalizeList,
-        normalizeStatus,
-        parseNextEpisode,
-        buildEpisodeWatchAction,
-        getItemIds,
-      });
-
-      // ── UI layer (DOM, events, rendering) ───────────────────────────────────
-
-      const GENRE_COLORS = [
-        "#22c55e","#60a5fa","#f59e0b","#f97316","#ec4899",
-        "#8b5cf6","#06b6d4","#84cc16","#ef4444","#14b8a6",
-        "#a78bfa","#fb923c","#34d399","#93c5fd","#fcd34d",
-      ];
-
-      const state = {
-        tvItems: [],
-        movieItems: [],
-        libraryIds: new Set(),
-      };
-
-      const els = {
-        accessToken: document.getElementById("accessToken"),
-        appIntro: document.getElementById("appIntro"),
-        appIntroDesc: document.getElementById("appIntroDesc"),
-        authSetup: document.getElementById("authSetup"),
-        clientId: document.getElementById("clientId"),
-        getStartedBtn: document.getElementById("getStartedBtn"),
-        globalStatus: document.getElementById("globalStatus"),
-        goHomeButton: document.getElementById("goHomeButton"),
-        installButton: document.getElementById("installButton"),
-        loadingSpinner: document.getElementById("loadingSpinner"),
-        loginStatusNote: document.getElementById("loginStatusNote"),
-        loginView: document.getElementById("loginView"),
-        logoutAreaInline: document.getElementById("logoutAreaInline"),
-        logoutButton: document.getElementById("logoutButton"),
-        movieRow: document.getElementById("movieRow"),
-        openAuthModalButton: document.getElementById("openAuthModalButton"),
-        openStatsModalButton: document.getElementById("openStatsModalButton"),
-        openTrendingButton: document.getElementById("openTrendingButton"),
-        providerHelpText: document.getElementById("providerHelpText"),
-        providerCreateAppLink: document.getElementById("providerCreateAppLink"),
-        providerCreateAppHelp: document.getElementById("providerCreateAppHelp"),
-        providerListAppsHelp: document.getElementById("providerListAppsHelp"),
-        providerListAppsLink: document.getElementById("providerListAppsLink"),
-        saveCredentialsButton: document.getElementById("saveCredentialsButton"),
-        hideTrendingWatched: document.getElementById("hideTrendingWatched"),
-        statsContent: document.getElementById("statsContent"),
-        statsView: document.getElementById("statsView"),
-        suggestionsGrid: document.querySelector(".suggestions-grid"),
-        topBar: document.querySelector(".top-bar"),
-        trendingPeriodTabs: document.getElementById("trendingPeriodTabs"),
-        trendingView: document.getElementById("trendingView"),
-        tvRow: document.getElementById("tvRow"),
-      };
-
-      const clientIdInput = els.clientId;
-      const accessTokenInput = els.accessToken;
-      const globalStatus = els.globalStatus;
-      const tvRow = els.tvRow;
-      const movieRow = els.movieRow;
-      const topBar = els.topBar;
-      const statsView = els.statsView;
-      const loadingSpinner = els.loadingSpinner;
-      const statsContent = els.statsContent;
-      function syncViewportMetrics() {
-        const viewportHeight = window.visualViewport?.height || window.innerHeight;
-        document.documentElement.style.setProperty("--app-height", `${Math.round(viewportHeight)}px`);
-        if (topBar) {
-          document.documentElement.style.setProperty("--top-bar-height", `${Math.ceil(topBar.getBoundingClientRect().height)}px`);
-        }
-      }
-
-      syncViewportMetrics();
-      window.addEventListener("resize", syncViewportMetrics, { passive: true });
-      window.addEventListener("pageshow", syncViewportMetrics, { passive: true });
-      window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true });
-      window.visualViewport?.addEventListener("scroll", syncViewportMetrics, { passive: true });
-      if ("ResizeObserver" in window && topBar) {
-        new ResizeObserver(syncViewportMetrics).observe(topBar);
-      }
-
-      // PWA install
-      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-      if (isStandalone) els.installButton.classList.add("hidden");
-
-      let deferredInstall;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredInstall = e;
-      });
-      window.addEventListener("appinstalled", () => {
-        els.installButton.style.display = "none";
-      });
-      els.installButton.addEventListener("click", async () => {
-        if (deferredInstall) {
-          deferredInstall.prompt();
-          const { outcome } = await deferredInstall.userChoice;
-          deferredInstall = null;
-          if (outcome === "accepted") els.installButton.style.display = "none";
-        } else {
-          // iOS / already installed fallback
-          setGlobalStatus("On iOS: tap Share → Add to Home Screen");
-        }
-      });
-
-      els.goHomeButton.addEventListener("click", showHomeView);
-      els.openTrendingButton.addEventListener("click", showTrendingView);
-      els.openAuthModalButton.addEventListener("click", showLoginView);
-      els.logoutButton.addEventListener("click", () => {
-        localStorage.removeItem(storageKeys.accessToken);
-        hydrateCredentials();
-        showLoginView();
-      });
-      els.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          setActiveTrendingPeriod(btn.dataset.period);
-          loadTrending();
+      // ── Render rows ──
+      function renderRow(rowEl, items, type) {
+        if (!items.length) { rowEl.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+        rowEl.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
+        rowEl.querySelectorAll(".row-item").forEach((wrap, i) => {
+          const item = items[i];
+          wrap.innerHTML = renderCard(item, type);
+          wrap.querySelector(".mark-watched-btn")?.addEventListener("click", () => onMarkWatched(item, type, wrap.querySelector(".item-card")));
+          wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); onRemove(item, type); });
         });
-      });
-      els.hideTrendingWatched.checked = getHideTrendingWatched();
-      els.hideTrendingWatched.addEventListener("change", () => {
-        try { localStorage.setItem(storageKeys.trendingHideWatched, String(els.hideTrendingWatched.checked)); } catch {}
-        loadTrending();
-      });
-      els.openStatsModalButton.addEventListener("click", showStatsView);
-      els.getStartedBtn.addEventListener("click", () => {
-        els.appIntro.hidden = true;
-        els.authSetup.hidden = false;
-        els.clientId.scrollIntoView({ behavior: "smooth", block: "center" });
-        els.clientId.focus();
-      });
-      els.saveCredentialsButton.addEventListener("click", saveCredentials);
-      window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-        }
-      });
-
-      hydrateCredentials();
-      setActiveTrendingPeriod(getTrendingPeriod());
-      if (getAccessToken()) {
-        const [hashView, p1] = location.hash.replace("#", "").split("/");
-        if (hashView === "trending") {
-          setActiveTrendingPeriod(p1 || getTrendingPeriod());
-          showTrendingView();
-        } else if (hashView === "stats") {
-          showStatsView().then(() => {
-            if (p1) {
-              const btn = statsView.querySelector(`[data-range="${p1}"]`);
-              if (btn) { statsView.querySelectorAll(".range-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); applyStatsRange(); }
-            }
-          });
-        } else if (hashView === "login") {
-          showLoginView();
-        } else {
-          showView("next");
-        }
-        loadSuggestions();
-      } else {
-        showLoginView();
+        initDockEffect(rowEl);
       }
 
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
-      }
-
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && getAccessToken()) loadSuggestions();
-      });
-
-      const statsFeature = window.createStatsFeature({
-        Chart,
-        countBy,
-        escapeHtml,
-        genreColors: GENRE_COLORS,
-        makeBarChart,
-        makePieChart,
-        normalizeList,
-        normalizeStatus,
-        provider,
-        showView,
-        statsContent,
-        statsView,
-      });
-
-      function showStatsView(...args) {
-        return statsFeature.showStatsView(...args);
-      }
-
-      function applyStatsRange(...args) {
-        return statsFeature.applyStatsRange(...args);
-      }
-
-      function getTrendingFeature() {
-        if (!window.__trendingFeature) {
-          window.__trendingFeature = window.createTrendingFeature({
-            els,
-            escapeHtml,
-            initDockEffect,
-            loadSuggestions,
-            provider,
-            renderPosterEntry,
-            setGlobalStatus,
-            state,
-          });
-        }
-        return window.__trendingFeature;
-      }
-
-      function loadTrending(...args) {
-        return getTrendingFeature().loadTrending(...args);
-      }
-
-      function restoreTrendingCards(...args) {
-        return getTrendingFeature().restoreTrendingCards(...args);
-      }
-
-      function updateProviderUi() {
-        els.appIntroDesc.textContent = providerMeta.introText;
-        els.providerHelpText.textContent = providerMeta.helpText;
-        els.providerCreateAppLink.href = providerMeta.createAppUrl;
-        els.providerListAppsLink.href = providerMeta.listAppsUrl;
-        clientIdInput.placeholder = providerMeta.clientIdPlaceholder;
-        accessTokenInput.placeholder = providerMeta.accessTokenPlaceholder;
-      }
-
-      function hydrateCredentials() {
-        const loggedIn = !!getAccessToken();
-        clientIdInput.value = getClientId();
-        accessTokenInput.value = getAccessToken();
-        els.openAuthModalButton.classList.toggle("logged-in", loggedIn);
-        els.topBar.hidden = !loggedIn;
-        els.appIntro.hidden = loggedIn;
-        els.authSetup.hidden = !loggedIn;
-        els.logoutAreaInline.hidden = !loggedIn;
-        els.loginStatusNote.hidden = !loggedIn;
-        els.providerHelpText.hidden = loggedIn;
-        els.providerCreateAppHelp.hidden = loggedIn;
-        els.providerListAppsHelp.hidden = !loggedIn;
-        updateProviderUi();
-        syncViewportMetrics();
-      }
-
-      async function saveCredentials() {
-        const clientId = clientIdInput.value.trim();
-        const accessToken = accessTokenInput.value.trim();
-        if (!clientId) {
-          setGlobalStatus("Enter a client ID.", true);
-          return;
-        }
-        if (!accessToken) {
-          setGlobalStatus("Enter an access token.", true);
-          return;
-        }
-
+      // ── Mark watched ──
+      async function onMarkWatched(item, type, card) {
+        if (type === "movie") { promptRate(item, type, card); return; }
+        if (card) card.classList.add("marking-watched");
         try {
-          await provider.validateCredentials({ clientId, accessToken });
-          localStorage.setItem(storageKeys.clientId, clientId);
-          localStorage.setItem(storageKeys.accessToken, accessToken);
-          migrateLegacyStorage();
-          hydrateCredentials();
-          setGlobalStatus(`Connected to ${providerMeta.name}.`);
-          showHomeView();
-          await loadSuggestions({ preserveStatus: true });
-        } catch (error) {
-          setGlobalStatus(provider.getAuthErrorMessage?.(error) || error.message || "That client ID or token didn’t work. Check both values and try again.", true);
-          showView("login");
-          els.appIntro.hidden = true;
-          els.authSetup.hidden = false;
-          els.providerHelpText.hidden = false;
-          els.providerCreateAppHelp.hidden = false;
-          els.providerListAppsHelp.hidden = !getAccessToken();
+          const ep = parseNextEpisode(item.next_to_watch);
+          const payload = type === "tv" && ep
+            ? { shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }] }
+            : { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] };
+          await apiFetch("/sync/history", { method: "POST", body: JSON.stringify(payload) });
+          showToast(`Marked ${item.title} watched.`);
+          await loadSuggestions();
+        } catch (err) {
+          if (card) card.classList.remove("marking-watched");
+          showToast(err.message, true);
         }
       }
 
-      async function buildSuggestionsModel() {
-        return provider.buildSuggestionsModel();
+      function promptRate(item, type, card) {
+        if (!card) return;
+        const btns = Array.from({ length: 10 }, (_, i) => `<button class="rating-btn" data-rating="${i + 1}">${i + 1}</button>`).join("");
+        const el = document.createElement("div");
+        el.className = "rating-prompt";
+        el.innerHTML = `<span class="rating-prompt-label">Rate before marking watched</span><div class="rating-prompt-row">${btns}</div><button class="rating-skip">Skip rating</button>`;
+        card.appendChild(el);
+        el.querySelectorAll(".rating-btn").forEach((btn) => btn.addEventListener("click", () => rateAndMark(item, type, Number(btn.dataset.rating), card)));
+        el.querySelector(".rating-skip").addEventListener("click", () => { el.remove(); markWatchedDirect(item, type, card); });
       }
 
-      function applySuggestionsModel({ libraryIds, tvItems, movieItems }) {
-        state.libraryIds = libraryIds;
-        state.tvItems = tvItems;
-        state.movieItems = movieItems;
-        renderRow("tv");
-        renderRow("movie");
-      }
-
-      function enrichRenderedTvItems() {
-        Promise.allSettled(state.tvItems.map(item => provider.enrichWithEpisodeTitle(item))).then(results => {
-          let changed = false;
-          results.forEach((r, i) => {
-            if (r.status === "fulfilled" && r.value !== state.tvItems[i]) {
-              state.tvItems[i] = { ...state.tvItems[i], nextEpisodeTitle: r.value.nextEpisodeTitle, nextSeasonImg: r.value.nextSeasonImg };
-              changed = true;
-            }
-          });
-          if (changed) renderRow("tv");
-        });
-      }
-
-      async function loadSuggestions({ preserveStatus = false } = {}) {
-        if (!getClientId() || !getAccessToken()) {
-          setGlobalStatus("A client ID and access token are required.", true);
-          return;
+      async function rateAndMark(item, type, rating, card) {
+        if (card) card.classList.add("marking-watched");
+        try {
+          const key = type === "tv" ? "shows" : "movies";
+          await Promise.all([
+            apiFetch("/sync/ratings", { method: "POST", body: JSON.stringify({ [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] }) }),
+            apiFetch("/sync/history", { method: "POST", body: JSON.stringify({ movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] }) }),
+          ]);
+          showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
+          await loadSuggestions();
+        } catch (err) {
+          if (card) card.classList.remove("marking-watched");
+          showToast(err.message, true);
         }
+      }
+
+      async function markWatchedDirect(item, type, card) {
+        if (card) card.classList.add("marking-watched");
+        try {
+          await apiFetch("/sync/history", { method: "POST", body: JSON.stringify({ movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] }) });
+          showToast(`Marked ${item.title} watched.`);
+          await loadSuggestions();
+        } catch (err) {
+          if (card) card.classList.remove("marking-watched");
+          showToast(err.message, true);
+        }
+      }
+
+      // ── Remove ──
+      async function onRemove(item, type) {
+        if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
+        try {
+          const key = type === "tv" ? "shows" : "movies";
+          await apiFetch("/sync/history/remove", { method: "POST", body: JSON.stringify({ [key]: [{ ids: item.ids }] }) });
+          showToast(`Removed ${item.title}.`);
+          await loadSuggestions();
+        } catch (err) { showToast(err.message, true); }
+      }
+
+      // ── Load suggestions ──
+      async function loadSuggestions() {
+        if (!getClientId() || !getAccessToken()) return;
         loadingSpinner.hidden = false;
         try {
-          applySuggestionsModel(await buildSuggestionsModel());
-          if (!preserveStatus) setGlobalStatus("");
-          enrichRenderedTvItems();
-          if (!state.tvItems.length && !state.movieItems.length && !els.suggestionsGrid.hidden) {
-            showTrendingView();
-          }
-        } catch (error) {
-          setGlobalStatus(error.message || "Failed to load.", true);
+          const data = await sync();
+          const allShows = [...(data.shows || []), ...(data.anime || [])];
+          tvItems = buildTvSuggestions(allShows);
+          movieItems = buildMovieSuggestions(data.movies || []);
+          libraryIds = new Set([
+            ...allShows.map(simklId),
+            ...(data.movies || []).map(simklId),
+          ].filter(Boolean));
+          renderRow(tvRow, tvItems, "tv");
+          renderRow(movieRow, movieItems, "movie");
+          if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
+        } catch (err) {
+          showToast(err.message || "Failed to load.", true);
         } finally {
           loadingSpinner.hidden = true;
         }
       }
 
-      function renderRow(type) {
-        const el = type === "tv" ? tvRow : movieRow;
-        const key = `next-scroll-${type}`;
-        const items = type === "tv" ? state.tvItems : state.movieItems;
-        if (!items.length) { el.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
-        el.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
-        if (el._scrollSave) el.removeEventListener("scroll", el._scrollSave);
-        el._scrollSave = () => { sessionStorage.setItem(key, el.scrollLeft); };
-        el.addEventListener("scroll", el._scrollSave, { passive: true });
-        el.querySelectorAll(".row-item").forEach((wrap, i) => {
-          const item = items[i];
-          wrap.innerHTML = renderItem(item, type);
-          wrap.querySelector(".mark-watched-btn")?.addEventListener("click", () => {
-            const card = wrap.querySelector(".item-card");
-            if (type === "tv") markItemWatched(item, type, card);
-            else promptRateItem(item, type, card);
-          });
-          wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); removeItem(item, type); });
-        });
-        el.scrollLeft = +(sessionStorage.getItem(key) || 0);
-      }
-
-      function promptRateItem(item, type, card) {
-        if (!card) return;
-        const ratingBtns = Array.from({ length: 10 }, (_, i) => i + 1)
-          .map(n => `<button class="rating-btn" data-rating="${n}">${n}</button>`).join("");
-        const prompt = document.createElement("div");
-        prompt.className = "rating-prompt";
-        prompt.innerHTML = `
-          <span class="rating-prompt-label">Rate before marking watched</span>
-          <div class="rating-prompt-row">${ratingBtns}</div>
-          <button class="rating-skip">Skip rating</button>`;
-        card.appendChild(prompt);
-        prompt.querySelectorAll(".rating-btn").forEach(btn => {
-          btn.addEventListener("click", () => rateItemWatched(item, type, Number(btn.dataset.rating), card));
-        });
-        prompt.querySelector(".rating-skip").addEventListener("click", () => markItemWatched(item, type, card));
-      }
-
-      async function markItemWatched(item, type, card) {
-        if (!item?.watchAction) { setGlobalStatus("Cannot mark as watched.", true); return; }
-        if (card) card.classList.add("marking-watched");
+      // ── Trending ──
+      async function loadTrending() {
+        const period = trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
+        try { localStorage.setItem(STORAGE.trendingPeriod, period); } catch {}
+        trendingTvContent.innerHTML = trendingMoviesContent.innerHTML = `<p class="empty">Loading...</p>`;
         try {
-          await provider.addHistory(item.watchAction.payload);
-          const simklId = item.ids?.simkl;
-          const key = type === "tv" ? "shows" : "movies";
-          const undoPayload = buildUndoHistoryPayload(item, type);
-          await loadSuggestions();
-          setGlobalStatus(getWatchedToastMessage(item, type), false, simklId ? async () => {
-            try {
-              await provider.removeHistory(undoPayload || { [key]: [{ ids: { simkl: simklId } }] });
-              await loadSuggestions();
-              setGlobalStatus("Undone.");
-            } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
-          } : null);
-        } catch (error) {
-          if (card) card.classList.remove("marking-watched");
-          setGlobalStatus(error.message || "Failed to mark watched.", true);
+          const [tvData, movieData] = await Promise.all([
+            fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
+            fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
+          ]);
+          const filterWatched = hideTrendingWatched.checked;
+          const filterFn = (item) => !filterWatched || !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
+          const tv = tvData.filter(filterFn).slice(0, 12);
+          const movies = movieData.filter(filterFn).slice(0, 12);
+          trendingTvContent.innerHTML = tv.length ? renderTrendingRow(tv, "tv") : `<p class="empty">No results.</p>`;
+          trendingMoviesContent.innerHTML = movies.length ? renderTrendingRow(movies, "movies") : `<p class="empty">No results.</p>`;
+          for (const row of document.querySelectorAll(".trending-row")) initDockEffect(row);
+          for (const btn of document.querySelectorAll(".add-watchlist-btn")) setupAddWatchlistBtn(btn);
+        } catch (err) {
+          trendingTvContent.innerHTML = trendingMoviesContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message)}</p>`;
         }
       }
 
-      async function rateItemWatched(item, type, rating, card) {
-        const simklId = item.ids?.simkl;
-        if (!simklId) { setGlobalStatus("Cannot rate: missing Simkl ID.", true); return; }
-        if (card) card.classList.add("marking-watched");
-        try {
-          const key = type === "tv" ? "shows" : "movies";
-          const ratedAt = new Date().toISOString();
-          const calls = [provider.rate(type, simklId, rating, ratedAt)];
-          if (item.watchAction) calls.push(provider.addHistory(item.watchAction.payload));
-          await Promise.all(calls);
-          const undoPayload = buildUndoHistoryPayload(item, type);
-          await loadSuggestions();
-          setGlobalStatus(getWatchedToastMessage(item, type), false, async () => {
-            try {
-              await provider.removeHistory(undoPayload || { [key]: [{ ids: { simkl: simklId } }] });
-              await loadSuggestions();
-              setGlobalStatus("Undone.");
-            } catch (err) { setGlobalStatus(err.message || "Undo failed.", true); }
-          });
-        } catch (error) {
-          if (card) card.classList.remove("marking-watched");
-          setGlobalStatus(error.message || "Failed to rate.", true);
-        }
+      function renderTrendingRow(items, urlBase) {
+        return `<div class="trending-carousel"><div class="trending-row">${items.map((m) => {
+          const title = m.title || "";
+          const year = m.year || "";
+          const imgCode = m.poster || m.img || "";
+          const img = imgCode ? `https://wsrv.nl/?url=https://simkl.in/posters/${imgCode}_m.webp` : "";
+          const id = String(m.ids?.simkl_id || m.ids?.simkl || "");
+          const fixedPath = m.url ? m.url.replace(/^\/movie\//, "/movies/") : null;
+          const url = fixedPath ? `https://simkl.com${fixedPath}` : id ? `https://simkl.com/${urlBase}/${id}` : "#";
+          const watched = id && libraryIds.has(id);
+          const loggedIn = !!getAccessToken();
+          const rating = m.ratings?.imdb?.rating;
+          return `
+            <a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}">
+              ${img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : ""}
+              <div class="poster-top">
+                <div class="poster-top-text">
+                  <div class="poster-title"><span class="poster-title-link">${escapeHtml(title)}</span>${!watched && year ? `<span class="poster-title-meta">(${year})</span>` : ""}</div>
+                  ${!watched && rating ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
+                </div>
+              </div>
+              <div class="poster-bottom"></div>
+              ${loggedIn && id && !watched ? `<button class="add-watchlist-btn" title="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
+            </a>`;
+        }).join("")}</div></div>`;
       }
 
-      async function removeItem(item, type) {
-        const simklId = item.ids?.simkl;
-        if (!simklId) { setGlobalStatus("Cannot remove: missing ID.", true); return; }
-        if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
-        try {
-          setGlobalStatus(`Removing ${item.title}…`);
-          const key = type === "tv" ? "shows" : "movies";
-          await provider.removeHistory({ [key]: [{ ids: { simkl: simklId } }] });
-          restoreTrendingCards(simklId);
-          setGlobalStatus("Removed.");
-          await loadSuggestions();
-        } catch (error) {
-          setGlobalStatus(error.message || "Failed to remove.", true);
-        }
-      }
-
-      const REMOVE_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
-      const MARK_WATCHED_BTN_IMG = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4sedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" />`;
-
-      function renderPosterMedia({ posterUrl, href, title, loading = "eager", extraAttrs = "" }) {
-        const posterImg = posterUrl
-          ? `<img class="poster" src="${escapeHtml(posterUrl)}" alt="${escapeHtml(title)}" loading="${loading}" draggable="false" ${extraAttrs} />`
-          : "";
-        return href
-          ? `<a class="poster-anchor" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${posterImg}</a>`
-          : posterImg;
-      }
-
-      function renderPosterTopText({ title, titleUrl, titleMeta = "", imdbRating, imdbId, subtext = "", subtextUrl = "", codeHtml = "" }) {
-        return `<div class="poster-top-text">
-          <div class="poster-title">${titleUrl
-            ? `<a class="poster-title-link" href="${escapeHtml(titleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>`
-            : `<span class="poster-title-link">${escapeHtml(title)}</span>`}${titleMeta ? `<span class="poster-title-meta">(${escapeHtml(titleMeta)})</span>` : ""}</div>
-          ${imdbRating ? (imdbId ? `<a class="imdb-badge" href="https://www.imdb.com/title/${encodeURIComponent(imdbId)}/" target="_blank" rel="noreferrer">IMDb ${imdbRating}</a>` : `<span class="imdb-badge">IMDb ${imdbRating}</span>`) : ""}
-          ${subtext ? (subtextUrl ? `<a class="poster-episode" href="${escapeHtml(subtextUrl)}" target="_blank" rel="noreferrer">${escapeHtml(subtext)}</a>` : `<span class="poster-episode">${escapeHtml(subtext)}</span>`) : ""}
-          ${codeHtml || ""}
-        </div>`;
-      }
-
-      function renderPosterCard({ cardTag = "article", cardClass = "", cardAttrs = "", media = "", topText = "", topAction = "", body = "", footer = "" }) {
-        return `
-          <${cardTag} class="item-card${cardClass ? ` ${cardClass}` : ""}"${cardAttrs ? ` ${cardAttrs}` : ""}>
-            ${media}
-            <div class="poster-top">
-              ${topText}
-              ${topAction}
-            </div>
-            <div class="poster-bottom"></div>
-            ${body}
-            ${footer}
-          </${cardTag}>`;
-      }
-
-      function renderPosterEntry({
-        title = "",
-        titleUrl = "",
-        titleMeta = "",
-        posterUrl = "",
-        mediaHref = "",
-        loading = "eager",
-        imdbRating = "",
-        imdbId = "",
-        subtext = "",
-        subtextUrl = "",
-        codeHtml = "",
-        cardTag = "article",
-        cardClass = "",
-        cardAttrs = "",
-        topAction = "",
-        body = "",
-        footer = "",
-      }) {
-        const media = renderPosterMedia({ posterUrl, href: mediaHref, title, loading });
-        const topText = renderPosterTopText({ title, titleUrl, titleMeta, imdbRating, imdbId, subtext, subtextUrl, codeHtml });
-        return renderPosterCard({ cardTag, cardClass, cardAttrs, media, topText, topAction, body, footer });
-      }
-
-      function renderItem(item, type) {
-        if (!item) return "";
-
-        const nextEpisode = parseNextEpisode(item.next_to_watch);
-        const isUnstartedShow = type === "tv" && (
-          normalizeStatus(item.status) === "plantowatch" ||
-          ((item.watched_episodes_count || 0) === 0 && nextEpisode?.episode === 1)
-        );
-        const isUnstartedMovie = type === "movie" && normalizeStatus(item.status) === "plantowatch";
-        const showImdbBadge = type === "movie" || isUnstartedShow;
-        const posterUrl = getPosterUrl(item);
-        const episodeName = (!isUnstartedShow && nextEpisode) ? (item.nextEpisodeTitle || null) : null;
-        const episodeCode = (!isUnstartedShow && nextEpisode) ? formatEpisode(nextEpisode) : "";
-        const episodeUrl = (!isUnstartedShow && nextEpisode) ? buildEpisodeUrl(item, nextEpisode) : "";
-        return renderPosterEntry({
-          title: item.title,
-          titleUrl: item.url,
-          titleMeta: (isUnstartedShow || isUnstartedMovie) && item.year ? String(item.year) : "",
-          posterUrl,
-          mediaHref: episodeUrl || item.url,
-          imdbRating: showImdbBadge ? item.ratings?.imdb?.rating : "",
-          imdbId: showImdbBadge ? item.ids?.imdb : "",
-          subtext: episodeName,
-          subtextUrl: episodeUrl,
-          codeHtml: episodeCode ? (episodeUrl ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(episodeUrl)}" target="_blank" rel="noreferrer">${escapeHtml(episodeCode)}</a>` : `<span class="poster-episode poster-episode-code">${escapeHtml(episodeCode)}</span>`) : "",
-          topAction: (type === "movie" || isUnstartedShow)
-            ? `<button class="poster-remove" title="Remove from list">${REMOVE_BTN_IMG}</button>`
-            : "",
-          body: item.watchAction
-            ? `<button class="mark-watched-btn" title="I've watched this">${MARK_WATCHED_BTN_IMG}</button>`
-            : "",
+      function setupAddWatchlistBtn(btn) {
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const card = btn.closest(".item-card");
+          const id = card?.dataset.simklId;
+          const urlBase = card?.dataset.urlBase;
+          const title = btn.dataset.title;
+          if (!id) return;
+          btn.disabled = true;
+          try {
+            const key = urlBase === "movies" ? "movies" : "shows";
+            await apiFetch("/sync/add-to-list", { method: "POST", body: JSON.stringify({ [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] }) });
+            libraryIds.add(id);
+            card.classList.add("trending-watched");
+            btn.remove();
+            showToast(`Added "${title}" to watchlist.`);
+            await loadSuggestions();
+          } catch (err) {
+            btn.disabled = false;
+            showToast(err.message, true);
+          }
         });
       }
 
-      function setGlobalStatus(message, isError = false, undoFn = null) {
-        clearTimeout(toastTimer);
-        if (!message) { globalStatus.hidden = true; return; }
-        globalStatus.style.color = isError ? "#fca5a5" : "";
-        if (undoFn) {
-          globalStatus.innerHTML = `${escapeHtml(message)} <button id="undoBtn" style="margin-left:8px;font-size:0.75rem;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:4px;padding:2px 8px;min-height:unset;cursor:pointer;">Undo</button>`;
-          globalStatus.querySelector("#undoBtn").addEventListener("click", () => {
-            clearTimeout(toastTimer);
-            globalStatus.hidden = true;
-            undoFn();
-          });
-        } else {
-          globalStatus.textContent = message;
-        }
-        globalStatus.hidden = false;
-        toastTimer = setTimeout(() => { globalStatus.hidden = true; }, 8000);
-      }
-
-      function showView(name, { updateHash = true } = {}) {
-        for (const row of document.querySelectorAll(".items-row, .trending-row"))
-          scrollPositions.set(row, row.scrollLeft);
-        els.suggestionsGrid.hidden = name !== "next";
-        els.statsView.hidden = name !== "stats";
-        els.trendingView.hidden = name !== "trending";
-        els.loginView.hidden = name !== "login";
-        for (const row of document.querySelectorAll(".items-row, .trending-row"))
-          if (scrollPositions.has(row)) row.scrollLeft = scrollPositions.get(row);
-        const navMap = {
-          next: els.goHomeButton,
-          stats: els.openStatsModalButton,
-          trending: els.openTrendingButton,
-          login: els.openAuthModalButton,
-        };
-        Object.values(navMap).forEach((el) => el?.classList.remove("active-nav"));
-        navMap[name]?.classList.add("active-nav");
-        if (updateHash) history.replaceState(null, "", "#" + name);
-      }
-
-      function showHomeView() { showView("next"); }
-
-      function showTrendingView() {
-        return getTrendingFeature().showTrendingView(showView);
-      }
-
-      function showLoginView() {
-        showView("login");
-        const loggedIn = !!getAccessToken();
-        els.logoutAreaInline.hidden = !loggedIn;
-        els.appIntro.hidden = loggedIn;
-        els.authSetup.hidden = !loggedIn;
-        els.loginStatusNote.hidden = !loggedIn;
-        els.providerHelpText.hidden = loggedIn;
-        els.providerCreateAppHelp.hidden = loggedIn;
-        els.providerListAppsHelp.hidden = !loggedIn;
-      }
-
+      // ── Dock effect ──
       function initDockEffect(row) {
-        const MAX_EXTRA = 0.5;
-        const RADIUS = 2.5;
+        const MAX_EXTRA = 0.5, RADIUS = 2.5;
         let baseW = 0;
-
         function computeBase() {
           if (window.matchMedia("(max-width: 680px)").matches) {
             baseW = row.clientHeight * 2 / 3;
@@ -861,97 +580,166 @@
             baseW = (Math.min(window.innerWidth, 680) - 64) / 3;
           }
         }
-
         function apply(cx) {
           if (!baseW) return;
           const cards = [...row.querySelectorAll(".item-card")];
-          const rects = cards.map(c => c.getBoundingClientRect());
+          const rects = cards.map((c) => c.getBoundingClientRect());
           cards.forEach((card, i) => {
             const dist = Math.abs(cx - (rects[i].left + rects[i].width / 2));
             const t = Math.max(0, 1 - dist / (baseW * RADIUS));
             card.style.setProperty("--dock-scale", (1 + MAX_EXTRA * t * t).toFixed(3));
           });
         }
-
-        function reset() {
-          for (const card of row.querySelectorAll(".item-card"))
-            card.style.removeProperty("--dock-scale");
-        }
-
+        function reset() { for (const c of row.querySelectorAll(".item-card")) c.style.removeProperty("--dock-scale"); }
         requestAnimationFrame(() => {
           computeBase();
           if (window.matchMedia("(max-width: 680px)").matches) {
-            row.addEventListener("scroll", () => {
-              const r = row.getBoundingClientRect();
-              apply(r.left + r.width / 2);
-            }, { passive: true });
+            row.addEventListener("scroll", () => { const r = row.getBoundingClientRect(); apply(r.left + r.width / 2); }, { passive: true });
           } else {
-            row.addEventListener("mousemove", e => apply(e.clientX));
+            row.addEventListener("mousemove", (e) => apply(e.clientX));
             row.addEventListener("mouseleave", reset);
           }
           window.addEventListener("resize", () => { computeBase(); reset(); }, { passive: true });
         });
       }
 
-      function makePieChart(canvasId, entries, colors = GENRE_COLORS) {
-        const labels = entries.map(([l]) => l);
-        const data = entries.map(([, v]) => v);
-        const palette = colors.slice(0, labels.length);
-        const canvas = document.getElementById(canvasId);
-        Chart.getChart(canvas)?.destroy();
-        new Chart(canvas, {
-          type: "pie",
-          data: {
-            labels,
-            datasets: [{ data, backgroundColor: palette, borderColor: "#111827", borderWidth: 2 }],
-          },
-          options: {
-            plugins: {
-              legend: { position: "bottom", labels: { color: "#f9fafb", boxWidth: 12, padding: 8, font: { size: 11 } } },
-            },
-          },
-        });
-      }
+      // ── OAuth flow (same page redirect) ──
+      function buildRedirectUri() { return `${location.origin}${location.pathname}`; }
 
-      function countBy(items, key) {
-        const map = {};
-        for (const item of items) {
-          const val = item[key];
-          if (val != null) map[val] = (map[val] || 0) + 1;
+      connectBtn.addEventListener("click", () => {
+        const clientId = clientIdInput.value.trim();
+        const clientSecret = clientSecretInput.value.trim();
+        if (!clientId) { showToast("Enter a client ID.", true); return; }
+        if (!clientSecret) { showToast("Enter an app secret.", true); return; }
+        localStorage.setItem(STORAGE.clientId, clientId);
+        localStorage.setItem(STORAGE.clientSecret, clientSecret);
+
+        const state = Math.random().toString(36).slice(2);
+        sessionStorage.setItem("oauth-state", state);
+        location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(buildRedirectUri())}&state=${state}`);
+      });
+
+      // Handle OAuth callback on page load
+      (async function handleOAuthCallback() {
+        const params = new URLSearchParams(location.search);
+        const code = params.get("code");
+        const error = params.get("error");
+        const state = params.get("state") || "";
+        if (!code && !error) return;
+        history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
+        loadingSpinner.hidden = false;
+        try {
+          if (error) throw new Error(error);
+          const expected = sessionStorage.getItem("oauth-state");
+          if (expected && state && expected !== state) throw new Error("State mismatch.");
+          const clientId = getClientId();
+          const clientSecret = getClientSecret();
+          if (!clientId || !clientSecret) throw new Error("Missing client ID or app secret.");
+          const token = await fetch(`${API_BASE}/oauth/token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: buildRedirectUri(), grant_type: "authorization_code" }),
+          }).then((r) => r.json());
+          if (!token.access_token) throw new Error(token.error || "Token exchange failed.");
+          localStorage.setItem(STORAGE.accessToken, token.access_token);
+          sessionStorage.removeItem("oauth-state");
+          hydrateUI();
+          showView("next");
+          showToast("Connected to Simkl.");
+          await loadSuggestions();
+        } catch (err) {
+          showToast(err.message, true);
+          showView("login");
+        } finally {
+          loadingSpinner.hidden = true;
         }
-        return map;
+      })();
+
+      // ── Navigation ──
+      function showView(name) {
+        currentView = name;
+        loginView.hidden = name !== "login";
+        nextView.hidden = name !== "next";
+        trendingView.hidden = name !== "trending";
+        [navNext, navTrending, navLogin].forEach((btn) => btn.classList.remove("active-nav"));
+        if (name === "next") navNext.classList.add("active-nav");
+        if (name === "trending") navTrending.classList.add("active-nav");
+        if (name === "login") navLogin.classList.add("active-nav");
+        if (name === "trending") loadTrending();
+        const hash = name === "next" ? "" : `#${name}`;
+        if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
       }
 
-      function makeBarChart(canvasId, labels, datasets, extraOptions = {}) {
-        const canvas = document.getElementById(canvasId);
-        Chart.getChart(canvas)?.destroy();
-        return new Chart(canvas, {
-          type: "bar",
-          data: { labels, datasets },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { labels: { color: "#f9fafb", boxWidth: 12, padding: 10 } },
-              tooltip: { mode: "index" },
-            },
-            scales: {
-              x: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
-              y: { ticks: { color: "#94a3b8" }, grid: { color: "#1f2937" } },
-            },
-            ...extraOptions,
-          },
-        });
+      navNext.addEventListener("click", () => showView("next"));
+      navTrending.addEventListener("click", () => showView("trending"));
+      navLogin.addEventListener("click", () => showView("login"));
+
+      trendingPeriodTabs.addEventListener("click", (e) => {
+        const tab = e.target.closest(".range-tab");
+        if (!tab) return;
+        trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        loadTrending();
+      });
+
+      hideTrendingWatched.addEventListener("change", loadTrending);
+
+      getStartedBtn.addEventListener("click", () => {
+        appIntro.hidden = true;
+        authSetup.hidden = false;
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        for (const key of Object.values(STORAGE)) localStorage.removeItem(key);
+        tvItems = [];
+        movieItems = [];
+        libraryIds.clear();
+        clientIdInput.value = "";
+        clientSecretInput.value = "";
+        hydrateUI();
+        showView("login");
+        showToast("Logged out.");
+      });
+
+      // ── UI hydration ──
+      function hydrateUI() {
+        const loggedIn = !!getAccessToken();
+        topBar.hidden = !loggedIn;
+        navLogin.classList.toggle("logged-in", loggedIn);
+        clientIdInput.value = getClientId();
+        clientSecretInput.value = getClientSecret();
+        appIntro.hidden = loggedIn;
+        authSetup.hidden = !loggedIn;
+        loginStatusNote.hidden = !loggedIn;
+        logoutArea.hidden = !loggedIn;
+        syncViewportMetrics();
       }
 
-      function escapeHtml(value) {
-        return String(value)
-          .replace(/\\'/g, "'")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
+      // ── Init ──
+      hydrateUI();
+
+      if (getAccessToken()) {
+        const hash = location.hash.replace("#", "").split("/")[0];
+        if (hash === "trending") showView("trending");
+        else if (hash === "login") showView("login");
+        else showView("next");
+        loadSuggestions();
+      } else {
+        showView("login");
       }
+
+      // Refresh on visibility change
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && getAccessToken()) loadSuggestions();
+      });
+
+      // PWA install
+      let deferredInstallPrompt = null;
+      window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; installButton.classList.remove("hidden"); });
+      installButton.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); });
+
+      // Service worker
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
     </script>
   </body>
 </html>

@@ -51,13 +51,12 @@ window.createTrendingFeature = function createTrendingFeature({
   async function ensureLibraryIds() {
     if (state.libraryIds.size > 0 || !provider.getAccessToken()) return;
     try {
-      const [sRes, mRes] = await Promise.all([
-        provider.fetch("https://api.simkl.com/sync/all-items/shows/?status=watching,plantowatch,completed").catch(() => ({})),
-        provider.fetch("https://api.simkl.com/sync/all-items/movies/?status=watching,plantowatch,completed").catch(() => ({})),
-      ]);
+      const lists = await provider.fetchSuggestionLists();
       state.libraryIds = new Set([
-        ...(sRes.shows || []).flatMap(provider.getAllIds),
-        ...(mRes.movies || []).flatMap(provider.getAllIds),
+        ...(lists.shows || []).flatMap(provider.getAllIds),
+        ...(lists.movies || []).flatMap(provider.getAllIds),
+        ...(lists.completedShows || []).flatMap(provider.getAllIds),
+        ...(lists.completedMovies || []).flatMap(provider.getAllIds),
       ]);
     } catch (_) {}
   }
