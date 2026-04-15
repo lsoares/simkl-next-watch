@@ -475,6 +475,7 @@
         let currentView = null;
         let toastTimer = null;
         let libraryIds = new Set();
+        let libraryReady = null;
         let tvItems = [];
         let movieItems = [];
 
@@ -618,6 +619,8 @@
 
         async function loadSuggestions() {
           if (!isLoggedIn()) return;
+          let resolveLibrary;
+          libraryReady = new Promise((r) => { resolveLibrary = r; });
           el.spinner.hidden = false;
           try {
             const data = await sync();
@@ -625,12 +628,13 @@
             tvItems = buildTvSuggestions(allShows);
             movieItems = buildMovieSuggestions(data.movies || []);
             libraryIds = collectLibraryIds(data);
+            resolveLibrary();
             renderRow(el.tvRow, tvItems, "tv");
             renderRow(el.movieRow, movieItems, "movie");
             enrichEpisodeTitles();
             if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
-            else if (currentView === "trending") loadTrending();
           } catch (err) {
+            resolveLibrary();
             handleError(err, "Failed to load.");
           } finally {
             el.spinner.hidden = true;
@@ -683,7 +687,7 @@
           writeStorage(STORAGE.trendingPeriod, period);
           el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty">Loading...</p>`;
           try {
-            const [tvData, movieData] = await fetchTrending(period);
+            const [[tvData, movieData]] = await Promise.all([fetchTrending(period), libraryReady]);
             const hideWatched = el.hideTrendingWatched.checked;
             const filterFn = (item) => !hideWatched || !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             const tv = tvData.filter(filterFn).slice(0, 12);
@@ -837,8 +841,8 @@
         handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
-          showView(hash === "trending" ? "trending" : hash === "login" ? "login" : "next");
           loadSuggestions();
+          showView(hash === "trending" ? "trending" : hash === "login" ? "login" : "next");
         } else {
           showView("login");
         }
