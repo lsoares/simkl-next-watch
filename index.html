@@ -32,7 +32,15 @@
         </div>
         <div id="authSetup" hidden>
           <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
-          <p class="field-help" id="loginNewNote">Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> and paste the client ID and app secret below.</p>
+          <div class="field-help" id="loginNewNote">
+            <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> with:</p>
+            <ul class="setup-hints">
+              <li>Name: <strong>Next Watch</strong></li>
+              <li>Description: <strong>Next Watch</strong></li>
+              <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
+            </ul>
+            <p>Save changes, then paste the client ID and app secret below.</p>
+          </div>
           <div style="margin-bottom:12px">
             <label for="clientIdInput">Client ID</label>
             <input id="clientIdInput" type="text" autocomplete="off" />
@@ -453,7 +461,7 @@
         const $ = (id) => document.getElementById(id);
         const el = {
           topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navLogin: $("navLogin"),
-          loginView: $("loginView"), appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"),
+          loginView: $("loginView"), appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
           logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"),
           nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
@@ -491,6 +499,7 @@
         // ── Render rows ──
 
         function renderRow(rowEl, items, type) {
+          const scrollKey = `scroll:${rowEl.id}`;
           if (!items.length) { rowEl.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
           rowEl.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
           rowEl.querySelectorAll(".row-item").forEach((wrap, i) => {
@@ -499,6 +508,10 @@
             wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); removeFromWatchlist(items[i], type); });
           });
           initDockEffect(rowEl);
+          if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave);
+          rowEl._scrollSave = () => { sessionStorage.setItem(scrollKey, rowEl.scrollLeft); };
+          rowEl.addEventListener("scroll", rowEl._scrollSave, { passive: true });
+          rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0);
         }
 
         // ── Mark watched ──
@@ -779,6 +792,12 @@
 
         // ── Wire events ──
 
+        const redirectUri = `${location.origin}${location.pathname}`.replace(/\/$/, "");
+        el.redirectHint.textContent = redirectUri.replace(/^https?:\/\//, "");
+        el.copyRedirectBtn.addEventListener("click", () => {
+          navigator.clipboard.writeText(redirectUri);
+          showToast("Copied redirect URI.");
+        });
         el.connectBtn.addEventListener("click", startOAuth);
         el.logoutBtn.addEventListener("click", logout);
         el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });

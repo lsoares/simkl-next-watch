@@ -294,6 +294,10 @@
         .items-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
+        #tvRow .row-item { flex-shrink: 0; width: max(100px, calc((100vw - 44px) / 2.8)); }
+        #tvRow .row-item .item-card { width: 100%; height: 100%; }
+        #movieRow .row-item { flex-shrink: 0; width: max(90px, calc((100vw - 44px) / 3.5)); }
+        #movieRow .row-item .item-card { width: 100%; height: 100%; }
 
         /* Trending: reuse suggestions-grid layout */
         #trendingView {
@@ -303,6 +307,8 @@
         }
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; }
+        #trendingGrid .row-item { flex-shrink: 0; width: max(90px, calc((100vw - 44px) / 3.5)); height: 100%; }
+        #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
       }
 
       .nav-arrow {
@@ -655,6 +661,9 @@
         margin: 0 0 16px;
       }
       #trendingPeriodTabs { margin: 0; }
+      #trendingGrid .row-item {
+        width: calc((min(100vw, 680px) - 68px) / 3.8);
+      }
       #trendingGrid .item-card {
         text-decoration: none;
       }
@@ -896,6 +905,31 @@
         }
         .poster-title { font-size: 1rem; }
       }
+
+      .setup-hints {
+        margin: 6px 0;
+        padding-left: 18px;
+        font-size: 0.85rem;
+        line-height: 1.8;
+      }
+      .setup-hints code {
+        background: #1e293b;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.78rem;
+      }
+      .copy-btn {
+        display: inline;
+        background: none;
+        border: none;
+        color: #475569;
+        font-size: 0.65rem;
+        min-height: unset;
+        padding: 0 2px;
+        cursor: pointer;
+        vertical-align: middle;
+      }
+      .copy-btn:hover { color: var(--muted); }
 
       .app-intro {
         text-align: center;
