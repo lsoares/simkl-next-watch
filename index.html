@@ -280,7 +280,7 @@
 
       // ── HTML templates ──
 
-      const ICON_CHECK = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAMAAAAcqPc3AAAAbFBMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8+T+BWAAAAI3RSTlMA/Q/6YO/3jn+vzr4/8nAg4cedUDDe0KRqWDoWCAWzRquhKFYsTe8AAADfSURBVCjPdZHZusIgDIQzrKWlmz1Vu+lR3v8dhVIUL5ybhD9fAmQoiokKQZVglKmR4KqWtQJk86bMgHd6Xmm5awmY1FKC65RvWqGMqYYa6KNJQYdowa+U6wpYHwyq7QP/fGsPQ9SCzxmWbqBZoSWB8Qs7S9sIQQVu4W4RMBudC0mFwvOeqNnP7BwxXfjBW+lJwonfwuDSOV87BRrnCHT7aF9IeO0gwjttLCRMd442/Ktf94KlQ2eYuIeGchWAPfY25evh0O89n5bkxT9HmftyGRb2nB518iXzsc58/OX7C7ZgC5Da3IqXAAAAAElFTkSuQmCC" alt="" style="width:18px;height:18px;display:block;opacity:0.55;filter:brightness(10)" />`;
+      const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       const ICON_REMOVE = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
 
       function renderCard(item, type) {
@@ -361,13 +361,14 @@
       // ── API ──
 
       const API_BASE = "https://api.simkl.com";
+      class ApiError extends Error { constructor(msg) { super(msg); this.name = "ApiError"; } }
 
       async function apiFetch(path, options = {}) {
         const headers = { "Content-Type": "application/json", "simkl-api-key": getClientId(), ...options.headers };
         if (getAccessToken()) headers.Authorization = `Bearer ${getAccessToken()}`;
         const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`);
+        if (!res.ok) throw new ApiError(data.error || data.message || `API error ${res.status}`);
         return data;
       }
 
@@ -381,7 +382,7 @@
         const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" });
         if (dateFrom) params.set("date_from", dateFrom);
         const data = await apiFetch(`/sync/all-items/${type}/?${params}`);
-        return (data?.[type] || data || []).map(normalizeItem);
+        return (data?.[type] ?? []).map(normalizeItem);
       }
 
       async function sync() {
@@ -488,6 +489,12 @@
           toastTimer = setTimeout(() => { el.toast.hidden = true; }, 8000);
         }
 
+        function handleError(err, fallbackMsg) {
+          if (err instanceof ApiError) { showToast(err.message, true); return; }
+          console.error(err);
+          if (fallbackMsg) showToast(fallbackMsg, true);
+        }
+
         // ── Viewport ──
 
         function syncViewportMetrics() {
@@ -525,7 +532,7 @@
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
-            showToast(err.message, true);
+            handleError(err);
           }
         }
 
@@ -554,7 +561,7 @@
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
-            showToast(err.message, true);
+            handleError(err);
           }
         }
 
@@ -566,7 +573,7 @@
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
-            showToast(err.message, true);
+            handleError(err);
           }
         }
 
@@ -578,7 +585,7 @@
             await apiPost("/sync/history/remove", buildRemovePayload(item, type));
             showToast(`Removed ${item.title}.`);
             await loadSuggestions();
-          } catch (err) { showToast(err.message, true); }
+          } catch (err) { handleError(err); }
         }
 
         // ── Episode title enrichment ──
@@ -623,7 +630,7 @@
             enrichEpisodeTitles();
             if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
           } catch (err) {
-            showToast(err.message || "Failed to load.", true);
+            handleError(err, "Failed to load.");
           } finally {
             el.spinner.hidden = true;
           }
@@ -658,7 +665,7 @@
               await loadSuggestions();
             } catch (err) {
               btn.disabled = false;
-              showToast(err.message, true);
+              handleError(err);
             }
           });
         }
@@ -693,7 +700,8 @@
             initDockEffect(el.trendingMoviesContent);
             for (const btn of document.querySelectorAll(".add-watchlist-btn")) setupAddWatchlistBtn(btn);
           } catch (err) {
-            el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message)}</p>`;
+            if (err instanceof ApiError) el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message)}</p>`;
+            else console.error(err);
           }
         }
 
@@ -755,7 +763,7 @@
             showToast("Connected to Simkl.");
             await loadSuggestions();
           } catch (err) {
-            showToast(err.message, true);
+            handleError(err);
             showView("login");
           } finally {
             el.spinner.hidden = true;
