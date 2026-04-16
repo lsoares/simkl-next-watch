@@ -1096,7 +1096,7 @@
           showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`);
         });
         el.logoutBtn.addEventListener("click", logout);
-        el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });
+        el.getStartedBtn.addEventListener("click", () => showView("settings"));
         el.navNext.addEventListener("click", () => showView("next"));
         el.navTrending.addEventListener("click", () => showView("trending"));
         el.navAi.addEventListener("click", () => showView("ai"));
@@ -1136,9 +1136,11 @@
           el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod));
         }
         handleOAuthCallback();
-        if (isLoggedIn()) {
-          const hash = location.hash.replace("#", "").split("/")[0];
-          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : hash === "settings" ? "settings" : "next");
+        const hash = location.hash.replace("#", "").split("/")[0];
+        if (hash === "settings") {
+          showView("settings");
+        } else if (isLoggedIn()) {
+          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
           loadSuggestions();
         } else {
           showView("next");
