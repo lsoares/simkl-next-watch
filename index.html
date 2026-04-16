@@ -816,28 +816,7 @@
         const aiCache = {};
         const AI_CACHE_TTL = 5 * 60 * 1000;
 
-        async function getRecommendations(mood) {
-          const cache = readJsonStorage(STORAGE.syncCache);
-          const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
-          if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
-
-          const cacheKey = mood + "|" + ratings;
-          const cached = aiCache[cacheKey];
-          if (cached && Date.now() - cached.ts < AI_CACHE_TTL) return cached.data;
-
-          const provider = readStorage(STORAGE.aiProvider) || "gemini";
-          const key = readStorage(STORAGE.aiKey);
-          const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
-          const raw = await aiComplete(provider, key, userMessage);
-
-          let suggestions;
-          try {
-            const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-            suggestions = Array.isArray(parsed) ? parsed : [];
-          } catch {
-            throw new ApiError("Couldn't parse AI suggestions. Try again.");
-          }
-
+        async function resolveSimkl(suggestions) {
           const results = await Promise.all(suggestions.map(async (s) => {
             try {
               const q = encodeURIComponent(`${s.title} ${s.year || ""}`.trim());
@@ -850,12 +829,45 @@
               return null;
             }
           }));
+          return results.filter((item) => item && !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
+        }
 
-          const filtered = results
-            .filter((item) => item && !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")))
-            .slice(0, 3);
-          aiCache[cacheKey] = { ts: Date.now(), data: filtered };
-          return filtered;
+        async function fetchAiSuggestions(provider, key, userMessage, exclude) {
+          const msg = exclude.length ? `${userMessage}\nDo NOT suggest: ${exclude.join(", ")}` : userMessage;
+          const raw = await aiComplete(provider, key, msg);
+          try {
+            const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            throw new ApiError("Couldn't parse AI suggestions. Try again.");
+          }
+        }
+
+        async function getRecommendations(mood) {
+          const cache = readJsonStorage(STORAGE.syncCache);
+          const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
+          if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
+
+          const cacheKey = mood + "|" + ratings;
+          const cached = aiCache[cacheKey];
+          if (cached && Date.now() - cached.ts < AI_CACHE_TTL) return cached.data;
+
+          const provider = readStorage(STORAGE.aiProvider) || "gemini";
+          const key = readStorage(STORAGE.aiKey);
+          const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
+
+          const collected = [];
+          const exclude = [];
+          for (let attempt = 0; attempt < 3 && collected.length < 3; attempt++) {
+            const suggestions = await fetchAiSuggestions(provider, key, userMessage, exclude);
+            exclude.push(...suggestions.map((s) => s.title));
+            const resolved = await resolveSimkl(suggestions);
+            collected.push(...resolved);
+          }
+
+          const final = collected.slice(0, 3);
+          aiCache[cacheKey] = { ts: Date.now(), data: final };
+          return final;
         }
 
         // ── AI Result Rendering ──
