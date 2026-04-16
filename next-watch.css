@@ -952,3 +952,49 @@
         font-size: 1rem;
         padding: 12px 28px;
       }
+
+/* ── AI view ── */
+
+#aiView select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.ai-toolbar {
+  text-align: right;
+  margin-bottom: 12px;
+}
+
+.ai-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ai-prompt-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ai-prompt-btn:hover {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.ai-prompt-btn.active {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.15);
+}

@@ -17,6 +17,7 @@
       <div class="top-bar-scroll">
         <button id="navNext" class="tiny-link active-nav" type="button">next</button>
         <button id="navTrending" class="tiny-link" type="button">trending</button>
+        <button id="navAi" class="tiny-link" type="button">ai</button>
         <button id="navLogin" class="tiny-link" type="button">login</button>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
       </div>
@@ -85,6 +86,46 @@
           <div class="media-section">
             <div id="trendingMoviesContent" class="items-row"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- AI view -->
+      <div id="aiView" hidden>
+        <div id="aiSetup">
+          <p class="field-help">Get AI-powered recommendations based on your ratings. Pick a provider and paste your API key.
+            Get a key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Gemini (free)</a> &middot; <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI</a> &middot; <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">Claude</a>
+          </p>
+          <div style="margin-bottom:12px">
+            <label for="aiProviderSelect">Provider</label>
+            <select id="aiProviderSelect">
+              <option value="gemini">Gemini (free)</option>
+              <option value="openai">OpenAI</option>
+              <option value="claude">Claude</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px">
+            <label for="aiKeyInput">API Key</label>
+            <input id="aiKeyInput" type="password" autocomplete="off" />
+          </div>
+          <button class="secondary" id="aiSaveBtn" type="button">Save</button>
+        </div>
+        <div id="aiMain" hidden>
+          <div class="ai-toolbar">
+            <button class="tiny-link" id="aiEditSettings" type="button">edit settings</button>
+          </div>
+          <div class="ai-prompts" id="aiPrompts">
+            <button class="ai-prompt-btn" type="button">Cozy night in</button>
+            <button class="ai-prompt-btn" type="button">Edge of my seat</button>
+            <button class="ai-prompt-btn" type="button">Make me laugh</button>
+            <button class="ai-prompt-btn" type="button">Mind-bending</button>
+            <button class="ai-prompt-btn" type="button">Epic adventure</button>
+            <button class="ai-prompt-btn" type="button">True stories</button>
+            <button class="ai-prompt-btn" type="button">Hidden gems</button>
+            <button class="ai-prompt-btn" type="button">Date night</button>
+            <button class="ai-prompt-btn" type="button">Feel-good</button>
+            <button class="ai-prompt-btn" type="button">Dark &amp; gritty</button>
+          </div>
+          <div id="aiResults" class="items-row"></div>
         </div>
       </div>
     </main>
@@ -336,6 +377,13 @@
         return `<span class="rating-prompt-label">Rate before marking watched</span><div class="rating-prompt-row">${btns}</div><button class="rating-skip">Skip rating</button>`;
       }
 
+      function buildRatingsInput(shows, movies, anime) {
+        return [...(shows || []), ...(movies || []), ...(anime || [])]
+          .filter((item) => item.user_rating != null)
+          .map((item) => `${item.title}:${item.user_rating}`)
+          .join(",");
+      }
+
       // ── Storage ──
 
       const STORAGE = {
@@ -346,6 +394,8 @@
         trendingPeriod: "next-watch-trending-period",
         hideWatched: "next-watch-hide-watched",
         episodeCache: "next-watch-episode-cache",
+        aiProvider: "next-watch-ai-provider",
+        aiKey: "next-watch-ai-key",
       };
 
       function readStorage(key) { return localStorage.getItem(key) || ""; }
@@ -461,7 +511,7 @@
       (function app() {
         const $ = (id) => document.getElementById(id);
         const el = {
-          topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navLogin: $("navLogin"),
+          topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"), navLogin: $("navLogin"),
           loginView: $("loginView"), appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
           logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"),
@@ -469,6 +519,9 @@
           trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
           hideTrendingWatched: $("hideTrendingWatched"),
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
+          aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"),
+          aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiSaveBtn: $("aiSaveBtn"),
+          aiEditSettings: $("aiEditSettings"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
         };
 
@@ -703,6 +756,17 @@
           }
         }
 
+        // ── AI ──
+
+        function hydrateAiView() {
+          const hasKey = !!readStorage(STORAGE.aiKey);
+          el.aiSetup.hidden = hasKey;
+          el.aiMain.hidden = !hasKey;
+          if (hasKey) {
+            el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+          }
+        }
+
         // ── Navigation ──
 
         function showView(name) {
@@ -710,11 +774,14 @@
           el.loginView.hidden = name !== "login";
           el.nextView.hidden = name !== "next";
           el.trendingView.hidden = name !== "trending";
-          [el.navNext, el.navTrending, el.navLogin].forEach((btn) => btn.classList.remove("active-nav"));
+          el.aiView.hidden = name !== "ai";
+          [el.navNext, el.navTrending, el.navAi, el.navLogin].forEach((btn) => btn.classList.remove("active-nav"));
           if (name === "next") el.navNext.classList.add("active-nav");
           if (name === "trending") el.navTrending.classList.add("active-nav");
+          if (name === "ai") el.navAi.classList.add("active-nav");
           if (name === "login") el.navLogin.classList.add("active-nav");
           if (name === "trending") loadTrending();
+          if (name === "ai") hydrateAiView();
           const hash = name === "next" ? "" : `#${name}`;
           if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
         }
@@ -809,8 +876,24 @@
         el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });
         el.navNext.addEventListener("click", () => showView("next"));
         el.navTrending.addEventListener("click", () => showView("trending"));
+        el.navAi.addEventListener("click", () => showView("ai"));
         el.navLogin.addEventListener("click", () => showView("login"));
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
+        el.aiSaveBtn.addEventListener("click", () => {
+          const key = el.aiKeyInput.value.trim();
+          if (!key) { showToast("Enter an API key.", true); return; }
+          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
+          writeStorage(STORAGE.aiKey, key);
+          el.aiKeyInput.value = "";
+          hydrateAiView();
+          showToast("AI provider saved.");
+        });
+        el.aiEditSettings.addEventListener("click", () => {
+          el.aiSetup.hidden = false;
+          el.aiMain.hidden = true;
+          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+        });
         el.trendingPeriodTabs.addEventListener("click", (e) => {
           const tab = e.target.closest(".range-tab");
           if (!tab) return;
@@ -841,8 +924,8 @@
         handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
+          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : hash === "login" ? "login" : "next");
           loadSuggestions();
-          showView(hash === "trending" ? "trending" : hash === "login" ? "login" : "next");
         } else {
           showView("login");
         }
