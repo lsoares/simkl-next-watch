@@ -517,7 +517,7 @@
 
       // ── App (DOM + state + wiring) ──
 
-      (async function app() {
+      (function app() {
         const $ = (id) => document.getElementById(id);
         const el = {
           topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
@@ -1102,13 +1102,13 @@
 
         // ── Boot ──
 
+        hydrateUI();
         el.hideTrendingWatched.checked = readStorage(STORAGE.hideWatched) === "true";
         const savedPeriod = readStorage(STORAGE.trendingPeriod);
         if (savedPeriod) {
           el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod));
         }
-        await handleOAuthCallback();
-        hydrateUI();
+        handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
           showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
