@@ -92,16 +92,15 @@
       <!-- AI view -->
       <div id="aiView" hidden>
         <div id="aiSetup">
-          <p class="field-help">Get AI-powered recommendations based on your ratings. Pick a provider and paste your API key.
-            Get a key: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Gemini (free)</a> &middot; <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI</a> &middot; <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">Claude</a>
-          </p>
+          <p class="field-help">Get AI-powered recommendations based on your ratings. Pick a provider and paste your API key.</p>
           <div style="margin-bottom:12px">
             <label for="aiProviderSelect">Provider</label>
             <select id="aiProviderSelect">
-              <option value="gemini">Gemini (free)</option>
-              <option value="openai">OpenAI</option>
-              <option value="claude">Claude</option>
+              <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+              <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
+              <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
             </select>
+            <a class="tiny-link" id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px">Get a Gemini key</a>
           </div>
           <div style="margin-bottom:12px">
             <label for="aiKeyInput">API Key</label>
@@ -520,7 +519,7 @@
           hideTrendingWatched: $("hideTrendingWatched"),
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
           aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"),
-          aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiSaveBtn: $("aiSaveBtn"),
+          aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"), aiSaveBtn: $("aiSaveBtn"),
           aiEditSettings: $("aiEditSettings"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
         };
@@ -765,6 +764,13 @@
           if (hasKey) {
             el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
           }
+          syncAiKeyLink();
+        }
+
+        function syncAiKeyLink() {
+          const opt = el.aiProviderSelect.selectedOptions[0];
+          el.aiKeyLink.href = opt.dataset.url;
+          el.aiKeyLink.textContent = `Get a ${opt.textContent.replace(/ \(free\)/, "")} key`;
         }
 
         // ── AI Provider Adapters ──
@@ -986,6 +992,7 @@
         el.navAi.addEventListener("click", () => showView("ai"));
         el.navLogin.addEventListener("click", () => showView("login"));
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
+        el.aiProviderSelect.addEventListener("change", syncAiKeyLink);
         el.aiSaveBtn.addEventListener("click", () => {
           const key = el.aiKeyInput.value.trim();
           if (!key) { showToast("Enter an API key.", true); return; }
