@@ -818,9 +818,6 @@
 
         // ── Recommendation Flow ──
 
-        const aiCache = {};
-        const AI_CACHE_TTL = 5 * 60 * 1000;
-
         async function resolveSimkl(suggestions, mediaType) {
           const results = await Promise.all(suggestions.map(async (s) => {
             try {
@@ -865,10 +862,6 @@
           const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
-          const cacheKey = `${mood}|${mediaType}|${ratings}`;
-          const cached = aiCache[cacheKey];
-          if (cached && Date.now() - cached.ts < AI_CACHE_TTL) return cached.data;
-
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
           const key = readStorage(STORAGE.aiKey);
           const systemPrompt = aiSystemPrompt(mediaType);
@@ -883,9 +876,7 @@
             collected.push(...resolved);
           }
 
-          const final = collected.slice(0, 3);
-          aiCache[cacheKey] = { ts: Date.now(), data: final };
-          return final;
+          return collected.slice(0, 3);
         }
 
         // ── AI Result Rendering ──
