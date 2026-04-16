@@ -33,7 +33,7 @@
             <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
           </div>
           <div id="authSetup" hidden>
-            <p class="section-label">Simkl</p>
+            <h2 style="font-size:1.1rem;margin-bottom:8px">Simkl</h2>
             <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
             <div class="field-help" id="loginNewNote">
               <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> with:</p>
@@ -58,11 +58,11 @@
             </form>
             <div id="aiSettingsSection" hidden>
               <div style="margin-top:24px"></div>
-              <p class="section-label">AI Recommendations</p>
+              <h2 style="font-size:1.1rem;margin-bottom:8px">AI Recommendations</h2>
               <p class="field-help">Optional: add a key for personalized recommendations.</p>
               <form id="aiForm" autocomplete="off" onsubmit="return false">
                 <div style="margin-bottom:12px">
-                  <label for="aiProviderSelect">AI Provider</label>
+                  <label for="aiProviderSelect">Provider</label>
                   <select id="aiProviderSelect">
                     <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
                     <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
@@ -71,7 +71,7 @@
                   <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Create key</a>
                 </div>
                 <div style="margin-bottom:12px">
-                  <label for="aiKeyInput">AI API Key</label>
+                  <label for="aiKeyInput">API Key</label>
                   <input id="aiKeyInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
                 </div>
                 <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
