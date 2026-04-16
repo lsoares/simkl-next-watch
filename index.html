@@ -926,7 +926,7 @@
 
         function showView(name) {
           currentView = name;
-          el.nextView.hidden = name !== "next";
+          el.nextView.hidden = name !== "next" && name !== "settings";
           el.trendingView.hidden = name !== "trending";
           el.aiView.hidden = name !== "ai";
           [el.navNext, el.navTrending, el.navAi].forEach((btn) => btn.classList.remove("active-nav"));
@@ -936,6 +936,15 @@
           if (name === "trending") loadTrending();
           if (name === "ai") hydrateAiView();
           if (name === "next") hydrateNextView();
+          if (name === "settings") {
+            el.nextSetup.hidden = false;
+            el.nextContent.hidden = true;
+            el.appIntro.hidden = true;
+            el.authSetup.hidden = false;
+            el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+            el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+            syncAiKeyLink();
+          }
           const hash = name === "next" ? "" : `#${name}`;
           if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
         }
@@ -1059,16 +1068,7 @@
         el.navNext.addEventListener("click", () => showView("next"));
         el.navTrending.addEventListener("click", () => showView("trending"));
         el.navAi.addEventListener("click", () => showView("ai"));
-        el.editSimklSettings.addEventListener("click", () => {
-          showView("next");
-          el.nextSetup.hidden = false;
-          el.nextContent.hidden = true;
-          el.appIntro.hidden = true;
-          el.authSetup.hidden = false;
-          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
-          syncAiKeyLink();
-        });
+        el.editSimklSettings.addEventListener("click", () => showView("settings"));
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.aiProviderSelect.addEventListener("change", syncAiKeyLink);
         el.trendingPeriodTabs.addEventListener("click", (e) => {
@@ -1106,7 +1106,7 @@
         handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
-          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
+          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : hash === "settings" ? "settings" : "next");
           loadSuggestions();
         } else {
           showView("next");
