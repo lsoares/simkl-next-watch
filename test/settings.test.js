@@ -16,7 +16,7 @@ test.describe("settings", () => {
     await setupSyncAnime(page, [])
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
     await page.getByRole("button", { name: "Settings" }).click()
 
@@ -39,7 +39,7 @@ test.describe("settings", () => {
     await setupSyncAnime(page, [])
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("button", { name: "Settings" }).click()
     await page.getByRole("textbox", { name: /api key/i }).fill("my-gemini-key")
 
@@ -61,7 +61,7 @@ test.describe("settings", () => {
     await setupSyncAnime(page, [])
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("button", { name: "Settings" }).click()
 
     await page.getByRole("button", { name: /save.*key/i }).click()

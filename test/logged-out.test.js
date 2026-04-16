@@ -34,7 +34,7 @@ test.describe("logged out from simkl", () => {
     await setupSyncAnime(page, [])
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("button", { name: "Settings" }).click()
 
     await page.getByRole("button", { name: /logout/i }).click()

@@ -35,7 +35,7 @@ test.describe("ai suggestions", () => {
       await setupSyncAnime(page, [])
       await setupTvEpisodes(page, "11121")
       await loginViaOAuth(page)
-      await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+      await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
       await setupAiChat(page, 
         '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]', 
         "apiAiKey",
@@ -51,13 +51,13 @@ test.describe("ai suggestions", () => {
       await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
       await page.getByRole("button", { name: /save.*key/i }).click()
       await expect(page.getByRole("status")).toContainText(/key saved/i)
-      await page.getByRole("button", { name: /ai suggested/i }).click()
+      await page.getByRole("link", { name: /ai suggested/i }).click()
 
       await page.getByRole("button", { name: /make me laugh/i }).click()
 
-      await expect(page.getByRole("img", { name: "Parasite" })).toBeVisible()
-      await expect(page.getByRole("img", { name: "Oldboy" })).toBeVisible()
-      await expect(page.getByRole("img", { name: "The Handmaiden" })).toBeVisible()
+      await expect(page.getByRole("article", { name: "Parasite" })).toBeVisible()
+      await expect(page.getByRole("article", { name: "Oldboy" })).toBeVisible()
+      await expect(page.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
     })
   })
 
@@ -76,8 +76,8 @@ test.describe("ai suggestions", () => {
     await setupSyncAnime(page, [])
     await setupTvEpisodes(page, "11121")
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
-    await page.getByRole("button", { name: /ai suggested/i }).click()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await page.getByRole("link", { name: /ai suggested/i }).click()
 
     await page.getByRole("button", { name: /cozy night in/i }).click()
 

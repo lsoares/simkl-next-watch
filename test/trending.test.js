@@ -26,11 +26,11 @@ test.describe("trending", () => {
       { title: "Dune", year: 2024, ids: { simkl_id: 99003 }, poster: "p3", ratings: { imdb: { rating: 8.1 } } },
     ])
     await loginViaOAuth(page)
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
-    await page.getByRole("button", { name: /trending/i }).click()
+    await page.getByRole("link", { name: /trending/i }).click()
 
-    await expect(page.getByRole("link", { name: "The Rookie" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "The Boys" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
   })
 })

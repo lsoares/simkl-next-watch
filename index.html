@@ -15,9 +15,9 @@
   <body>
     <nav class="top-bar" id="topBar" hidden>
       <div class="top-bar-scroll">
-        <button id="navNext" class="tiny-link active-nav" type="button">next</button>
-        <button id="navTrending" class="tiny-link" type="button">trending</button>
-        <button id="navAi" class="tiny-link" type="button">ai suggested</button>
+        <a id="navNext" class="tiny-link active-nav" href="#">next</a>
+        <a id="navTrending" class="tiny-link" href="#trending">trending</a>
+        <a id="navAi" class="tiny-link" href="#ai">ai suggested</a>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
         <button class="settings-icon" id="editSimklSettings" type="button" aria-label="Settings">⚙</button>
       </div>
@@ -144,7 +144,7 @@
       </div>
     </main>
 
-    <div class="spinner" id="loadingSpinner" hidden></div>
+    <div class="spinner" id="loadingSpinner" role="progressbar" aria-label="Loading" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
 
     <script>
@@ -347,8 +347,8 @@
         const epCode = !unstarted && ep ? formatEpisode(ep) : "";
 
         return `
-          <article class="item-card" data-simkl-id="${simklId(item)}" data-type="${type}">
-            ${img ? `<a class="poster-anchor" href="${escapeHtml(epUrl || url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(item.title)}" draggable="false" /></a>` : ""}
+          <article class="item-card" data-simkl-id="${simklId(item)}" data-type="${type}" aria-label="${escapeHtml(item.title)}">
+            ${img ? `<a class="poster-anchor" href="${escapeHtml(epUrl || url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="" draggable="false" /></a>` : ""}
             <div class="poster-top">
               <div class="poster-top-text">
                 <div class="poster-title">
@@ -373,17 +373,17 @@
         const rating = item.ratings?.imdb?.rating;
 
         return `
-          <a class="item-card${watched ? " trending-watched" : ""}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}">
-            ${img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : ""}
+          <article class="item-card${watched ? " trending-watched" : ""}" data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
+            ${img ? `<a class="poster-anchor" href="${escapeHtml(url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="" loading="lazy" draggable="false" /></a>` : ""}
             <div class="poster-top">
               <div class="poster-top-text">
-                <div class="poster-title"><span class="poster-title-link">${escapeHtml(title)}</span>${!watched && year ? `<span class="poster-title-meta">(${year})</span>` : ""}</div>
+                <div class="poster-title"><a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>${!watched && year ? `<span class="poster-title-meta">(${year})</span>` : ""}</div>
                 ${!watched && rating ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
               </div>
             </div>
             <div class="poster-bottom"></div>
             ${loggedIn && id && !watched ? `<button class="add-watchlist-btn" title="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
-          </a>`;
+          </article>`;
       }
 
       function renderRatingPrompt() {
@@ -774,7 +774,7 @@
         async function loadTrending() {
           const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
           writeStorage(STORAGE.trendingPeriod, period);
-          el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty">Loading...</p>`;
+          el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<div class="spinner-inline" role="progressbar" aria-label="Loading"></div>`;
           try {
             const [[tvData, movieData]] = await Promise.all([fetchTrending(period), libraryReady]);
             const hideWatched = el.hideTrendingWatched.checked;
@@ -965,7 +965,7 @@
           if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) { showToast("Add an AI key in settings first.", true); return; }
           el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          el.aiResults.innerHTML = `<p class="empty">Thinking...</p>`;
+          el.aiResults.innerHTML = `<div class="spinner-inline" role="progressbar" aria-label="Loading"></div>`;
           try {
             const items = await getRecommendations(btn.textContent);
             renderAiResults(items);
@@ -1131,9 +1131,9 @@
         });
         el.logoutBtn.addEventListener("click", logout);
         el.getStartedBtn.addEventListener("click", () => showView("settings"));
-        el.navNext.addEventListener("click", () => showView("next"));
-        el.navTrending.addEventListener("click", () => showView("trending"));
-        el.navAi.addEventListener("click", () => showView("ai"));
+        el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
+        el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
+        el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });
         el.editSimklSettings.addEventListener("click", () => showView("settings"));
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); });

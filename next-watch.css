@@ -605,6 +605,16 @@
         pointer-events: none;
       }
       .spinner[hidden] { display: none; }
+      .spinner-inline {
+        display: block;
+        margin: 24px auto;
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--muted, #888);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
       #installButton.hidden { display: none; }
 
       .empty {

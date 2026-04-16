@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 
 export function setupCompleteChat(page, responseText, expectedKey) {
-  return page.route("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent/**", async (route) => {
+  return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
     expect(route.request().method()).toBe("POST")
     const url = new URL(route.request().url())
     expect(url.searchParams.get("key")).toBe(expectedKey)

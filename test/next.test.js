@@ -21,6 +21,6 @@ test.describe("next", () => {
 
     await loginViaOAuth(page)
 
-    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   })
 })
