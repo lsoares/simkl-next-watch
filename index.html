@@ -767,6 +767,113 @@
           }
         }
 
+        // ── AI Provider Adapters ──
+
+        const AI_SYSTEM = "You suggest movies and TV shows. Return exactly 3 suggestions as a JSON array: [{\"title\":\"...\",\"year\":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.";
+
+        async function aiComplete(provider, key, userMessage) {
+          if (provider === "gemini") {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ parts: [{ text: AI_SYSTEM + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new ApiError(data.error?.message || `Gemini error ${res.status}`);
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
+          if (provider === "openai") {
+            const res = await fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: AI_SYSTEM }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new ApiError(data.error?.message || `OpenAI error ${res.status}`);
+            return data.choices?.[0]?.message?.content || "";
+          }
+          if (provider === "claude") {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
+              body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: AI_SYSTEM, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new ApiError(data.error?.message || `Claude error ${res.status}`);
+            return data.content?.[0]?.text || "";
+          }
+          throw new ApiError("Unknown AI provider");
+        }
+
+        // ── Recommendation Flow ──
+
+        const aiCache = {};
+        const AI_CACHE_TTL = 5 * 60 * 1000;
+
+        async function getRecommendations(mood) {
+          const cache = readJsonStorage(STORAGE.syncCache);
+          const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
+          if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
+
+          const cacheKey = mood + "|" + ratings;
+          const cached = aiCache[cacheKey];
+          if (cached && Date.now() - cached.ts < AI_CACHE_TTL) return cached.data;
+
+          const provider = readStorage(STORAGE.aiProvider) || "gemini";
+          const key = readStorage(STORAGE.aiKey);
+          const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
+          const raw = await aiComplete(provider, key, userMessage);
+
+          let suggestions;
+          try {
+            const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+            suggestions = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            throw new ApiError("Couldn't parse AI suggestions. Try again.");
+          }
+
+          const results = await Promise.all(suggestions.slice(0, 3).map(async (s) => {
+            const q = `${s.title} ${s.year || ""}`.trim();
+            const search = await apiFetch(`/search/multi/?q=${encodeURIComponent(q)}&limit=1`);
+            const match = Array.isArray(search) ? search[0] : null;
+            return match || null;
+          }));
+
+          const filtered = results.filter(Boolean);
+          aiCache[cacheKey] = { ts: Date.now(), data: filtered };
+          return filtered;
+        }
+
+        // ── AI Result Rendering ──
+
+        function renderAiResults(items) {
+          if (!items.length) {
+            el.aiResults.innerHTML = `<p class="empty">No results found.</p>`;
+            return;
+          }
+          el.aiResults.innerHTML = items.map((item) => {
+            const urlBase = item.type === "movie" ? "movies" : "tv";
+            const watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
+            return `<div class="row-item">${renderTrendingCard(item, urlBase, watched, true)}</div>`;
+          }).join("");
+          for (const btn of el.aiResults.querySelectorAll(".add-watchlist-btn")) setupAddWatchlistBtn(btn);
+        }
+
+        el.aiPrompts.addEventListener("click", async (e) => {
+          const btn = e.target.closest(".ai-prompt-btn");
+          if (!btn) return;
+          el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          el.aiResults.innerHTML = `<p class="empty">Thinking...</p>`;
+          try {
+            const items = await getRecommendations(btn.textContent);
+            renderAiResults(items);
+          } catch (err) {
+            el.aiResults.innerHTML = "";
+            handleError(err);
+          }
+        });
+
         // ── Navigation ──
 
         function showView(name) {
