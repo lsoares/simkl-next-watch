@@ -400,7 +400,9 @@
         hideWatched: "next-watch-hide-watched",
         episodeCache: "next-watch-episode-cache",
         aiProvider: "next-watch-ai-provider",
-        aiKey: "next-watch-ai-key",
+        aiKeyGemini: "next-watch-ai-key-gemini",
+        aiKeyOpenai: "next-watch-ai-key-openai",
+        aiKeyClaude: "next-watch-ai-key-claude",
         aiMediaType: "next-watch-ai-media-type",
       };
 
@@ -770,10 +772,21 @@
           syncAiKeyLink();
         }
 
+        const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude };
+
+        function getAiKey(provider) { return readStorage(AI_KEY_STORAGE[provider] || STORAGE.aiKeyGemini); }
+
         function syncAiKeyLink() {
           const opt = el.aiProviderSelect.selectedOptions[0];
           el.aiKeyLink.href = opt.dataset.url;
           el.aiKeyLink.textContent = `Get a ${opt.textContent.replace(/ \(free\)/, "")} key`;
+          el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
+          syncAiSaveLabel();
+        }
+
+        function syncAiSaveLabel() {
+          const name = el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "");
+          el.aiSaveBtn.textContent = `Save ${name} key`;
         }
 
         // ── AI Provider Adapters ──
@@ -864,7 +877,7 @@
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
-          const key = readStorage(STORAGE.aiKey);
+          const key = getAiKey(provider);
           const systemPrompt = aiSystemPrompt(mediaType);
           const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
 
@@ -898,7 +911,7 @@
         el.aiPrompts.addEventListener("click", async (e) => {
           const btn = e.target.closest(".ai-prompt-btn");
           if (!btn) return;
-          if (!readStorage(STORAGE.aiKey)) { showToast("Add an AI key in settings first.", true); return; }
+          if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) { showToast("Add an AI key in settings first.", true); return; }
           el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           el.aiResults.innerHTML = `<p class="empty">Thinking...</p>`;
@@ -943,7 +956,7 @@
             el.appIntro.hidden = true;
             el.authSetup.hidden = false;
             el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-            el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+            el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
             syncAiKeyLink();
           }
           const hash = name === "next" ? "" : `#${name}`;
@@ -1029,7 +1042,7 @@
           el.clientIdInput.value = getClientId();
           el.clientSecretInput.value = getClientSecret();
           el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+          el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
           el.loginStatusNote.hidden = !loggedIn;
           el.loginNewNote.hidden = loggedIn;
           el.logoutArea.hidden = !loggedIn;
@@ -1057,11 +1070,13 @@
           showToast("Simkl settings saved.");
         });
         el.aiSaveBtn.addEventListener("click", () => {
+          const provider = el.aiProviderSelect.value;
           const aiKey = el.aiKeyInput.value.trim();
           if (!aiKey) { showToast("Enter an AI API key.", true); return; }
-          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
-          writeStorage(STORAGE.aiKey, aiKey);
-          showToast("AI key saved.");
+          writeStorage(STORAGE.aiProvider, provider);
+          writeStorage(AI_KEY_STORAGE[provider], aiKey);
+          syncAiSaveLabel();
+          showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`);
         });
         el.logoutBtn.addEventListener("click", logout);
         el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });
@@ -1070,7 +1085,7 @@
         el.navAi.addEventListener("click", () => showView("ai"));
         el.editSimklSettings.addEventListener("click", () => showView("settings"));
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
-        el.aiProviderSelect.addEventListener("change", syncAiKeyLink);
+        el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); });
         el.trendingPeriodTabs.addEventListener("click", (e) => {
           const tab = e.target.closest(".range-tab");
           if (!tab) return;
