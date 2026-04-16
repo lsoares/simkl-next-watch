@@ -44,13 +44,32 @@
             </div>
             <div style="margin-bottom:12px">
               <label for="clientIdInput">Client ID</label>
-              <input id="clientIdInput" type="text" autocomplete="off" />
+              <input id="clientIdInput" type="text" autocomplete="new-password" data-1p-ignore />
             </div>
             <div style="margin-bottom:12px">
               <label for="clientSecretInput">App Secret</label>
-              <input id="clientSecretInput" type="password" autocomplete="off" />
+              <input id="clientSecretInput" type="password" autocomplete="new-password" data-1p-ignore />
             </div>
             <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
+            <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save settings</button>
+            <div id="aiSettingsSection" hidden>
+              <hr style="border:0;border-top:1px solid var(--panel-border);margin:20px 0" />
+              <p class="field-help">Optional: add an AI key for personalized recommendations.
+                <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="color:#86efac">Get a key</a>
+              </p>
+              <div style="margin-bottom:12px">
+                <label for="aiProviderSelect">AI Provider</label>
+                <select id="aiProviderSelect">
+                  <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+                  <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
+                  <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
+                </select>
+              </div>
+              <div style="margin-bottom:12px">
+                <label for="aiKeyInput">AI API Key</label>
+                <input id="aiKeyInput" type="password" autocomplete="new-password" data-1p-ignore />
+              </div>
+            </div>
             <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
               <button class="tiny-link" id="logoutBtn" type="button">logout</button>
             </div>
@@ -91,35 +110,13 @@
 
       <!-- AI view -->
       <div id="aiView" hidden>
-        <div id="aiSetup">
-          <p class="field-help">Get AI-powered recommendations based on your ratings. Pick a provider and paste your API key.</p>
-          <div style="margin-bottom:12px">
-            <label for="aiProviderSelect">Provider</label>
-            <select id="aiProviderSelect">
-              <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
-              <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
-              <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
-            </select>
-            <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Get a Gemini key</a>
-          </div>
-          <div style="margin-bottom:12px">
-            <label for="aiKeyInput">API Key</label>
-            <input id="aiKeyInput" type="password" autocomplete="off" />
-          </div>
-          <button class="secondary" id="aiSaveBtn" type="button">Save</button>
-          <div id="aiLogoutArea" hidden style="margin-top:16px;text-align:center">
-            <button class="tiny-link" id="aiLogoutBtn" type="button">remove AI key</button>
+        <div class="ai-toolbar">
+          <div class="range-tabs" id="aiTypeTabs">
+            <button class="range-tab active" data-type="both" type="button">Both</button>
+            <button class="range-tab" data-type="tv" type="button">Series</button>
+            <button class="range-tab" data-type="movie" type="button">Movies</button>
           </div>
         </div>
-        <div id="aiMain" hidden>
-          <div class="ai-toolbar">
-            <div class="range-tabs" id="aiTypeTabs">
-              <button class="range-tab active" data-type="both" type="button">Both</button>
-              <button class="range-tab" data-type="tv" type="button">Series</button>
-              <button class="range-tab" data-type="movie" type="button">Movies</button>
-            </div>
-            <button class="settings-icon" id="aiEditSettings" type="button" title="Edit settings">⚙</button>
-          </div>
           <div class="ai-prompts" id="aiPrompts">
             <button class="ai-prompt-btn" type="button">Cozy night in</button>
             <button class="ai-prompt-btn" type="button">Edge of my seat</button>
@@ -521,17 +518,17 @@
         const $ = (id) => document.getElementById(id);
         const el = {
           topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
-          nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"),
+          nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
           appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
-          logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"),
+          logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"),
           nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
           trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
           hideTrendingWatched: $("hideTrendingWatched"),
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-          aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"), aiTypeTabs: $("aiTypeTabs"),
-          aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"), aiSaveBtn: $("aiSaveBtn"),
-          aiEditSettings: $("aiEditSettings"), aiLogoutArea: $("aiLogoutArea"), aiLogoutBtn: $("aiLogoutBtn"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
+          aiView: $("aiView"), aiTypeTabs: $("aiTypeTabs"),
+          aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
+          aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
         };
 
@@ -769,13 +766,7 @@
         // ── AI ──
 
         function hydrateAiView() {
-          const hasKey = !!readStorage(STORAGE.aiKey);
-          el.aiSetup.hidden = hasKey;
-          el.aiMain.hidden = !hasKey;
-          el.aiLogoutArea.hidden = !hasKey;
-          if (hasKey) {
-            el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-          }
+          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
           syncAiKeyLink();
         }
 
@@ -911,6 +902,7 @@
         el.aiPrompts.addEventListener("click", async (e) => {
           const btn = e.target.closest(".ai-prompt-btn");
           if (!btn) return;
+          if (!readStorage(STORAGE.aiKey)) { showToast("Add an AI key in settings first.", true); return; }
           el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           el.aiResults.innerHTML = `<p class="empty">Thinking...</p>`;
@@ -959,6 +951,11 @@
           if (!clientSecret) { showToast("Enter an app secret.", true); return; }
           writeStorage(STORAGE.clientId, clientId);
           writeStorage(STORAGE.clientSecret, clientSecret);
+          const aiKey = el.aiKeyInput.value.trim();
+          if (aiKey) {
+            writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
+            writeStorage(STORAGE.aiKey, aiKey);
+          }
           const state = Math.random().toString(36).slice(2);
           sessionStorage.setItem("oauth-state", state);
           const redirectUri = `${location.origin}${location.pathname}`;
@@ -1028,9 +1025,14 @@
           el.topBar.hidden = false;
           el.clientIdInput.value = getClientId();
           el.clientSecretInput.value = getClientSecret();
+          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
           el.loginStatusNote.hidden = !loggedIn;
           el.loginNewNote.hidden = loggedIn;
           el.logoutArea.hidden = !loggedIn;
+          el.connectBtn.hidden = loggedIn;
+          el.saveSettingsBtn.hidden = !loggedIn;
+          el.aiSettingsSection.hidden = !loggedIn;
           hydrateNextView();
           syncViewportMetrics();
         }
@@ -1044,6 +1046,16 @@
           showToast("Copied redirect URI.");
         });
         el.connectBtn.addEventListener("click", startOAuth);
+        el.saveSettingsBtn.addEventListener("click", () => {
+          writeStorage(STORAGE.clientId, el.clientIdInput.value.trim());
+          writeStorage(STORAGE.clientSecret, el.clientSecretInput.value.trim());
+          const aiKey = el.aiKeyInput.value.trim();
+          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
+          writeStorage(STORAGE.aiKey, aiKey);
+          hydrateUI();
+          showView("next");
+          showToast("Settings saved.");
+        });
         el.logoutBtn.addEventListener("click", logout);
         el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });
         el.navNext.addEventListener("click", () => showView("next"));
@@ -1054,33 +1066,12 @@
           el.nextContent.hidden = true;
           el.appIntro.hidden = true;
           el.authSetup.hidden = false;
+          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+          syncAiKeyLink();
         });
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.aiProviderSelect.addEventListener("change", syncAiKeyLink);
-        el.aiSaveBtn.addEventListener("click", () => {
-          const key = el.aiKeyInput.value.trim();
-          if (!key) { showToast("Enter an API key.", true); return; }
-          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
-          writeStorage(STORAGE.aiKey, key);
-          el.aiKeyInput.value = "";
-          hydrateAiView();
-          showToast("AI provider saved.");
-        });
-        el.aiEditSettings.addEventListener("click", () => {
-          el.aiSetup.hidden = false;
-          el.aiMain.hidden = true;
-          el.aiLogoutArea.hidden = false;
-          el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-          el.aiKeyInput.value = readStorage(STORAGE.aiKey);
-        });
-        el.aiLogoutBtn.addEventListener("click", () => {
-          localStorage.removeItem(STORAGE.aiProvider);
-          localStorage.removeItem(STORAGE.aiKey);
-          el.aiKeyInput.value = "";
-          el.aiResults.innerHTML = "";
-          hydrateAiView();
-          showToast("AI key removed.");
-        });
         el.trendingPeriodTabs.addEventListener("click", (e) => {
           const tab = e.target.closest(".range-tab");
           if (!tab) return;
