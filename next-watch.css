@@ -74,7 +74,6 @@
         padding-right: 16px;
       }
       .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
-      #openAuthModalButton.logged-in { opacity: 0.35; }
 
       .row {
         display: grid;

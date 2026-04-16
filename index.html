@@ -18,52 +18,54 @@
         <button id="navNext" class="tiny-link active-nav" type="button">next</button>
         <button id="navTrending" class="tiny-link" type="button">trending</button>
         <button id="navAi" class="tiny-link" type="button">ai suggested</button>
-        <button id="navLogin" class="tiny-link" type="button">login</button>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
       </div>
     </nav>
 
     <main>
-      <!-- Login view -->
-      <div id="loginView" hidden>
-        <div class="app-intro" id="appIntro">
-          <p class="app-intro-tagline">Your next episode or movie, at a glance.</p>
-          <p class="app-intro-desc">Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies &mdash; no browsing, no thinking.</p>
-          <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
-        </div>
-        <div id="authSetup" hidden>
-          <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
-          <div class="field-help" id="loginNewNote">
-            <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> with:</p>
-            <ul class="setup-hints">
-              <li>Name: <strong>Next Watch</strong></li>
-              <li>Description: <strong>Next Watch</strong></li>
-              <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
-            </ul>
-            <p>Save changes, then paste the client ID and app secret below.</p>
-          </div>
-          <div style="margin-bottom:12px">
-            <label for="clientIdInput">Client ID</label>
-            <input id="clientIdInput" type="text" autocomplete="off" />
-          </div>
-          <div style="margin-bottom:12px">
-            <label for="clientSecretInput">App Secret</label>
-            <input id="clientSecretInput" type="password" autocomplete="off" />
-          </div>
-          <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
-          <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
-            <button class="tiny-link" id="logoutBtn" type="button">logout</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Next view -->
-      <div id="nextView" class="suggestions-grid" hidden>
-        <div class="media-section">
-          <div id="tvRow" class="items-row"></div>
+      <div id="nextView" hidden>
+        <div id="nextSetup">
+          <div class="app-intro" id="appIntro">
+            <p class="app-intro-tagline">Your next episode or movie, at a glance.</p>
+            <p class="app-intro-desc">Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies &mdash; no browsing, no thinking.</p>
+            <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
+          </div>
+          <div id="authSetup" hidden>
+            <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
+            <div class="field-help" id="loginNewNote">
+              <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> with:</p>
+              <ul class="setup-hints">
+                <li>Name: <strong>Next Watch</strong></li>
+                <li>Description: <strong>Next Watch</strong></li>
+                <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
+              </ul>
+              <p>Save changes, then paste the client ID and app secret below.</p>
+            </div>
+            <div style="margin-bottom:12px">
+              <label for="clientIdInput">Client ID</label>
+              <input id="clientIdInput" type="text" autocomplete="off" />
+            </div>
+            <div style="margin-bottom:12px">
+              <label for="clientSecretInput">App Secret</label>
+              <input id="clientSecretInput" type="password" autocomplete="off" />
+            </div>
+            <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
+            <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
+              <button class="tiny-link" id="logoutBtn" type="button">logout</button>
+            </div>
+          </div>
         </div>
-        <div class="media-section">
-          <div id="movieRow" class="items-row"></div>
+        <div id="nextContent" class="suggestions-grid" hidden>
+          <div class="ai-toolbar">
+            <button class="tiny-link" id="editSimklSettings" type="button">edit settings</button>
+          </div>
+          <div class="media-section">
+            <div id="tvRow" class="items-row"></div>
+          </div>
+          <div class="media-section">
+            <div id="movieRow" class="items-row"></div>
+          </div>
         </div>
       </div>
 
@@ -517,8 +519,9 @@
       (function app() {
         const $ = (id) => document.getElementById(id);
         const el = {
-          topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"), navLogin: $("navLogin"),
-          loginView: $("loginView"), appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
+          topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
+          nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"),
+          appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
           logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"),
           nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
@@ -931,17 +934,16 @@
 
         function showView(name) {
           currentView = name;
-          el.loginView.hidden = name !== "login";
           el.nextView.hidden = name !== "next";
           el.trendingView.hidden = name !== "trending";
           el.aiView.hidden = name !== "ai";
-          [el.navNext, el.navTrending, el.navAi, el.navLogin].forEach((btn) => btn.classList.remove("active-nav"));
+          [el.navNext, el.navTrending, el.navAi].forEach((btn) => btn.classList.remove("active-nav"));
           if (name === "next") el.navNext.classList.add("active-nav");
           if (name === "trending") el.navTrending.classList.add("active-nav");
           if (name === "ai") el.navAi.classList.add("active-nav");
-          if (name === "login") el.navLogin.classList.add("active-nav");
           if (name === "trending") loadTrending();
           if (name === "ai") hydrateAiView();
+          if (name === "next") hydrateNextView();
           const hash = name === "next" ? "" : `#${name}`;
           if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
         }
@@ -989,7 +991,7 @@
             await loadSuggestions();
           } catch (err) {
             handleError(err);
-            showView("login");
+            showView("next");
           } finally {
             el.spinner.hidden = true;
           }
@@ -1003,23 +1005,31 @@
           el.clientIdInput.value = "";
           el.clientSecretInput.value = "";
           hydrateUI();
-          showView("login");
+          showView("next");
           showToast("Logged out.");
         }
 
         // ── UI hydration ──
 
+        function hydrateNextView() {
+          const loggedIn = isLoggedIn();
+          el.nextSetup.hidden = loggedIn;
+          el.nextContent.hidden = !loggedIn;
+          if (!loggedIn) {
+            el.appIntro.hidden = !!getClientId();
+            el.authSetup.hidden = !getClientId();
+          }
+        }
+
         function hydrateUI() {
           const loggedIn = isLoggedIn();
-          el.topBar.hidden = !loggedIn;
-          el.navLogin.classList.toggle("logged-in", loggedIn);
+          el.topBar.hidden = false;
           el.clientIdInput.value = getClientId();
           el.clientSecretInput.value = getClientSecret();
-          el.appIntro.hidden = loggedIn;
-          el.authSetup.hidden = !loggedIn;
           el.loginStatusNote.hidden = !loggedIn;
           el.loginNewNote.hidden = loggedIn;
           el.logoutArea.hidden = !loggedIn;
+          hydrateNextView();
           syncViewportMetrics();
         }
 
@@ -1037,7 +1047,12 @@
         el.navNext.addEventListener("click", () => showView("next"));
         el.navTrending.addEventListener("click", () => showView("trending"));
         el.navAi.addEventListener("click", () => showView("ai"));
-        el.navLogin.addEventListener("click", () => showView("login"));
+        el.editSimklSettings.addEventListener("click", () => {
+          el.nextSetup.hidden = false;
+          el.nextContent.hidden = true;
+          el.appIntro.hidden = true;
+          el.authSetup.hidden = false;
+        });
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.aiProviderSelect.addEventListener("change", syncAiKeyLink);
         el.aiSaveBtn.addEventListener("click", () => {
@@ -1085,10 +1100,10 @@
         handleOAuthCallback();
         if (isLoggedIn()) {
           const hash = location.hash.replace("#", "").split("/")[0];
-          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : hash === "login" ? "login" : "next");
+          showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
           loadSuggestions();
         } else {
-          showView("login");
+          showView("next");
         }
       })();
     </script>
