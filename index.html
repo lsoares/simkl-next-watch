@@ -111,10 +111,9 @@
       <!-- AI view -->
       <div id="aiView" hidden>
         <div class="ai-toolbar">
-          <div class="range-tabs" id="aiTypeTabs">
-            <button class="range-tab active" data-type="both" type="button">Both</button>
-            <button class="range-tab" data-type="tv" type="button">Series</button>
-            <button class="range-tab" data-type="movie" type="button">Movies</button>
+          <div class="ai-toggles">
+            <button class="ai-toggle active" id="aiToggleTv" type="button">Series</button>
+            <button class="ai-toggle active" id="aiToggleMovie" type="button">Movies</button>
           </div>
         </div>
           <div class="ai-prompts" id="aiPrompts">
@@ -526,7 +525,7 @@
           trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
           hideTrendingWatched: $("hideTrendingWatched"),
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-          aiView: $("aiView"), aiTypeTabs: $("aiTypeTabs"),
+          aiView: $("aiView"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
           aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
           aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
@@ -852,7 +851,12 @@
         }
 
         function getAiMediaType() {
-          return el.aiTypeTabs.querySelector(".range-tab.active")?.dataset.type || "both";
+          const tv = el.aiToggleTv.classList.contains("active");
+          const movie = el.aiToggleMovie.classList.contains("active");
+          if (tv && movie) return "both";
+          if (tv) return "tv";
+          if (movie) return "movie";
+          return "both";
         }
 
         async function getRecommendations(mood) {
@@ -915,14 +919,17 @@
           }
         });
 
-        el.aiTypeTabs.addEventListener("click", (e) => {
-          const tab = e.target.closest(".range-tab");
-          if (!tab) return;
-          el.aiTypeTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.remove("active"));
-          tab.classList.add("active");
-          el.aiResults.innerHTML = "";
-          el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
-        });
+        function handleAiToggle(btn, other) {
+          btn.addEventListener("click", () => {
+            if (!btn.classList.contains("active") || other.classList.contains("active")) {
+              btn.classList.toggle("active");
+            }
+            el.aiResults.innerHTML = "";
+            el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
+          });
+        }
+        handleAiToggle(el.aiToggleTv, el.aiToggleMovie);
+        handleAiToggle(el.aiToggleMovie, el.aiToggleTv);
 
         // ── Navigation ──
 
