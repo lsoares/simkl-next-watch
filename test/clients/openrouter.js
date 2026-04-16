@@ -1,11 +1,11 @@
 import { expect } from "@playwright/test"
 
 export function setupCompleteChat(page, responseText, expectedKey) {
-  return page.route("**/v1/chat/completions", async (route) => {
+  return page.route("https://openrouter.ai/**", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)
     const body = route.request().postDataJSON()
-    expect(body.model).toBe("gpt-4o-mini")
+    expect(body.model).toBe("google/gemini-2.5-flash-lite-preview:free")
     expect(body.messages[0].role).toBe("system")
     expect(body.messages[1].role).toBe("user")
     expect(body.temperature).toBe(0.9)

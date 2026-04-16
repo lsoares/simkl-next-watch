@@ -19,7 +19,7 @@
         <button id="navTrending" class="tiny-link" type="button">trending</button>
         <button id="navAi" class="tiny-link" type="button">ai suggested</button>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
-        <button class="settings-icon" id="editSimklSettings" type="button" title="Settings">⚙</button>
+        <button class="settings-icon" id="editSimklSettings" type="button" aria-label="Settings">⚙</button>
       </div>
     </nav>
 
@@ -28,15 +28,15 @@
       <div id="nextView" hidden>
         <div id="nextSetup">
           <div class="app-intro" id="appIntro">
-            <p class="app-intro-tagline">Your next episode or movie, at a glance.</p>
+            <h2 class="app-intro-tagline">Your next episode or movie, at a glance.</h2>
             <p class="app-intro-desc">Connect your Simkl account and Next Watch surfaces what to watch next across all your shows and movies &mdash; no browsing, no thinking.</p>
             <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
           </div>
           <div id="authSetup" hidden>
-            <h2 style="font-size:1.1rem;margin-bottom:8px">Simkl</h2>
+            <h2 style="font-size:1.1rem;margin-bottom:8px">Series and movies database</h2>
             <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
             <div class="field-help" id="loginNewNote">
-              <p>Next Watch uses your <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> watchlist and ratings to show what to watch next.</p>
+              <p><a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> tracks your watchlist and ratings so Next Watch knows what to recommend next.</p>
               <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a>:</p>
               <ol class="setup-hints">
                 <li>Name: <strong>Next Watch</strong></li>
@@ -68,6 +68,10 @@
                     <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
                     <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
                     <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
+                    <option value="grok" data-url="https://console.x.ai">Grok</option>
+                    <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
+                    <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
+                    <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
                   </select>
                   <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Create key</a>
                 </div>
@@ -141,7 +145,7 @@
     </main>
 
     <div class="spinner" id="loadingSpinner" hidden></div>
-    <div class="toast" id="toast" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
 
     <script>
       // ── Pure domain functions (no DOM, no storage, no fetch) ──
@@ -419,6 +423,10 @@
         aiKeyGemini: "next-watch-ai-key-gemini",
         aiKeyOpenai: "next-watch-ai-key-openai",
         aiKeyClaude: "next-watch-ai-key-claude",
+        aiKeyGrok: "next-watch-ai-key-grok",
+        aiKeyGroq: "next-watch-ai-key-groq",
+        aiKeyDeepseek: "next-watch-ai-key-deepseek",
+        aiKeyOpenrouter: "next-watch-ai-key-openrouter",
         aiMediaType: "next-watch-ai-media-type",
       };
 
@@ -791,7 +799,7 @@
           syncAiKeyLink();
         }
 
-        const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude };
+        const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude, grok: STORAGE.aiKeyGrok, groq: STORAGE.aiKeyGroq, deepseek: STORAGE.aiKeyDeepseek, openrouter: STORAGE.aiKeyOpenrouter };
 
         function getAiKey(provider) { return readStorage(AI_KEY_STORAGE[provider] || STORAGE.aiKeyGemini); }
 
@@ -834,6 +842,30 @@
             body: (systemPrompt, userMessage) => ({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
             extract: (data) => data.content?.[0]?.text,
           },
+          grok: {
+            url: () => "https://api.x.ai/v1/chat/completions",
+            headers: (key) => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ model: "grok-3-mini", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.choices?.[0]?.message?.content,
+          },
+          groq: {
+            url: () => "https://api.groq.com/openai/v1/chat/completions",
+            headers: (key) => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.choices?.[0]?.message?.content,
+          },
+          deepseek: {
+            url: () => "https://api.deepseek.com/chat/completions",
+            headers: (key) => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ model: "deepseek-chat", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.choices?.[0]?.message?.content,
+          },
+          openrouter: {
+            url: () => "https://openrouter.ai/api/v1/chat/completions",
+            headers: (key) => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ model: "google/gemini-2.5-flash-lite-preview:free", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.choices?.[0]?.message?.content,
+          },
         };
 
         async function aiComplete(provider, key, userMessage, systemPrompt) {
@@ -845,7 +877,7 @@
             body: JSON.stringify(config.body(systemPrompt, userMessage)),
           });
           const data = await res.json();
-          if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `${provider} error ${res.status}`));
+          if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || (typeof data.error === "string" ? data.error : null) || `${provider} error ${res.status}`));
           return config.extract(data) || "";
         }
 

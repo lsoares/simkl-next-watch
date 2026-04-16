@@ -1,12 +1,17 @@
-import assert from "node:assert/strict"
-import { http, HttpResponse } from "msw"
+import { expect } from "@playwright/test"
 
-export function completeChat(responseText, expectedKey) {
-  return http.post("https://generativelanguage.googleapis.com/v1beta/models/*", async ({ request }) => {
-    assert.equal(new URL(request.url).searchParams.get("key"), expectedKey)
-    const body = await request.json()
-    assert.ok(body.contents?.[0]?.parts?.[0]?.text)
-    assert.equal(body.generationConfig?.temperature, 0.9)
-    return HttpResponse.json({ candidates: [{ content: { parts: [{ text: responseText }] } }] })
+export function setupCompleteChat(page, responseText, expectedKey) {
+  return page.route("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent/**", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    const url = new URL(route.request().url())
+    expect(url.searchParams.get("key")).toBe(expectedKey)
+    const body = route.request().postDataJSON()
+    expect(body.contents?.[0]?.parts?.[0]?.text).toBeTruthy()
+    expect(body.generationConfig?.temperature).toBe(0.9)
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: responseText }] } }] }),
+    })
   })
 }

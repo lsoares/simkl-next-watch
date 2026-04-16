@@ -1,89 +1,118 @@
-import assert from "node:assert/strict"
-import { http, HttpResponse } from "msw"
+import { expect } from "@playwright/test"
 
-export function syncActivities() {
-  return http.post("https://api.simkl.com/sync/activities", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    return HttpResponse.json({ all: "2025-01-01T00:00:00Z" })
+export function setupOauthToken(page, accessToken) {
+  return page.route("**/oauth/token", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    const body = route.request().postDataJSON()
+    expect(body.client_id).toBe("test-client-id")
+    expect(body.client_secret).toBe("test-secret")
+    expect(body.code).toBeTruthy()
+    expect(body.grant_type).toBe("authorization_code")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ access_token: accessToken }) })
   })
 }
 
-export function syncShows(shows) {
-  return http.get("https://api.simkl.com/sync/all-items/shows/", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    const params = new URL(request.url).searchParams
-    assert.equal(params.get("extended"), "full")
-    assert.equal(params.get("episode_watched_at"), "yes")
-    return HttpResponse.json({ shows })
+export function setupSyncActivities(page) {
+  return page.route("**/sync/activities", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ all: "2025-01-01T00:00:00Z" }) })
   })
 }
 
-export function syncMovies(movies) {
-  return http.get("https://api.simkl.com/sync/all-items/movies/", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    const params = new URL(request.url).searchParams
-    assert.equal(params.get("extended"), "full")
-    assert.equal(params.get("episode_watched_at"), "yes")
-    return HttpResponse.json({ movies })
+export function setupSyncShows(page, shows) {
+  return page.route("**/sync/all-items/shows/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    expect(params.get("episode_watched_at")).toBe("yes")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ shows }) })
   })
 }
 
-export function syncAnime(anime) {
-  return http.get("https://api.simkl.com/sync/all-items/anime/", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    const params = new URL(request.url).searchParams
-    assert.equal(params.get("extended"), "full")
-    assert.equal(params.get("episode_watched_at"), "yes")
-    return HttpResponse.json({ anime })
+export function setupSyncMovies(page, movies) {
+  return page.route("**/sync/all-items/movies/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    expect(params.get("episode_watched_at")).toBe("yes")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ movies }) })
   })
 }
 
-export function tvEpisodes(expectedId) {
-  return http.get("https://api.simkl.com/tv/episodes/:id", ({ request, params }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    if (expectedId) assert.equal(params.id, expectedId)
-    return HttpResponse.json([])
+export function setupSyncAnime(page, anime) {
+  return page.route("**/sync/all-items/anime/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    expect(params.get("episode_watched_at")).toBe("yes")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ anime }) })
   })
 }
 
-export function searchTv() {
-  return http.get("https://api.simkl.com/search/tv", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    const params = new URL(request.url).searchParams
-    assert.ok(params.get("q"))
-    assert.equal(params.get("limit"), "1")
-    return HttpResponse.json([])
+export function setupTvEpisodes(page, expectedId) {
+  return page.route("**/tv/episodes/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    const url = new URL(route.request().url())
+    expect(url.pathname).toContain(expectedId)
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
   })
 }
 
-export function searchMovie(results) {
-  return http.get("https://api.simkl.com/search/movie", ({ request }) => {
-    assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
-    assert.equal(request.headers.get("authorization"), "Bearer test-token")
-    const params = new URL(request.url).searchParams
-    assert.ok(params.get("q"))
-    assert.equal(params.get("limit"), "1")
+export function setupTvEpisodesAny(page) {
+  return page.route("**/tv/episodes/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+  })
+}
+
+export function setupSearchTv(page) {
+  return page.route("**/search/tv?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("q")).toBeTruthy()
+    expect(params.get("limit")).toBe("1")
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+  })
+}
+
+export function setupSearchMovie(page, results) {
+  return page.route("**/search/movie?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("q")).toBeTruthy()
+    expect(params.get("limit")).toBe("1")
     const q = params.get("q")
     for (const [keyword, item] of Object.entries(results)) {
-      if (q.includes(keyword)) return HttpResponse.json([item])
+      if (q.includes(keyword)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([item]) })
     }
-    return HttpResponse.json([])
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
   })
 }
 
-export function trendingTv(items) {
-  return http.get("https://data.simkl.in/discover/trending/tv/:period", () =>
-    HttpResponse.json(items)
-  )
+export function setupTrendingTv(page, items) {
+  return page.route("**/discover/trending/tv/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
 }
 
-export function trendingMovies(items) {
-  return http.get("https://data.simkl.in/discover/trending/movies/:period", () =>
-    HttpResponse.json(items)
-  )
+export function setupTrendingMovies(page, items) {
+  return page.route("**/discover/trending/movies/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
 }

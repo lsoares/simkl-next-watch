@@ -1,16 +1,20 @@
-import assert from "node:assert/strict"
-import { http, HttpResponse } from "msw"
+import { expect } from "@playwright/test"
 
-export function completeChat(responseText, expectedKey) {
-  return http.post("https://api.anthropic.com/v1/messages", async ({ request }) => {
-    assert.equal(request.headers.get("x-api-key"), expectedKey)
-    assert.equal(request.headers.get("anthropic-version"), "2023-06-01")
-    const body = await request.json()
-    assert.equal(body.model, "claude-sonnet-4-20250514")
-    assert.ok(body.system)
-    assert.equal(body.messages[0].role, "user")
-    assert.equal(body.temperature, 0.9)
-    assert.equal(body.max_tokens, 256)
-    return HttpResponse.json({ content: [{ text: responseText }] })
+export function setupCompleteChat(page, responseText, expectedKey) {
+  return page.route("**/v1/messages", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["x-api-key"]).toBe(expectedKey)
+    expect(route.request().headers()["anthropic-version"]).toBe("2023-06-01")
+    const body = route.request().postDataJSON()
+    expect(body.model).toBe("claude-sonnet-4-20250514")
+    expect(body.system).toBeTruthy()
+    expect(body.messages[0].role).toBe("user")
+    expect(body.temperature).toBe(0.9)
+    expect(body.max_tokens).toBe(256)
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ content: [{ text: responseText }] }),
+    })
   })
 }

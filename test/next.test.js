@@ -1,31 +1,26 @@
-import { describe, it, before, after } from "node:test"
-import { setupServer } from "msw/node"
-import { findByText } from "@testing-library/dom"
-import { loadApp } from "./loadApp.js"
-import { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes } from "./clients/simkl.js"
+import { test, expect } from "@playwright/test"
+import { loginViaOAuth } from "./loginViaOAuth.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes } from "./clients/simkl.js"
 
-describe("next", () => {
-  const server = setupServer()
-  before(() => server.listen({ onUnhandledRequest: "error" }))
-  after(() => server.close())
+test.describe("next", () => {
 
-  it("shows suggestions after syncing", async () => {
-    server.use(
-      syncActivities(),
-      syncShows([{
-        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
-        status: "watching", user_rating: 9, next_to_watch: "S05E01",
-        watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
-      }]),
-      syncMovies([{
-        movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
-        status: "completed", user_rating: 8,
-      }]),
-      syncAnime([]),
-      tvEpisodes("11121"),
-    )
-    const document = loadApp({ localStorage: { "next-watch-client-id": "test-client-id", "next-watch-client-secret": "test-secret", "next-watch-access-token": "test-token" } })
+  test("shows suggestions after syncing", async ({ page }) => {
+    await setupOauthToken(page, "test-token")
+    await setupSyncActivities(page)
+    await setupSyncShows(page, [{
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+      status: "watching", user_rating: 9, next_to_watch: "S05E01",
+      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+    }])
+    await setupSyncMovies(page, [{
+      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+      status: "completed", user_rating: 8,
+    }])
+    await setupSyncAnime(page, [])
+    await setupTvEpisodes(page, "11121")
 
-    await findByText(document, "Breaking Bad")
+    await loginViaOAuth(page)
+
+    await expect(page.getByRole("link", { name: "Breaking Bad" }).first()).toBeVisible()
   })
 })
