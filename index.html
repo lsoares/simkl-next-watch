@@ -43,33 +43,37 @@
               </ul>
               <p>Save changes, then paste the client ID and app secret below.</p>
             </div>
-            <div style="margin-bottom:12px">
-              <label for="clientIdInput">Client ID</label>
-              <input id="clientIdInput" type="text" autocomplete="new-password" data-1p-ignore />
-            </div>
-            <div style="margin-bottom:12px">
-              <label for="clientSecretInput">App Secret</label>
-              <input id="clientSecretInput" type="password" autocomplete="new-password" data-1p-ignore />
-            </div>
-            <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
-            <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save Simkl settings</button>
+            <form id="simklForm" autocomplete="off" onsubmit="return false">
+              <div style="margin-bottom:12px">
+                <label for="clientIdInput">Client ID</label>
+                <input id="clientIdInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" />
+              </div>
+              <div style="margin-bottom:12px">
+                <label for="clientSecretInput">App Secret</label>
+                <input id="clientSecretInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
+              </div>
+              <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
+              <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save Simkl settings</button>
+            </form>
             <div id="aiSettingsSection" hidden>
               <hr style="border:0;border-top:1px solid var(--panel-border);margin:20px 0" />
               <p class="field-help">Optional: add an AI key for personalized recommendations.</p>
-              <div style="margin-bottom:12px">
-                <label for="aiProviderSelect">AI Provider</label>
-                <select id="aiProviderSelect">
-                  <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
-                  <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
-                  <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
-                </select>
-                <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Create key</a>
-              </div>
-              <div style="margin-bottom:12px">
-                <label for="aiKeyInput">AI API Key</label>
-                <input id="aiKeyInput" type="password" autocomplete="new-password" data-1p-ignore />
-              </div>
-              <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
+              <form id="aiForm" autocomplete="off" onsubmit="return false">
+                <div style="margin-bottom:12px">
+                  <label for="aiProviderSelect">AI Provider</label>
+                  <select id="aiProviderSelect">
+                    <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+                    <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
+                    <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
+                  </select>
+                  <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Create key</a>
+                </div>
+                <div style="margin-bottom:12px">
+                  <label for="aiKeyInput">AI API Key</label>
+                  <input id="aiKeyInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
+                </div>
+                <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
+              </form>
             </div>
             <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
               <button class="tiny-link" id="logoutBtn" type="button">logout</button>
