@@ -42,11 +42,11 @@ test.describe("ai suggestions", () => {
       )
       await setupSearchTv(page)
       await setupSearchMovie(page, {
-        Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie" },
-        Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, poster: "p", type: "movie" },
-        Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie" },
+        Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
+        Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.4 } } },
+        Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.1 } } },
       })
-      await page.getByRole("button", { name: /settings/i }).click()
+      await page.getByRole("link", { name: /settings/i }).click()
       await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
       await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
       await page.getByRole("button", { name: /save.*key/i }).click()
@@ -58,6 +58,7 @@ test.describe("ai suggestions", () => {
       await expect(page.getByRole("article", { name: "Parasite" })).toBeVisible()
       await expect(page.getByRole("article", { name: "Oldboy" })).toBeVisible()
       await expect(page.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
+      await expect(page.getByText("IMDb 8.5")).toBeVisible()
     })
   })
 

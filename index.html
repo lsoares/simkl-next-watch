@@ -19,7 +19,7 @@
         <a id="navTrending" class="tiny-link" href="#trending">trending</a>
         <a id="navAi" class="tiny-link" href="#ai">ai suggested</a>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
-        <button class="settings-icon" id="editSimklSettings" type="button" aria-label="Settings">⚙</button>
+        <a class="settings-icon" id="editSimklSettings" href="#settings" aria-label="Settings">⚙</a>
       </div>
     </nav>
 
@@ -237,7 +237,7 @@
         const aLeft = availableEpisodesLeft(a);
         const bLeft = availableEpisodesLeft(b);
         if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1;
-        if (aLeft === 1) return new Date(a.last_watched_at || 0) - new Date(b.last_watched_at || 0);
+        if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity);
         return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
       }
 
@@ -338,53 +338,83 @@
       const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       const ICON_REMOVE = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
 
-      function renderCard(item, type) {
-        const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
-        const unstarted = isUnstarted(item, type);
-        const img = posterUrl(item.poster);
-        const url = buildSimklUrl(item);
-        const epUrl = !unstarted && ep ? buildEpisodeUrl(item, ep) : "";
-        const epCode = !unstarted && ep ? formatEpisode(ep) : "";
+      class PosterCard extends HTMLElement {
+        variant = "next";
+        type = "tv";
+        item = null;
+        watched = false;
+        loggedIn = false;
 
-        return `
-          <article class="item-card" data-simkl-id="${simklId(item)}" data-type="${type}" aria-label="${escapeHtml(item.title)}">
-            ${img ? `<a class="poster-anchor" href="${escapeHtml(epUrl || url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="" draggable="false" /></a>` : ""}
-            <div class="poster-top">
-              <div class="poster-top-text">
-                <div class="poster-title">
-                  ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a>` : `<span class="poster-title-link">${escapeHtml(item.title)}</span>`}${unstarted && item.year ? `<span class="poster-title-meta">(${escapeHtml(String(item.year))})</span>` : ""}
+        connectedCallback() {
+          if (this._rendered) return;
+          this._render();
+          this._rendered = true;
+        }
+
+        get cardEl() { return this.querySelector(".item-card"); }
+
+        _emit(name) {
+          this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item, type: this.type } }));
+        }
+
+        _render() {
+          const { item, variant, type, watched, loggedIn } = this;
+          if (!item) return;
+
+          const isNext = variant === "next";
+          const id = simklId(item) || String(item.ids?.simkl_id || item.ids?.simkl || "");
+          const title = item.title || "";
+          const year = item.year || "";
+          const rating = item.ratings?.imdb?.rating;
+          const urlBase = type === "movie" ? "movies" : "tv";
+          const posterCode = item.poster || item.img || "";
+          const img = isNext ? posterUrl(posterCode) : trendingPosterUrl(posterCode);
+          const itemWithType = { ...item, type };
+          const url = isNext ? buildSimklUrl(itemWithType) : buildTrendingUrl(item, urlBase);
+
+          const ep = isNext && type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
+          const unstarted = isNext ? isUnstarted(item, type) : false;
+          const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
+          const epCode = !unstarted && ep ? formatEpisode(ep) : "";
+
+          const showYear = isNext ? unstarted && year : !watched && year;
+          const showRemove = isNext && (type === "movie" || unstarted);
+          const showMarkWatched = isNext;
+          const showAddWatchlist = !isNext && loggedIn && id && !watched;
+          const showImdb = !isNext && !watched && rating;
+
+          const dataAttrs = isNext
+            ? `data-simkl-id="${id}" data-type="${type}"`
+            : `data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}"`;
+          const imgLazy = isNext ? "" : ` loading="lazy"`;
+          const posterHref = isNext ? (epUrl || url) : url;
+
+          this.innerHTML = `
+            <article class="item-card${watched ? " trending-watched" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
+              ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
+              <div class="poster-top">
+                <div class="poster-top-text">
+                  <div class="poster-title">
+                    ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}${showYear ? `<span class="poster-title-meta">(${escapeHtml(String(year))})</span>` : ""}
+                  </div>
+                  ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
+                  ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
+                  ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
                 </div>
-                ${!unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
-                ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
+                ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
               </div>
-              ${type === "movie" || unstarted ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
-            </div>
-            <div class="poster-bottom"></div>
-            <button class="mark-watched-btn" title="I've watched this">${ICON_CHECK}</button>
-          </article>`;
-      }
+              <div class="poster-bottom"></div>
+              ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this">${ICON_CHECK}</button>` : ""}
+              ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
+            </article>
+          `;
 
-      function renderTrendingCard(item, urlBase, watched, loggedIn) {
-        const title = item.title || "";
-        const year = item.year || "";
-        const img = trendingPosterUrl(item.poster || item.img || "");
-        const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
-        const url = buildTrendingUrl(item, urlBase);
-        const rating = item.ratings?.imdb?.rating;
-
-        return `
-          <article class="item-card${watched ? " trending-watched" : ""}" data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
-            ${img ? `<a class="poster-anchor" href="${escapeHtml(url)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt="" loading="lazy" draggable="false" /></a>` : ""}
-            <div class="poster-top">
-              <div class="poster-top-text">
-                <div class="poster-title"><a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>${!watched && year ? `<span class="poster-title-meta">(${year})</span>` : ""}</div>
-                ${!watched && rating ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
-              </div>
-            </div>
-            <div class="poster-bottom"></div>
-            ${loggedIn && id && !watched ? `<button class="add-watchlist-btn" title="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
-          </article>`;
+          this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"));
+          this.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); this._emit("remove"); });
+          this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); });
+        }
       }
+      customElements.define("poster-card", PosterCard);
 
       function renderRatingPrompt() {
         const btns = Array.from({ length: 10 }, (_, i) => `<button class="rating-btn" data-rating="${i + 1}">${i + 1}</button>`).join("");
@@ -596,11 +626,18 @@
         function renderRow(rowEl, items, type) {
           const scrollKey = `scroll:${rowEl.id}`;
           if (!items.length) { rowEl.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
-          rowEl.innerHTML = items.map((_, i) => `<div class="row-item" data-idx="${i}"></div>`).join("");
-          rowEl.querySelectorAll(".row-item").forEach((wrap, i) => {
-            wrap.innerHTML = renderCard(items[i], type);
-            wrap.querySelector(".mark-watched-btn")?.addEventListener("click", () => markWatched(items[i], type, wrap.querySelector(".item-card")));
-            wrap.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); removeFromWatchlist(items[i], type); });
+          rowEl.innerHTML = "";
+          items.forEach((item) => {
+            const wrap = document.createElement("div");
+            wrap.className = "row-item";
+            const card = document.createElement("poster-card");
+            card.variant = "next";
+            card.type = type;
+            card.item = item;
+            card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl));
+            card.addEventListener("poster:remove", () => removeFromWatchlist(item, type));
+            wrap.appendChild(card);
+            rowEl.appendChild(wrap);
           });
           initDockEffect(rowEl);
           if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave);
@@ -611,6 +648,15 @@
 
         // ── Mark watched ──
 
+        function waitForWatchedAnimation(card) {
+          if (!card) return Promise.resolve();
+          return new Promise((resolve) => {
+            const done = () => resolve();
+            card.addEventListener("animationend", done, { once: true });
+            setTimeout(done, 700);
+          });
+        }
+
         async function markWatched(item, type, card) {
           if (type === "movie") { promptRate(item, type, card); return; }
           if (card) card.classList.add("marking-watched");
@@ -618,6 +664,7 @@
             await apiPost("/sync/history", buildMarkWatchedPayload(item, type));
             showToast(`Marked ${item.title} watched.`);
             localStorage.removeItem(STORAGE.syncCache);
+            await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -648,6 +695,7 @@
             ]);
             showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
             localStorage.removeItem(STORAGE.syncCache);
+            await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -661,6 +709,7 @@
             await apiPost("/sync/history", buildMarkWatchedPayload(item, "movie"));
             showToast(`Marked ${item.title} watched.`);
             localStorage.removeItem(STORAGE.syncCache);
+            await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -732,36 +781,42 @@
 
         // ── Trending ──
 
-        function renderTrendingRow(items, urlBase) {
+        function renderDiscoveryRow(containerEl, items, type) {
           const loggedIn = isLoggedIn();
-          return items.map((m) => {
-            const id = String(m.ids?.simkl_id || m.ids?.simkl || "");
-            const watched = id && libraryIds.has(id);
-            return `<div class="row-item">${renderTrendingCard(m, urlBase, watched, loggedIn)}</div>`;
-          }).join("");
+          containerEl.innerHTML = "";
+          items.forEach((item) => {
+            const wrap = document.createElement("div");
+            wrap.className = "row-item";
+            const card = document.createElement("poster-card");
+            card.variant = "discovery";
+            card.type = type;
+            card.item = item;
+            card.watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
+            card.loggedIn = loggedIn;
+            card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
+            wrap.appendChild(card);
+            containerEl.appendChild(wrap);
+          });
         }
 
-        function setupAddWatchlistBtn(btn) {
-          btn.addEventListener("click", async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const card = btn.closest(".item-card");
-            const id = card?.dataset.simklId;
-            const urlBase = card?.dataset.urlBase;
-            if (!id) return;
-            btn.disabled = true;
-            try {
-              await apiPost("/sync/add-to-list", buildAddToWatchlistPayload(urlBase, id));
-              libraryIds.add(id);
-              card.classList.add("trending-watched");
-              btn.remove();
-              showToast(`Added "${btn.dataset.title}" to watchlist.`);
-              await loadSuggestions();
-            } catch (err) {
-              btn.disabled = false;
-              handleError(err);
-            }
-          });
+        async function addToWatchlist(card) {
+          const item = card.item;
+          const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
+          const urlBase = card.type === "movie" ? "movies" : "tv";
+          const btn = card.cardEl?.querySelector(".add-watchlist-btn");
+          if (!id || !btn) return;
+          btn.disabled = true;
+          try {
+            await apiPost("/sync/add-to-list", buildAddToWatchlistPayload(urlBase, id));
+            libraryIds.add(id);
+            card.cardEl.classList.add("trending-watched");
+            btn.remove();
+            showToast(`Added "${item.title}" to watchlist.`);
+            await loadSuggestions();
+          } catch (err) {
+            btn.disabled = false;
+            handleError(err);
+          }
         }
 
         async function fetchTrending(period) {
@@ -781,11 +836,12 @@
             const filterFn = (item) => !hideWatched || !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             const tv = tvData.filter(filterFn).slice(0, 12);
             const movies = movieData.filter(filterFn).slice(0, 12);
-            el.trendingTvContent.innerHTML = tv.length ? renderTrendingRow(tv, "tv") : `<p class="empty">No results.</p>`;
-            el.trendingMoviesContent.innerHTML = movies.length ? renderTrendingRow(movies, "movies") : `<p class="empty">No results.</p>`;
+            if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv");
+            else el.trendingTvContent.innerHTML = `<p class="empty">No results.</p>`;
+            if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie");
+            else el.trendingMoviesContent.innerHTML = `<p class="empty">No results.</p>`;
             initDockEffect(el.trendingTvContent);
             initDockEffect(el.trendingMoviesContent);
-            for (const btn of document.querySelectorAll(".add-watchlist-btn")) setupAddWatchlistBtn(btn);
           } catch (err) {
             if (err instanceof ApiError) el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message)}</p>`;
             else console.error(err);
@@ -887,11 +943,11 @@
           const results = await Promise.all(suggestions.map(async (s) => {
             try {
               const q = encodeURIComponent(`${s.title} ${s.year || ""}`.trim());
-              if (mediaType === "tv") { const r = await apiFetch(`/search/tv?q=${q}&limit=1`); return Array.isArray(r) && r[0] || null; }
-              if (mediaType === "movie") { const r = await apiFetch(`/search/movie?q=${q}&limit=1`); return Array.isArray(r) && r[0] || null; }
+              if (mediaType === "tv") { const r = await apiFetch(`/search/tv?q=${q}&limit=1&extended=full`); return Array.isArray(r) && r[0] || null; }
+              if (mediaType === "movie") { const r = await apiFetch(`/search/movie?q=${q}&limit=1&extended=full`); return Array.isArray(r) && r[0] || null; }
               const [tv, movie] = await Promise.all([
-                apiFetch(`/search/tv?q=${q}&limit=1`),
-                apiFetch(`/search/movie?q=${q}&limit=1`),
+                apiFetch(`/search/tv?q=${q}&limit=1&extended=full`),
+                apiFetch(`/search/movie?q=${q}&limit=1&extended=full`),
               ]);
               return (Array.isArray(tv) && tv[0]) || (Array.isArray(movie) && movie[0]) || null;
             } catch {
@@ -951,12 +1007,21 @@
             el.aiResults.innerHTML = `<p class="empty">Not enough new suggestions. Try another mood.</p>`;
             return;
           }
-          el.aiResults.innerHTML = items.map((item) => {
-            const urlBase = item.type === "movie" ? "movies" : "tv";
-            const watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
-            return `<div class="row-item">${renderTrendingCard(item, urlBase, watched, true)}</div>`;
-          }).join("");
-          for (const btn of el.aiResults.querySelectorAll(".add-watchlist-btn")) setupAddWatchlistBtn(btn);
+          const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }));
+          el.aiResults.innerHTML = "";
+          typed.forEach(({ item, type }) => {
+            const wrap = document.createElement("div");
+            wrap.className = "row-item";
+            const card = document.createElement("poster-card");
+            card.variant = "discovery";
+            card.type = type;
+            card.item = item;
+            card.watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
+            card.loggedIn = true;
+            card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
+            wrap.appendChild(card);
+            el.aiResults.appendChild(wrap);
+          });
         }
 
         el.aiPrompts.addEventListener("click", async (e) => {
@@ -1134,7 +1199,7 @@
         el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
         el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
         el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });
-        el.editSimklSettings.addEventListener("click", () => showView("settings"));
+        el.editSimklSettings.addEventListener("click", (e) => { e.preventDefault(); showView("settings"); });
         el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
         el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); });
         el.trendingPeriodTabs.addEventListener("click", (e) => {

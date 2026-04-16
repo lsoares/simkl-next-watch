@@ -18,7 +18,7 @@ test.describe("settings", () => {
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
-    await page.getByRole("button", { name: "Settings" }).click()
+    await page.getByRole("link", { name: "Settings" }).click()
 
     await expect(page.getByRole("textbox", { name: /client id/i })).toHaveValue("test-client-id")
     await expect(page.getByRole("textbox", { name: /app secret/i })).toHaveValue("test-secret")
@@ -40,7 +40,7 @@ test.describe("settings", () => {
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await page.getByRole("button", { name: "Settings" }).click()
+    await page.getByRole("link", { name: "Settings" }).click()
     await page.getByRole("textbox", { name: /api key/i }).fill("my-gemini-key")
 
     await page.getByRole("button", { name: /save.*key/i }).click()
@@ -62,7 +62,7 @@ test.describe("settings", () => {
     await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await page.getByRole("button", { name: "Settings" }).click()
+    await page.getByRole("link", { name: "Settings" }).click()
 
     await page.getByRole("button", { name: /save.*key/i }).click()
 

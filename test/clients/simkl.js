@@ -83,6 +83,7 @@ export function setupSearchTv(page) {
     const params = new URL(route.request().url()).searchParams
     expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
+    expect(params.get("extended")).toBe("full")
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
   })
 }
@@ -95,6 +96,7 @@ export function setupSearchMovie(page, results) {
     const params = new URL(route.request().url()).searchParams
     expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
+    expect(params.get("extended")).toBe("full")
     const q = params.get("q")
     for (const [keyword, item] of Object.entries(results)) {
       if (q.includes(keyword)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([item]) })
