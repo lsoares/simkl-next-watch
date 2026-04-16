@@ -711,7 +711,7 @@
             enrichEpisodeTitles();
             if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
           } catch (err) {
-            resolveLibrary();
+            resolveLibraryReady();
             handleError(err, "Failed to load.");
           } finally {
             el.spinner.hidden = true;
