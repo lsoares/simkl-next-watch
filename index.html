@@ -873,7 +873,10 @@
         async function getRecommendations(mood) {
           const mediaType = getAiMediaType();
           const cache = readJsonStorage(STORAGE.syncCache);
-          const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
+          const shows = mediaType !== "movie" ? cache?.shows : [];
+          const movies = mediaType !== "tv" ? cache?.movies : [];
+          const anime = mediaType !== "movie" ? cache?.anime : [];
+          const ratings = buildRatingsInput(shows, movies, anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
