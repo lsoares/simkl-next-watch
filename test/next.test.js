@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test"
+import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
 import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupRemoveFromWatchlist } from "./clients/simkl.js"
 

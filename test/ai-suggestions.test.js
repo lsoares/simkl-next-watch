@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test"
+import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
 import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSearchTv, setupSearchMovie, setupTvEpisodes } from "./clients/simkl.js"
 import { setupCompleteChat as setupGeminiChat } from "./clients/gemini.js"
