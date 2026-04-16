@@ -19,6 +19,7 @@
         <button id="navTrending" class="tiny-link" type="button">trending</button>
         <button id="navAi" class="tiny-link" type="button">ai suggested</button>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
+        <button class="settings-icon" id="editSimklSettings" type="button" title="Settings">⚙</button>
       </div>
     </nav>
 
@@ -76,8 +77,7 @@
           </div>
         </div>
         <div id="nextContent" class="suggestions-grid" hidden>
-          <div class="media-section" style="position:relative">
-            <button class="settings-icon" id="editSimklSettings" type="button" title="Edit settings" style="position:absolute;right:0;top:-24px">⚙</button>
+          <div class="media-section">
             <div id="tvRow" class="items-row"></div>
           </div>
           <div class="media-section">
@@ -1059,6 +1059,7 @@
         el.navTrending.addEventListener("click", () => showView("trending"));
         el.navAi.addEventListener("click", () => showView("ai"));
         el.editSimklSettings.addEventListener("click", () => {
+          showView("next");
           el.nextSetup.hidden = false;
           el.nextContent.hidden = true;
           el.appIntro.hidden = true;
