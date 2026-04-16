@@ -384,6 +384,8 @@
       function buildRatingsInput(shows, movies, anime) {
         return [...(shows || []), ...(movies || []), ...(anime || [])]
           .filter((item) => item.user_rating != null)
+          .sort((a, b) => b.user_rating - a.user_rating)
+          .slice(0, 30)
           .map((item) => `${item.title}:${item.user_rating}`)
           .join(",");
       }
