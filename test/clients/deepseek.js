@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupCompleteChat(page, responseText, expectedKey, expectedRatings) {
+export function setupDeepseekChat(page, responseText, expectedKey, expectedRatings) {
   return page.route("https://api.deepseek.com/**", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)

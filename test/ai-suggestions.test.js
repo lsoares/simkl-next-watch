@@ -1,13 +1,13 @@
 import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
 import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSearchTv, setupSearchMovie, setupTvEpisodes } from "./clients/simkl.js"
-import { setupCompleteChat as setupGeminiChat } from "./clients/gemini.js"
-import { setupCompleteChat as setupOpenaiChat } from "./clients/openai.js"
-import { setupCompleteChat as setupClaudeChat } from "./clients/claude.js"
-import { setupCompleteChat as setupGrokChat } from "./clients/grok.js"
-import { setupCompleteChat as setupGroqChat } from "./clients/groq.js"
-import { setupCompleteChat as setupDeepseekChat } from "./clients/deepseek.js"
-import { setupCompleteChat as setupOpenrouterChat } from "./clients/openrouter.js"
+import { setupGeminiChat } from "./clients/gemini.js"
+import { setupOpenaiChat } from "./clients/openai.js"
+import { setupClaudeChat } from "./clients/claude.js"
+import { setupGrokChat } from "./clients/grok.js"
+import { setupGroqChat } from "./clients/groq.js"
+import { setupDeepseekChat } from "./clients/deepseek.js"
+import { setupOpenrouterChat } from "./clients/openrouter.js"
 
 test.describe("ai suggestions", () => {
 

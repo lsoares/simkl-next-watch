@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupCompleteChat(page, responseText, expectedKey, expectedRatings) {
+export function setupGrokChat(page, responseText, expectedKey, expectedRatings) {
   return page.route("**/api.x.ai/**", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)

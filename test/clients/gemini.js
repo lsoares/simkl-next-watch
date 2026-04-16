@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupCompleteChat(page, responseText, expectedKey, expectedRatings) {
+export function setupGeminiChat(page, responseText, expectedKey, expectedRatings) {
   return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
     expect(route.request().method()).toBe("POST")
     const url = new URL(route.request().url())
