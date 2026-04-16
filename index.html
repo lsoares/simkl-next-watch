@@ -873,8 +873,8 @@
         // ── AI Result Rendering ──
 
         function renderAiResults(items) {
-          if (!items.length) {
-            el.aiResults.innerHTML = `<p class="empty">No results found.</p>`;
+          if (items.length < 3) {
+            el.aiResults.innerHTML = `<p class="empty">Not enough new suggestions. Try another mood.</p>`;
             return;
           }
           el.aiResults.innerHTML = items.map((item) => {
