@@ -609,6 +609,7 @@
           try {
             await apiPost("/sync/history", buildMarkWatchedPayload(item, type));
             showToast(`Marked ${item.title} watched.`);
+            localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -638,6 +639,7 @@
               apiPost("/sync/history", buildMarkWatchedPayload(item, type)),
             ]);
             showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
+            localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -650,6 +652,7 @@
           try {
             await apiPost("/sync/history", buildMarkWatchedPayload(item, "movie"));
             showToast(`Marked ${item.title} watched.`);
+            localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
           } catch (err) {
             if (card) card.classList.remove("marking-watched");
@@ -664,6 +667,7 @@
           try {
             await apiPost("/sync/history/remove", buildRemovePayload(item, type));
             showToast(`Removed ${item.title}.`);
+            localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
           } catch (err) { handleError(err); }
         }
@@ -811,38 +815,38 @@
           return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both}. Return exactly 6 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.`;
         }
 
+        const AI_PROVIDERS = {
+          gemini: {
+            url: (key) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(key)}`,
+            headers: () => ({ "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ contents: [{ parts: [{ text: systemPrompt + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
+            extract: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text,
+          },
+          openai: {
+            url: () => "https://api.openai.com/v1/chat/completions",
+            headers: (key) => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" }),
+            body: (systemPrompt, userMessage) => ({ model: "gpt-4o-mini", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.choices?.[0]?.message?.content,
+          },
+          claude: {
+            url: () => "https://api.anthropic.com/v1/messages",
+            headers: (key) => ({ "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" }),
+            body: (systemPrompt, userMessage) => ({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
+            extract: (data) => data.content?.[0]?.text,
+          },
+        };
+
         async function aiComplete(provider, key, userMessage, systemPrompt) {
-          if (provider === "gemini") {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(key)}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `Gemini error ${res.status}`));
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          }
-          if (provider === "openai") {
-            const res = await fetch("https://api.openai.com/v1/chat/completions", {
-              method: "POST",
-              headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `OpenAI error ${res.status}`));
-            return data.choices?.[0]?.message?.content || "";
-          }
-          if (provider === "claude") {
-            const res = await fetch("https://api.anthropic.com/v1/messages", {
-              method: "POST",
-              headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
-              body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `Claude error ${res.status}`));
-            return data.content?.[0]?.text || "";
-          }
-          throw new ApiError("Unknown AI provider");
+          const config = AI_PROVIDERS[provider];
+          if (!config) throw new ApiError("Unknown AI provider");
+          const res = await fetch(config.url(key), {
+            method: "POST",
+            headers: config.headers(key),
+            body: JSON.stringify(config.body(systemPrompt, userMessage)),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `${provider} error ${res.status}`));
+          return config.extract(data) || "";
         }
 
         // ── Recommendation Flow ──

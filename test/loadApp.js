@@ -10,7 +10,7 @@ function loadApp({ localStorage: initialStorage = {} } = {}) {
     .map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(typeof v === "string" ? v : JSON.stringify(v))})`)
     .join("\n")
 
-  return new JSDOM(
+  const dom = new JSDOM(
     html.replace("<script>", `<script>${prelude}\n`),
     {
       url: "https://localhost/",
@@ -24,21 +24,7 @@ function loadApp({ localStorage: initialStorage = {} } = {}) {
       },
     },
   )
+  return dom.window.document
 }
 
-function waitFor(fn, { timeout = 2000, interval = 50 } = {}) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now()
-    function check() {
-      try {
-        resolve(fn())
-      } catch (err) {
-        if (Date.now() - start >= timeout) reject(err)
-        else setTimeout(check, interval)
-      }
-    }
-    check()
-  })
-}
-
-module.exports = { loadApp, waitFor }
+module.exports = { loadApp }
