@@ -405,7 +405,7 @@
               </div>
               <div class="poster-bottom"></div>
               ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this">${ICON_CHECK}</button>` : ""}
-              ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
+              ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
             </article>
           `;
 

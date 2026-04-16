@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupTrendingTv, setupTrendingMovies } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupTrendingTv, setupTrendingMovies, setupAddToWatchlist } from "./clients/simkl.js"
 
 test.describe("trending", () => {
 
@@ -32,5 +32,34 @@ test.describe("trending", () => {
 
     await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
+  })
+
+
+  test("adds a trending movie to the watchlist", async ({ page }) => {
+    await setupOauthToken(page, "test-token")
+    await setupSyncActivities(page)
+    await setupSyncShows(page, [{
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+      status: "watching", user_rating: 9, next_to_watch: "S05E01",
+      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+    }])
+    await setupSyncMovies(page, [])
+    await setupSyncAnime(page, [])
+    await setupTvEpisodes(page, "11121")
+    await setupTrendingTv(page, [])
+    await setupTrendingMovies(page, [
+      { title: "Dune", year: 2024, ids: { simkl_id: 99003 }, poster: "p3", ratings: { imdb: { rating: 8.1 } } },
+    ])
+    await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
+    await loginViaOAuth(page)
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await page.getByRole("link", { name: /trending/i }).click()
+    const card = page.getByRole("article", { name: "Dune" })
+    await expect(card).toBeVisible()
+
+    await card.getByRole("button", { name: /add to watchlist/i }).click()
+
+    await expect(page.getByRole("status")).toContainText(/added.*dune.*watchlist/i)
+    await expect(card.getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)
   })
 })
