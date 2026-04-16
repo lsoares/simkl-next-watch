@@ -52,7 +52,7 @@
               <input id="clientSecretInput" type="password" autocomplete="new-password" data-1p-ignore />
             </div>
             <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
-            <button class="secondary" id="saveSettingsBtn" type="button" hidden>Connect to Simkl</button>
+            <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save Simkl settings</button>
             <div id="aiSettingsSection" hidden>
               <hr style="border:0;border-top:1px solid var(--panel-border);margin:20px 0" />
               <p class="field-help">Optional: add an AI key for personalized recommendations.</p>
@@ -69,6 +69,7 @@
                 <label for="aiKeyInput">AI API Key</label>
                 <input id="aiKeyInput" type="password" autocomplete="new-password" data-1p-ignore />
               </div>
+              <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
             </div>
             <div id="logoutArea" hidden style="margin-top:16px;text-align:center">
               <button class="tiny-link" id="logoutBtn" type="button">logout</button>
@@ -520,7 +521,7 @@
           nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
           appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
-          logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"),
+          logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"), aiSaveBtn: $("aiSaveBtn"),
           nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
           trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
           hideTrendingWatched: $("hideTrendingWatched"),
@@ -958,11 +959,6 @@
           if (!clientSecret) { showToast("Enter an app secret.", true); return; }
           writeStorage(STORAGE.clientId, clientId);
           writeStorage(STORAGE.clientSecret, clientSecret);
-          const aiKey = el.aiKeyInput.value.trim();
-          if (aiKey) {
-            writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
-            writeStorage(STORAGE.aiKey, aiKey);
-          }
           const state = Math.random().toString(36).slice(2);
           sessionStorage.setItem("oauth-state", state);
           const redirectUri = `${location.origin}${location.pathname}`;
@@ -1056,12 +1052,16 @@
         el.saveSettingsBtn.addEventListener("click", () => {
           writeStorage(STORAGE.clientId, el.clientIdInput.value.trim());
           writeStorage(STORAGE.clientSecret, el.clientSecretInput.value.trim());
-          const aiKey = el.aiKeyInput.value.trim();
-          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
-          writeStorage(STORAGE.aiKey, aiKey);
           hydrateUI();
           showView("next");
-          showToast("Settings saved.");
+          showToast("Simkl settings saved.");
+        });
+        el.aiSaveBtn.addEventListener("click", () => {
+          const aiKey = el.aiKeyInput.value.trim();
+          if (!aiKey) { showToast("Enter an AI API key.", true); return; }
+          writeStorage(STORAGE.aiProvider, el.aiProviderSelect.value);
+          writeStorage(STORAGE.aiKey, aiKey);
+          showToast("AI key saved.");
         });
         el.logoutBtn.addEventListener("click", logout);
         el.getStartedBtn.addEventListener("click", () => { el.appIntro.hidden = true; el.authSetup.hidden = false; });
