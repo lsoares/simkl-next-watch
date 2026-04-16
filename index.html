@@ -35,15 +35,7 @@
           <div id="authSetup" hidden>
             <h2 style="font-size:1.1rem;margin-bottom:8px">Simkl</h2>
             <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
-            <div class="field-help" id="loginNewNote">
-              <p>Next Watch uses your <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> watchlist and ratings to show what to watch next. Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a> with:</p>
-              <ul class="setup-hints">
-                <li>Name: <strong>Next Watch</strong></li>
-                <li>Description: <strong>Next Watch</strong></li>
-                <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
-              </ul>
-              <p>Save changes, then paste the client ID and app secret below.</p>
-            </div>
+            <p class="field-help" id="loginNewNote">Next Watch uses your <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> watchlist and ratings to show what to watch next.</p>
             <form id="simklForm" autocomplete="off" onsubmit="return false">
               <div style="margin-bottom:12px">
                 <label for="clientIdInput">Client ID</label>
@@ -52,6 +44,15 @@
               <div style="margin-bottom:12px">
                 <label for="clientSecretInput">App Secret</label>
                 <input id="clientSecretInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
+              </div>
+              <div class="field-help" id="loginNewNote2">
+                <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a>:</p>
+                <ol class="setup-hints">
+                  <li>Name: <strong>Next Watch</strong></li>
+                  <li>Description: <strong>Next Watch</strong></li>
+                  <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
+                  <li>Save changes, then paste the client ID and app secret above.</li>
+                </ol>
               </div>
               <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
               <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save Simkl settings</button>
@@ -536,7 +537,7 @@
         const el = {
           topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
           nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
-          appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
+          appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), loginNewNote2: $("loginNewNote2"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
           clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
           logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"), aiSaveBtn: $("aiSaveBtn"),
           nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
@@ -1060,6 +1061,7 @@
           el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
           el.loginStatusNote.hidden = !loggedIn;
           el.loginNewNote.hidden = loggedIn;
+          el.loginNewNote2.hidden = loggedIn;
           el.logoutArea.hidden = !loggedIn;
           el.connectBtn.hidden = loggedIn;
           el.saveSettingsBtn.hidden = !loggedIn;
