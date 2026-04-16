@@ -380,13 +380,22 @@
         return `<span class="rating-prompt-label">Rate before marking watched</span><div class="rating-prompt-row">${btns}</div><button class="rating-skip">Skip rating</button>`;
       }
 
-      function buildRatingsInput(shows, movies, anime) {
-        return [...(shows || []), ...(movies || []), ...(anime || [])]
+      function formatRatings(items) {
+        return items
           .filter((item) => item.user_rating != null)
           .sort((a, b) => b.user_rating - a.user_rating)
-          .slice(0, 30)
+          .slice(0, 15)
           .map((item) => `${item.title}:${item.user_rating}`)
           .join(",");
+      }
+
+      function buildRatingsInput(shows, movies, anime) {
+        const tv = formatRatings([...(shows || []), ...(anime || [])]);
+        const film = formatRatings(movies || []);
+        const parts = [];
+        if (tv) parts.push(`TV: ${tv}`);
+        if (film) parts.push(`Movies: ${film}`);
+        return parts.join("\n");
       }
 
       // ── Storage ──
