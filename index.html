@@ -775,7 +775,7 @@
 
         // ── AI Provider Adapters ──
 
-        const AI_SYSTEM = "You suggest movies and TV shows. Return exactly 3 suggestions as a JSON array: [{\"title\":\"...\",\"year\":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.";
+        const AI_SYSTEM = "You suggest movies and TV shows. Return exactly 6 suggestions as a JSON array: [{\"title\":\"...\",\"year\":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.";
 
         async function aiComplete(provider, key, userMessage) {
           if (provider === "gemini") {
@@ -838,7 +838,7 @@
             throw new ApiError("Couldn't parse AI suggestions. Try again.");
           }
 
-          const results = await Promise.all(suggestions.slice(0, 3).map(async (s) => {
+          const results = await Promise.all(suggestions.map(async (s) => {
             try {
               const q = encodeURIComponent(`${s.title} ${s.year || ""}`.trim());
               const [tv, movie] = await Promise.all([
@@ -851,7 +851,9 @@
             }
           }));
 
-          const filtered = results.filter(Boolean);
+          const filtered = results
+            .filter((item) => item && !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")))
+            .slice(0, 3);
           aiCache[cacheKey] = { ts: Date.now(), data: filtered };
           return filtered;
         }
