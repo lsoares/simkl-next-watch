@@ -973,12 +973,11 @@
   background: transparent;
   border: 0;
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.15s;
+  transition: color 0.15s;
 }
-.settings-icon:hover { opacity: 1; }
+.settings-icon:hover { color: var(--text); }
 
 .ai-toolbar {
   display: flex;
