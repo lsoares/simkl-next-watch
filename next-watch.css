@@ -718,8 +718,15 @@
       .range-tabs {
         display: flex;
         gap: 4px;
+      }
+
+      .trending-toolbar .range-tabs {
         margin-left: auto;
         margin-right: 12px;
+      }
+
+      #aiView > .range-tabs {
+        margin-bottom: 12px;
       }
 
       .range-tab {
@@ -1004,12 +1011,12 @@
 }
 
 .ai-prompt-btn {
-  padding: 8px 16px;
+  padding: 4px 12px;
   border: 1px solid var(--panel-border);
-  border-radius: 20px;
+  border-radius: 16px;
   background: transparent;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }

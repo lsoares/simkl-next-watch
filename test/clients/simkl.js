@@ -57,21 +57,13 @@ export function setupSyncAnime(page, anime) {
   })
 }
 
-export function setupTvEpisodes(page, expectedId) {
+export function setupTvEpisodes(page, expectedId, episodes = []) {
   return page.route("**/tv/episodes/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const url = new URL(route.request().url())
     expect(url.pathname).toContain(expectedId)
-    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
-  })
-}
-
-export function setupTvEpisodesAny(page) {
-  return page.route("**/tv/episodes/*", async (route) => {
-    expect(route.request().method()).toBe("GET")
-    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(episodes) })
   })
 }
 
@@ -107,6 +99,16 @@ export function setupSearchMovie(page, results) {
 
 export function setupAddToWatchlist(page, expectedPayload) {
   return page.route("**/sync/add-to-list", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(route.request().postDataJSON()).toEqual(expectedPayload)
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
+  })
+}
+
+export function setupRemoveFromWatchlist(page, expectedPayload) {
+  return page.route("**/sync/history/remove", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")

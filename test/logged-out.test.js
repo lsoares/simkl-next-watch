@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodesAny } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime } from "./clients/simkl.js"
 
 test.describe("logged out from simkl", () => {
 
@@ -26,13 +26,11 @@ test.describe("logged out from simkl", () => {
     await setupOauthToken(page, "test-token")
     await setupSyncActivities(page)
     await setupSyncShows(page, [{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
-      status: "watching", user_rating: 9, next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      status: "plantowatch",
     }])
     await setupSyncMovies(page, [])
     await setupSyncAnime(page, [])
-    await setupTvEpisodesAny(page)
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: "Settings" }).click()

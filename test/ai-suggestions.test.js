@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSearchTv, setupSearchMovie, setupTvEpisodes } from "./clients/simkl.js"
 import { setupCompleteChat as setupGeminiChat } from "./clients/gemini.js"
 import { setupCompleteChat as setupOpenaiChat } from "./clients/openai.js"
 import { setupCompleteChat as setupClaudeChat } from "./clients/claude.js"
@@ -36,9 +36,10 @@ test.describe("ai suggestions", () => {
       await setupTvEpisodes(page, "11121")
       await loginViaOAuth(page)
       await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-      await setupAiChat(page, 
-        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]', 
+      await setupAiChat(page,
+        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]',
         "apiAiKey",
+        ["Breaking Bad:9", "Inception:8"],
       )
       await setupSearchTv(page)
       await setupSearchMovie(page, {

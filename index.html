@@ -121,26 +121,23 @@
 
       <!-- AI view -->
       <div id="aiView" hidden>
-        <div class="ai-toolbar">
-          <div class="range-tabs">
-            <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
-            <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
-          </div>
+        <div class="range-tabs">
+          <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
+          <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
         </div>
-          <div class="ai-prompts" id="aiPrompts">
-            <button class="ai-prompt-btn" type="button">Cozy night in</button>
-            <button class="ai-prompt-btn" type="button">Edge of my seat</button>
-            <button class="ai-prompt-btn" type="button">Make me laugh</button>
-            <button class="ai-prompt-btn" type="button">Mind-bending</button>
-            <button class="ai-prompt-btn" type="button">Epic adventure</button>
-            <button class="ai-prompt-btn" type="button">True stories</button>
-            <button class="ai-prompt-btn" type="button">Hidden gems</button>
-            <button class="ai-prompt-btn" type="button">Date night</button>
-            <button class="ai-prompt-btn" type="button">Feel-good</button>
-            <button class="ai-prompt-btn" type="button">Dark &amp; gritty</button>
-          </div>
-          <div id="aiResults" class="items-row"></div>
+        <div class="ai-prompts" id="aiPrompts">
+          <button class="ai-prompt-btn" type="button">Cozy night in</button>
+          <button class="ai-prompt-btn" type="button">Edge of my seat</button>
+          <button class="ai-prompt-btn" type="button">Make me laugh</button>
+          <button class="ai-prompt-btn" type="button">Mind-bending</button>
+          <button class="ai-prompt-btn" type="button">Epic adventure</button>
+          <button class="ai-prompt-btn" type="button">True stories</button>
+          <button class="ai-prompt-btn" type="button">Hidden gems</button>
+          <button class="ai-prompt-btn" type="button">Date night</button>
+          <button class="ai-prompt-btn" type="button">Feel-good</button>
+          <button class="ai-prompt-btn" type="button">Dark &amp; gritty</button>
         </div>
+        <div id="aiResults" class="items-row"></div>
       </div>
     </main>
 
@@ -388,10 +385,11 @@
             : `data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}"`;
           const imgLazy = isNext ? "" : ` loading="lazy"`;
           const posterHref = isNext ? (epUrl || url) : url;
+          const posterTooltip = isNext && !unstarted && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : "";
 
           this.innerHTML = `
             <article class="item-card${watched ? " trending-watched" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
-              ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
+              ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
               <div class="poster-top">
                 <div class="poster-top-text">
                   <div class="poster-title">
@@ -404,7 +402,7 @@
                 ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
               </div>
               <div class="poster-bottom"></div>
-              ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this">${ICON_CHECK}</button>` : ""}
+              ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
               ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
             </article>
           `;
@@ -876,7 +874,7 @@
 
         const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
         function aiSystemPrompt(mediaType) {
-          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both}. Return exactly 6 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.`;
+          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 6 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.`;
         }
 
         const AI_PROVIDERS = {
