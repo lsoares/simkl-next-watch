@@ -967,6 +967,19 @@
   margin-top: 4px;
 }
 
+.settings-icon {
+  min-height: unset;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.settings-icon:hover { opacity: 1; }
+
 .ai-toolbar {
   display: flex;
   justify-content: space-between;
