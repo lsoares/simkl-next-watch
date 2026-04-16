@@ -553,7 +553,8 @@
         let currentView = null;
         let toastTimer = null;
         let libraryIds = new Set();
-        let libraryReady = null;
+        let resolveLibraryReady;
+        let libraryReady = new Promise((r) => { resolveLibraryReady = r; });
         let tvItems = [];
         let movieItems = [];
 
@@ -697,8 +698,6 @@
 
         async function loadSuggestions() {
           if (!isLoggedIn()) return;
-          let resolveLibrary;
-          libraryReady = new Promise((r) => { resolveLibrary = r; });
           el.spinner.hidden = false;
           try {
             const data = await sync();
@@ -706,7 +705,7 @@
             tvItems = buildTvSuggestions(allShows);
             movieItems = buildMovieSuggestions(data.movies || []);
             libraryIds = collectLibraryIds(data);
-            resolveLibrary();
+            resolveLibraryReady();
             renderRow(el.tvRow, tvItems, "tv");
             renderRow(el.movieRow, movieItems, "movie");
             enrichEpisodeTitles();
