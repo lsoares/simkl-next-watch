@@ -107,6 +107,9 @@
             <input id="aiKeyInput" type="password" autocomplete="off" />
           </div>
           <button class="secondary" id="aiSaveBtn" type="button">Save</button>
+          <div id="aiLogoutArea" hidden style="margin-top:16px;text-align:center">
+            <button class="tiny-link" id="aiLogoutBtn" type="button">remove AI key</button>
+          </div>
         </div>
         <div id="aiMain" hidden>
           <div class="ai-toolbar">
@@ -528,7 +531,7 @@
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
           aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"), aiTypeTabs: $("aiTypeTabs"),
           aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"), aiSaveBtn: $("aiSaveBtn"),
-          aiEditSettings: $("aiEditSettings"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
+          aiEditSettings: $("aiEditSettings"), aiLogoutArea: $("aiLogoutArea"), aiLogoutBtn: $("aiLogoutBtn"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
         };
 
@@ -769,6 +772,7 @@
           const hasKey = !!readStorage(STORAGE.aiKey);
           el.aiSetup.hidden = hasKey;
           el.aiMain.hidden = !hasKey;
+          el.aiLogoutArea.hidden = !hasKey;
           if (hasKey) {
             el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
           }
@@ -1065,8 +1069,17 @@
         el.aiEditSettings.addEventListener("click", () => {
           el.aiSetup.hidden = false;
           el.aiMain.hidden = true;
+          el.aiLogoutArea.hidden = false;
           el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
           el.aiKeyInput.value = readStorage(STORAGE.aiKey);
+        });
+        el.aiLogoutBtn.addEventListener("click", () => {
+          localStorage.removeItem(STORAGE.aiProvider);
+          localStorage.removeItem(STORAGE.aiKey);
+          el.aiKeyInput.value = "";
+          el.aiResults.innerHTML = "";
+          hydrateAiView();
+          showToast("AI key removed.");
         });
         el.trendingPeriodTabs.addEventListener("click", (e) => {
           const tab = e.target.closest(".range-tab");
