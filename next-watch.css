@@ -979,34 +979,11 @@
 }
 .settings-icon:hover { color: var(--text); }
 
-.ai-toggles {
-  display: flex;
-  gap: 8px;
-}
-
-.ai-toggle {
-  padding: 6px 14px;
-  border: 1px solid var(--panel-border);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-  min-height: unset;
-}
-
-.ai-toggle.active {
-  border-color: var(--accent);
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--text);
-}
-
 .ai-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .ai-prompts {

@@ -111,9 +111,9 @@
       <!-- AI view -->
       <div id="aiView" hidden>
         <div class="ai-toolbar">
-          <div class="ai-toggles">
-            <button class="ai-toggle active" id="aiToggleTv" type="button">Series</button>
-            <button class="ai-toggle active" id="aiToggleMovie" type="button">Movies</button>
+          <div class="range-tabs">
+            <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
+            <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
           </div>
         </div>
           <div class="ai-prompts" id="aiPrompts">
@@ -919,17 +919,16 @@
           }
         });
 
-        function handleAiToggle(btn, other) {
-          btn.addEventListener("click", () => {
-            if (!btn.classList.contains("active") || other.classList.contains("active")) {
-              btn.classList.toggle("active");
-            }
+        [el.aiToggleTv, el.aiToggleMovie].forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const other = btn === el.aiToggleTv ? el.aiToggleMovie : el.aiToggleTv;
+            if (btn.classList.contains("active") && !other.classList.contains("active")) return;
+            btn.classList.toggle("active");
             el.aiResults.innerHTML = "";
             el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           });
-        }
-        handleAiToggle(el.aiToggleTv, el.aiToggleMovie);
-        handleAiToggle(el.aiToggleMovie, el.aiToggleTv);
+        });
 
         // ── Navigation ──
 
