@@ -790,7 +790,7 @@
               body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
             });
             const data = await res.json();
-            if (!res.ok) throw new ApiError(data.error?.message || `Gemini error ${res.status}`);
+            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `Gemini error ${res.status}`));
             return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
           }
           if (provider === "openai") {
@@ -800,7 +800,7 @@
               body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new ApiError(data.error?.message || `OpenAI error ${res.status}`);
+            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `OpenAI error ${res.status}`));
             return data.choices?.[0]?.message?.content || "";
           }
           if (provider === "claude") {
@@ -810,7 +810,7 @@
               body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new ApiError(data.error?.message || `Claude error ${res.status}`);
+            if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || `Claude error ${res.status}`));
             return data.content?.[0]?.text || "";
           }
           throw new ApiError("Unknown AI provider");
