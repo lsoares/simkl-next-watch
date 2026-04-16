@@ -1,7 +1,7 @@
-const assert = require("node:assert/strict")
-const { http, HttpResponse } = require("msw")
+import assert from "node:assert/strict"
+import { http, HttpResponse } from "msw"
 
-function completeChat(responseText, expectedKey) {
+export function completeChat(responseText, expectedKey) {
   return http.post("https://api.openai.com/v1/chat/completions", async ({ request }) => {
     assert.equal(request.headers.get("authorization"), `Bearer ${expectedKey}`)
     const body = await request.json()
@@ -12,5 +12,3 @@ function completeChat(responseText, expectedKey) {
     return HttpResponse.json({ choices: [{ message: { content: responseText } }] })
   })
 }
-
-module.exports = { completeChat }

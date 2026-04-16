@@ -1,21 +1,21 @@
-const { describe, it, before, after } = require("node:test")
-const { setupServer } = require("msw/node")
-const { findByRole, findByText } = require("@testing-library/dom")
-const { loadApp } = require("./loadApp")
-const { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes, searchTv, searchMovie } = require("./clients/simkl")
-const { completeChat: completeGeminiChat } = require("./clients/gemini")
-const { completeChat: completeOpenaiChat } = require("./clients/openai")
-const { completeChat: completeClaudeChat } = require("./clients/claude")
+import { describe, it, before, after } from "node:test"
+import { setupServer } from "msw/node"
+import { getByRole, getByLabelText, findByRole, findByText } from "@testing-library/dom"
+import { loadApp } from "./loadApp.js"
+import { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes, searchTv, searchMovie } from "./clients/simkl.js"
+import { completeChat as completeGeminiChat } from "./clients/gemini.js"
+import { completeChat as completeOpenaiChat } from "./clients/openai.js"
+import { completeChat as completeClaudeChat } from "./clients/claude.js"
 
 describe("ai suggestions", () => {
   const server = setupServer()
   before(() => server.listen({ onUnhandledRequest: "error" }))
   after(() => server.close())
 
-  for (const { name, keyName, aiHandler } of [
-    { name: "gemini", keyName: "next-watch-ai-key-gemini", aiHandler: completeGeminiChat },
-    { name: "openai", keyName: "next-watch-ai-key-openai", aiHandler: completeOpenaiChat },
-    { name: "claude", keyName: "next-watch-ai-key-claude", aiHandler: completeClaudeChat },
+  for (const { name, aiHandler } of [
+    { name: "gemini", aiHandler: completeGeminiChat },
+    { name: "openai", aiHandler: completeOpenaiChat },
+    { name: "claude", aiHandler: completeClaudeChat },
   ]) {
     it(`shows poster recommendations with ${name}`, async () => {
       server.use(
@@ -31,7 +31,7 @@ describe("ai suggestions", () => {
         }]),
         syncAnime([]),
         tvEpisodes("11121"),
-        aiHandler('[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]'),
+        aiHandler('[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]', "test-key"),
         searchTv(),
         searchMovie({
           Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie" },
@@ -39,14 +39,20 @@ describe("ai suggestions", () => {
           Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie" },
         }),
       )
-      const document = loadApp({
-        localStorage: {
-          "next-watch-client-id": "test-client-id", "next-watch-client-secret": "test-secret", "next-watch-access-token": "test-token",
-          "next-watch-ai-provider": name,
-          [keyName]: "test-key",
-        },
-      })
+      const document = loadApp({ localStorage: { "next-watch-client-id": "test-client-id", "next-watch-client-secret": "test-secret", "next-watch-access-token": "test-token" } })
       await findByText(document, "Breaking Bad")
+
+      // Configure AI provider via settings UI
+      getByRole(document, "button", { name: "⚙" }).click()
+      const providerSelect = await findByRole(document, "combobox", { name: /provider/i })
+      providerSelect.value = name
+      providerSelect.dispatchEvent(new document.defaultView.Event("change"))
+      const aiKeyInput = getByLabelText(document, /api key/i)
+      aiKeyInput.value = "test-key"
+      getByRole(document, "button", { name: /save.*key/i }).click()
+      await findByText(document, /key saved/i)
+
+      // Navigate to AI and pick a mood
       const aiButton = await findByRole(document, "button", { name: /ai suggested/i })
       aiButton.click()
       const laughButton = await findByRole(document, "button", { name: /make me laugh/i })

@@ -1,9 +1,9 @@
-const { describe, it, before, after } = require("node:test")
-const assert = require("node:assert/strict")
-const { setupServer } = require("msw/node")
-const { getByRole, getByLabelText, findByRole, findByText } = require("@testing-library/dom")
-const { loadApp } = require("./loadApp")
-const { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes } = require("./clients/simkl")
+import { describe, it, before, after } from "node:test"
+import assert from "node:assert/strict"
+import { setupServer } from "msw/node"
+import { getByRole, getByLabelText, findByRole, findByText } from "@testing-library/dom"
+import { loadApp } from "./loadApp.js"
+import { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes } from "./clients/simkl.js"
 
 describe("settings", () => {
   const server = setupServer()

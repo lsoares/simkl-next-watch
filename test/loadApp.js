@@ -1,9 +1,10 @@
-const { JSDOM } = require("jsdom")
-const fs = require("fs")
-const path = require("path")
+import { JSDOM } from "jsdom"
+import fs from "fs"
+import { fileURLToPath } from "url"
+import { dirname, join } from "path"
 
-function loadApp({ localStorage: initialStorage = {} } = {}) {
-  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8")
+export function loadApp({ localStorage: initialStorage = {} } = {}) {
+  const html = fs.readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "index.html"), "utf8")
     .replace(/<link rel="stylesheet"[^>]*>/, "")
 
   const prelude = Object.entries(initialStorage)
@@ -26,5 +27,3 @@ function loadApp({ localStorage: initialStorage = {} } = {}) {
   )
   return dom.window.document
 }
-
-module.exports = { loadApp }

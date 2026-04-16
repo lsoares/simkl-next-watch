@@ -1,8 +1,8 @@
-const { describe, it, before, after } = require("node:test")
-const { setupServer } = require("msw/node")
-const { findByText } = require("@testing-library/dom")
-const { loadApp } = require("./loadApp")
-const { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes } = require("./clients/simkl")
+import { describe, it, before, after } from "node:test"
+import { setupServer } from "msw/node"
+import { findByText } from "@testing-library/dom"
+import { loadApp } from "./loadApp.js"
+import { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes } from "./clients/simkl.js"
 
 describe("next", () => {
   const server = setupServer()

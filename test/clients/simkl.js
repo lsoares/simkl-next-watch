@@ -1,7 +1,7 @@
-const assert = require("node:assert/strict")
-const { http, HttpResponse } = require("msw")
+import assert from "node:assert/strict"
+import { http, HttpResponse } from "msw"
 
-function syncActivities() {
+export function syncActivities() {
   return http.post("https://api.simkl.com/sync/activities", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -9,7 +9,7 @@ function syncActivities() {
   })
 }
 
-function syncShows(shows) {
+export function syncShows(shows) {
   return http.get("https://api.simkl.com/sync/all-items/shows/", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -20,7 +20,7 @@ function syncShows(shows) {
   })
 }
 
-function syncMovies(movies) {
+export function syncMovies(movies) {
   return http.get("https://api.simkl.com/sync/all-items/movies/", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -31,7 +31,7 @@ function syncMovies(movies) {
   })
 }
 
-function syncAnime(anime) {
+export function syncAnime(anime) {
   return http.get("https://api.simkl.com/sync/all-items/anime/", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -42,7 +42,7 @@ function syncAnime(anime) {
   })
 }
 
-function tvEpisodes(expectedId) {
+export function tvEpisodes(expectedId) {
   return http.get("https://api.simkl.com/tv/episodes/:id", ({ request, params }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     if (expectedId) assert.equal(params.id, expectedId)
@@ -50,7 +50,7 @@ function tvEpisodes(expectedId) {
   })
 }
 
-function searchTv() {
+export function searchTv() {
   return http.get("https://api.simkl.com/search/tv", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -61,7 +61,7 @@ function searchTv() {
   })
 }
 
-function searchMovie(results) {
+export function searchMovie(results) {
   return http.get("https://api.simkl.com/search/movie", ({ request }) => {
     assert.equal(request.headers.get("simkl-api-key"), "test-client-id")
     assert.equal(request.headers.get("authorization"), "Bearer test-token")
@@ -76,16 +76,14 @@ function searchMovie(results) {
   })
 }
 
-function trendingTv(items) {
+export function trendingTv(items) {
   return http.get("https://data.simkl.in/discover/trending/tv/:period", () =>
     HttpResponse.json(items)
   )
 }
 
-function trendingMovies(items) {
+export function trendingMovies(items) {
   return http.get("https://data.simkl.in/discover/trending/movies/:period", () =>
     HttpResponse.json(items)
   )
 }
-
-module.exports = { syncActivities, syncShows, syncMovies, syncAnime, tvEpisodes, searchTv, searchMovie, trendingTv, trendingMovies }

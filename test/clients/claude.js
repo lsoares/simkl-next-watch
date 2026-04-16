@@ -1,7 +1,7 @@
-const assert = require("node:assert/strict")
-const { http, HttpResponse } = require("msw")
+import assert from "node:assert/strict"
+import { http, HttpResponse } from "msw"
 
-function completeChat(responseText, expectedKey) {
+export function completeChat(responseText, expectedKey) {
   return http.post("https://api.anthropic.com/v1/messages", async ({ request }) => {
     assert.equal(request.headers.get("x-api-key"), expectedKey)
     assert.equal(request.headers.get("anthropic-version"), "2023-06-01")
@@ -14,5 +14,3 @@ function completeChat(responseText, expectedKey) {
     return HttpResponse.json({ content: [{ text: responseText }] })
   })
 }
-
-module.exports = { completeChat }
