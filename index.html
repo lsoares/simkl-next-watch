@@ -970,18 +970,18 @@
           history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
           el.spinner.hidden = false;
           try {
-            if (error) throw new Error(error);
+            if (error) throw new ApiError(error);
             const expected = sessionStorage.getItem("oauth-state");
             const state = params.get("state") || "";
-            if (expected && state && expected !== state) throw new Error("State mismatch.");
-            if (!getClientId() || !getClientSecret()) throw new Error("Missing client ID or app secret.");
+            if (expected && state && expected !== state) throw new ApiError("State mismatch.");
+            if (!getClientId() || !getClientSecret()) throw new ApiError("Missing client ID or app secret.");
             const redirectUri = `${location.origin}${location.pathname}`;
             const token = await fetch(`${API_BASE}/oauth/token`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ code, client_id: getClientId(), client_secret: getClientSecret(), redirect_uri: redirectUri, grant_type: "authorization_code" }),
             }).then((r) => r.json());
-            if (!token.access_token) throw new Error(token.error || "Token exchange failed.");
+            if (!token.access_token) throw new ApiError(token.error || "Token exchange failed.");
             writeStorage(STORAGE.accessToken, token.access_token);
             sessionStorage.removeItem("oauth-state");
             hydrateUI();
