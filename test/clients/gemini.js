@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupGeminiChat(page, responseText, expectedKey, expectedRatings) {
+export function setupGeminiChat(page, responseText, expectedKey, expectedRatings, expectedLibrary) {
   return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
     expect(route.request().method()).toBe("POST")
     const url = new URL(route.request().url())
@@ -9,11 +9,14 @@ export function setupGeminiChat(page, responseText, expectedKey, expectedRatings
     const text = body.contents?.[0]?.parts?.[0]?.text
     expect(text).toMatch(/movies and TV shows/)
     expect(text).toMatch(/at least 6\.5 IMDb rating/)
-    expect(text).toMatch(/exactly 6 suggestions/)
+    expect(text).toMatch(/exactly 10 suggestions/)
     expect(text).toMatch(/JSON array/)
+    expect(text).toMatch(/Do not suggest any title already in the user's library/)
     expect(text).toMatch(/Mood:/)
     expect(text).toMatch(/My ratings:/)
+    expect(text).toMatch(/My library:/)
     for (const rating of expectedRatings) expect(text).toContain(rating)
+    for (const title of expectedLibrary) expect(text).toContain(title)
     expect(body.generationConfig?.temperature).toBe(0.9)
     await route.fulfill({
       status: 200,

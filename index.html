@@ -437,6 +437,15 @@
         return parts.join("\n");
       }
 
+      function buildLibraryInput(shows, movies, anime) {
+        const tv = [...(shows || []), ...(anime || [])].map((i) => i.title).filter(Boolean).join(", ");
+        const film = (movies || []).map((i) => i.title).filter(Boolean).join(", ");
+        const parts = [];
+        if (tv) parts.push(`TV: ${tv}`);
+        if (film) parts.push(`Movies: ${film}`);
+        return parts.join("\n");
+      }
+
       // ── Storage ──
 
       const STORAGE = {
@@ -874,7 +883,7 @@
 
         const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
         function aiSystemPrompt(mediaType) {
-          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 6 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.`;
+          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Do not suggest any title already in the user's library. Prefer quality matches over popularity.`;
         }
 
         const AI_PROVIDERS = {
@@ -893,7 +902,7 @@
           claude: {
             url: () => "https://api.anthropic.com/v1/messages",
             headers: (key) => ({ "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" }),
-            body: (systemPrompt, userMessage) => ({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
+            body: (systemPrompt, userMessage) => ({ model: "claude-sonnet-4-20250514", max_tokens: 512, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
             extract: (data) => data.content?.[0]?.text,
           },
           grok: {
@@ -952,12 +961,11 @@
               return null;
             }
           }));
-          return results.filter((item) => item && !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
+          return results.filter(Boolean);
         }
 
-        async function fetchAiSuggestions(provider, key, userMessage, exclude, systemPrompt) {
-          const msg = exclude.length ? `${userMessage}\nDo NOT suggest: ${exclude.join(", ")}` : userMessage;
-          const raw = await aiComplete(provider, key, msg, systemPrompt);
+        async function fetchAiSuggestions(provider, key, userMessage, systemPrompt) {
+          const raw = await aiComplete(provider, key, userMessage, systemPrompt);
           try {
             const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
             return Array.isArray(parsed) ? parsed : [];
@@ -980,29 +988,28 @@
           const cache = readJsonStorage(STORAGE.syncCache);
           const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
+          const library = buildLibraryInput(cache?.shows, cache?.movies, cache?.anime);
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
           const key = getAiKey(provider);
           const systemPrompt = aiSystemPrompt(mediaType);
-          const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
+          const userMessage = `My ratings: ${ratings}\nMy library: ${library}\nMood: ${mood}`;
 
-          const collected = [];
-          const exclude = [];
-          for (let attempt = 0; attempt < 3 && collected.length < 3; attempt++) {
-            const suggestions = await fetchAiSuggestions(provider, key, userMessage, exclude, systemPrompt);
-            exclude.push(...suggestions.map((s) => s.title));
-            const resolved = await resolveSimkl(suggestions, mediaType);
-            collected.push(...resolved);
-          }
-
-          return collected.slice(0, 3);
+          const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
+          const resolved = await resolveSimkl(suggestions, mediaType);
+          return resolved.sort((a, b) => {
+            const aw = libraryIds.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
+            const bw = libraryIds.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
+            if (aw !== bw) return aw - bw;
+            return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0);
+          });
         }
 
         // ── AI Result Rendering ──
 
         function renderAiResults(items) {
-          if (items.length < 3) {
-            el.aiResults.innerHTML = `<p class="empty">Not enough new suggestions. Try another mood.</p>`;
+          if (!items.length) {
+            el.aiResults.innerHTML = `<p class="empty">No suggestions. Try another mood.</p>`;
             return;
           }
           const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }));

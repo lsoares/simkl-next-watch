@@ -28,24 +28,32 @@ test.describe("ai suggestions", () => {
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
         watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
       }])
-      await setupSyncMovies(page, [{
-        movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
-        status: "completed", user_rating: 8,
-      }])
+      await setupSyncMovies(page, [
+        {
+          movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+          status: "completed", user_rating: 8,
+        },
+        {
+          movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, poster: "test" },
+          status: "completed",
+        },
+      ])
       await setupSyncAnime(page, [])
       await setupTvEpisodes(page, "11121")
       await loginViaOAuth(page)
       await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
       await setupAiChat(page,
-        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016}]',
+        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010}]',
         "apiAiKey",
         ["Breaking Bad:9", "Inception:8"],
+        ["Breaking Bad", "Inception", "The Matrix"],
       )
       await setupSearchTv(page)
       await setupSearchMovie(page, {
         Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
         Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.4 } } },
         Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.1 } } },
+        Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
       })
       await page.getByRole("link", { name: /settings/i }).click()
       await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
@@ -56,10 +64,11 @@ test.describe("ai suggestions", () => {
 
       await page.getByRole("button", { name: /make me laugh/i }).click()
 
-      await expect(page.getByRole("article", { name: "Parasite" })).toBeVisible()
-      await expect(page.getByRole("article", { name: "Oldboy" })).toBeVisible()
-      await expect(page.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
-      await expect(page.getByText("IMDb 8.5")).toBeVisible()
+      const aiResults = page.locator("#aiResults")
+      await expect(aiResults.getByRole("article", { name: "Parasite" })).toBeVisible()
+      await expect(aiResults.getByRole("article", { name: "Oldboy" })).toBeVisible()
+      await expect(aiResults.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
+      await expect(aiResults.getByRole("article", { name: "Inception" })).toHaveClass(/trending-watched/)
     })
   })
 
