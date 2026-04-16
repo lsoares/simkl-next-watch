@@ -63,7 +63,7 @@
                   <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
                   <option value="claude" data-url="https://console.anthropic.com/settings/keys">Anthropic</option>
                 </select>
-                <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Get a Gemini key</a>
+                <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style="display:inline-block;margin-top:6px;color:#86efac;font-size:0.85rem">Create key</a>
               </div>
               <div style="margin-bottom:12px">
                 <label for="aiKeyInput">AI API Key</label>
@@ -779,7 +779,7 @@
         function syncAiKeyLink() {
           const opt = el.aiProviderSelect.selectedOptions[0];
           el.aiKeyLink.href = opt.dataset.url;
-          el.aiKeyLink.textContent = `Get a ${opt.textContent.replace(/ \(free\)/, "")} key`;
+          el.aiKeyLink.textContent = "Create key";
           el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
           syncAiSaveLabel();
         }
