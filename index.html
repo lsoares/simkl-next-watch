@@ -110,6 +110,11 @@
         </div>
         <div id="aiMain" hidden>
           <div class="ai-toolbar">
+            <div class="range-tabs" id="aiTypeTabs">
+              <button class="range-tab active" data-type="both" type="button">Both</button>
+              <button class="range-tab" data-type="tv" type="button">Series</button>
+              <button class="range-tab" data-type="movie" type="button">Movies</button>
+            </div>
             <button class="tiny-link" id="aiEditSettings" type="button">edit settings</button>
           </div>
           <div class="ai-prompts" id="aiPrompts">
@@ -518,7 +523,7 @@
           trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
           hideTrendingWatched: $("hideTrendingWatched"),
           trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-          aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"),
+          aiView: $("aiView"), aiSetup: $("aiSetup"), aiMain: $("aiMain"), aiTypeTabs: $("aiTypeTabs"),
           aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"), aiSaveBtn: $("aiSaveBtn"),
           aiEditSettings: $("aiEditSettings"), aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
           spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
@@ -775,14 +780,17 @@
 
         // ── AI Provider Adapters ──
 
-        const AI_SYSTEM = "You suggest movies and TV shows. Return exactly 6 suggestions as a JSON array: [{\"title\":\"...\",\"year\":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.";
+        const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
+        function aiSystemPrompt(mediaType) {
+          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both}. Return exactly 6 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Avoid suggesting anything from the user's list. Prefer quality matches over popularity.`;
+        }
 
-        async function aiComplete(provider, key, userMessage) {
+        async function aiComplete(provider, key, userMessage, systemPrompt) {
           if (provider === "gemini") {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(key)}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: [{ text: AI_SYSTEM + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
+              body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n" + userMessage }] }], generationConfig: { temperature: 0.9 } }),
             });
             const data = await res.json();
             if (!res.ok) throw new ApiError(data.error?.message || `Gemini error ${res.status}`);
@@ -792,7 +800,7 @@
             const res = await fetch("https://api.openai.com/v1/chat/completions", {
               method: "POST",
               headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: AI_SYSTEM }, { role: "user", content: userMessage }], temperature: 0.9 }),
+              body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }], temperature: 0.9 }),
             });
             const data = await res.json();
             if (!res.ok) throw new ApiError(data.error?.message || `OpenAI error ${res.status}`);
@@ -802,7 +810,7 @@
             const res = await fetch("https://api.anthropic.com/v1/messages", {
               method: "POST",
               headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
-              body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: AI_SYSTEM, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
+              body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 256, system: systemPrompt, messages: [{ role: "user", content: userMessage }], temperature: 0.9 }),
             });
             const data = await res.json();
             if (!res.ok) throw new ApiError(data.error?.message || `Claude error ${res.status}`);
@@ -816,10 +824,12 @@
         const aiCache = {};
         const AI_CACHE_TTL = 5 * 60 * 1000;
 
-        async function resolveSimkl(suggestions) {
+        async function resolveSimkl(suggestions, mediaType) {
           const results = await Promise.all(suggestions.map(async (s) => {
             try {
               const q = encodeURIComponent(`${s.title} ${s.year || ""}`.trim());
+              if (mediaType === "tv") { const r = await apiFetch(`/search/tv?q=${q}&limit=1`); return Array.isArray(r) && r[0] || null; }
+              if (mediaType === "movie") { const r = await apiFetch(`/search/movie?q=${q}&limit=1`); return Array.isArray(r) && r[0] || null; }
               const [tv, movie] = await Promise.all([
                 apiFetch(`/search/tv?q=${q}&limit=1`),
                 apiFetch(`/search/movie?q=${q}&limit=1`),
@@ -832,9 +842,9 @@
           return results.filter((item) => item && !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
         }
 
-        async function fetchAiSuggestions(provider, key, userMessage, exclude) {
+        async function fetchAiSuggestions(provider, key, userMessage, exclude, systemPrompt) {
           const msg = exclude.length ? `${userMessage}\nDo NOT suggest: ${exclude.join(", ")}` : userMessage;
-          const raw = await aiComplete(provider, key, msg);
+          const raw = await aiComplete(provider, key, msg, systemPrompt);
           try {
             const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
             return Array.isArray(parsed) ? parsed : [];
@@ -843,25 +853,31 @@
           }
         }
 
+        function getAiMediaType() {
+          return el.aiTypeTabs.querySelector(".range-tab.active")?.dataset.type || "both";
+        }
+
         async function getRecommendations(mood) {
+          const mediaType = getAiMediaType();
           const cache = readJsonStorage(STORAGE.syncCache);
           const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
-          const cacheKey = mood + "|" + ratings;
+          const cacheKey = `${mood}|${mediaType}|${ratings}`;
           const cached = aiCache[cacheKey];
           if (cached && Date.now() - cached.ts < AI_CACHE_TTL) return cached.data;
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
           const key = readStorage(STORAGE.aiKey);
+          const systemPrompt = aiSystemPrompt(mediaType);
           const userMessage = `My ratings: ${ratings}\nMood: ${mood}`;
 
           const collected = [];
           const exclude = [];
           for (let attempt = 0; attempt < 3 && collected.length < 3; attempt++) {
-            const suggestions = await fetchAiSuggestions(provider, key, userMessage, exclude);
+            const suggestions = await fetchAiSuggestions(provider, key, userMessage, exclude, systemPrompt);
             exclude.push(...suggestions.map((s) => s.title));
-            const resolved = await resolveSimkl(suggestions);
+            const resolved = await resolveSimkl(suggestions, mediaType);
             collected.push(...resolved);
           }
 
@@ -898,6 +914,15 @@
             el.aiResults.innerHTML = "";
             handleError(err);
           }
+        });
+
+        el.aiTypeTabs.addEventListener("click", (e) => {
+          const tab = e.target.closest(".range-tab");
+          if (!tab) return;
+          el.aiTypeTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          el.aiResults.innerHTML = "";
+          el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
         });
 
         // ── Navigation ──

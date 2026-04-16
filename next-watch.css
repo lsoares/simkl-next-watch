@@ -967,7 +967,9 @@
 }
 
 .ai-toolbar {
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
 }
 
