@@ -993,17 +993,21 @@
         font-size: 0.78rem;
       }
       .copy-btn {
-        display: inline;
-        background: none;
-        border: none;
-        color: #475569;
-        font-size: 0.65rem;
+        display: inline-flex;
+        align-items: center;
+        background: #1e293b;
+        border: 1px solid #334155;
+        color: #e2e8f0;
+        font-size: 0.8rem;
+        font-weight: 500;
         min-height: unset;
-        padding: 0 2px;
+        padding: 3px 10px;
+        margin-left: 6px;
+        border-radius: 4px;
         cursor: pointer;
         vertical-align: middle;
       }
-      .copy-btn:hover { color: var(--muted); }
+      .copy-btn:hover { background: #334155; color: #fff; }
 
       .app-intro {
         text-align: center;
