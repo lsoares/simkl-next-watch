@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupRemoveFromWatchlist } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupRemoveFromWatchlist, setupTrendingTv, setupTrendingMovies, setupMovieSummary } from "./clients/simkl.js"
 
 test.describe("next", () => {
 
@@ -38,11 +38,16 @@ test.describe("next", () => {
       status: "plantowatch",
     }])
     await setupSyncAnime(page, [])
+    await setupTrendingTv(page, {})
+    await setupTrendingMovies(page, { today: [{ ids: { simkl_id: 22222 } }] })
+    await setupMovieSummary(page, "22222", { ratings: { imdb: { rating: 8.8 } } })
     await setupRemoveFromWatchlist(page, { movies: [{ ids: { simkl_id: 22222 } }] })
     page.on("dialog", (d) => d.accept())
     await loginViaOAuth(page)
     const card = page.getByRole("article", { name: "Inception" })
     await expect(card).toBeVisible()
+    await expect(card.getByText(/IMDb 8\.8/)).toBeVisible()
+    await expect(card.getByText("🔥 Today")).toBeVisible()
 
     await card.getByRole("button", { name: /remove/i }).click()
 

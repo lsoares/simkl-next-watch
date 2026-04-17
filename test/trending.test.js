@@ -13,18 +13,20 @@ test.describe("trending", () => {
     }])
     await setupSyncMovies(page, [])
     await setupSyncAnime(page, [])
-    await setupTrendingTv(page, [
+    await setupTrendingTv(page, { today: [
       { title: "The Rookie", ids: { simkl_id: 99001 } },
       { title: "The Boys", ids: { simkl_id: 99002 } },
-    ])
-    await setupTrendingMovies(page, [])
+    ] })
+    await setupTrendingMovies(page, {})
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
     await page.getByRole("link", { name: /trending/i }).click()
 
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    const rookie = page.getByRole("article", { name: "The Rookie" })
+    await expect(rookie).toBeVisible()
     await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
+    await expect(rookie.getByText(/🔥/)).toHaveCount(0)
   })
 
   test("adds a trending movie to the watchlist", async ({ page }) => {
@@ -36,10 +38,10 @@ test.describe("trending", () => {
     }])
     await setupSyncMovies(page, [])
     await setupSyncAnime(page, [])
-    await setupTrendingTv(page, [])
-    await setupTrendingMovies(page, [
+    await setupTrendingTv(page, {})
+    await setupTrendingMovies(page, { today: [
       { title: "Dune", ids: { simkl_id: 99003 } },
-    ])
+    ] })
     await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()

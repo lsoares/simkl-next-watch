@@ -186,6 +186,7 @@
           poster: media.poster || media.img || "",
           runtime: media.runtime || 0,
           url: media.url || "",
+          ratings: media.ratings || null,
           status: normalizeStatus(raw.status),
           next_to_watch: raw.next_to_watch || "",
           added_at: raw.added_to_watchlist_at || raw.added_at || null,
@@ -331,6 +332,21 @@
         return match?.title || null;
       }
 
+      function trendingBadgeInfo(period) {
+        if (period === "today") return { label: "Today", tooltip: "Trending today" };
+        if (period === "week") return { label: "Week", tooltip: "Trending this week" };
+        if (period === "month") return { label: "Month", tooltip: "Trending this month" };
+        return null;
+      }
+
+      function trendingPeriodFor(simklId, sets) {
+        if (!simklId || !sets) return null;
+        if (sets.today.has(simklId)) return "today";
+        if (sets.week.has(simklId)) return "week";
+        if (sets.month.has(simklId)) return "month";
+        return null;
+      }
+
       // ── HTML templates ──
 
       const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -379,7 +395,7 @@
           const showRemove = isNext && (type === "movie" || unstarted);
           const showMarkWatched = isNext;
           const showAddWatchlist = !isNext && loggedIn && id && !watched;
-          const showImdb = !isNext && !watched && rating;
+          const showImdb = !watched && rating && (!isNext || unstarted);
 
           const dataAttrs = isNext
             ? `data-simkl-id="${id}" data-type="${type}"`
@@ -455,6 +471,7 @@
         clientSecret: "next-watch-client-secret",
         accessToken: "next-watch-access-token",
         syncCache: "next-watch-sync-cache",
+        ratingsCache: "next-watch-ratings-cache",
         trendingPeriod: "next-watch-trending-period",
         hideWatched: "next-watch-hide-watched",
         episodeCache: "next-watch-episode-cache",
@@ -506,10 +523,13 @@
         return (data?.[type] ?? []).map(normalizeItem);
       }
 
+      const SYNC_CACHE_SCHEMA = 2;
+
       async function sync() {
         const activities = await apiFetch("/sync/activities", { method: "POST" });
         const sig = JSON.stringify(activities);
-        const cache = readJsonStorage(STORAGE.syncCache);
+        const rawCache = readJsonStorage(STORAGE.syncCache);
+        const cache = rawCache?.schema === SYNC_CACHE_SCHEMA ? rawCache : null;
 
         if (cache?.sig === sig && cache.shows && cache.movies) return cache;
 
@@ -530,7 +550,7 @@
           anime = mergeItems(cache.anime || [], deltaAnime);
         }
 
-        const next = { sig, lastActivity: latestTimestamp(activities), shows, movies, anime };
+        const next = { schema: SYNC_CACHE_SCHEMA, sig, lastActivity: latestTimestamp(activities), shows, movies, anime };
         writeStorage(STORAGE.syncCache, next);
         return next;
       }
@@ -635,6 +655,7 @@
         function renderRow(rowEl, items, type) {
           const scrollKey = `scroll:${rowEl.id}`;
           if (!items.length) { rowEl.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+          applyCachedRatings(items);
           rowEl.innerHTML = "";
           items.forEach((item) => {
             const wrap = document.createElement("div");
@@ -653,6 +674,8 @@
           rowEl._scrollSave = () => { sessionStorage.setItem(scrollKey, rowEl.scrollLeft); };
           rowEl.addEventListener("scroll", rowEl._scrollSave, { passive: true });
           rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0);
+          annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type));
+          hydrateMissingRatings(rowEl, items, type);
         }
 
         // ── Mark watched ──
@@ -828,11 +851,140 @@
           }
         }
 
+        const RATINGS_CACHE_SCHEMA = 1;
+        const RATINGS_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+        const RATINGS_FETCH_CONCURRENCY = 5;
+
+        function readRatingsCache() {
+          const raw = readJsonStorage(STORAGE.ratingsCache);
+          if (raw?.schema !== RATINGS_CACHE_SCHEMA || !raw.entries) return {};
+          return raw.entries;
+        }
+
+        function writeRatingsCache(entries) {
+          writeStorage(STORAGE.ratingsCache, { schema: RATINGS_CACHE_SCHEMA, entries });
+        }
+
+        function getCachedRating(entries, id) {
+          const entry = entries[id];
+          if (!entry || typeof entry.rating !== "number") return null;
+          const age = Date.now() - new Date(entry.fetchedAt).getTime();
+          if (age > RATINGS_CACHE_TTL_MS) return null;
+          return entry.rating;
+        }
+
+        async function fetchItemRating(type, id) {
+          try {
+            const path = type === "movie" ? `/movies/${id}?extended=full` : `/tv/${id}?extended=full`;
+            const data = await apiFetch(path);
+            const rating = data?.ratings?.imdb?.rating;
+            return typeof rating === "number" ? rating : null;
+          } catch {
+            return null;
+          }
+        }
+
+        async function chunkedForEach(items, size, fn) {
+          for (let i = 0; i < items.length; i += size) {
+            await Promise.all(items.slice(i, i + size).map(fn));
+          }
+        }
+
+        function injectImdbBadge(card, rating) {
+          const host = card?.cardEl?.querySelector(".poster-top-text");
+          if (!host || host.querySelector(".imdb-badge")) return;
+          const badge = document.createElement("span");
+          badge.className = "imdb-badge";
+          badge.textContent = `IMDb ${rating}`;
+          const trendingSibling = host.querySelector(".trending-badge");
+          if (trendingSibling) host.insertBefore(badge, trendingSibling);
+          else host.appendChild(badge);
+        }
+
+        function applyCachedRatings(items) {
+          const entries = readRatingsCache();
+          for (const item of items) {
+            const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
+            if (!id) continue;
+            const cached = getCachedRating(entries, id);
+            if (cached == null) continue;
+            if (item.ratings?.imdb?.rating == null) {
+              item.ratings = { ...(item.ratings || {}), imdb: { rating: cached } };
+            }
+          }
+        }
+
+        async function hydrateMissingRatings(rowEl, items, type) {
+          const entries = readRatingsCache();
+          const cards = rowEl.querySelectorAll("poster-card");
+          const pending = [];
+          items.forEach((item, i) => {
+            if (!isUnstarted(item, type)) return;
+            const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
+            if (!id) return;
+            if (item.ratings?.imdb?.rating != null) return;
+            if (getCachedRating(entries, id) != null) return;
+            pending.push({ item, id, card: cards[i] });
+          });
+          if (!pending.length) return;
+          await chunkedForEach(pending, RATINGS_FETCH_CONCURRENCY, async ({ item, id, card }) => {
+            const rating = await fetchItemRating(type, id);
+            if (rating == null) return;
+            entries[id] = { rating, fetchedAt: new Date().toISOString() };
+            item.ratings = { ...(item.ratings || {}), imdb: { rating } };
+            if (card) injectImdbBadge(card, rating);
+          });
+          writeRatingsCache(entries);
+        }
+
         async function fetchTrending(period) {
           return Promise.all([
             fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
             fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
           ]);
+        }
+
+        let trendingBadgeSetsPromise = null;
+        function loadTrendingBadgeSets() {
+          if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise;
+          const periods = ["today", "week", "month"];
+          trendingBadgeSetsPromise = Promise.all(periods.map(fetchTrending))
+            .then((results) => {
+              const sets = { today: new Set(), week: new Set(), month: new Set() };
+              results.forEach(([tv, movies], i) => {
+                const period = periods[i];
+                for (const item of [...(tv || []), ...(movies || [])]) {
+                  const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
+                  if (id) sets[period].add(id);
+                }
+              });
+              return sets;
+            })
+            .catch(() => ({ today: new Set(), week: new Set(), month: new Set() }));
+          return trendingBadgeSetsPromise;
+        }
+
+        async function annotateTrendingBadges(rowEl, items, isEligible) {
+          const sets = await loadTrendingBadgeSets();
+          const cards = rowEl.querySelectorAll("poster-card");
+          items.forEach((item, i) => {
+            const card = cards[i];
+            if (!card) return;
+            if (isEligible && !isEligible(item)) return;
+            const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
+            const period = trendingPeriodFor(id, sets);
+            if (!period) return;
+            const info = trendingBadgeInfo(period);
+            if (!info) return;
+            const host = card.cardEl?.querySelector(".poster-top-text");
+            if (!host || host.querySelector(".trending-badge")) return;
+            const badge = document.createElement("span");
+            badge.className = `trending-badge trending-badge--${period}`;
+            badge.title = info.tooltip;
+            badge.setAttribute("aria-label", info.tooltip);
+            badge.textContent = `🔥 ${info.label}`;
+            host.appendChild(badge);
+          });
         }
 
         async function loadTrending() {
@@ -1028,6 +1180,7 @@
             wrap.appendChild(card);
             el.aiResults.appendChild(wrap);
           });
+          annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
         }
 
         el.aiPrompts.addEventListener("click", async (e) => {

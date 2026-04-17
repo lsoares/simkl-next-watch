@@ -67,6 +67,26 @@ export function setupTvEpisodes(page, expectedId, episodes = []) {
   })
 }
 
+export function setupTvSummary(page, id, data) {
+  return page.route(`**/tv/${id}?**`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) })
+  })
+}
+
+export function setupMovieSummary(page, id, data) {
+  return page.route(`**/movies/${id}?**`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) })
+  })
+}
+
 export function setupSearchTv(page) {
   return page.route("**/search/tv?**", async (route) => {
     expect(route.request().method()).toBe("GET")
@@ -117,16 +137,25 @@ export function setupRemoveFromWatchlist(page, expectedPayload) {
   })
 }
 
-export function setupTrendingTv(page, items) {
+function periodFromTrendingUrl(url) {
+  const match = new URL(url).pathname.match(/(today|week|month)_100\.json$/)
+  return match?.[1] || null
+}
+
+export function setupTrendingTv(page, byPeriod) {
   return page.route("**/discover/trending/tv/*", async (route) => {
     expect(route.request().method()).toBe("GET")
+    const period = periodFromTrendingUrl(route.request().url())
+    const items = byPeriod[period] || []
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
   })
 }
 
-export function setupTrendingMovies(page, items) {
+export function setupTrendingMovies(page, byPeriod) {
   return page.route("**/discover/trending/movies/*", async (route) => {
     expect(route.request().method()).toBe("GET")
+    const period = periodFromTrendingUrl(route.request().url())
+    const items = byPeriod[period] || []
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
   })
 }

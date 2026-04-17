@@ -514,6 +514,39 @@
       }
       span.imdb-badge { pointer-events: none; }
 
+      /* Trending period badge (posters in Next and AI views).
+         Visual weight climbs with period length: today (subtle) < week < month (boldest). */
+      .trending-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        color: #fff;
+        letter-spacing: 0.02em;
+        padding: 1px 5px;
+        border-radius: 999px;
+        align-self: flex-start;
+        margin-top: 2px;
+        white-space: nowrap;
+        pointer-events: none;
+        user-select: none;
+      }
+      .trending-badge--today {
+        background: rgba(120, 113, 108, 0.55);
+        font-size: 0.55rem;
+        font-weight: 500;
+      }
+      .trending-badge--week {
+        background: linear-gradient(135deg, rgba(234, 88, 12, 0.78), rgba(217, 119, 6, 0.78));
+        font-size: 0.6rem;
+        font-weight: 700;
+      }
+      .trending-badge--month {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(217, 70, 239, 0.95));
+        font-size: 0.65rem;
+        font-weight: 800;
+        box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
+      }
+
       /* season progress bar */
       .season-bar-wrap {
         position: absolute;
