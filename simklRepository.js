@@ -28,8 +28,7 @@
     async getLibrary() {
       const activities = await apiFetch("/sync/activities", { method: "POST" })
       const sig = JSON.stringify(activities)
-      const raw = (() => { try { return JSON.parse(localStorage.getItem("next-watch-sync-cache") || "null") } catch { return null } })()
-      const cache = raw?.schema === 3 ? raw : null
+      const cache = await readSyncCache()
 
       if (cache?.sig === sig && cache.shows && cache.movies) {
         return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [] }
@@ -81,12 +80,7 @@
         if (typeof node === "object") for (const v of Object.values(node)) walk(v)
       })(activities)
 
-      try {
-        localStorage.setItem("next-watch-sync-cache", JSON.stringify({ schema: 3, sig, lastActivity: latestActivity, shows, movies, anime }))
-      } catch (err) {
-        localStorage.removeItem("next-watch-sync-cache")
-        console.warn("Sync cache not persisted:", err?.message || err)
-      }
+      await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies, anime })
       return { shows, movies, anime }
     },
 
@@ -97,31 +91,31 @@
           await apiPost("/sync/history", {
             shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
           })
-          localStorage.removeItem("next-watch-sync-cache")
+          localStorage.removeItem(SYNC_CACHE_KEY)
           return
         }
       }
       await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
-      localStorage.removeItem("next-watch-sync-cache")
+      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async rate(item, type, rating) {
       const key = type === "tv" ? "shows" : "movies"
       await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
-      localStorage.removeItem("next-watch-sync-cache")
+      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async removeFromHistory(item, type) {
       const key = type === "tv" ? "shows" : "movies"
       await apiPost("/sync/history/remove", { [key]: [{ ids: item.ids }] })
-      localStorage.removeItem("next-watch-sync-cache")
+      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async addToWatchlist(item, type) {
       const key = type === "movie" ? "movies" : "shows"
       const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] })
-      localStorage.removeItem("next-watch-sync-cache")
+      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     getEpisodes(showId) {
@@ -171,6 +165,48 @@
   }
 
   // ── Helpers ──
+
+  const SYNC_CACHE_KEY = "next-watch-sync-cache"
+  const SYNC_CACHE_SCHEMA = 4
+
+  async function readSyncCache() {
+    const raw = localStorage.getItem(SYNC_CACHE_KEY)
+    if (!raw) return null
+    try {
+      const envelope = JSON.parse(raw)
+      if (envelope?.schema !== SYNC_CACHE_SCHEMA || !envelope.payload) return null
+      return await decompressJson(envelope.payload)
+    } catch {
+      return null
+    }
+  }
+
+  async function writeSyncCache(payload) {
+    try {
+      const compressed = await compressJson(payload)
+      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({ schema: SYNC_CACHE_SCHEMA, payload: compressed }))
+    } catch (err) {
+      localStorage.removeItem(SYNC_CACHE_KEY)
+      console.warn("Sync cache not persisted:", err?.message || err)
+    }
+  }
+
+  async function compressJson(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj))
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"))
+    const compressed = new Uint8Array(await new Response(stream).arrayBuffer())
+    let bin = ""
+    for (const b of compressed) bin += String.fromCharCode(b)
+    return btoa(bin)
+  }
+
+  async function decompressJson(b64) {
+    const bin = atob(b64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))
+    return JSON.parse(await new Response(stream).text())
+  }
 
   async function apiFetch(path, options = {}) {
     const headers = {
