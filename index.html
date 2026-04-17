@@ -7,6 +7,7 @@
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./icon.png" type="image/png" />
     <link rel="apple-touch-icon" href="./icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Next Watch" />
@@ -41,7 +42,7 @@
               <ol class="setup-hints">
                 <li>Name: <strong>Next Watch</strong></li>
                 <li>Description: <strong>Next Watch</strong></li>
-                <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button" title="Copy">&#x2398;</button></li>
+                <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button">Copy</button></li>
                 <li>Save changes, then paste the client ID and app secret below.</li>
               </ol>
             </div>
@@ -257,6 +258,10 @@
         return show.total_episodes_count === 0 || show.total_episodes_count > show.not_aired_episodes_count;
       }
 
+      function isReleased(item) {
+        return item.release_status !== "unreleased";
+      }
+
       function sortWatching(a, b) {
         const aLeft = availableEpisodesLeft(a);
         const bLeft = availableEpisodesLeft(b);
@@ -270,10 +275,11 @@
       }
 
       function buildTvSuggestions(shows) {
-        const watching = shows
+        const released = shows.filter(isReleased);
+        const watching = released
           .filter((s) => s.status === "watching" && parseNextEpisode(s.next_to_watch) && hasAiredEpisodes(s))
           .sort(sortWatching);
-        const planToWatch = shows
+        const planToWatch = released
           .filter((s) => s.status === "plantowatch" && hasAiredEpisodes(s))
           .sort(sortByAddedDate);
         return [...watching, ...planToWatch];
@@ -281,7 +287,7 @@
 
       function buildMovieSuggestions(movies) {
         return movies
-          .filter((m) => m.status === "plantowatch" || m.status === "watching")
+          .filter((m) => (m.status === "plantowatch" || m.status === "watching") && isReleased(m))
           .sort(sortByAddedDate);
       }
 
@@ -510,6 +516,12 @@
       function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
       function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
       function clearAllStorage() { for (const key of Object.values(STORAGE)) localStorage.removeItem(key); }
+
+      window.resetCache = (wipeAll = false) => {
+        const keep = wipeAll ? [] : [STORAGE.clientId, STORAGE.clientSecret, STORAGE.accessToken, STORAGE.aiKeyGemini, STORAGE.aiKeyOpenai, STORAGE.aiKeyClaude, STORAGE.aiKeyGrok, STORAGE.aiKeyGroq, STORAGE.aiKeyDeepseek, STORAGE.aiKeyOpenrouter];
+        for (const key of Object.values(STORAGE)) if (!keep.includes(key)) localStorage.removeItem(key);
+        console.log(wipeAll ? "Wiped everything — reload to re-auth." : "Cleared cache (kept API keys) — reload to re-sync.");
+      };
 
       function getClientId() { return readStorage(STORAGE.clientId); }
       function getClientSecret() { return readStorage(STORAGE.clientSecret); }
@@ -828,8 +840,11 @@
           try {
             const data = await sync();
             const allShows = [...(data.shows || []), ...(data.anime || [])];
+            const allMovies = data.movies || [];
+            applyCachedRatings(allShows);
+            applyCachedRatings(allMovies);
             tvItems = buildTvSuggestions(allShows);
-            movieItems = buildMovieSuggestions(data.movies || []);
+            movieItems = buildMovieSuggestions(allMovies);
             libraryIds = collectLibraryIds(data);
             resolveLibraryReady();
             renderRow(el.tvRow, tvItems, "tv");
@@ -881,26 +896,22 @@
           }
         }
 
-        const RATINGS_CACHE_SCHEMA = 1;
-        const RATINGS_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-        const RATINGS_FETCH_CONCURRENCY = 5;
-
         function readRatingsCache() {
           const raw = readJsonStorage(STORAGE.ratingsCache);
-          if (raw?.schema !== RATINGS_CACHE_SCHEMA || !raw.entries) return {};
+          if (raw?.schema !== 2 || !raw.entries) return {};
           return raw.entries;
         }
 
         function writeRatingsCache(entries) {
-          writeStorage(STORAGE.ratingsCache, { schema: RATINGS_CACHE_SCHEMA, entries });
+          writeStorage(STORAGE.ratingsCache, { schema: 2, entries });
         }
 
-        function getCachedRating(entries, id) {
+        function getCachedInfo(entries, id) {
           const entry = entries[id];
-          if (!entry || typeof entry.rating !== "number") return null;
+          if (!entry) return null;
           const age = Date.now() - new Date(entry.fetchedAt).getTime();
-          if (age > RATINGS_CACHE_TTL_MS) return null;
-          return entry.rating;
+          if (age > 30 * 24 * 60 * 60 * 1000) return null;
+          return entry;
         }
 
         async function fetchItemRating(type, id) {
@@ -935,10 +946,12 @@
           for (const item of items) {
             const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
             if (!id) continue;
-            const cached = getCachedRating(entries, id);
-            if (cached == null) continue;
-            if (item.ratings?.imdb?.rating == null) {
-              item.ratings = { ...(item.ratings || {}), imdb: { rating: cached } };
+            const cached = getCachedInfo(entries, id);
+            if (!cached) continue;
+            if (typeof cached.rating === "number") {
+              if (item.ratings?.imdb?.rating == null) item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } };
+            } else {
+              item.release_status = "unreleased";
             }
           }
         }
@@ -951,17 +964,20 @@
             if (!isUnstarted(item, type)) return;
             const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
             if (!id) return;
-            if (item.ratings?.imdb?.rating != null) return;
-            if (getCachedRating(entries, id) != null) return;
+            if (getCachedInfo(entries, id)) return;
             pending.push({ item, id, card: cards[i] });
           });
           if (!pending.length) return;
-          await chunkedForEach(pending, RATINGS_FETCH_CONCURRENCY, async ({ item, id, card }) => {
+          await chunkedForEach(pending, 5, async ({ item, id, card }) => {
             const rating = await fetchItemRating(type, id);
-            if (rating == null) return;
             entries[id] = { rating, fetchedAt: new Date().toISOString() };
-            item.ratings = { ...(item.ratings || {}), imdb: { rating } };
-            if (card) injectImdbBadge(card, rating);
+            if (rating == null) {
+              item.release_status = "unreleased";
+              card?.closest(".row-item")?.remove();
+            } else {
+              item.ratings = { ...(item.ratings || {}), imdb: { rating } };
+              if (card) injectImdbBadge(card, rating);
+            }
           });
           writeRatingsCache(entries);
         }
@@ -1361,8 +1377,8 @@
 
         // ── Wire events ──
 
-        const redirectUri = `${location.origin}${location.pathname}`.replace(/\/$/, "");
-        el.redirectHint.textContent = redirectUri.replace(/^https?:\/\//, "");
+        const redirectUri = `${location.origin}${location.pathname}`.replace(/\/$/, "").replace(/^https?:\/\//, "");
+        el.redirectHint.textContent = redirectUri;
         el.copyRedirectBtn.addEventListener("click", () => {
           navigator.clipboard.writeText(redirectUri);
           showToast("Copied redirect URI.");
