@@ -514,25 +514,9 @@ function buildTrendingUrl(item, urlBase) {
       function getAccessToken() { return readStorage(STORAGE.accessToken); }
       function isLoggedIn() { return !!getAccessToken(); }
 
-      // ── API ──
+      const ApiError = simkl.ApiError;
 
-      const API_BASE = "https://api.simkl.com";
-      class ApiError extends Error { constructor(msg) { super(msg); this.name = "ApiError"; } }
-
-      async function apiFetch(path, options = {}) {
-        const headers = { "Content-Type": "application/json", "simkl-api-key": getClientId(), ...options.headers };
-        if (getAccessToken()) headers.Authorization = `Bearer ${getAccessToken()}`;
-        const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new ApiError(data.error || data.message || `API error ${res.status}`);
-        return data;
-      }
-
-      function apiPost(path, payload) {
-        return apiFetch(path, { method: "POST", body: JSON.stringify(payload) });
-      }
-
-      // ── Sync ──
+// ── Sync ──
 
       const SYNC_CACHE_SCHEMA = 2;
 
@@ -1276,12 +1260,7 @@ function buildTrendingUrl(item, urlBase) {
             if (expected && state && expected !== state) throw new ApiError("State mismatch.");
             if (!getClientId() || !getClientSecret()) throw new ApiError("Missing client ID or app secret.");
             const redirectUri = `${location.origin}${location.pathname}`;
-            const token = await fetch(`${API_BASE}/oauth/token`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code, client_id: getClientId(), client_secret: getClientSecret(), redirect_uri: redirectUri, grant_type: "authorization_code" }),
-            }).then((r) => r.json());
-            if (!token.access_token) throw new ApiError(token.error || "Token exchange failed.");
+            const token = await simkl.exchangeOAuthCode(code, redirectUri);
             writeStorage(STORAGE.accessToken, token.access_token);
             sessionStorage.removeItem("oauth-state");
             hydrateUI();
