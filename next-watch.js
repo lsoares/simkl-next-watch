@@ -211,14 +211,15 @@ class PosterCard extends HTMLElement {
               ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
-            ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
-            ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
             ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
             ${watchedAgo ? `<span class="watched-ago">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
           </div>
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
-        <div class="poster-bottom"></div>
+        <div class="poster-bottom">
+          ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
+          ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
+        </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
       </article>

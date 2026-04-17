@@ -369,14 +369,18 @@
       /* always-on gradient + text at bottom */
       .poster-bottom {
         position: absolute;
-        inset: 40% 0 0 0;
+        inset: auto 0 0 0;
+        height: 60%;
         border-radius: 0 0 10px 10px;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 8px 8px 72px;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 0 64px 18px 10px;
         pointer-events: none;
         overflow: hidden;
+        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 30%, transparent 65%);
       }
       .poster-bottom > * { pointer-events: auto; }
       .poster-title {
@@ -418,22 +422,25 @@
         letter-spacing: 0.04em;
       }
       .poster-episode {
-        font-size: 1rem;
+        align-self: flex-start;
+        max-width: 100%;
+        font-size: 0.9rem;
         font-weight: 400;
-        color: rgba(255,255,255,0.75);
+        line-height: 1.2;
+        color: rgba(255,255,255,0.85);
+        text-align: left;
         text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
         text-decoration: none;
-        display: block;
-        margin-top: 2px;
-        white-space: nowrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
         font-style: italic;
       }
       .poster-episode:hover { color: #fff; }
       .poster-episode-code {
-        display: inline-flex;
         align-self: flex-start;
+        display: inline-flex;
         font-size: 0.65rem;
         font-style: normal;
         font-weight: 700;
@@ -443,7 +450,6 @@
         background: rgba(0, 0, 0, 0.55);
         padding: 1px 6px;
         border-radius: 3px;
-        margin-top: 2px;
         white-space: nowrap;
         text-decoration: none;
       }
