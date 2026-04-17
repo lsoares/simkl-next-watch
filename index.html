@@ -800,7 +800,7 @@ function buildTrendingUrl(item, urlBase) {
             if (!ep || !id || item.status === "plantowatch") return null;
             const cacheKey = `${id}:${ep.season}:${ep.episode}`;
             if (cache[cacheKey]) return cache[cacheKey];
-            const episodes = await apiFetch(`/tv/episodes/${encodeURIComponent(id)}`);
+            const episodes = await simkl.getEpisodes(id);
             const title = findEpisodeTitle(episodes, ep.season, ep.episode);
             if (title) cache[cacheKey] = title;
             return title;
@@ -901,8 +901,7 @@ function buildTrendingUrl(item, urlBase) {
 
         async function fetchItemRating(type, id) {
           try {
-            const path = type === "movie" ? `/movies/${id}?extended=full` : `/tv/${id}?extended=full`;
-            const data = await apiFetch(path);
+            const data = await (type === "movie" ? simkl.getMovie(id) : simkl.getShow(id));
             const rating = data?.ratings?.imdb?.rating;
             return typeof rating === "number" ? rating : null;
           } catch {
