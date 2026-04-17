@@ -41,7 +41,7 @@ test.describe("next", () => {
     await setupTrendingTv(page, {})
     await setupTrendingMovies(page, { today: [{ ids: { simkl_id: 22222 } }] })
     await setupMovieSummary(page, "22222", { ratings: { imdb: { rating: 8.8 } } })
-    await setupRemoveFromWatchlist(page, { movies: [{ ids: { simkl_id: 22222 } }] })
+    await setupRemoveFromWatchlist(page, { movies: [{ ids: { simkl: 22222 } }] })
     page.on("dialog", (d) => d.accept())
     await loginViaOAuth(page)
     const card = page.getByRole("article", { name: "Inception" })

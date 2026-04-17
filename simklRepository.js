@@ -29,7 +29,7 @@
       const activities = await apiFetch("/sync/activities", { method: "POST" })
       const sig = JSON.stringify(activities)
       const raw = (() => { try { return JSON.parse(localStorage.getItem("next-watch-sync-cache") || "null") } catch { return null } })()
-      const cache = raw?.schema === 2 ? raw : null
+      const cache = raw?.schema === 3 ? raw : null
 
       if (cache?.sig === sig && cache.shows && cache.movies) {
         return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [] }
@@ -81,7 +81,12 @@
         if (typeof node === "object") for (const v of Object.values(node)) walk(v)
       })(activities)
 
-      localStorage.setItem("next-watch-sync-cache", JSON.stringify({ schema: 2, sig, lastActivity: latestActivity, shows, movies, anime }))
+      try {
+        localStorage.setItem("next-watch-sync-cache", JSON.stringify({ schema: 3, sig, lastActivity: latestActivity, shows, movies, anime }))
+      } catch (err) {
+        localStorage.removeItem("next-watch-sync-cache")
+        console.warn("Sync cache not persisted:", err?.message || err)
+      }
       return { shows, movies, anime }
     },
 
@@ -199,15 +204,16 @@
 
   function normalizeItem(raw) {
     const media = raw.show || raw.movie || raw
-    const ids = media.ids || raw.ids || {}
+    const rawIds = media.ids || raw.ids || {}
+    const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
+    const imdbRating = media.ratings?.imdb?.rating
     return {
-      ids,
+      ids: { simkl },
       title: decodeSimklText(media.title) || "Unknown",
       year: media.year || "",
       poster: media.poster || media.img || "",
       runtime: media.runtime || 0,
-      url: media.url || "",
-      ratings: media.ratings || null,
+      ratings: imdbRating != null ? { imdb: { rating: imdbRating } } : null,
       status: normalizeStatus(raw.status),
       next_to_watch: raw.next_to_watch || "",
       added_at: raw.added_to_watchlist_at || raw.added_at || null,
