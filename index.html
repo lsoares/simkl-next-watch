@@ -308,30 +308,7 @@ function latestTimestamp(obj) {
         return item.status === "plantowatch";
       }
 
-      function buildMarkWatchedPayload(item, type) {
-        if (type === "tv") {
-          const ep = parseNextEpisode(item.next_to_watch);
-          if (ep) return { shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }] };
-        }
-        return { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] };
-      }
-
-      function buildRatePayload(item, type, rating) {
-        const key = type === "tv" ? "shows" : "movies";
-        return { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] };
-      }
-
-      function buildRemovePayload(item, type) {
-        const key = type === "tv" ? "shows" : "movies";
-        return { [key]: [{ ids: item.ids }] };
-      }
-
-      function buildAddToWatchlistPayload(urlBase, id) {
-        const key = urlBase === "movies" ? "movies" : "shows";
-        return { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] };
-      }
-
-      function buildTrendingUrl(item, urlBase) {
+function buildTrendingUrl(item, urlBase) {
         const fixedPath = item.url ? item.url.replace(/^\/movie\//, "/movies/") : null;
         const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
         return fixedPath ? `https://simkl.com${fixedPath}` : id ? `https://simkl.com/${urlBase}/${id}` : "#";
@@ -746,7 +723,7 @@ function latestTimestamp(obj) {
           if (type === "movie") { promptRate(item, type, card); return; }
           if (card) card.classList.add("marking-watched");
           try {
-            await apiPost("/sync/history", buildMarkWatchedPayload(item, type));
+            await simkl.markWatched(item, type);
             showToast(`Marked ${item.title} watched.`);
             localStorage.removeItem(STORAGE.syncCache);
             await waitForWatchedAnimation(card);
@@ -774,8 +751,8 @@ function latestTimestamp(obj) {
           if (card) card.classList.add("marking-watched");
           try {
             await Promise.all([
-              apiPost("/sync/ratings", buildRatePayload(item, type, rating)),
-              apiPost("/sync/history", buildMarkWatchedPayload(item, type)),
+              simkl.rate(item, type, rating),
+              simkl.markWatched(item, type),
             ]);
             showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
             localStorage.removeItem(STORAGE.syncCache);
@@ -790,7 +767,7 @@ function latestTimestamp(obj) {
         async function markMovieWatched(item, card) {
           if (card) card.classList.add("marking-watched");
           try {
-            await apiPost("/sync/history", buildMarkWatchedPayload(item, "movie"));
+            await simkl.markWatched(item, "movie");
             showToast(`Marked ${item.title} watched.`);
             localStorage.removeItem(STORAGE.syncCache);
             await waitForWatchedAnimation(card);
@@ -806,7 +783,7 @@ function latestTimestamp(obj) {
         async function removeFromWatchlist(item, type) {
           if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
           try {
-            await apiPost("/sync/history/remove", buildRemovePayload(item, type));
+            await simkl.removeFromHistory(item, type);
             showToast(`Removed ${item.title}.`);
             localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
@@ -888,12 +865,11 @@ function latestTimestamp(obj) {
         async function addToWatchlist(card) {
           const item = card.item;
           const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
-          const urlBase = card.type === "movie" ? "movies" : "tv";
           const btn = card.cardEl?.querySelector(".add-watchlist-btn");
           if (!id || !btn) return;
           btn.disabled = true;
           try {
-            await apiPost("/sync/add-to-list", buildAddToWatchlistPayload(urlBase, id));
+            await simkl.addToWatchlist(item, card.type);
             libraryWatched.set(id, null);
             card.cardEl.classList.add("trending-watched");
             btn.remove();
