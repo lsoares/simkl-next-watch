@@ -390,7 +390,20 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        opacity: calc(0.7 + (var(--dock-scale, 1) - 1) * 0.6);
+        transition: opacity 0.2s ease;
       }
+      .item-card .imdb-badge,
+      .item-card .trending-badge,
+      .item-card .mark-watched-btn,
+      .item-card .poster-remove,
+      .item-card .add-watchlist-btn { opacity: calc(0.7 + (var(--dock-scale, 1) - 1) * 0.6); transition: opacity 0.2s ease; }
+      .item-card:hover .poster-title,
+      .item-card:hover .imdb-badge,
+      .item-card:hover .trending-badge,
+      .item-card:hover .mark-watched-btn,
+      .item-card:hover .poster-remove,
+      .item-card:hover .add-watchlist-btn { opacity: 1; }
       .poster-title-link {
         color: inherit;
         text-decoration: none;
@@ -492,10 +505,6 @@
         transition: color 0.15s, background 0.15s;
       }
       .poster-remove:hover { color: #fca5a5; border-color: #fca5a5; background: rgba(239,68,68,0.25); }
-      @media (hover: hover) and (pointer: fine) {
-        .poster-remove { opacity: 0; }
-        .item-card:hover .poster-remove { opacity: 1; }
-      }
       .poster-remove::after {
         content: "Remove from list";
         position: absolute;
