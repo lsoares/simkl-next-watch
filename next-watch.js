@@ -187,7 +187,7 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
-    const unstartedEpCount = type === "tv" && isUnstarted(item, type) ? availableEpisodesLeft(item) : null;
+    const unstartedEpCount = type === "tv" && !epCode ? availableEpisodesLeft(item) : null;
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
     const showYear = isNext ? unstarted && year : !watched && year;
@@ -419,7 +419,7 @@ function initDockEffect(row) {
   function renderRow(rowEl, items, type) {
     const scrollKey = `scroll:${rowEl.id}`;
     if (!items.length) { setEmpty(rowEl, "Nothing here."); return; }
-    applyCachedRatings(items);
+    applyCachedDetails(items, type);
     rowEl.replaceChildren();
     items.forEach((item) => {
       const { frag, card } = makeRowItem();
@@ -436,7 +436,7 @@ function initDockEffect(row) {
     rowEl.addEventListener("scroll", rowEl._scrollSave, { passive: true });
     rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0);
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type));
-    hydrateMissingRatings(rowEl, items, type);
+    hydrateMissingDetails(rowEl, items, type);
   }
 
   // ── Mark watched ──
@@ -552,8 +552,8 @@ function initDockEffect(row) {
       const data = await simkl.getLibrary()
       const allShows = [...(data.shows || []), ...(data.anime || [])]
       const allMovies = data.movies || []
-      applyCachedRatings(allShows)
-      applyCachedRatings(allMovies)
+      applyCachedDetails(allShows, "tv")
+      applyCachedDetails(allMovies, "movie")
       tvItems = buildTvSuggestions(allShows)
       movieItems = buildMovieSuggestions(allMovies)
       libraryWatched = collectLibraryWatched(data)
@@ -575,6 +575,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type) {
     const loggedIn = isLoggedIn();
+    applyCachedDetails(items, type);
     containerEl.replaceChildren();
     items.forEach((item) => {
       const { frag, card } = makeRowItem();
@@ -588,6 +589,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
       containerEl.appendChild(frag);
     });
+    hydrateMissingDetails(containerEl, items, type);
   }
 
   async function addToWatchlist(card) {
@@ -627,11 +629,15 @@ function initDockEffect(row) {
     return entry;
   }
 
-  async function fetchItemRating(type, id) {
+  async function fetchItemDetails(type, id) {
     try {
       const data = await (type === "movie" ? simkl.getMovie(id) : simkl.getShow(id));
       const rating = data?.ratings?.imdb?.rating;
-      return typeof rating === "number" ? rating : null;
+      return {
+        rating: typeof rating === "number" ? rating : null,
+        total: data?.total_episodes_count,
+        notAired: data?.not_aired_episodes_count,
+      };
     } catch {
       return null;
     }
@@ -653,7 +659,16 @@ function initDockEffect(row) {
     else host.appendChild(badge);
   }
 
-  function applyCachedRatings(items) {
+  function injectEpisodeCount(card, count) {
+    const host = card?.cardEl?.querySelector(".poster-bottom");
+    if (!host || host.querySelector(".poster-episode")) return;
+    const label = document.createElement("span");
+    label.className = "poster-episode";
+    label.textContent = `${count} episode${count === 1 ? "" : "s"}`;
+    host.appendChild(label);
+  }
+
+  function applyCachedDetails(items, type) {
     const entries = readRatingsCache();
     for (const item of items) {
       const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
@@ -662,33 +677,51 @@ function initDockEffect(row) {
       if (!cached) continue;
       if (typeof cached.rating === "number") {
         if (item.ratings?.imdb?.rating == null) item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } };
-      } else {
+      } else if (cached.rating === null) {
         item.release_status = "unreleased";
+      }
+      if (type === "tv" && typeof cached.total === "number") {
+        if (!(item.total_episodes_count > 0)) item.total_episodes_count = cached.total;
+        if (item.not_aired_episodes_count == null) item.not_aired_episodes_count = cached.notAired || 0;
       }
     }
   }
 
-  async function hydrateMissingRatings(rowEl, items, type) {
+  async function hydrateMissingDetails(rowEl, items, typeOrFn) {
+    const getType = typeof typeOrFn === "function" ? typeOrFn : () => typeOrFn;
     const entries = readRatingsCache();
     const cards = rowEl.querySelectorAll("poster-card");
     const pending = [];
     items.forEach((item, i) => {
-      if (!isUnstarted(item, type)) return;
       const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
       if (!id) return;
-      if (getCachedInfo(entries, id)) return;
-      pending.push({ item, id, card: cards[i] });
+      const type = getType(item);
+      const cached = getCachedInfo(entries, id);
+      const needsRating = item.ratings?.imdb?.rating == null && isUnstarted(item, type);
+      const needsCount = type === "tv" && !(item.total_episodes_count > 0);
+      if (!needsRating && !needsCount) return;
+      if (cached && (!needsRating || cached.rating != null) && (!needsCount || typeof cached.total === "number")) return;
+      pending.push({ item, id, type, card: cards[i] });
     });
     if (!pending.length) return;
-    await chunkedForEach(pending, 5, async ({ item, id, card }) => {
-      const rating = await fetchItemRating(type, id);
-      entries[id] = { rating, fetchedAt: new Date().toISOString() };
-      if (rating == null) {
+    await chunkedForEach(pending, 5, async ({ item, id, type, card }) => {
+      const details = await fetchItemDetails(type, id);
+      if (!details) return;
+      entries[id] = { ...details, fetchedAt: new Date().toISOString() };
+      if (details.rating == null && isUnstarted(item, type)) {
         item.release_status = "unreleased";
         card?.closest(".row-item")?.remove();
-      } else {
-        item.ratings = { ...(item.ratings || {}), imdb: { rating } };
-        if (card) injectImdbBadge(card, rating);
+        return;
+      }
+      if (details.rating != null) {
+        item.ratings = { ...(item.ratings || {}), imdb: { rating: details.rating } };
+        if (card && isUnstarted(item, type)) injectImdbBadge(card, details.rating);
+      }
+      if (type === "tv" && typeof details.total === "number") {
+        item.total_episodes_count = details.total;
+        item.not_aired_episodes_count = details.notAired || 0;
+        const count = availableEpisodesLeft(item);
+        if (card && Number.isFinite(count) && count > 0) injectEpisodeCount(card, count);
       }
     });
     writeRatingsCache(entries);
@@ -908,6 +941,9 @@ function initDockEffect(row) {
       return;
     }
     const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }));
+    const typeByItem = new Map(typed.map(({ item, type }) => [item, type]));
+    applyCachedDetails(items.filter((item) => typeByItem.get(item) === "tv"), "tv");
+    applyCachedDetails(items.filter((item) => typeByItem.get(item) === "movie"), "movie");
     el.aiResults.replaceChildren();
     typed.forEach(({ item, type }) => {
       const { frag, card } = makeRowItem();
@@ -922,6 +958,7 @@ function initDockEffect(row) {
       el.aiResults.appendChild(frag);
     });
     annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryWatched.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
+    hydrateMissingDetails(el.aiResults, items, (item) => typeByItem.get(item) || "tv");
   }
 
   el.aiPrompts.addEventListener("click", async (e) => {
