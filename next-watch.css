@@ -977,6 +977,7 @@
           flex-direction: column;
           padding: var(--main-top-gap) 12px var(--main-bottom-gap);
         }
+        .top-bar-scroll { padding: 0 12px; }
         .poster-title { font-size: 1rem; }
       }
 
