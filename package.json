@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "npx playwright test",
+    "build": "node build.js",
     "expose": "trap 'kill 0' EXIT; npx serve -l 8080 -s . & open https://simkl.com/settings/developer/edit/61491; ngrok http 8080"
   },
   "repository": {
@@ -24,6 +25,7 @@
   "homepage": "https://github.com/lsoares/simkl-next-watch#readme",
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "html-minifier-terser": "^7.2.0",
     "serve": "^14.2.6"
   }
 }
