@@ -460,7 +460,6 @@ function buildTrendingUrl(item, urlBase) {
         clientId: "next-watch-client-id",
         clientSecret: "next-watch-client-secret",
         accessToken: "next-watch-access-token",
-        syncCache: "next-watch-sync-cache",
         ratingsCache: "next-watch-ratings-cache",
         trendingPeriod: "next-watch-trending-period",
         hideWatched: "next-watch-hide-watched",
@@ -648,7 +647,6 @@ function buildTrendingUrl(item, urlBase) {
           try {
             await simkl.markWatched(item, type);
             showToast(`Marked ${item.title} watched.`);
-            localStorage.removeItem(STORAGE.syncCache);
             await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
@@ -678,7 +676,6 @@ function buildTrendingUrl(item, urlBase) {
               simkl.markWatched(item, type),
             ]);
             showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
-            localStorage.removeItem(STORAGE.syncCache);
             await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
@@ -692,7 +689,6 @@ function buildTrendingUrl(item, urlBase) {
           try {
             await simkl.markWatched(item, "movie");
             showToast(`Marked ${item.title} watched.`);
-            localStorage.removeItem(STORAGE.syncCache);
             await waitForWatchedAnimation(card);
             await loadSuggestions();
           } catch (err) {
@@ -708,7 +704,6 @@ function buildTrendingUrl(item, urlBase) {
           try {
             await simkl.removeFromHistory(item, type);
             showToast(`Removed ${item.title}.`);
-            localStorage.removeItem(STORAGE.syncCache);
             await loadSuggestions();
           } catch (err) { handleError(err); }
         }

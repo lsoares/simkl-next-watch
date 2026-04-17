@@ -83,17 +83,6 @@
       return data;
     },
 
-    getActivities() {
-      return apiFetch("/sync/activities", { method: "POST" });
-    },
-
-    async getAllItems(type, dateFrom) {
-      const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" });
-      if (dateFrom) params.set("date_from", dateFrom);
-      const data = await apiFetch(`/sync/all-items/${type}/?${params}`);
-      return (data?.[type] ?? []).map(normalizeItem);
-    },
-
     async getLibrary() {
       const activities = await apiFetch("/sync/activities", { method: "POST" });
       const sig = JSON.stringify(activities);
@@ -154,36 +143,38 @@
       return { shows, movies, anime };
     },
 
-    markWatched(item, type) {
+    async markWatched(item, type) {
       if (type === "tv") {
         const ep = parseNextEpisode(item.next_to_watch);
         if (ep) {
-          return apiPost("/sync/history", {
+          await apiPost("/sync/history", {
             shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
           });
+          localStorage.removeItem("next-watch-sync-cache");
+          return;
         }
       }
-      return apiPost("/sync/history", {
-        movies: [{ ids: item.ids, watched_at: new Date().toISOString() }],
-      });
+      await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] });
+      localStorage.removeItem("next-watch-sync-cache");
     },
 
-    rate(item, type, rating) {
+    async rate(item, type, rating) {
       const key = type === "tv" ? "shows" : "movies";
-      return apiPost("/sync/ratings", {
-        [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }],
-      });
+      await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] });
+      localStorage.removeItem("next-watch-sync-cache");
     },
 
-    removeFromHistory(item, type) {
+    async removeFromHistory(item, type) {
       const key = type === "tv" ? "shows" : "movies";
-      return apiPost("/sync/history/remove", { [key]: [{ ids: item.ids }] });
+      await apiPost("/sync/history/remove", { [key]: [{ ids: item.ids }] });
+      localStorage.removeItem("next-watch-sync-cache");
     },
 
-    addToWatchlist(item, type) {
+    async addToWatchlist(item, type) {
       const key = type === "movie" ? "movies" : "shows";
       const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
-      return apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] });
+      await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] });
+      localStorage.removeItem("next-watch-sync-cache");
     },
 
     getEpisodes(showId) {
