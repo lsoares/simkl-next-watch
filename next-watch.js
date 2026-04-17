@@ -541,7 +541,7 @@ function initDockEffect(row) {
 
   // ── Load suggestions ──
 
-  async function loadSuggestions() {
+  async function loadSuggestions(isRetry = false) {
     if (!isLoggedIn()) { resolveLibraryReady(); return; }
     el.spinner.hidden = false;
     try {
@@ -559,6 +559,11 @@ function initDockEffect(row) {
       enrichEpisodeTitles();
       if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
     } catch (err) {
+      if (!(err instanceof ApiError) && !isRetry) {
+        localStorage.removeItem("next-watch-sync-cache")
+        showToast("Refreshed library data.")
+        return await loadSuggestions(true)
+      }
       resolveLibraryReady();
       handleError(err, "Failed to load.");
     } finally {
