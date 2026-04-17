@@ -71,7 +71,11 @@
         gap: 28px;
         align-items: center;
         pointer-events: auto;
-        padding-right: 16px;
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 0 24px;
+        box-sizing: border-box;
       }
       .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
 
@@ -984,17 +988,7 @@
   margin-top: 4px;
 }
 
-.settings-icon {
-  min-height: unset;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.settings-icon:hover { color: var(--text); }
+#editSimklSettings { margin-left: auto; }
 
 .ai-toolbar {
   display: flex;

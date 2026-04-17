@@ -19,7 +19,7 @@
         <a id="navTrending" class="tiny-link" href="#trending">trending</a>
         <a id="navAi" class="tiny-link" href="#ai">ai suggested</a>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
-        <a class="settings-icon" id="editSimklSettings" href="#settings" aria-label="Settings">⚙</a>
+        <a class="tiny-link" id="editSimklSettings" href="#settings">settings</a>
       </div>
     </nav>
 
@@ -136,6 +136,7 @@
           <button class="ai-prompt-btn" type="button">Date night</button>
           <button class="ai-prompt-btn" type="button">Feel-good</button>
           <button class="ai-prompt-btn" type="button">Dark &amp; gritty</button>
+          <button class="ai-prompt-btn" type="button">Weird &amp; wild</button>
         </div>
         <div id="aiResults" class="items-row"></div>
       </div>
@@ -1061,10 +1062,11 @@
           el.nextView.hidden = name !== "next" && name !== "settings";
           el.trendingView.hidden = name !== "trending";
           el.aiView.hidden = name !== "ai";
-          [el.navNext, el.navTrending, el.navAi].forEach((btn) => btn.classList.remove("active-nav"));
+          [el.navNext, el.navTrending, el.navAi, el.editSimklSettings].forEach((btn) => btn.classList.remove("active-nav"));
           if (name === "next") el.navNext.classList.add("active-nav");
           if (name === "trending") el.navTrending.classList.add("active-nav");
           if (name === "ai") el.navAi.classList.add("active-nav");
+          if (name === "settings") el.editSimklSettings.classList.add("active-nav");
           if (name === "trending") loadTrending();
           if (name === "ai") hydrateAiView();
           if (name === "next") hydrateNextView();
