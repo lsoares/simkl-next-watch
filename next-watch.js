@@ -146,7 +146,7 @@ function formatWatchedAgo(iso) {
 // ── HTML templates ──
 
 const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-const ICON_REMOVE = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAZlBMVEUAAACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCz1ijSAAAAIXRSTlMAB93o48qZ19H8dPYQPl2IFx/NwHzwkqi2T2ou7KBsMDGScFKnAAAAvUlEQVQY003Oia7CIBCF4QO07FAuXaxXq877v6QydekfkglfSAZwwp+0XvQk8EsrKaWRyoMbrB1NVda2GWYiSsgm0DFlz8AlZIBKJJEIWJQA8Oc8BJVC4vEyLdGMboiE6ICXraZZpKmZIDbTo0UDw366lc1twNfCxjavB7tqNlkPRgNb7fjGeyN5tlF+H/FnW1s42j+bdm8ohHvIbIOLOAEj8oI0n9kmd8GnfE08k6q19nvVFHC+N6bbM23FEwtADjgMYiT+AAAAAElFTkSuQmCC" alt="Remove" style="width:14px;height:16px;display:block;filter:brightness(10)" />`;
+const ICON_REMOVE = `&times;`;
 
 class PosterCard extends HTMLElement {
   variant = "next";
