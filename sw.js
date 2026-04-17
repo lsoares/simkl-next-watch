@@ -1,4 +1,4 @@
-const CACHE = "next-watch-v5";
+const CACHE = "next-watch-v6";
 const SHELL = [
   "./index.html",
   "./icon.png",
@@ -24,6 +24,10 @@ self.addEventListener("fetch", (e) => {
 
   // Let Simkl API and auth calls through untouched
   if (url.hostname === "api.simkl.com" || url.hostname === "simkl.com") return;
+
+  // Let PostHog through untouched — event POSTs must not be cached,
+  // and the SDK handles its own asset caching.
+  if (url.hostname.endsWith(".i.posthog.com")) return;
 
   // Cache-first for CDN assets (Chart.js, image proxies)
   if (url.hostname !== self.location.hostname && url.protocol === "https:") {
