@@ -89,10 +89,10 @@
         </div>
         <div id="nextContent" class="suggestions-grid" hidden>
           <div class="media-section">
-            <div id="tvRow" class="items-row"></div>
+            <posters-row id="tvRow"></posters-row>
           </div>
           <div class="media-section">
-            <div id="movieRow" class="items-row"></div>
+            <posters-row id="movieRow"></posters-row>
           </div>
         </div>
       </div>
@@ -111,10 +111,10 @@
         </div>
         <div class="suggestions-grid" id="trendingGrid">
           <div class="media-section">
-            <div id="trendingTvContent" class="items-row"></div>
+            <posters-row id="trendingTvContent"></posters-row>
           </div>
           <div class="media-section">
-            <div id="trendingMoviesContent" class="items-row"></div>
+            <posters-row id="trendingMoviesContent"></posters-row>
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@
           <button class="ai-prompt-btn" type="button">Dark &amp; gritty</button>
           <button class="ai-prompt-btn" type="button">Weird &amp; wild</button>
         </div>
-        <div id="aiResults" class="items-row"></div>
+        <posters-row id="aiResults"></posters-row>
       </div>
     </main>
 
@@ -414,6 +414,9 @@
         }
       }
       customElements.define("poster-card", PosterCard);
+
+      class PostersRow extends HTMLElement {}
+      customElements.define("posters-row", PostersRow);
 
       function renderRatingPrompt() {
         const btns = Array.from({ length: 10 }, (_, i) => `<button class="rating-btn" data-rating="${i + 1}">${i + 1}</button>`).join("");

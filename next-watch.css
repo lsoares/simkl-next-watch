@@ -224,7 +224,7 @@
         letter-spacing: 0.06em;
         margin: 0 0 8px;
       }
-      .items-row,
+      posters-row,
       .trending-row {
         display: flex;
         gap: 10px;
@@ -234,13 +234,15 @@
         scrollbar-width: none;
         touch-action: pan-x;
         padding-right: var(--row-fade, 32px);
+        scroll-snap-type: x mandatory;
       }
-      .items-row::-webkit-scrollbar,
+      posters-row::-webkit-scrollbar,
       .trending-row::-webkit-scrollbar { display: none; }
-      .items-row { scroll-timeline: --media-scroll inline; }
+      posters-row { scroll-timeline: --media-scroll inline; }
       .row-item {
         flex-shrink: 0;
         width: calc((min(100vw, 680px) - 68px) / 3.2);
+        scroll-snap-align: start;
       }
       .row-item .item-card { width: 100%; aspect-ratio: 2/3; height: auto; }
 
@@ -296,7 +298,7 @@
           gap: 10px;
         }
         .media-section { flex: 1; min-height: 0; overflow: clip; }
-        .items-row { height: 100%; }
+        posters-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
         #tvRow .row-item { flex-shrink: 0; width: max(100px, calc((100vw - 44px) / 2.8)); }
