@@ -29,9 +29,10 @@
       const activities = await apiFetch("/sync/activities", { method: "POST" })
       const sig = JSON.stringify(activities)
       const cache = await readSyncCache()
+      const fresh = !cache
 
       if (cache?.sig === sig && cache.shows && cache.movies) {
-        return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [] }
+        return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [], fresh: false }
       }
 
       const fetchItems = async (type, dateFrom) => {
@@ -81,7 +82,7 @@
       })(activities)
 
       await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies, anime })
-      return { shows, movies, anime }
+      return { shows, movies, anime, fresh }
     },
 
     async markWatched(item, type) {
@@ -166,16 +167,13 @@
 
   // ── Helpers ──
 
-  const SYNC_CACHE_KEY = "next-watch-sync-cache"
-  const SYNC_CACHE_SCHEMA = 4
+  const SYNC_CACHE_KEY = "simkl-cache-v2"
 
   async function readSyncCache() {
     const raw = localStorage.getItem(SYNC_CACHE_KEY)
     if (!raw) return null
     try {
-      const envelope = JSON.parse(raw)
-      if (envelope?.schema !== SYNC_CACHE_SCHEMA || !envelope.payload) return null
-      return await decompressJson(envelope.payload)
+      return await decompressJson(raw)
     } catch {
       return null
     }
@@ -183,8 +181,7 @@
 
   async function writeSyncCache(payload) {
     try {
-      const compressed = await compressJson(payload)
-      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({ schema: SYNC_CACHE_SCHEMA, payload: compressed }))
+      localStorage.setItem(SYNC_CACHE_KEY, await compressJson(payload))
     } catch (err) {
       localStorage.removeItem(SYNC_CACHE_KEY)
       console.warn("Sync cache not persisted:", err?.message || err)

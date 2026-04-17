@@ -265,7 +265,7 @@ const STORAGE = {
   clientId: "next-watch-client-id",
   clientSecret: "next-watch-client-secret",
   accessToken: "next-watch-access-token",
-  syncCache: "next-watch-sync-cache",
+  syncCache: "simkl-cache-v2",
   ratingsCache: "next-watch-ratings-cache",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
@@ -558,6 +558,7 @@ function initDockEffect(row) {
       renderRow(el.movieRow, movieItems, "movie")
       enrichEpisodeTitles()
       if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending")
+      if (data.fresh) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
       handleError(err)
