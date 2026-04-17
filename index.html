@@ -190,11 +190,7 @@
         return String(s || "").replace(/\\(['"\\])/g, "$1");
       }
 
-      function normalizeStatus(s) {
-        return String(s || "").toLowerCase().replace(/\s+/g, "");
-      }
-
-      function simklId(item) {
+function simklId(item) {
         const ids = item?.ids || {};
         return String(ids.simkl || ids.simkl_id || "");
       }
@@ -214,30 +210,7 @@
         return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
       }
 
-      function normalizeItem(raw) {
-        const media = raw.show || raw.movie || raw;
-        const ids = media.ids || raw.ids || {};
-        return {
-          ids,
-          title: decodeSimklText(media.title) || "Unknown",
-          year: media.year || "",
-          poster: media.poster || media.img || "",
-          runtime: media.runtime || 0,
-          url: media.url || "",
-          ratings: media.ratings || null,
-          status: normalizeStatus(raw.status),
-          next_to_watch: raw.next_to_watch || "",
-          added_at: raw.added_to_watchlist_at || raw.added_at || null,
-          last_watched_at: raw.last_watched_at || null,
-          watched_episodes_count: raw.watched_episodes_count ?? 0,
-          total_episodes_count: raw.total_episodes_count ?? 0,
-          not_aired_episodes_count: raw.not_aired_episodes_count ?? 0,
-          user_rating: raw.user_rating ?? null,
-          type: raw.show ? "tv" : raw.movie ? "movie" : (raw.anime_type ? "tv" : null),
-        };
-      }
-
-      function latestTimestamp(obj) {
+function latestTimestamp(obj) {
         let latest = "";
         (function walk(node) {
           if (!node) return;
@@ -589,17 +562,10 @@
 
       // ── Sync ──
 
-      async function fetchAllItems(type, dateFrom) {
-        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" });
-        if (dateFrom) params.set("date_from", dateFrom);
-        const data = await apiFetch(`/sync/all-items/${type}/?${params}`);
-        return (data?.[type] ?? []).map(normalizeItem);
-      }
-
       const SYNC_CACHE_SCHEMA = 2;
 
       async function sync() {
-        const activities = await apiFetch("/sync/activities", { method: "POST" });
+        const activities = await simkl.getActivities();
         const sig = JSON.stringify(activities);
         const rawCache = readJsonStorage(STORAGE.syncCache);
         const cache = rawCache?.schema === SYNC_CACHE_SCHEMA ? rawCache : null;
@@ -612,11 +578,11 @@
 
         if (needsFull) {
           [shows, movies, anime] = await Promise.all([
-            fetchAllItems("shows"), fetchAllItems("movies"), fetchAllItems("anime").catch(() => []),
+            simkl.getAllItems("shows"), simkl.getAllItems("movies"), simkl.getAllItems("anime").catch(() => []),
           ]);
         } else {
           const [deltaShows, deltaMovies, deltaAnime] = await Promise.all([
-            fetchAllItems("shows", dateFrom), fetchAllItems("movies", dateFrom), fetchAllItems("anime", dateFrom).catch(() => []),
+            simkl.getAllItems("shows", dateFrom), simkl.getAllItems("movies", dateFrom), simkl.getAllItems("anime", dateFrom).catch(() => []),
           ]);
           shows = mergeItems(cache.shows, deltaShows);
           movies = mergeItems(cache.movies, deltaMovies);
