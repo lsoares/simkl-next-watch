@@ -205,29 +205,7 @@
         return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
       }
 
-function latestTimestamp(obj) {
-        let latest = "";
-        (function walk(node) {
-          if (!node) return;
-          if (typeof node === "string" && /^\d{4}-\d{2}-\d{2}T/.test(node)) { if (node > latest) latest = node; return; }
-          if (typeof node === "object") for (const v of Object.values(node)) walk(v);
-        })(obj);
-        return latest;
-      }
-
-      function mergeItems(existing, updated) {
-        const map = new Map();
-        for (const item of existing) { const id = simklId(item); if (id) map.set(id, item); }
-        for (const item of updated) {
-          const id = simklId(item);
-          if (!id) continue;
-          if (item.status === "deleted") map.delete(id);
-          else map.set(id, item);
-        }
-        return [...map.values()];
-      }
-
-      function availableEpisodesLeft(show) {
+function availableEpisodesLeft(show) {
         const total = show.total_episodes_count || 0;
         const notAired = show.not_aired_episodes_count || 0;
         const watched = show.watched_episodes_count || 0;
@@ -516,40 +494,6 @@ function buildTrendingUrl(item, urlBase) {
 
       const ApiError = simkl.ApiError;
 
-// ── Sync ──
-
-      const SYNC_CACHE_SCHEMA = 2;
-
-      async function sync() {
-        const activities = await simkl.getActivities();
-        const sig = JSON.stringify(activities);
-        const rawCache = readJsonStorage(STORAGE.syncCache);
-        const cache = rawCache?.schema === SYNC_CACHE_SCHEMA ? rawCache : null;
-
-        if (cache?.sig === sig && cache.shows && cache.movies) return cache;
-
-        const dateFrom = cache?.lastActivity || null;
-        const needsFull = !cache?.shows || !cache?.movies || !dateFrom;
-        let shows, movies, anime;
-
-        if (needsFull) {
-          [shows, movies, anime] = await Promise.all([
-            simkl.getAllItems("shows"), simkl.getAllItems("movies"), simkl.getAllItems("anime").catch(() => []),
-          ]);
-        } else {
-          const [deltaShows, deltaMovies, deltaAnime] = await Promise.all([
-            simkl.getAllItems("shows", dateFrom), simkl.getAllItems("movies", dateFrom), simkl.getAllItems("anime", dateFrom).catch(() => []),
-          ]);
-          shows = mergeItems(cache.shows, deltaShows);
-          movies = mergeItems(cache.movies, deltaMovies);
-          anime = mergeItems(cache.anime || [], deltaAnime);
-        }
-
-        const next = { schema: SYNC_CACHE_SCHEMA, sig, lastActivity: latestTimestamp(activities), shows, movies, anime };
-        writeStorage(STORAGE.syncCache, next);
-        return next;
-      }
-
       // ── Dock effect (visual, self-contained) ──
 
       function initDockEffect(row) {
@@ -801,7 +745,7 @@ function buildTrendingUrl(item, urlBase) {
           if (!isLoggedIn()) { resolveLibraryReady(); return; }
           el.spinner.hidden = false;
           try {
-            const data = await sync();
+            const data = await simkl.getLibrary();
             const allShows = [...(data.shows || []), ...(data.anime || [])];
             const allMovies = data.movies || [];
             applyCachedRatings(allShows);
@@ -1132,8 +1076,8 @@ function buildTrendingUrl(item, urlBase) {
 
         async function getRecommendations(mood) {
           const mediaType = getAiMediaType();
-          const cache = readJsonStorage(STORAGE.syncCache);
-          const ratings = buildRatingsInput(mediaType, cache?.shows, cache?.movies, cache?.anime);
+          const library = await simkl.getLibrary();
+          const ratings = buildRatingsInput(mediaType, library.shows, library.movies, library.anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
