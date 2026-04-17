@@ -242,6 +242,7 @@
         flex-shrink: 0;
         width: calc((min(100vw, 680px) - 68px) / 3.2);
         scroll-snap-align: start;
+        scroll-snap-stop: always;
       }
       .row-item .item-card { width: 100%; aspect-ratio: 2/3; height: auto; }
 
@@ -273,6 +274,8 @@
         }
         .top-bar .tiny-link {
           flex: 0 0 auto;
+          display: inline-flex;
+          align-items: center;
           min-height: 28px;
           padding: 4px 0;
           border: 0;
@@ -591,7 +594,6 @@
 
 
       /* install button — desktop hides it, only mobile/PWA context */
-      #installButton { display: inline-flex; }
       @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
 
       @keyframes spin { to { transform: rotate(360deg); } }

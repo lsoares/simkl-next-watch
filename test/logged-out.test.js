@@ -7,7 +7,7 @@ test.describe("logged out from simkl", () => {
   test("shows the intro with Get Started button", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { name: /your next episode or movie/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /your next watch/i })).toBeVisible()
     await expect(page.getByRole("button", { name: /get started/i })).toBeVisible()
   })
 
@@ -55,6 +55,6 @@ test.describe("logged out from simkl", () => {
     await page.getByRole("button", { name: /logout/i }).click()
 
     await expect(page.getByRole("button", { name: /get started/i })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /your next episode or movie/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /your next watch/i })).toBeVisible()
   })
 })
