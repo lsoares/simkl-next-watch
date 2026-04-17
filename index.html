@@ -145,6 +145,31 @@
     <div class="spinner" id="loadingSpinner" role="progressbar" aria-label="Loading" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
 
+    <template id="tpl-empty"><p class="empty"></p></template>
+    <template id="tpl-spinner"><div class="spinner-inline" role="progressbar" aria-label="Loading"></div></template>
+    <template id="tpl-row-item"><div class="row-item"></div></template>
+    <template id="tpl-imdb-badge"><span class="imdb-badge"></span></template>
+    <template id="tpl-trending-badge"><span class="trending-badge"></span></template>
+    <template id="tpl-toast-undo"><button class="tiny-link" id="undoBtn" style="color:inherit;margin-left:8px">Undo</button></template>
+    <template id="tpl-rating-prompt">
+      <div class="rating-prompt">
+        <span class="rating-prompt-label">Rate before marking watched</span>
+        <div class="rating-prompt-row">
+          <button class="rating-btn" data-rating="1">1</button>
+          <button class="rating-btn" data-rating="2">2</button>
+          <button class="rating-btn" data-rating="3">3</button>
+          <button class="rating-btn" data-rating="4">4</button>
+          <button class="rating-btn" data-rating="5">5</button>
+          <button class="rating-btn" data-rating="6">6</button>
+          <button class="rating-btn" data-rating="7">7</button>
+          <button class="rating-btn" data-rating="8">8</button>
+          <button class="rating-btn" data-rating="9">9</button>
+          <button class="rating-btn" data-rating="10">10</button>
+        </div>
+        <button class="rating-skip">Skip rating</button>
+      </div>
+    </template>
+
     <script>
       // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
@@ -434,11 +459,6 @@
       class PostersRow extends HTMLElement {}
       customElements.define("posters-row", PostersRow);
 
-      function renderRatingPrompt() {
-        const btns = Array.from({ length: 10 }, (_, i) => `<button class="rating-btn" data-rating="${i + 1}">${i + 1}</button>`).join("");
-        return `<span class="rating-prompt-label">Rate before marking watched</span><div class="rating-prompt-row">${btns}</div><button class="rating-skip">Skip rating</button>`;
-      }
-
       function shuffle(arr) {
         return arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
       }
@@ -601,6 +621,19 @@
 
       (function app() {
         const $ = (id) => document.getElementById(id);
+        const tpl = (id) => $(id).content.cloneNode(true);
+        const setEmpty = (container, msg, isError = false) => {
+          const p = tpl("tpl-empty").firstElementChild;
+          p.textContent = msg;
+          if (isError) p.style.color = "#fca5a5";
+          container.replaceChildren(p);
+        };
+        const makeRowItem = () => {
+          const frag = tpl("tpl-row-item");
+          const card = document.createElement("poster-card");
+          frag.firstElementChild.appendChild(card);
+          return { frag, card };
+        };
         const el = {
           topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
           nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
@@ -631,8 +664,12 @@
           clearTimeout(toastTimer);
           el.toast.hidden = false;
           el.toast.style.color = isError ? "#fca5a5" : "";
-          el.toast.innerHTML = escapeHtml(msg) + (undoFn ? ` <button class="tiny-link" id="undoBtn" style="color:inherit;margin-left:8px">Undo</button>` : "");
-          if (undoFn) $("undoBtn").addEventListener("click", () => { el.toast.hidden = true; undoFn(); });
+          el.toast.textContent = msg;
+          if (undoFn) {
+            const undo = tpl("tpl-toast-undo").firstElementChild;
+            undo.addEventListener("click", () => { el.toast.hidden = true; undoFn(); });
+            el.toast.append(" ", undo);
+          }
           toastTimer = setTimeout(() => { el.toast.hidden = true; }, 8000);
         }
 
@@ -654,20 +691,17 @@
 
         function renderRow(rowEl, items, type) {
           const scrollKey = `scroll:${rowEl.id}`;
-          if (!items.length) { rowEl.innerHTML = `<p class="empty">Nothing here.</p>`; return; }
+          if (!items.length) { setEmpty(rowEl, "Nothing here."); return; }
           applyCachedRatings(items);
-          rowEl.innerHTML = "";
+          rowEl.replaceChildren();
           items.forEach((item) => {
-            const wrap = document.createElement("div");
-            wrap.className = "row-item";
-            const card = document.createElement("poster-card");
+            const { frag, card } = makeRowItem();
             card.variant = "next";
             card.type = type;
             card.item = item;
             card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl));
             card.addEventListener("poster:remove", () => removeFromWatchlist(item, type));
-            wrap.appendChild(card);
-            rowEl.appendChild(wrap);
+            rowEl.appendChild(frag);
           });
           initDockEffect(rowEl);
           if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave);
@@ -706,16 +740,15 @@
 
         function promptRate(item, type, card) {
           if (!card) return;
-          const prompt = document.createElement("div");
-          prompt.className = "rating-prompt";
-          prompt.innerHTML = renderRatingPrompt();
-          card.appendChild(prompt);
+          const frag = tpl("tpl-rating-prompt");
+          const prompt = frag.firstElementChild;
           prompt.querySelectorAll(".rating-btn").forEach((btn) =>
             btn.addEventListener("click", () => rateAndMarkWatched(item, type, Number(btn.dataset.rating), card)));
           prompt.querySelector(".rating-skip").addEventListener("click", () => {
             prompt.remove();
             markMovieWatched(item, card);
           });
+          card.appendChild(prompt);
         }
 
         async function rateAndMarkWatched(item, type, rating, card) {
@@ -815,19 +848,16 @@
 
         function renderDiscoveryRow(containerEl, items, type) {
           const loggedIn = isLoggedIn();
-          containerEl.innerHTML = "";
+          containerEl.replaceChildren();
           items.forEach((item) => {
-            const wrap = document.createElement("div");
-            wrap.className = "row-item";
-            const card = document.createElement("poster-card");
+            const { frag, card } = makeRowItem();
             card.variant = "discovery";
             card.type = type;
             card.item = item;
             card.watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             card.loggedIn = loggedIn;
             card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
-            wrap.appendChild(card);
-            containerEl.appendChild(wrap);
+            containerEl.appendChild(frag);
           });
         }
 
@@ -893,8 +923,7 @@
         function injectImdbBadge(card, rating) {
           const host = card?.cardEl?.querySelector(".poster-top-text");
           if (!host || host.querySelector(".imdb-badge")) return;
-          const badge = document.createElement("span");
-          badge.className = "imdb-badge";
+          const badge = tpl("tpl-imdb-badge").firstElementChild;
           badge.textContent = `IMDb ${rating}`;
           const trendingSibling = host.querySelector(".trending-badge");
           if (trendingSibling) host.insertBefore(badge, trendingSibling);
@@ -978,8 +1007,8 @@
             if (!info) return;
             const host = card.cardEl?.querySelector(".poster-top-text");
             if (!host || host.querySelector(".trending-badge")) return;
-            const badge = document.createElement("span");
-            badge.className = `trending-badge trending-badge--${period}`;
+            const badge = tpl("tpl-trending-badge").firstElementChild;
+            badge.classList.add(`trending-badge--${period}`);
             badge.title = info.tooltip;
             badge.setAttribute("aria-label", info.tooltip);
             badge.textContent = `🔥 ${info.label}`;
@@ -990,7 +1019,8 @@
         async function loadTrending() {
           const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today";
           writeStorage(STORAGE.trendingPeriod, period);
-          el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<div class="spinner-inline" role="progressbar" aria-label="Loading"></div>`;
+          el.trendingTvContent.replaceChildren(tpl("tpl-spinner"));
+          el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"));
           try {
             const [[tvData, movieData]] = await Promise.all([fetchTrending(period), libraryReady]);
             const hideWatched = el.hideTrendingWatched.checked;
@@ -998,14 +1028,16 @@
             const tv = tvData.filter(filterFn).slice(0, 12);
             const movies = movieData.filter(filterFn).slice(0, 12);
             if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv");
-            else el.trendingTvContent.innerHTML = `<p class="empty">No results.</p>`;
+            else setEmpty(el.trendingTvContent, "No results.");
             if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie");
-            else el.trendingMoviesContent.innerHTML = `<p class="empty">No results.</p>`;
+            else setEmpty(el.trendingMoviesContent, "No results.");
             initDockEffect(el.trendingTvContent);
             initDockEffect(el.trendingMoviesContent);
           } catch (err) {
-            if (err instanceof ApiError) el.trendingTvContent.innerHTML = el.trendingMoviesContent.innerHTML = `<p class="empty" style="color:#fca5a5">${escapeHtml(err.message)}</p>`;
-            else console.error(err);
+            if (err instanceof ApiError) {
+              setEmpty(el.trendingTvContent, err.message, true);
+              setEmpty(el.trendingMoviesContent, err.message, true);
+            } else console.error(err);
           }
         }
 
@@ -1162,23 +1194,20 @@
 
         function renderAiResults(items) {
           if (!items.length) {
-            el.aiResults.innerHTML = `<p class="empty">No suggestions. Try another mood.</p>`;
+            setEmpty(el.aiResults, "No suggestions. Try another mood.");
             return;
           }
           const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }));
-          el.aiResults.innerHTML = "";
+          el.aiResults.replaceChildren();
           typed.forEach(({ item, type }) => {
-            const wrap = document.createElement("div");
-            wrap.className = "row-item";
-            const card = document.createElement("poster-card");
+            const { frag, card } = makeRowItem();
             card.variant = "discovery";
             card.type = type;
             card.item = item;
             card.watched = libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             card.loggedIn = true;
             card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
-            wrap.appendChild(card);
-            el.aiResults.appendChild(wrap);
+            el.aiResults.appendChild(frag);
           });
           annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIds.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
         }
@@ -1189,12 +1218,12 @@
           if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) { showToast("Add an AI key in settings first.", true); return; }
           el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          el.aiResults.innerHTML = `<div class="spinner-inline" role="progressbar" aria-label="Loading"></div>`;
+          el.aiResults.replaceChildren(tpl("tpl-spinner"));
           try {
             const items = await getRecommendations(btn.textContent);
             renderAiResults(items);
           } catch (err) {
-            el.aiResults.innerHTML = "";
+            el.aiResults.replaceChildren();
             handleError(err);
           }
         });
@@ -1206,7 +1235,7 @@
             if (btn.classList.contains("active") && !other.classList.contains("active")) return;
             btn.classList.toggle("active");
             writeStorage(STORAGE.aiMediaType, getAiMediaType());
-            el.aiResults.innerHTML = "";
+            el.aiResults.replaceChildren();
             el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
           });
         });
