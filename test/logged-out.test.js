@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTrendingTv, setupTrendingMovies } from "./clients/simkl.js"
 
 test.describe("logged out from simkl", () => {
 
@@ -19,6 +19,19 @@ test.describe("logged out from simkl", () => {
 
     await expect(page.getByRole("heading", { name: /series and movies database/i })).toBeVisible()
     await expect(page.getByRole("button", { name: /connect with simkl/i })).toBeVisible()
+  })
+
+
+  test("trending view loads without login", async ({ page }) => {
+    await setupTrendingTv(page, { today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }] })
+    await setupTrendingMovies(page, { today: [{ title: "Dune", ids: { simkl_id: 99003 } }] })
+    await page.goto("/")
+
+    await page.getByRole("link", { name: /trending/i }).click()
+
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
+    await expect(page.getByRole("checkbox", { name: /hide listed/i })).toBeHidden()
   })
 
 

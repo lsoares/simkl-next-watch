@@ -823,7 +823,7 @@
         // ── Load suggestions ──
 
         async function loadSuggestions() {
-          if (!isLoggedIn()) return;
+          if (!isLoggedIn()) { resolveLibraryReady(); return; }
           el.spinner.hidden = false;
           try {
             const data = await sync();
@@ -1354,6 +1354,7 @@
           el.connectBtn.hidden = loggedIn;
           el.saveSettingsBtn.hidden = !loggedIn;
           el.aiSettingsSection.hidden = !loggedIn;
+          el.hideTrendingWatched.closest("label").hidden = !loggedIn;
           hydrateNextView();
           syncViewportMetrics();
         }
@@ -1431,7 +1432,8 @@
           showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
           loadSuggestions();
         } else {
-          showView("next");
+          resolveLibraryReady();
+          showView(hash === "trending" ? "trending" : "next");
         }
       })();
     </script>
