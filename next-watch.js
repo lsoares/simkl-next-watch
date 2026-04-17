@@ -396,10 +396,9 @@ function initDockEffect(row) {
     toastTimer = setTimeout(() => { el.toast.hidden = true; }, 8000);
   }
 
-  function handleError(err, fallbackMsg) {
-    if (err instanceof ApiError) { showToast(err.message, true); return; }
-    console.error(err);
-    if (fallbackMsg) showToast(fallbackMsg, true);
+  function handleError(err) {
+    console.error(err)
+    showToast(err?.message || String(err), true)
   }
 
   // ── Viewport ──
@@ -541,36 +540,28 @@ function initDockEffect(row) {
 
   // ── Load suggestions ──
 
-  async function loadSuggestions(isRetry = false) {
-    if (!isLoggedIn()) { resolveLibraryReady(); return; }
-    el.spinner.hidden = false;
+  async function loadSuggestions() {
+    if (!isLoggedIn()) { resolveLibraryReady(); return }
+    el.spinner.hidden = false
     try {
-      const data = await simkl.getLibrary();
-      const allShows = [...(data.shows || []), ...(data.anime || [])];
-      const allMovies = data.movies || [];
-      applyCachedRatings(allShows);
-      applyCachedRatings(allMovies);
-      tvItems = buildTvSuggestions(allShows);
-      movieItems = buildMovieSuggestions(allMovies);
-      libraryWatched = collectLibraryWatched(data);
-      resolveLibraryReady();
-      renderRow(el.tvRow, tvItems, "tv");
-      renderRow(el.movieRow, movieItems, "movie");
-      enrichEpisodeTitles();
-      if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending");
-    } catch (err) {
-      if (!(err instanceof ApiError) && !isRetry) {
-        localStorage.removeItem("next-watch-sync-cache")
-        localStorage.removeItem(STORAGE.ratingsCache)
-        localStorage.removeItem(STORAGE.episodeCache)
-        showToast("Refreshed library data.")
-        return await loadSuggestions(true)
-      }
+      const data = await simkl.getLibrary()
+      const allShows = [...(data.shows || []), ...(data.anime || [])]
+      const allMovies = data.movies || []
+      applyCachedRatings(allShows)
+      applyCachedRatings(allMovies)
+      tvItems = buildTvSuggestions(allShows)
+      movieItems = buildMovieSuggestions(allMovies)
+      libraryWatched = collectLibraryWatched(data)
       resolveLibraryReady()
-      console.error("loadSuggestions failed", err)
-      showToast(err?.message ? `Failed to load: ${err.message}` : "Failed to load.", true)
+      renderRow(el.tvRow, tvItems, "tv")
+      renderRow(el.movieRow, movieItems, "movie")
+      enrichEpisodeTitles()
+      if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending")
+    } catch (err) {
+      resolveLibraryReady()
+      handleError(err)
     } finally {
-      el.spinner.hidden = true;
+      el.spinner.hidden = true
     }
   }
 
