@@ -187,7 +187,8 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
-    const unstartedEpCount = type === "tv" && !epCode ? availableEpisodesLeft(item) : null;
+    const showEpCount = type === "tv" && !epCode && (isNext || !watched);
+    const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null;
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
     const showYear = isNext ? unstarted && year : !watched && year;
@@ -214,7 +215,6 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
-            ${watchedAgo ? `<span class="watched-ago">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
           </div>
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
@@ -222,6 +222,7 @@ class PosterCard extends HTMLElement {
           ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
           ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
           ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
+          ${watchedAgo ? `<span class="poster-episode">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
@@ -289,12 +290,6 @@ function readStorage(key) { return localStorage.getItem(key) || ""; }
 function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
 function clearAllStorage() { for (const key of Object.values(STORAGE)) localStorage.removeItem(key); }
-
-window.resetCache = (wipeAll = false) => {
-  const keep = wipeAll ? [] : [STORAGE.clientId, STORAGE.clientSecret, STORAGE.accessToken, STORAGE.aiKeyGemini, STORAGE.aiKeyOpenai, STORAGE.aiKeyClaude, STORAGE.aiKeyGrok, STORAGE.aiKeyGroq, STORAGE.aiKeyDeepseek, STORAGE.aiKeyOpenrouter];
-  for (const key of Object.values(STORAGE)) if (!keep.includes(key)) localStorage.removeItem(key);
-  console.log(wipeAll ? "Wiped everything — reload to re-auth." : "Cleared cache (kept API keys) — reload to re-sync.");
-};
 
 function getClientId() { return readStorage(STORAGE.clientId); }
 function getClientSecret() { return readStorage(STORAGE.clientSecret); }
@@ -367,7 +362,7 @@ function initDockEffect(row) {
     nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
     appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
     clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
-    logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"), aiSaveBtn: $("aiSaveBtn"),
+    logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
@@ -635,8 +630,8 @@ function initDockEffect(row) {
       const rating = data?.ratings?.imdb?.rating;
       return {
         rating: typeof rating === "number" ? rating : null,
-        total: data?.total_episodes_count,
-        notAired: data?.not_aired_episodes_count,
+        total: data?.total_episodes,
+        notAired: 0,
       };
     } catch {
       return null;
@@ -721,7 +716,8 @@ function initDockEffect(row) {
         item.total_episodes_count = details.total;
         item.not_aired_episodes_count = details.notAired || 0;
         const count = availableEpisodesLeft(item);
-        if (card && Number.isFinite(count) && count > 0) injectEpisodeCount(card, count);
+        const showCount = card && (card.variant === "next" || !card.watched);
+        if (showCount && Number.isFinite(count) && count > 0) injectEpisodeCount(card, count);
       }
     });
     writeRatingsCache(entries);
@@ -1130,6 +1126,12 @@ function initDockEffect(row) {
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`);
   });
   el.logoutBtn.addEventListener("click", logout);
+  el.resetCacheBtn.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE.syncCache);
+    localStorage.removeItem("next-watch-ratings-cache");
+    localStorage.removeItem("next-watch-episode-cache");
+    location.reload();
+  });
   el.getStartedBtn.addEventListener("click", () => showView("settings"));
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
