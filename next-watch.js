@@ -561,11 +561,14 @@ function initDockEffect(row) {
     } catch (err) {
       if (!(err instanceof ApiError) && !isRetry) {
         localStorage.removeItem("next-watch-sync-cache")
+        localStorage.removeItem(STORAGE.ratingsCache)
+        localStorage.removeItem(STORAGE.episodeCache)
         showToast("Refreshed library data.")
         return await loadSuggestions(true)
       }
-      resolveLibraryReady();
-      handleError(err, "Failed to load.");
+      resolveLibraryReady()
+      console.error("loadSuggestions failed", err)
+      showToast(err?.message ? `Failed to load: ${err.message}` : "Failed to load.", true)
     } finally {
       el.spinner.hidden = true;
     }
