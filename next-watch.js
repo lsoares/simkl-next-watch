@@ -187,7 +187,7 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
-    const unstartedEpCount = unstarted && isNext && type === "tv" ? availableEpisodesLeft(item) : null;
+    const unstartedEpCount = type === "tv" && isUnstarted(item, type) ? availableEpisodesLeft(item) : null;
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
     const showYear = isNext ? unstarted && year : !watched && year;
