@@ -16,7 +16,7 @@ const minified = await minify(html, {
 })
 await writeFile("dist/index.html", minified)
 
-for (const f of ["next-watch.css", "manifest.json", "favicon.ico", "icon.png", "sw.js", "simklRepository.js"]) {
+for (const f of ["next-watch.css", "next-watch.js", "manifest.json", "favicon.ico", "icon.png", "sw.js", "simklRepository.js"]) {
   await copyFile(f, `dist/${f}`)
 }
 
