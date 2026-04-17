@@ -16,6 +16,7 @@ export function setupGroqChat(page, responseText, expectedKey, expectedRatings, 
     expect(body.messages[1].content).toMatch(/Mood:/)
     expect(body.messages[1].content).toMatch(/My ratings:/)
     expect(body.messages[1].content).toMatch(/My library:/)
+    expect(body.messages[1].content).toMatch(/Variation: \d+/)
     for (const rating of expectedRatings) expect(body.messages[1].content).toContain(rating)
     for (const title of expectedLibrary) expect(body.messages[1].content).toContain(title)
     expect(body.temperature).toBe(0.9)

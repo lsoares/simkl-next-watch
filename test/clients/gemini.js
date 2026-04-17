@@ -15,6 +15,7 @@ export function setupGeminiChat(page, responseText, expectedKey, expectedRatings
     expect(text).toMatch(/Mood:/)
     expect(text).toMatch(/My ratings:/)
     expect(text).toMatch(/My library:/)
+    expect(text).toMatch(/Variation: \d+/)
     for (const rating of expectedRatings) expect(text).toContain(rating)
     for (const title of expectedLibrary) expect(text).toContain(title)
     expect(body.generationConfig?.temperature).toBe(0.9)

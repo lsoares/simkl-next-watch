@@ -59,7 +59,7 @@
             </form>
             <div id="aiSettingsSection" hidden>
               <div style="margin-top:48px"></div>
-              <h2 style="font-size:1.1rem;margin-bottom:8px">AI Recommendations</h2>
+              <h2 style="font-size:1.1rem;margin-bottom:8px">AI recommendations</h2>
               <p class="field-help">Optional: add a key for personalized recommendations.</p>
               <form id="aiForm" autocomplete="off" onsubmit="return false">
                 <div style="margin-bottom:12px">
@@ -419,13 +419,13 @@
         return `<span class="rating-prompt-label">Rate before marking watched</span><div class="rating-prompt-row">${btns}</div><button class="rating-skip">Skip rating</button>`;
       }
 
+      function shuffle(arr) {
+        return arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+      }
+
       function formatRatings(items) {
-        return items
-          .filter((item) => item.user_rating != null)
-          .sort((a, b) => b.user_rating - a.user_rating)
-          .slice(0, 15)
-          .map((item) => `${item.title}:${item.user_rating}`)
-          .join(",");
+        const top = items.filter((item) => item.user_rating != null).sort((a, b) => b.user_rating - a.user_rating).slice(0, 15);
+        return shuffle(top).map((item) => `${item.title}:${item.user_rating}`).join(",");
       }
 
       function buildRatingsInput(shows, movies, anime) {
@@ -438,8 +438,9 @@
       }
 
       function buildLibraryInput(shows, movies, anime) {
-        const tv = [...(shows || []), ...(anime || [])].map((i) => i.title).filter(Boolean).join(", ");
-        const film = (movies || []).map((i) => i.title).filter(Boolean).join(", ");
+        const withYear = (i) => i.title && (i.year ? `${i.title} (${i.year})` : i.title);
+        const tv = shuffle([...(shows || []), ...(anime || [])].map(withYear).filter(Boolean)).join(", ");
+        const film = shuffle((movies || []).map(withYear).filter(Boolean)).join(", ");
         const parts = [];
         if (tv) parts.push(`TV: ${tv}`);
         if (film) parts.push(`Movies: ${film}`);
@@ -883,7 +884,7 @@
 
         const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
         function aiSystemPrompt(mediaType) {
-          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Do not suggest any title already in the user's library. Prefer quality matches over popularity.`;
+          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Do not suggest any title already in the user's library.`;
         }
 
         const AI_PROVIDERS = {
@@ -993,7 +994,7 @@
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
           const key = getAiKey(provider);
           const systemPrompt = aiSystemPrompt(mediaType);
-          const userMessage = `My ratings: ${ratings}\nMy library: ${library}\nMood: ${mood}`;
+          const userMessage = `My ratings: ${ratings}\nMy library: ${library}\nMood: ${mood}\nVariation: ${Math.floor(Math.random() * 1e9)}`;
 
           const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
           const resolved = await resolveSimkl(suggestions, mediaType);
