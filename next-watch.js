@@ -265,6 +265,7 @@ const STORAGE = {
   clientId: "next-watch-client-id",
   clientSecret: "next-watch-client-secret",
   accessToken: "next-watch-access-token",
+  syncCache: "next-watch-sync-cache",
   ratingsCache: "next-watch-ratings-cache",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
