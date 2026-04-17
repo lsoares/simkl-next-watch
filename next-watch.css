@@ -415,8 +415,8 @@
         position: absolute;
         bottom: 8px;
         right: 8px;
-        width: 34px;
-        height: 34px;
+        width: 48px;
+        height: 48px;
         background: rgba(0,0,0,0.55);
         border: 1.5px solid rgba(255,255,255,0.22);
         border-radius: 50%;
@@ -687,8 +687,8 @@
         position: absolute;
         bottom: 8px;
         right: 8px;
-        width: 34px;
-        height: 34px;
+        width: 48px;
+        height: 48px;
         background: rgba(0,0,0,0.55);
         border: 1.5px solid rgba(255,255,255,0.22);
         border-radius: 50%;
@@ -701,7 +701,7 @@
         padding: 0;
         z-index: 5;
       }
-      .add-watchlist-btn { color: rgba(255,255,255,0.7); font-size: 1.3rem; line-height: 1; }
+      .add-watchlist-btn { color: rgba(255,255,255,0.7); font-size: 1.8rem; line-height: 1; }
       .add-watchlist-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; color: #fff; }
 
       .trending-rank {

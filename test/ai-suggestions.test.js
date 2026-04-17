@@ -45,8 +45,7 @@ test.describe("ai suggestions", () => {
       await setupAiChat(page,
         '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010}]',
         "apiAiKey",
-        ["Breaking Bad:9", "Inception:8"],
-        ["Breaking Bad (2008)", "Inception (2010)", "The Matrix (1999)"],
+        ["Breaking Bad (2008):9", "Inception (2010):8"],
       )
       await setupSearchTv(page)
       await setupSearchMovie(page, {

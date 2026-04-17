@@ -423,27 +423,24 @@
         return arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
       }
 
-      function formatRatings(items) {
-        const top = items.filter((item) => item.user_rating != null).sort((a, b) => b.user_rating - a.user_rating).slice(0, 15);
-        return shuffle(top).map((item) => `${item.title}:${item.user_rating}`).join(",");
+      function formatRatings(items, cap) {
+        const pool = items.filter((item) => item.user_rating != null).sort((a, b) => b.user_rating - a.user_rating).slice(0, cap * 2);
+        return shuffle(pool).slice(0, cap).map((item) => `${item.title}${item.year ? ` (${item.year})` : ""}:${item.user_rating}`).join(",");
       }
 
-      function buildRatingsInput(shows, movies, anime) {
-        const tv = formatRatings([...(shows || []), ...(anime || [])]);
-        const film = formatRatings(movies || []);
+      function buildRatingsInput(mediaType, shows, movies, anime) {
+        const includeTv = mediaType !== "movie";
+        const includeFilm = mediaType !== "tv";
+        const cap = includeTv !== includeFilm ? 120 : 60;
         const parts = [];
-        if (tv) parts.push(`TV: ${tv}`);
-        if (film) parts.push(`Movies: ${film}`);
-        return parts.join("\n");
-      }
-
-      function buildLibraryInput(shows, movies, anime) {
-        const withYear = (i) => i.title && (i.year ? `${i.title} (${i.year})` : i.title);
-        const tv = shuffle([...(shows || []), ...(anime || [])].map(withYear).filter(Boolean)).join(", ");
-        const film = shuffle((movies || []).map(withYear).filter(Boolean)).join(", ");
-        const parts = [];
-        if (tv) parts.push(`TV: ${tv}`);
-        if (film) parts.push(`Movies: ${film}`);
+        if (includeTv) {
+          const tv = formatRatings([...(shows || []), ...(anime || [])], cap);
+          if (tv) parts.push(`TV: ${tv}`);
+        }
+        if (includeFilm) {
+          const film = formatRatings(movies || [], cap);
+          if (film) parts.push(`Movies: ${film}`);
+        }
         return parts.join("\n");
       }
 
@@ -884,7 +881,7 @@
 
         const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
         function aiSystemPrompt(mediaType) {
-          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Do not suggest any title already in the user's library.`;
+          return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Use my ratings as inspiration for taste but do not suggest any of them — they are already in my library.`;
         }
 
         const AI_PROVIDERS = {
@@ -987,14 +984,13 @@
         async function getRecommendations(mood) {
           const mediaType = getAiMediaType();
           const cache = readJsonStorage(STORAGE.syncCache);
-          const ratings = buildRatingsInput(cache?.shows, cache?.movies, cache?.anime);
+          const ratings = buildRatingsInput(mediaType, cache?.shows, cache?.movies, cache?.anime);
           if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
-          const library = buildLibraryInput(cache?.shows, cache?.movies, cache?.anime);
 
           const provider = readStorage(STORAGE.aiProvider) || "gemini";
           const key = getAiKey(provider);
           const systemPrompt = aiSystemPrompt(mediaType);
-          const userMessage = `My ratings: ${ratings}\nMy library: ${library}\nMood: ${mood}\nVariation: ${Math.floor(Math.random() * 1e9)}`;
+          const userMessage = `My ratings: ${ratings}\nMood: ${mood}\nVariation: ${Math.floor(Math.random() * 1e9)}`;
 
           const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
           const resolved = await resolveSimkl(suggestions, mediaType);
