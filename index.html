@@ -185,12 +185,7 @@
         return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
       }
 
-      // Simkl returns free-text fields with literal backslash-escaped quotes (e.g. `Life\'s Still`).
-      function decodeSimklText(s) {
-        return String(s || "").replace(/\\(['"\\])/g, "$1");
-      }
-
-function simklId(item) {
+      function simklId(item) {
         const ids = item?.ids || {};
         return String(ids.simkl || ids.simkl_id || "");
       }
@@ -848,7 +843,7 @@ function buildTrendingUrl(item, urlBase) {
         function renderDiscoveryRow(containerEl, items, type) {
           const loggedIn = isLoggedIn();
           containerEl.replaceChildren();
-          items.map((item) => ({ ...item, title: decodeSimklText(item.title) })).forEach((item) => {
+          items.forEach((item) => {
             const { frag, card } = makeRowItem();
             const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
             card.variant = "discovery";
@@ -966,21 +961,14 @@ function buildTrendingUrl(item, urlBase) {
           writeRatingsCache(entries);
         }
 
-        async function fetchTrending(period) {
-          return Promise.all([
-            fetch(`https://data.simkl.in/discover/trending/tv/${period}_100.json`).then((r) => r.json()),
-            fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
-          ]);
-        }
-
         let trendingBadgeSetsPromise = null;
         function loadTrendingBadgeSets() {
           if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise;
           const periods = ["today", "week", "month"];
-          trendingBadgeSetsPromise = Promise.all(periods.map(fetchTrending))
+          trendingBadgeSetsPromise = Promise.all(periods.map((p) => simkl.getTrending(p)))
             .then((results) => {
               const sets = { today: new Set(), week: new Set(), month: new Set() };
-              results.forEach(([tv, movies], i) => {
+              results.forEach(({ tv, movies }, i) => {
                 const period = periods[i];
                 for (const item of [...(tv || []), ...(movies || [])]) {
                   const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
@@ -1022,7 +1010,7 @@ function buildTrendingUrl(item, urlBase) {
           el.trendingTvContent.replaceChildren(tpl("tpl-spinner"));
           el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"));
           try {
-            const [[tvData, movieData]] = await Promise.all([fetchTrending(period), libraryReady]);
+            const [{ tv: tvData, movies: movieData }] = await Promise.all([simkl.getTrending(period), libraryReady]);
             const hideWatched = el.hideTrendingWatched.checked;
             const filterFn = (item) => !hideWatched || !libraryWatched.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
             const tv = tvData.filter(filterFn).slice(0, 12);
