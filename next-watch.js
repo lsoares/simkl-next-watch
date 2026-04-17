@@ -187,6 +187,8 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
+    const unstartedEpCount = unstarted && isNext && type === "tv" ? availableEpisodesLeft(item) : null;
+    const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
     const showYear = isNext ? unstarted && year : !watched && year;
     const showRemove = isNext && (type === "movie" || unstarted);
@@ -219,6 +221,7 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
           ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
+          ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
