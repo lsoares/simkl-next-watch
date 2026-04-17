@@ -723,9 +723,11 @@ writeStorage(STORAGE.accessToken, token.access_token);
 
 The repo throws `ApiError` on failure, so the explicit check is unnecessary — the surrounding `try/catch` still handles it.
 
-- [ ] **Step 2: Delete `API_BASE`, `apiFetch`, `apiPost`, and the `ApiError` class from `index.html`**
+- [ ] **Step 2: Delete `API_BASE`, `apiFetch`, `apiPost`, and the `ApiError` class from `index.html`, and alias `ApiError` to the repo's**
 
-Near lines 573–587. Delete:
+Classic `<script>` tags don't share top-level `class` bindings, so the repo's `ApiError` lives inside its IIFE and is exposed as `simkl.ApiError`. Keep all existing `throw new ApiError(...)` / `instanceof ApiError` sites in `index.html` by introducing a single alias at the top of the inline script.
+
+Near lines 573–587, delete:
 
 ```js
       const API_BASE = "https://api.simkl.com";
@@ -736,7 +738,13 @@ Near lines 573–587. Delete:
       function apiPost(path, payload) { ... }
 ```
 
-The `ApiError` class is now declared at the top level of `simklRepository.js` — it's reachable by bare name from `index.html`'s inline script (classic-script scoping). Every remaining `throw new ApiError(...)` and `instanceof ApiError` in `index.html` (OAuth handler, AI provider code, handleError branches) keeps working unchanged.
+At the very top of the inline `<script>` block (just after the opening tag, before any domain helpers), add:
+
+```js
+      const ApiError = simkl.ApiError;
+```
+
+Now every remaining `throw new ApiError(...)` and `instanceof ApiError` in `index.html` resolves to the repo's class.
 
 - [ ] **Step 3: Final sweep — confirm nothing in `index.html` still references the removed helpers**
 

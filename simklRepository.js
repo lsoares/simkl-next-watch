@@ -1,9 +1,9 @@
-class ApiError extends Error {
-  constructor(msg) { super(msg); this.name = "ApiError"; }
-}
-
 (function () {
   "use strict";
+
+  class ApiError extends Error {
+    constructor(msg) { super(msg); this.name = "ApiError"; }
+  }
 
   const API_BASE = "https://api.simkl.com";
   const CLIENT_ID_KEY = "next-watch-client-id";
