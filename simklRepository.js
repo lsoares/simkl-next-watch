@@ -92,31 +92,26 @@
           await apiPost("/sync/history", {
             shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
           })
-          localStorage.removeItem(SYNC_CACHE_KEY)
           return
         }
       }
       await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
-      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async rate(item, type, rating) {
       const key = type === "tv" ? "shows" : "movies"
       await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
-      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async removeFromHistory(item, type) {
       const key = type === "tv" ? "shows" : "movies"
       await apiPost("/sync/history/remove", { [key]: [{ ids: item.ids }] })
-      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     async addToWatchlist(item, type) {
       const key = type === "movie" ? "movies" : "shows"
       const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] })
-      localStorage.removeItem(SYNC_CACHE_KEY)
     },
 
     getEpisodes(showId) {
