@@ -230,7 +230,6 @@
         gap: 10px;
         overflow-x: auto;
         overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         touch-action: pan-x;
         padding-right: var(--row-fade, 32px);

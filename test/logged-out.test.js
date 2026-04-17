@@ -22,6 +22,23 @@ test.describe("logged out from simkl", () => {
   })
 
 
+  test.describe("on mobile", () => {
+    test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+
+    test("install button appears when the browser signals the PWA is installable", async ({ page }) => {
+      await page.goto("/")
+
+      await page.evaluate(() => {
+        const e = new Event("beforeinstallprompt")
+        e.prompt = () => Promise.resolve()
+        window.dispatchEvent(e)
+      })
+
+      await expect(page.getByRole("button", { name: /install/i })).toBeVisible()
+    })
+  })
+
+
   test("logout clears session and shows intro", async ({ page }) => {
     await setupOauthToken(page, "test-token")
     await setupSyncActivities(page)
