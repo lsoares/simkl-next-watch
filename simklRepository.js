@@ -258,4 +258,9 @@
       type: raw.show ? "tv" : raw.movie ? "movie" : (raw.anime_type ? "tv" : null),
     }
   }
+
+  // Reclaim space from prior-versioned caches so key bumps never leak quota.
+  Object.keys(localStorage)
+    .filter((k) => (k === "next-watch-sync-cache" || k.startsWith("simkl-cache-")) && k !== SYNC_CACHE_KEY)
+    .forEach((k) => localStorage.removeItem(k))
 })()
