@@ -94,6 +94,66 @@
       return (data?.[type] ?? []).map(normalizeItem);
     },
 
+    async getLibrary() {
+      const activities = await apiFetch("/sync/activities", { method: "POST" });
+      const sig = JSON.stringify(activities);
+      const raw = (() => { try { return JSON.parse(localStorage.getItem("next-watch-sync-cache") || "null"); } catch { return null; } })();
+      const cache = raw?.schema === 2 ? raw : null;
+
+      if (cache?.sig === sig && cache.shows && cache.movies) {
+        return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [] };
+      }
+
+      const fetchItems = async (type, dateFrom) => {
+        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" });
+        if (dateFrom) params.set("date_from", dateFrom);
+        const data = await apiFetch(`/sync/all-items/${type}/?${params}`);
+        return (data?.[type] ?? []).map(normalizeItem);
+      };
+
+      const merge = (existing, updated) => {
+        const byId = new Map();
+        for (const item of existing) {
+          const id = String(item?.ids?.simkl || item?.ids?.simkl_id || "");
+          if (id) byId.set(id, item);
+        }
+        for (const item of updated) {
+          const id = String(item?.ids?.simkl || item?.ids?.simkl_id || "");
+          if (!id) continue;
+          if (item.status === "deleted") byId.delete(id);
+          else byId.set(id, item);
+        }
+        return [...byId.values()];
+      };
+
+      const dateFrom = cache?.lastActivity || null;
+      const needsFull = !cache?.shows || !cache?.movies || !dateFrom;
+      let shows, movies, anime;
+
+      if (needsFull) {
+        [shows, movies, anime] = await Promise.all([
+          fetchItems("shows"), fetchItems("movies"), fetchItems("anime").catch(() => []),
+        ]);
+      } else {
+        const [deltaShows, deltaMovies, deltaAnime] = await Promise.all([
+          fetchItems("shows", dateFrom), fetchItems("movies", dateFrom), fetchItems("anime", dateFrom).catch(() => []),
+        ]);
+        shows = merge(cache.shows, deltaShows);
+        movies = merge(cache.movies, deltaMovies);
+        anime = merge(cache.anime || [], deltaAnime);
+      }
+
+      let latestActivity = "";
+      (function walk(node) {
+        if (!node) return;
+        if (typeof node === "string" && /^\d{4}-\d{2}-\d{2}T/.test(node)) { if (node > latestActivity) latestActivity = node; return; }
+        if (typeof node === "object") for (const v of Object.values(node)) walk(v);
+      })(activities);
+
+      localStorage.setItem("next-watch-sync-cache", JSON.stringify({ schema: 2, sig, lastActivity: latestActivity, shows, movies, anime }));
+      return { shows, movies, anime };
+    },
+
     markWatched(item, type) {
       if (type === "tv") {
         const ep = parseNextEpisode(item.next_to_watch);
