@@ -710,6 +710,28 @@
         font-weight: 600;
       }
 
+      #trendingPeriodTabs .range-tab {
+        color: #fff;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 999px;
+        opacity: 0.45;
+      }
+      #trendingPeriodTabs .range-tab.active { opacity: 1; }
+      #trendingPeriodTabs .range-tab[data-period="today"] {
+        background: rgba(120, 113, 108, 0.55);
+        font-weight: 500;
+      }
+      #trendingPeriodTabs .range-tab[data-period="week"] {
+        background: linear-gradient(135deg, rgba(234, 88, 12, 0.78), rgba(217, 119, 6, 0.78));
+        font-weight: 700;
+      }
+      #trendingPeriodTabs .range-tab[data-period="month"] {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(217, 70, 239, 0.95));
+        font-weight: 800;
+        box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
+      }
+
       .trending-filter-toggle {
         display: inline-flex;
         align-items: center;
