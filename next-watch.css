@@ -430,7 +430,8 @@
         pointer-events: none;
       }
       .poster-top > * { pointer-events: auto; }
-      .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
+      .poster-top-text > * { pointer-events: auto; }
 
       .poster-remove {
         position: relative;

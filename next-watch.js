@@ -997,6 +997,8 @@ Output: a JSON array only, no prose, no markdown:
     annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
   }
 
+  el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => { if (b.dataset.gloss) b.title = b.dataset.gloss })
+
   el.aiPrompts.addEventListener("click", async (e) => {
     const btn = e.target.closest(".ai-prompt-btn");
     if (!btn) return;
