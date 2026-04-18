@@ -150,6 +150,7 @@ function formatWatchedAgo(iso) {
 
 const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const ICON_BOOKMARK = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
 const ICON_REMOVE = `&times;`;
 
 class PosterCard extends HTMLElement {
@@ -213,7 +214,7 @@ class PosterCard extends HTMLElement {
     const posterTooltip = isNext && !unstarted && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : "";
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
+      <article class="item-card${watched ? " trending-watched" : ""}${!watched && inWatchlist && !isNext ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
         ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
         <div class="poster-top">
           <div class="poster-top-text">
@@ -229,7 +230,7 @@ class PosterCard extends HTMLElement {
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
-          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist">On watchlist</span>` : ""}
+          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
