@@ -51,5 +51,6 @@ test.describe("next", () => {
     await card.getByRole("button", { name: /remove/i }).click()
 
     await expect(page.getByRole("status")).toContainText(/removed inception/i)
+    await expect(page.getByRole("article", { name: "Inception" })).toHaveCount(0)
   })
 })
