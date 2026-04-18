@@ -149,6 +149,7 @@ function formatWatchedAgo(iso) {
 // ── HTML templates ──
 
 const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const ICON_REMOVE = `&times;`;
 
 class PosterCard extends HTMLElement {
@@ -200,7 +201,8 @@ class PosterCard extends HTMLElement {
     const showMarkWatched = isNext;
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist;
     const showImdb = !watched && rating && (!isNext || unstarted);
-    const watchedAgo = !isNext && watched && watchedAt ? formatWatchedAgo(watchedAt) : "";
+    const showWatchedBadge = !isNext && watched;
+    const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : "";
     const showWatchlistBadge = !isNext && inWatchlist && !watched;
 
     const dataAttrs = isNext
@@ -226,7 +228,7 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-          ${watchedAgo ? `<span class="poster-status poster-status--watched">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
+          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist">On watchlist</span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
