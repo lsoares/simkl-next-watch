@@ -242,24 +242,27 @@ function shuffle(arr) {
   return arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
 }
 
-function formatRatings(items, cap) {
-  const pool = items.filter((item) => item.user_rating != null).sort((a, b) => b.user_rating - a.user_rating).slice(0, cap * 2);
-  return shuffle(pool).slice(0, cap).map((item) => `${item.title}${item.year ? ` (${item.year})` : ""}:${item.user_rating}`).join(",");
+function formatBand(items, cap) {
+  return shuffle(items).slice(0, cap).map((item) => `${item.title}${item.year ? ` (${item.year})` : ""}:${item.user_rating}`).join(", ");
 }
 
 function buildRatingsInput(mediaType, shows, movies, anime) {
   const includeTv = mediaType !== "movie";
   const includeFilm = mediaType !== "tv";
-  const cap = includeTv !== includeFilm ? 120 : 60;
+  const pool = [
+    ...(includeTv ? [...(shows || []), ...(anime || [])] : []),
+    ...(includeFilm ? (movies || []) : []),
+  ].filter((item) => item.user_rating != null);
+  const liked = pool.filter((i) => i.user_rating >= 8);
+  const mixed = pool.filter((i) => i.user_rating >= 6 && i.user_rating < 8);
+  const disliked = pool.filter((i) => i.user_rating < 6);
   const parts = [];
-  if (includeTv) {
-    const tv = formatRatings([...(shows || []), ...(anime || [])], cap);
-    if (tv) parts.push(`TV: ${tv}`);
-  }
-  if (includeFilm) {
-    const film = formatRatings(movies || [], cap);
-    if (film) parts.push(`Movies: ${film}`);
-  }
+  const likedStr = formatBand(liked, 60);
+  const mixedStr = formatBand(mixed, 30);
+  const dislikedStr = formatBand(disliked, 20);
+  if (likedStr) parts.push(`Liked (8-10): ${likedStr}`);
+  if (mixedStr) parts.push(`Mixed (6-7): ${mixedStr}`);
+  if (dislikedStr) parts.push(`Disliked (1-5): ${dislikedStr}`);
   return parts.join("\n");
 }
 
@@ -818,7 +821,20 @@ function initDockEffect(row) {
 
   const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" };
   function aiSystemPrompt(mediaType) {
-    return `You suggest ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Return exactly 10 suggestions as a JSON array: [{"title":"...","year":...}]. No other text. Use my ratings as inspiration for taste but do not suggest any of them — they are already in my library.`;
+    return `You are a film/TV recommender. Suggest exactly 10 ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Do not suggest any title the user has rated — they are already in my library.
+
+Taste:
+- Treat 8-10 ratings as strong likes; 1-5 as dislikes (avoid similar).
+- Infer across genre, tone, era, pacing, and country — not just genre.
+- Mood is the primary filter; taste chooses which mood-fitting titles to pick.
+
+Diversity within the 10:
+- Max 2 sharing a franchise, director, or lead creator.
+- Mix at least 3 decades and 3 countries/languages when plausible.
+- Don't stack one subgenre.
+
+Output: a JSON array only, no prose, no markdown:
+[{"title":"...","year":1234}]`;
   }
 
   const AI_PROVIDERS = {
@@ -916,7 +932,8 @@ function initDockEffect(row) {
     const provider = readStorage(STORAGE.aiProvider) || "gemini";
     const key = getAiKey(provider);
     const systemPrompt = aiSystemPrompt(mediaType);
-    const userMessage = `My ratings: ${ratings}\nMood: ${mood}\nVariation: ${Math.floor(Math.random() * 1e9)}`;
+    const moodLine = mood.gloss ? `${mood.label} — ${mood.gloss}` : mood.label;
+    const userMessage = `${ratings}\nMood: ${moodLine}`;
 
     const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
     const resolved = await resolveSimkl(suggestions, mediaType);
@@ -964,7 +981,7 @@ function initDockEffect(row) {
     btn.classList.add("active");
     el.aiResults.replaceChildren(tpl("tpl-spinner"));
     try {
-      const items = await getRecommendations(btn.textContent);
+      const items = await getRecommendations({ label: btn.textContent, gloss: btn.dataset.gloss || "" });
       renderAiResults(items);
     } catch (err) {
       el.aiResults.replaceChildren();
