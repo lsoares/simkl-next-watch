@@ -112,6 +112,7 @@ function collectLibraryIndex(data) {
       .map((item) => [simklId(item), {
         watched: item.status === "completed",
         watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
+        watching: item.status === "watching",
       }])
       .filter(([id]) => id)
   );
@@ -160,6 +161,7 @@ class PosterCard extends HTMLElement {
   watched = false;
   watchedAt = null;
   inWatchlist = false;
+  watching = false;
   loggedIn = false;
 
   connectedCallback() {
@@ -175,7 +177,7 @@ class PosterCard extends HTMLElement {
   }
 
   _render() {
-    const { item, variant, type, watched, watchedAt, inWatchlist, loggedIn } = this;
+    const { item, variant, type, watched, watchedAt, inWatchlist, watching, loggedIn } = this;
     if (!item) return;
 
     const isNext = variant === "next";
@@ -193,7 +195,7 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
-    const showEpCount = type === "tv" && !epCode && (isNext || !watched);
+    const showEpCount = type === "tv" && !epCode && !watching && (isNext || !watched);
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null;
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
@@ -223,12 +225,12 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
+            ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           </div>
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
@@ -432,6 +434,7 @@ function initDockEffect(row) {
       card.variant = "next";
       card.type = type;
       card.item = item;
+      card.watching = item.status === "watching";
       card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl));
       card.addEventListener("poster:remove", () => removeFromWatchlist(item, type));
       rowEl.appendChild(frag);
@@ -593,6 +596,7 @@ function initDockEffect(row) {
       card.watched = !!entry?.watched;
       card.watchedAt = entry?.watchedAt || null;
       card.inWatchlist = !!entry && !entry.watched;
+      card.watching = !!entry?.watching;
       card.loggedIn = loggedIn;
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
       containerEl.appendChild(frag);
@@ -663,16 +667,16 @@ function initDockEffect(row) {
     if (!host || host.querySelector(".imdb-badge")) return;
     const badge = tpl("tpl-imdb-badge").firstElementChild;
     badge.textContent = `IMDb ${rating}`;
-    const trendingSibling = host.querySelector(".trending-badge");
-    if (trendingSibling) host.insertBefore(badge, trendingSibling);
+    const anchor = host.querySelector(".trending-badge, .poster-episode-count");
+    if (anchor) host.insertBefore(badge, anchor);
     else host.appendChild(badge);
   }
 
   function injectEpisodeCount(card, count) {
-    const host = card?.cardEl?.querySelector(".poster-bottom");
-    if (!host || host.querySelector(".poster-episode")) return;
+    const host = card?.cardEl?.querySelector(".poster-top-text");
+    if (!host || host.querySelector(".poster-episode-count")) return;
     const label = document.createElement("span");
-    label.className = "poster-episode";
+    label.className = "poster-episode-count";
     label.textContent = `${count} episode${count === 1 ? "" : "s"}`;
     host.appendChild(label);
   }
@@ -730,7 +734,7 @@ function initDockEffect(row) {
         item.total_episodes_count = details.total;
         item.not_aired_episodes_count = details.notAired || 0;
         const count = availableEpisodesLeft(item);
-        const showCount = card && (card.variant === "next" || !card.watched);
+        const showCount = card && !card.watching && (card.variant === "next" || !card.watched);
         if (showCount && Number.isFinite(count) && count > 0) injectEpisodeCount(card, count);
       }
     });
@@ -776,7 +780,9 @@ function initDockEffect(row) {
       badge.title = info.tooltip;
       badge.setAttribute("aria-label", info.tooltip);
       badge.textContent = `🔥 ${info.label}`;
-      host.appendChild(badge);
+      const countSibling = host.querySelector(".poster-episode-count");
+      if (countSibling) host.insertBefore(badge, countSibling);
+      else host.appendChild(badge);
     });
   }
 
@@ -982,6 +988,7 @@ Output: a JSON array only, no prose, no markdown:
       card.watched = !!entry?.watched;
       card.watchedAt = entry?.watchedAt || null;
       card.inWatchlist = !!entry && !entry.watched;
+      card.watching = !!entry?.watching;
       card.loggedIn = true;
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
       el.aiResults.appendChild(frag);
