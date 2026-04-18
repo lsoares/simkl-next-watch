@@ -287,7 +287,7 @@
         }
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; }
-        #trendingGrid .row-item { flex-shrink: 0; width: max(120px, calc((100vw - 44px) / 3)); height: 100%; }
+        #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
       }
 
@@ -635,7 +635,7 @@
       }
       #trendingPeriodTabs { margin: 0; }
       #trendingGrid .row-item {
-        width: calc((min(100vw, 680px) - 68px) / 3);
+        width: calc((min(100vw, 680px) - 68px) / 2.6);
       }
       #trendingGrid .item-card {
         text-decoration: none;
@@ -647,6 +647,10 @@
       .trending-watched .poster-top { opacity: 0.35; transition: opacity 0.2s; }
       .trending-watched:hover .poster,
       .trending-watched:hover .poster-top { opacity: 0.75; }
+      .trending-watchlisted .poster,
+      .trending-watchlisted .poster-top { opacity: 0.55; transition: opacity 0.2s; }
+      .trending-watchlisted:hover .poster,
+      .trending-watchlisted:hover .poster-top { opacity: 0.85; }
       .poster-status {
         align-self: flex-start;
         max-width: 100%;
@@ -663,8 +667,8 @@
         gap: 5px;
       }
       .poster-status-icon { flex-shrink: 0; }
-      .poster-status--watched { background: rgba(34,197,94,0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
-      .poster-status--watchlist { background: rgba(59,130,246,0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+      .poster-status--watched { background: rgba(22,101,52,0.8); color: #d1fae5; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+      .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
       .item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)) .poster-bottom {
         padding-right: 10px;
       }
