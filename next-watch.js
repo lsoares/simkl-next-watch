@@ -21,7 +21,7 @@ function parseNextEpisode(value) {
 }
 
 function formatEpisode({ season, episode }) {
-  return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+  return `${season}x${episode}`;
 }
 
 function availableEpisodesLeft(show) {
@@ -219,8 +219,7 @@ class PosterCard extends HTMLElement {
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
         <div class="poster-bottom">
-          ${epCode ? `<a class="poster-episode poster-episode-code" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
-          ${isNext && !unstarted && item.episodeTitle ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.episodeTitle)}</a>` : ""}
+          ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           ${watchedAgo ? `<span class="poster-episode">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
         </div>
