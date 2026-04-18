@@ -698,7 +698,7 @@ function initDockEffect(row) {
   async function hydrateMissingDetails(rowEl, items, typeOrFn) {
     const getType = typeof typeOrFn === "function" ? typeOrFn : () => typeOrFn;
     const entries = readRatingsCache();
-    const cards = rowEl.querySelectorAll("poster-card");
+    const cards = rowEl ? rowEl.querySelectorAll("poster-card") : [];
     const pending = [];
     items.forEach((item, i) => {
       const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "");
@@ -948,12 +948,18 @@ Output: a JSON array only, no prose, no markdown:
 
     const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
     const resolved = await resolveSimkl(suggestions, mediaType);
-    return resolved.sort((a, b) => {
-      const aw = libraryIndex.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
-      const bw = libraryIndex.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
-      if (aw !== bw) return aw - bw;
-      return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0);
-    });
+    const getType = (item) => item.type === "movie" ? "movie" : "tv";
+    applyCachedDetails(resolved.filter((i) => getType(i) === "tv"), "tv");
+    applyCachedDetails(resolved.filter((i) => getType(i) === "movie"), "movie");
+    await hydrateMissingDetails(null, resolved, getType);
+    return resolved
+      .filter((i) => i.release_status !== "unreleased")
+      .sort((a, b) => {
+        const aw = libraryIndex.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
+        const bw = libraryIndex.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
+        if (aw !== bw) return aw - bw;
+        return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0);
+      });
   }
 
   // ── AI Result Rendering ──
@@ -964,9 +970,6 @@ Output: a JSON array only, no prose, no markdown:
       return;
     }
     const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }));
-    const typeByItem = new Map(typed.map(({ item, type }) => [item, type]));
-    applyCachedDetails(items.filter((item) => typeByItem.get(item) === "tv"), "tv");
-    applyCachedDetails(items.filter((item) => typeByItem.get(item) === "movie"), "movie");
     el.aiResults.replaceChildren();
     typed.forEach(({ item, type }) => {
       const { frag, card } = makeRowItem();
@@ -983,7 +986,6 @@ Output: a JSON array only, no prose, no markdown:
       el.aiResults.appendChild(frag);
     });
     annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
-    hydrateMissingDetails(el.aiResults, items, (item) => typeByItem.get(item) || "tv");
   }
 
   el.aiPrompts.addEventListener("click", async (e) => {
