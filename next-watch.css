@@ -303,9 +303,9 @@
         posters-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
-        #tvRow .row-item { flex-shrink: 0; width: max(100px, calc((100vw - 44px) / 2.8)); }
+        #tvRow .row-item { flex-shrink: 0; width: max(120px, calc((100vw - 44px) / 2.8)); }
         #tvRow .row-item .item-card { width: 100%; height: 100%; }
-        #movieRow .row-item { flex-shrink: 0; width: max(90px, calc((100vw - 44px) / 3.5)); }
+        #movieRow .row-item { flex-shrink: 0; width: max(110px, calc((100vw - 44px) / 3.5)); }
         #movieRow .row-item .item-card { width: 100%; height: 100%; }
 
         /* Trending: reuse suggestions-grid layout */
@@ -316,7 +316,7 @@
         }
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; }
-        #trendingGrid .row-item { flex-shrink: 0; width: max(90px, calc((100vw - 44px) / 3.5)); height: 100%; }
+        #trendingGrid .row-item { flex-shrink: 0; width: max(110px, calc((100vw - 44px) / 3.5)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
       }
 
