@@ -47,11 +47,6 @@
         margin-top: 0;
       }
 
-      .panel {
-        padding: 12px 0;
-        margin-bottom: 12px;
-      }
-
       .top-bar {
         position: fixed;
         top: 0;
@@ -78,13 +73,6 @@
         box-sizing: border-box;
       }
       .top-bar .active-nav { color: var(--text); font-weight: 600; text-decoration: none; }
-
-      .row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
-        margin-bottom: 12px;
-      }
 
       label {
         display: block;
@@ -172,11 +160,6 @@
       }
 
 
-      .status {
-        color: var(--muted);
-        min-height: 24px;
-      }
-
       .toast {
         position: fixed;
         bottom: 24px;
@@ -200,43 +183,31 @@
         gap: 28px;
       }
 
-      .media-section,
-      .trending-carousel {
+      .media-section {
         position: relative;
       }
-      .media-section::after,
-      .trending-carousel::after {
+      .media-section::after {
         content: "";
         position: absolute;
         top: 0;
         right: 0;
-        width: var(--row-fade, 32px);
+        width: 32px;
         height: 100%;
-        background: linear-gradient(to right, color-mix(in srgb, var(--fade-bg, var(--bg)) 0%, transparent), var(--fade-bg, var(--bg)));
+        background: linear-gradient(to right, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg));
         pointer-events: none;
       }
       .media-section { timeline-scope: --media-scroll; }
-      .section-label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin: 0 0 8px;
-      }
-      posters-row,
-      .trending-row {
+      posters-row {
         display: flex;
         gap: 10px;
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
         touch-action: pan-x;
-        padding-right: var(--row-fade, 32px);
+        padding-right: 32px;
         scroll-snap-type: x mandatory;
       }
-      posters-row::-webkit-scrollbar,
-      .trending-row::-webkit-scrollbar { display: none; }
+      posters-row::-webkit-scrollbar { display: none; }
       posters-row { scroll-timeline: --media-scroll inline; }
       .row-item {
         flex-shrink: 0;
@@ -319,27 +290,6 @@
         #trendingGrid .row-item { flex-shrink: 0; width: max(110px, calc((100vw - 44px) / 3.5)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
       }
-
-      .nav-arrow {
-        display: none;
-      }
-
-      .nav-arrow-hidden {
-        background: transparent;
-        border: none;
-        color: #334155;
-        min-height: unset;
-        width: 20px;
-        flex-shrink: 0;
-        padding: 0;
-        font-size: 1.4rem;
-        line-height: 1;
-        cursor: pointer;
-        transition: color 0.15s;
-      }
-      .nav-arrow:hover { color: var(--text); }
-      .nav-arrow:disabled { opacity: 0.2; cursor: default; }
-
 
       /* ── Poster card ── */
       .item-card {
@@ -571,16 +521,6 @@
         box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
       }
 
-      /* season progress bar */
-      .season-bar-wrap {
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        padding: 0;
-        border-radius: 0 0 10px 10px;
-        opacity: 0;
-        transition: opacity 0.2s;
-        pointer-events: none;
-      }
       .item-card {
         transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease, opacity 0.45s ease;
         touch-action: pan-x;
@@ -684,50 +624,8 @@
       .empty {
         color: var(--muted);
       }
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: rgba(2, 6, 23, 0.55);
-        z-index: 20;
-      }
-
-      .modal-backdrop[hidden] {
-        display: none;
-      }
-
-      .modal {
-        width: min(720px, 100%);
-        max-height: calc(100vh - 40px);
-        overflow: auto;
-        padding: 20px;
-        border: 1px solid var(--panel-border);
-        border-radius: 14px;
-        background: #111827;
-      }
-
-      #statsView .modal {
-        width: min(980px, 100%);
-      }
-
-      .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .modal-header h2 {
-        margin: 0;
-      }
-
       /* inline views */
-      #trendingView, #loginView { width: 100%; box-sizing: border-box; }
-      #loginView { max-width: 400px; margin: 0 auto; padding: 0 4px; }
+      #trendingView { width: 100%; box-sizing: border-box; }
       .trending-toolbar {
         display: flex;
         align-items: center;
@@ -826,156 +724,6 @@
         width: 14px;
         height: 14px;
         margin: 0;
-      }
-
-      .close-btn {
-        width: 32px;
-        height: 32px;
-        min-height: unset;
-        padding: 0;
-        font-size: 1rem;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      .stats-time {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-      }
-
-      .stats-time-item {
-        flex: 1;
-        min-width: 130px;
-        border: 1px solid var(--panel-border);
-        border-radius: 10px;
-        padding: 14px 18px;
-      }
-
-      .stats-time-label {
-        display: block;
-        font-size: 0.78rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        margin-bottom: 6px;
-      }
-
-      .stats-time-value {
-        display: block;
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--text);
-      }
-
-      .stats-time-sub {
-        display: flex;
-        gap: 10px;
-        margin-top: 5px;
-        font-size: 0.8rem;
-        flex-wrap: wrap;
-      }
-
-      .stats-time-tv    { color: #22c55e; }
-      .stats-time-movie { color: #60a5fa; }
-
-      .stats-charts {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .stats-chart-wrap {
-        border: 1px solid var(--panel-border);
-        border-radius: 10px;
-        padding: 16px;
-      }
-
-      .stats-chart-wrap h3 {
-        margin: 0 0 12px;
-        font-size: 0.85rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .chart-mode-tabs {
-        display: flex;
-        gap: 3px;
-        margin-left: auto;
-      }
-
-      .chart-mode-tab {
-        background: transparent;
-        border: 1px solid var(--panel-border);
-        color: var(--muted);
-        border-radius: 5px;
-        min-height: unset;
-        padding: 2px 8px;
-        font-size: 0.72rem;
-        cursor: pointer;
-        text-transform: none;
-        letter-spacing: 0;
-        transition: background 0.15s, color 0.15s, border-color 0.15s;
-      }
-
-      .chart-mode-tab.active {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #000;
-        font-weight: 600;
-      }
-
-      .stats-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-      }
-
-      .stats-genres {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-      }
-
-      .stats-status {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-        gap: 8px;
-        margin-bottom: 20px;
-      }
-
-      .stats-status-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        border: 1px solid var(--panel-border);
-        border-radius: 10px;
-        padding: 10px 14px;
-      }
-
-      .stats-status-count {
-        font-size: 1.3rem;
-        font-weight: 700;
-        line-height: 1.1;
-      }
-
-      .stats-status-label {
-        font-size: 0.75rem;
-        color: var(--muted);
-      }
-
-      .chart-scroll-x {
-        overflow-x: auto;
-      }
-
-      .chart-scroll-x canvas {
-        display: block;
-        height: 220px !important;
       }
 
       @media (max-width: 768px) {
@@ -1098,13 +846,6 @@
 }
 
 #editSimklSettings { margin-left: auto; }
-
-.ai-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
 
 .ai-prompts {
   display: flex;
