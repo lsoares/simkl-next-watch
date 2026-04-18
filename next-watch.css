@@ -434,23 +434,6 @@
         overflow: hidden;
         font-style: italic;
       }
-      .poster-episode-code {
-        align-self: flex-start;
-        display: inline-flex;
-        margin-left: -6px;
-        font-size: 0.65rem;
-        font-style: normal;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #fff;
-        background: rgba(0, 0, 0, 0.55);
-        padding: 1px 6px;
-        border-radius: 3px;
-        white-space: nowrap;
-        text-decoration: none;
-      }
-      .poster-episode-code:hover { background: rgba(0, 0, 0, 0.75); }
       .mark-watched-btn {
         position: absolute;
         bottom: 8px;
