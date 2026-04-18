@@ -193,7 +193,7 @@ class PosterCard extends HTMLElement {
     const unstarted = isNext ? isUnstarted(item, type) : false;
     const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
-    const showEpCount = type === "tv" && !epCode && (isNext || !watched);
+    const showEpCount = type === "tv" && !epCode && (isNext || !watched) && item.status !== "watching";
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null;
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
@@ -218,17 +218,17 @@ class PosterCard extends HTMLElement {
         ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
         <div class="poster-top">
           <div class="poster-top-text">
+            ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
+            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
             <div class="poster-title">
               ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}
             </div>
-            ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
-            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
+            ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           </div>
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
           ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
@@ -663,13 +663,13 @@ function initDockEffect(row) {
     if (!host || host.querySelector(".imdb-badge")) return;
     const badge = tpl("tpl-imdb-badge").firstElementChild;
     badge.textContent = `IMDb ${rating}`;
-    const trendingSibling = host.querySelector(".trending-badge");
-    if (trendingSibling) host.insertBefore(badge, trendingSibling);
+    const title = host.querySelector(".poster-title");
+    if (title) host.insertBefore(badge, title);
     else host.appendChild(badge);
   }
 
   function injectEpisodeCount(card, count) {
-    const host = card?.cardEl?.querySelector(".poster-bottom");
+    const host = card?.cardEl?.querySelector(".poster-top-text");
     if (!host || host.querySelector(".poster-episode")) return;
     const label = document.createElement("span");
     label.className = "poster-episode";
@@ -776,7 +776,9 @@ function initDockEffect(row) {
       badge.title = info.tooltip;
       badge.setAttribute("aria-label", info.tooltip);
       badge.textContent = `🔥 ${info.label}`;
-      host.appendChild(badge);
+      const titleEl = host.querySelector(".poster-title");
+      if (titleEl) host.insertBefore(badge, titleEl);
+      else host.appendChild(badge);
     });
   }
 
