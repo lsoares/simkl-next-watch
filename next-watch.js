@@ -224,8 +224,8 @@ class PosterCard extends HTMLElement {
               ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
-            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
+            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
           </div>
           ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
@@ -268,7 +268,7 @@ function buildRatingsInput(mediaType, shows, movies, anime) {
   const mixed = pool.filter((i) => i.user_rating >= 6 && i.user_rating < 8);
   const disliked = pool.filter((i) => i.user_rating < 6);
   const parts = [];
-  const likedStr = formatBand(liked, 60);
+  const likedStr = formatBand(liked, 120);
   const mixedStr = formatBand(mixed, 30);
   const dislikedStr = formatBand(disliked, 20);
   if (likedStr) parts.push(`Liked (8-10): ${likedStr}`);
@@ -400,7 +400,8 @@ function initDockEffect(row) {
     clearTimeout(toastTimer);
     el.toast.hidden = false;
     el.toast.style.color = isError ? "#fca5a5" : "";
-    el.toast.textContent = msg;
+    if (typeof msg === "string") el.toast.textContent = msg
+    else el.toast.replaceChildren(msg)
     if (undoFn) {
       const undo = tpl("tpl-toast-undo").firstElementChild;
       undo.addEventListener("click", () => { el.toast.hidden = true; undoFn(); });
@@ -667,7 +668,7 @@ function initDockEffect(row) {
     if (!host || host.querySelector(".imdb-badge")) return;
     const badge = tpl("tpl-imdb-badge").firstElementChild;
     badge.textContent = `IMDb ${rating}`;
-    const anchor = host.querySelector(".trending-badge, .poster-episode-count");
+    const anchor = host.querySelector(".trending-badge");
     if (anchor) host.insertBefore(badge, anchor);
     else host.appendChild(badge);
   }
@@ -678,7 +679,9 @@ function initDockEffect(row) {
     const label = document.createElement("span");
     label.className = "poster-episode-count";
     label.textContent = `${count} episode${count === 1 ? "" : "s"}`;
-    host.appendChild(label);
+    const anchor = host.querySelector(".imdb-badge, .trending-badge");
+    if (anchor) host.insertBefore(label, anchor);
+    else host.appendChild(label);
   }
 
   function applyCachedDetails(items, type) {
@@ -780,9 +783,7 @@ function initDockEffect(row) {
       badge.title = info.tooltip;
       badge.setAttribute("aria-label", info.tooltip);
       badge.textContent = `🔥 ${info.label}`;
-      const countSibling = host.querySelector(".poster-episode-count");
-      if (countSibling) host.insertBefore(badge, countSibling);
-      else host.appendChild(badge);
+      host.appendChild(badge);
     });
   }
 
@@ -999,7 +1000,14 @@ Output: a JSON array only, no prose, no markdown:
   el.aiPrompts.addEventListener("click", async (e) => {
     const btn = e.target.closest(".ai-prompt-btn");
     if (!btn) return;
-    if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) { showToast("Add an AI key in settings first.", true); return; }
+    if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) {
+      const link = Object.assign(document.createElement("a"), { href: "#settings", className: "tiny-link", textContent: "settings", style: "color:inherit;text-decoration:underline" })
+      link.addEventListener("click", (ev) => { ev.preventDefault(); el.toast.hidden = true; showView("settings") })
+      const frag = document.createDocumentFragment()
+      frag.append("Add an AI key in ", link, " first.")
+      showToast(frag, true)
+      return
+    }
     el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     el.aiResults.replaceChildren(tpl("tpl-spinner"));

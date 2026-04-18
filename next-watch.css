@@ -486,7 +486,7 @@
         white-space: nowrap;
         text-decoration: none;
         align-self: flex-start;
-        margin-top: 1px;
+        margin-top: 6px;
         transition: opacity 0.15s;
       }
       span.imdb-badge { pointer-events: none; }
