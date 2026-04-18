@@ -106,10 +106,13 @@ function buildTrendingUrl(item, urlBase) {
   return fixedPath ? `https://simkl.com${fixedPath}` : id ? `https://simkl.com/${urlBase}/${id}` : "#";
 }
 
-function collectLibraryWatched(data) {
+function collectLibraryIndex(data) {
   return new Map(
     [...(data.shows || []), ...(data.anime || []), ...(data.movies || [])]
-      .map((item) => [simklId(item), item.status === "completed" ? (item.last_watched_at || null) : null])
+      .map((item) => [simklId(item), {
+        watched: item.status === "completed",
+        watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
+      }])
       .filter(([id]) => id)
   );
 }
@@ -154,6 +157,7 @@ class PosterCard extends HTMLElement {
   item = null;
   watched = false;
   watchedAt = null;
+  inWatchlist = false;
   loggedIn = false;
 
   connectedCallback() {
@@ -169,7 +173,7 @@ class PosterCard extends HTMLElement {
   }
 
   _render() {
-    const { item, variant, type, watched, watchedAt, loggedIn } = this;
+    const { item, variant, type, watched, watchedAt, inWatchlist, loggedIn } = this;
     if (!item) return;
 
     const isNext = variant === "next";
@@ -194,9 +198,10 @@ class PosterCard extends HTMLElement {
     const showYear = isNext ? unstarted && year : !watched && year;
     const showRemove = isNext && (type === "movie" || unstarted);
     const showMarkWatched = isNext;
-    const showAddWatchlist = !isNext && loggedIn && id && !watched;
+    const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist;
     const showImdb = !watched && rating && (!isNext || unstarted);
     const watchedAgo = !isNext && watched && watchedAt ? formatWatchedAgo(watchedAt) : "";
+    const showWatchlistBadge = !isNext && inWatchlist && !watched;
 
     const dataAttrs = isNext
       ? `data-simkl-id="${id}" data-type="${type}"`
@@ -221,7 +226,8 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${unstartedEpLabel ? `<span class="poster-episode">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-          ${watchedAgo ? `<span class="poster-episode">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
+          ${watchedAgo ? `<span class="poster-status poster-status--watched">Watched ${escapeHtml(watchedAgo)}</span>` : ""}
+          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist">On watchlist</span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
@@ -377,7 +383,7 @@ function initDockEffect(row) {
 
   let currentView = null;
   let toastTimer = null;
-  let libraryWatched = new Map();
+  let libraryIndex = new Map();
   let resolveLibraryReady;
   let libraryReady = new Promise((r) => { resolveLibraryReady = r; });
   let tvItems = [];
@@ -553,7 +559,7 @@ function initDockEffect(row) {
       applyCachedDetails(allMovies, "movie")
       tvItems = buildTvSuggestions(allShows)
       movieItems = buildMovieSuggestions(allMovies)
-      libraryWatched = collectLibraryWatched(data)
+      libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
@@ -580,8 +586,10 @@ function initDockEffect(row) {
       card.variant = "discovery";
       card.type = type;
       card.item = item;
-      card.watched = libraryWatched.has(id);
-      card.watchedAt = libraryWatched.get(id) || null;
+      const entry = libraryIndex.get(id);
+      card.watched = !!entry?.watched;
+      card.watchedAt = entry?.watchedAt || null;
+      card.inWatchlist = !!entry && !entry.watched;
       card.loggedIn = loggedIn;
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
       containerEl.appendChild(frag);
@@ -597,9 +605,10 @@ function initDockEffect(row) {
     btn.disabled = true;
     try {
       await simkl.addToWatchlist(item, card.type);
-      libraryWatched.set(id, null);
-      card.cardEl.classList.add("trending-watched");
-      btn.remove();
+      libraryIndex.set(id, { watched: false, watchedAt: null });
+      card.inWatchlist = true;
+      card._rendered = false;
+      card._render();
       showToast(`Added "${item.title}" to watchlist.`);
       await loadSuggestions();
     } catch (err) {
@@ -776,7 +785,7 @@ function initDockEffect(row) {
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([simkl.getTrending(period), libraryReady]);
       const hideWatched = el.hideTrendingWatched.checked;
-      const filterFn = (item) => !hideWatched || !libraryWatched.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
+      const filterFn = (item) => !hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
       const tv = tvData.filter(filterFn).slice(0, 12);
       const movies = movieData.filter(filterFn).slice(0, 12);
       if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv");
@@ -938,8 +947,8 @@ Output: a JSON array only, no prose, no markdown:
     const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt);
     const resolved = await resolveSimkl(suggestions, mediaType);
     return resolved.sort((a, b) => {
-      const aw = libraryWatched.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
-      const bw = libraryWatched.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
+      const aw = libraryIndex.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
+      const bw = libraryIndex.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
       if (aw !== bw) return aw - bw;
       return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0);
     });
@@ -963,13 +972,15 @@ Output: a JSON array only, no prose, no markdown:
       card.variant = "discovery";
       card.type = type;
       card.item = item;
-      card.watched = libraryWatched.has(id);
-      card.watchedAt = libraryWatched.get(id) || null;
+      const entry = libraryIndex.get(id);
+      card.watched = !!entry?.watched;
+      card.watchedAt = entry?.watchedAt || null;
+      card.inWatchlist = !!entry && !entry.watched;
       card.loggedIn = true;
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card));
       el.aiResults.appendChild(frag);
     });
-    annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryWatched.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
+    annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")));
     hydrateMissingDetails(el.aiResults, items, (item) => typeByItem.get(item) || "tv");
   }
 
@@ -1077,7 +1088,7 @@ Output: a JSON array only, no prose, no markdown:
     clearAllStorage();
     tvItems = [];
     movieItems = [];
-    libraryWatched.clear();
+    libraryIndex.clear();
     el.clientIdInput.value = "";
     el.clientSecretInput.value = "";
     hydrateUI();
