@@ -103,6 +103,7 @@
       small.field-disclaimer {
         display: block;
         margin-top: 6px;
+        margin-bottom: 18px;
         font-size: 0.68rem;
         color: var(--muted);
         opacity: 0.75;
