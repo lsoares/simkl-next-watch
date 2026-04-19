@@ -129,7 +129,7 @@ Body on errors is JSON with `{ error, error_description }` — surface it via `A
 
 ## Planned files (not yet written)
 
-- [traktUserState.js](../traktUserState.js) (new) — `window.trakt` with `exchangeOAuthCode`, `getWatchedMap`, `getWatchlistSet`, `getProgress`, `getRatings`, `markWatched`, `undoMarkWatched`, `rate`, `addToWatchlist`, `removeFromWatchlist`. Internal `traktFetch(path, opts)` mirrors [simklRepository.js:213](../simklRepository.js) but with Trakt headers.
+- [traktUserState.js](../traktUserState.js) (new) — `window.trakt` with `exchangeOAuthCode`, `getWatchedMap`, `getWatchlistSet`, `getProgress`, `getRatings`, `markWatched`, `undoMarkWatched`, `rate`, `addToWatchlist`, `removeFromWatchlist`. Internal `traktFetch(path, opts)` mirrors `apiFetch` in [simklUserData.js](../simklUserData.js) but with Trakt headers.
 - [test/clients/trakt.js](../test/clients/trakt.js) (new) — MSW handler helpers named by action (`listWatchedShows`, `listWatchlist`, `showProgress`, `listRatings`, write variants). Follows [CLAUDE.md](../CLAUDE.md) testing rules: hardcode URL + method, assert headers and body inside the handler.
 
 ## References

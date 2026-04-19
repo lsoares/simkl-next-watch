@@ -1,6 +1,6 @@
 # Simkl API — app reference
 
-Scope: only what this app uses. Source of truth is [simklRepository.js](../simklRepository.js). When in doubt, read it — not the upstream docs.
+Scope: only what this app uses. Source of truth is split across [simklCatalog.js](../simklCatalog.js) (anonymous metadata) and [simklUserData.js](../simklUserData.js) (user-auth sync + OAuth). When in doubt, read them — not the upstream docs.
 
 ## Bases
 
@@ -25,7 +25,7 @@ Authorization: Bearer <token>     ← only if token present
 Content-Type: application/json
 ```
 
-See `apiFetch` at [simklRepository.js:213](../simklRepository.js).
+See `apiFetch` in [simklUserData.js](../simklUserData.js) (user-auth variant with bearer) and [simklCatalog.js](../simklCatalog.js) (anonymous variant).
 
 Public/metadata endpoints (`/tv/*`, `/movies/*`, `/search/*`, `data.simkl.in/*`) work with `simkl-api-key` only — no user OAuth, no `client_secret`. `/sync/*` needs the bearer token.
 
@@ -33,7 +33,7 @@ Public/metadata endpoints (`/tv/*`, `/movies/*`, `/search/*`, `data.simkl.in/*`)
 
 1. Browser → `https://simkl.com/oauth/authorize?response_type=code&client_id=…&redirect_uri=…&state=…`
 2. Callback hits the redirect URI with `?code=…`.
-3. `exchangeOAuthCode(code, redirectUri)` at [simklRepository.js:11](../simklRepository.js):
+3. `exchangeOAuthCode(code, redirectUri)` in [simklUserData.js](../simklUserData.js):
 
 ```
 POST https://api.simkl.com/oauth/token
@@ -68,7 +68,7 @@ All paths joined onto `https://api.simkl.com` unless noted.
 { "movies": [{ "ids": {...}, "watched_at": "2026-04-19T12:00:00.000Z" }] }
 ```
 
-`undoMarkWatched` on a movie also re-adds it to `plantowatch` so unwatching does not silently drop the item from the library ([simklRepository.js:111–113](../simklRepository.js)).
+`undoMarkWatched` on a movie also re-adds it to `plantowatch` so unwatching does not silently drop the item from the library (see [simklUserData.js](../simklUserData.js)).
 
 ### Catalog (metadata) — public
 
@@ -91,7 +91,7 @@ Plain JSON array of 100 items. Cache-first in [sw.js](../sw.js).
 
 ## Response fields the app actually reads
 
-From `normalizeItem` at [simklRepository.js:243](../simklRepository.js):
+From `normalizeItem` in [simklUserData.js](../simklUserData.js):
 
 - Media: `show | movie | <root>` (anime comes under the same shape)
 - IDs: `ids.simkl` or `ids.simkl_id` → integer; `ids.imdb` → string; `ids.tmdb`, `ids.tvdb` also present
@@ -105,19 +105,19 @@ Type is inferred: `raw.show → "tv"`, `raw.movie → "movie"`, `raw.anime_type 
 
 ## Gotchas
 
-- **Titles are backslash-escaped.** `decodeSimklText` at [simklRepository.js:231](../simklRepository.js) strips `\'`, `\"`, `\\`. Do this before rendering or searching.
+- **Titles are backslash-escaped.** `decodeSimklText` (present in both Simkl modules) strips `\'`, `\"`, `\\`. Do this before rendering or searching.
 - **`next_to_watch` shape varies.** Can be a string (`"S05E01"`) or an object. Parser needed.
 - **`ids.simkl` vs `ids.simkl_id`.** Both exist in responses. Always check both.
-- **Anime bucket is separate** (`/sync/all-items/anime/`) but normalizes to `type: "tv"`. Failure of that single call is swallowed with `.catch(() => [])` ([simklRepository.js:66](../simklRepository.js)).
+- **Anime bucket is separate** (`/sync/all-items/anime/`) but normalizes to `type: "tv"`. Failure of that single call is swallowed with `.catch(() => [])` (see [simklUserData.js](../simklUserData.js)).
 - **Poster field** may be a bare path (`"ab/abc123"`) or full URL; UI composes the CDN URL itself.
 - **Delta sync key:** pass `date_from=<latest ISO timestamp seen in /sync/activities>` to `/sync/all-items/*`. Items with `status: "deleted"` in the delta must be removed from the cached list.
-- **Errors.** `apiFetch` throws `ApiError` on non-2xx, using `data.error || data.message || "API error <status>"`. Non-JSON responses become empty objects.
+- **Errors.** `apiFetch` throws a plain `Error` on non-2xx, using `data.error || data.message || "API error <status>"`. Non-JSON responses become empty objects.
 
 ## Caching
 
 | Key | Shape | Purpose |
 |---|---|---|
-| `simkl-cache-v3` | gzip+base64 of `{ sig, lastActivity, shows, movies, anime }` | Full library; re-fetched delta-only when `sig` matches | 
+| `simkl-cache-v4` | gzip+base64 of `{ sig, lastActivity, shows, movies, anime }` | Full library; re-fetched delta-only when `sig` matches | 
 | `next-watch-ratings-cache` | `{ schema: 3, entries: { [simklId]: { rating, imdb, total, fetchedAt } } }` | 30-day TTL per entry |
 | `next-watch-episode-cache` | `{ "<simklId>:<season>:<episode>": title }` | Episode titles |
 | `next-watch-access-token` | string | User bearer token |
