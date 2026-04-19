@@ -276,8 +276,6 @@ function buildRatingsInput(mediaType, shows, movies, anime) {
 // ── Storage ──
 
 const STORAGE = {
-  clientId: "next-watch-client-id",
-  clientSecret: "next-watch-client-secret",
   accessToken: "next-watch-access-token",
   syncCache: "simkl-cache-v2",
   ratingsCache: "next-watch-ratings-cache",
@@ -300,8 +298,6 @@ function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key
 function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
 function clearAllStorage() { for (const key of Object.values(STORAGE)) localStorage.removeItem(key); }
 
-function getClientId() { return readStorage(STORAGE.clientId); }
-function getClientSecret() { return readStorage(STORAGE.clientSecret); }
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
 function isLoggedIn() { return !!getAccessToken(); }
 
@@ -369,9 +365,8 @@ function initDockEffect(row) {
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
-    appIntro: $("appIntro"), authSetup: $("authSetup"), loginStatusNote: $("loginStatusNote"), loginNewNote: $("loginNewNote"), redirectHint: $("redirectHint"), copyRedirectBtn: $("copyRedirectBtn"),
-    clientIdInput: $("clientIdInput"), clientSecretInput: $("clientSecretInput"), connectBtn: $("connectBtn"),
-    logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), saveSettingsBtn: $("saveSettingsBtn"), aiSaveBtn: $("aiSaveBtn"),
+    appIntro: $("appIntro"), authSetup: $("authSetup"), connectBtn: $("connectBtn"),
+    logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
@@ -1072,12 +1067,8 @@ Output: a JSON array only, no prose, no markdown:
   // ── OAuth ──
 
   function startOAuth() {
-    const clientId = el.clientIdInput.value.trim();
-    const clientSecret = el.clientSecretInput.value.trim();
-    if (!clientId) { showToast("Enter a client ID.", true); return; }
-    if (!clientSecret) { showToast("Enter an app secret.", true); return; }
-    writeStorage(STORAGE.clientId, clientId);
-    writeStorage(STORAGE.clientSecret, clientSecret);
+    const clientId = window.__SIMKL_CLIENT_ID__;
+    if (!clientId) { showToast("App is not configured.", true); return; }
     const state = Math.random().toString(36).slice(2);
     sessionStorage.setItem("oauth-state", state);
     const redirectUri = `${location.origin}${location.pathname}`;
@@ -1096,7 +1087,6 @@ Output: a JSON array only, no prose, no markdown:
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
       if (expected && state && expected !== state) throw new ApiError("State mismatch.");
-      if (!getClientId() || !getClientSecret()) throw new ApiError("Missing client ID or app secret.");
       const redirectUri = `${location.origin}${location.pathname}`;
       const token = await simkl.exchangeOAuthCode(code, redirectUri);
       writeStorage(STORAGE.accessToken, token.access_token);
@@ -1118,8 +1108,6 @@ Output: a JSON array only, no prose, no markdown:
     tvItems = [];
     movieItems = [];
     libraryIndex.clear();
-    el.clientIdInput.value = "";
-    el.clientSecretInput.value = "";
     hydrateUI();
     showView("next");
     showToast("Logged out.");
@@ -1132,23 +1120,17 @@ Output: a JSON array only, no prose, no markdown:
     el.nextSetup.hidden = loggedIn;
     el.nextContent.hidden = !loggedIn;
     if (!loggedIn) {
-      el.appIntro.hidden = !!getClientId();
-      el.authSetup.hidden = !getClientId();
+      el.appIntro.hidden = false;
+      el.authSetup.hidden = true;
     }
   }
 
   function hydrateUI() {
     const loggedIn = isLoggedIn();
     el.topBar.hidden = false;
-    el.clientIdInput.value = getClientId();
-    el.clientSecretInput.value = getClientSecret();
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
-    el.loginStatusNote.hidden = !loggedIn;
-    el.loginNewNote.hidden = loggedIn;
     el.logoutArea.hidden = !loggedIn;
-    el.connectBtn.hidden = loggedIn;
-    el.saveSettingsBtn.hidden = !loggedIn;
     el.aiSettingsSection.hidden = !loggedIn;
     el.hideTrendingWatched.closest("label").hidden = !loggedIn;
     el.editSimklSettings.hidden = !loggedIn;
@@ -1158,20 +1140,7 @@ Output: a JSON array only, no prose, no markdown:
 
   // ── Wire events ──
 
-  const redirectUri = `${location.origin}${location.pathname}`.replace(/\/$/, "").replace(/^https?:\/\//, "");
-  el.redirectHint.textContent = redirectUri;
-  el.copyRedirectBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(redirectUri);
-    showToast("Copied redirect URI.");
-  });
   el.connectBtn.addEventListener("click", startOAuth);
-  el.saveSettingsBtn.addEventListener("click", () => {
-    writeStorage(STORAGE.clientId, el.clientIdInput.value.trim());
-    writeStorage(STORAGE.clientSecret, el.clientSecretInput.value.trim());
-    hydrateUI();
-    showView("next");
-    showToast("Simkl settings saved.");
-  });
   el.aiSaveBtn.addEventListener("click", () => {
     const provider = el.aiProviderSelect.value;
     const aiKey = el.aiKeyInput.value.trim();
@@ -1188,7 +1157,7 @@ Output: a JSON array only, no prose, no markdown:
     localStorage.removeItem("next-watch-episode-cache");
     location.reload();
   });
-  el.getStartedBtn.addEventListener("click", () => showView("settings"));
+  el.getStartedBtn.addEventListener("click", startOAuth);
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });

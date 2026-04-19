@@ -10,7 +10,4 @@ export async function loginViaOAuth(page) {
   })
   await page.goto("/")
   await page.getByRole("button", { name: /get started/i }).click()
-  await page.getByLabel("Client ID").fill("test-client-id")
-  await page.getByLabel("App Secret").fill("test-secret")
-  await page.getByRole("button", { name: /connect with simkl/i }).click()
 }

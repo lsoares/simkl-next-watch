@@ -20,4 +20,17 @@ for (const f of ["next-watch.css", "next-watch.js", "manifest.json", "favicon.ic
   await copyFile(f, `dist/${f}`)
 }
 
+const clientId = process.env.SIMKL_CLIENT_ID || ""
+const clientSecret = process.env.SIMKL_CLIENT_SECRET || ""
+if (clientId && clientSecret) {
+  await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__=${JSON.stringify(clientId)};window.__SIMKL_CLIENT_SECRET__=${JSON.stringify(clientSecret)}\n`)
+} else {
+  try {
+    await copyFile("config.local.js", "dist/config.local.js")
+  } catch {
+    await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__="";window.__SIMKL_CLIENT_SECRET__=""\n`)
+    console.warn("No SIMKL_CLIENT_ID/SECRET env vars and no config.local.js — shipped with empty credentials.")
+  }
+}
+
 console.log(`index.html: ${html.length.toLocaleString()} → ${minified.length.toLocaleString()} bytes`)

@@ -2,6 +2,10 @@ import { test as base, expect } from "@playwright/test"
 
 export const test = base.extend({
   context: async ({ context, baseURL }, use) => {
+    await context.addInitScript(() => {
+      window.__SIMKL_CLIENT_ID__ = "test-client-id"
+      window.__SIMKL_CLIENT_SECRET__ = "test-secret"
+    })
     await context.route("**/*", (route) => {
       if (route.request().url().startsWith(baseURL)) return route.continue()
       route.abort("internetdisconnected")

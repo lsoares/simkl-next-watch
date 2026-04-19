@@ -1,5 +1,6 @@
 .claude/
 .DS_Store
+config.local.js
 dist/
 node_modules/
 test-results/

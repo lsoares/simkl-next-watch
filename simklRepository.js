@@ -14,8 +14,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          client_id: localStorage.getItem("next-watch-client-id"),
-          client_secret: localStorage.getItem("next-watch-client-secret"),
+          client_id: window.__SIMKL_CLIENT_ID__,
+          client_secret: window.__SIMKL_CLIENT_SECRET__,
           redirect_uri: redirectUri,
           grant_type: "authorization_code",
         }),
@@ -213,7 +213,7 @@
   async function apiFetch(path, options = {}) {
     const headers = {
       "Content-Type": "application/json",
-      "simkl-api-key": localStorage.getItem("next-watch-client-id"),
+      "simkl-api-key": window.__SIMKL_CLIENT_ID__,
       ...options.headers,
     }
     const token = localStorage.getItem("next-watch-access-token")

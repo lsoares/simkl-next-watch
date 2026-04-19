@@ -40,7 +40,7 @@
         <a id="navAi" class="tiny-link" href="#ai">ai suggested</a>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
         <a class="tiny-link" id="editSimklSettings" href="#settings">settings</a>
-        <a class="tiny-link" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer" title="Support Next Watch">☕ tip</a>
+        <a class="tiny-link" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer" title="Support Next Watch">☕</a>
       </div>
     </nav>
 
@@ -60,30 +60,7 @@
             <button class="app-intro-cta" id="getStartedBtn" type="button">Get started</button>
           </div>
           <div id="authSetup" hidden>
-            <h2 style="font-size:1.1rem;margin-bottom:8px">Series and movies database</h2>
-            <p class="field-help" id="loginStatusNote" hidden>You're already connected. Update credentials from your <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer">Simkl developer settings</a>.</p>
-            <div class="field-help" id="loginNewNote">
-              <p><a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> tracks your watchlist and ratings so Next Watch knows what to recommend next.</p>
-              <p>Create a <a href="https://simkl.com/settings/developer/new/" target="_blank" rel="noreferrer">new Simkl app</a>:</p>
-              <ol class="setup-hints">
-                <li>Name: <strong>Next Watch</strong></li>
-                <li>Description: <strong>Next Watch</strong></li>
-                <li>Redirect URI: <code id="redirectHint"></code><button class="copy-btn" id="copyRedirectBtn" type="button">Copy</button></li>
-                <li>Save changes, then paste the client ID and app secret below.</li>
-              </ol>
-            </div>
-            <form autocomplete="off" onsubmit="return false">
-              <div style="margin-bottom:12px">
-                <label for="clientIdInput">Client ID</label>
-                <input id="clientIdInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" />
-              </div>
-              <div style="margin-bottom:12px">
-                <label for="clientSecretInput">App Secret</label>
-                <input id="clientSecretInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
-              </div>
-              <button class="secondary" id="connectBtn" type="button">Connect with Simkl</button>
-              <button class="secondary" id="saveSettingsBtn" type="button" hidden>Save Simkl settings</button>
-            </form>
+            <button class="secondary" id="connectBtn" type="button" hidden>Connect with Simkl</button>
             <div id="aiSettingsSection" hidden>
               <div style="margin-top:48px"></div>
               <h2 style="font-size:1.1rem;margin-bottom:8px">AI recommendations</h2>
@@ -199,6 +176,7 @@
       </div>
     </template>
 
+    <script src="./config.local.js"></script>
     <script src="./simklRepository.js"></script>
     <script src="./next-watch.js"></script>
   </body>

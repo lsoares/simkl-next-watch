@@ -12,13 +12,20 @@ test.describe("logged out from simkl", () => {
   })
 
 
-  test("Get Started navigates to settings with Simkl setup form", async ({ page }) => {
+  test("Get Started redirects to Simkl OAuth", async ({ page }) => {
+    let authorizeHit = false
+    await page.route("https://simkl.com/oauth/authorize**", async (route) => {
+      authorizeHit = true
+      const url = new URL(route.request().url())
+      expect(url.searchParams.get("client_id")).toBe("test-client-id")
+      expect(url.searchParams.get("response_type")).toBe("code")
+      await route.fulfill({ status: 200, contentType: "text/html", body: "<html></html>" })
+    })
     await page.goto("/")
 
     await page.getByRole("button", { name: /get started/i }).click()
 
-    await expect(page.getByRole("heading", { name: /series and movies database/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /connect with simkl/i })).toBeVisible()
+    await expect.poll(() => authorizeHit).toBe(true)
   })
 
 

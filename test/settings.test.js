@@ -4,7 +4,7 @@ import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, 
 
 test.describe("settings", () => {
 
-  test("shows settings form pre-filled when logged in", async ({ page }) => {
+  test("shows logout button in settings when logged in", async ({ page }) => {
     await setupOauthToken(page, "test-token")
     await setupSyncActivities(page)
     await setupSyncShows(page, [{
@@ -19,9 +19,6 @@ test.describe("settings", () => {
 
     await page.getByRole("link", { name: "Settings" }).click()
 
-    await expect(page.getByRole("textbox", { name: /client id/i })).toHaveValue("test-client-id")
-    await expect(page.getByRole("textbox", { name: /app secret/i })).toHaveValue("test-secret")
-    await expect(page.getByRole("button", { name: /save simkl settings/i })).toBeVisible()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
   })
 
