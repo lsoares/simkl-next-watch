@@ -637,6 +637,15 @@
       .rating-btn:hover { background: #fbbf24; border-color: #fbbf24; color: #000; }
       .rating-skip { font-size: 0.65rem; color: #475569; background: none; border: none; cursor: pointer; min-height: unset; padding: 2px; }
       .rating-skip:hover { color: #94a3b8; }
+      @media (max-width: 680px) {
+        .rating-prompt-row {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 4px;
+          width: min(100%, 180px);
+        }
+        .rating-btn { width: 100%; height: 32px; font-size: 0.85rem; }
+      }
 
 
       /* install button — desktop hides it, only mobile/PWA context */
