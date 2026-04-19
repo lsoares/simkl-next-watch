@@ -106,6 +106,13 @@ function buildTrendingUrl(item, urlBase) {
   return fixedPath ? `https://simkl.com${fixedPath}` : id ? `https://simkl.com/${urlBase}/${id}` : "#";
 }
 
+function buildImdbUrl(item) {
+  const id = item?.ids?.imdb;
+  if (id) return `https://www.imdb.com/title/${encodeURIComponent(id)}/`;
+  const query = `${item?.title || ""} ${item?.year || ""}`.trim();
+  return query ? `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&s=tt` : "https://www.imdb.com/";
+}
+
 function collectLibraryIndex(data) {
   return new Map(
     [...(data.shows || []), ...(data.anime || []), ...(data.movies || [])]
@@ -233,7 +240,7 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
+            ${showImdb ? `<a class="imdb-badge" href="${escapeHtml(buildImdbUrl(item))}" target="_blank" rel="noreferrer">IMDb ${rating}</a>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
@@ -662,6 +669,7 @@ function initDockEffect(row) {
       const rating = data?.ratings?.imdb?.rating;
       return {
         rating: typeof rating === "number" ? rating : null,
+        imdb: data?.ids?.imdb || null,
         total: data?.total_episodes,
         notAired: 0,
       };
@@ -676,11 +684,12 @@ function initDockEffect(row) {
     }
   }
 
-  function injectImdbBadge(card, rating) {
+  function injectImdbBadge(card, item, rating) {
     const host = card?.cardEl?.querySelector(".poster-top-text");
     if (!host || host.querySelector(".imdb-badge")) return;
     const badge = tpl("tpl-imdb-badge").firstElementChild;
     badge.textContent = `IMDb ${rating}`;
+    badge.href = buildImdbUrl(item);
     const anchor = host.querySelector(".trending-badge");
     if (anchor) host.insertBefore(badge, anchor);
     else host.appendChild(badge);
@@ -704,6 +713,7 @@ function initDockEffect(row) {
       if (!id) continue;
       const cached = getCachedInfo(entries, id);
       if (!cached) continue;
+      if (cached.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: cached.imdb };
       if (typeof cached.rating === "number") {
         if (item.ratings?.imdb?.rating == null) item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } };
       } else if (cached.rating === null) {
@@ -742,9 +752,10 @@ function initDockEffect(row) {
         card?.closest(".row-item")?.remove();
         return;
       }
+      if (details.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: details.imdb };
       if (details.rating != null) {
         item.ratings = { ...(item.ratings || {}), imdb: { rating: details.rating } };
-        if (card && isUnstarted(item, type)) injectImdbBadge(card, details.rating);
+        if (card && isUnstarted(item, type)) injectImdbBadge(card, item, details.rating);
       }
       if (type === "tv" && typeof details.total === "number") {
         item.total_episodes_count = details.total;

@@ -244,9 +244,10 @@
     const media = raw.show || raw.movie || raw
     const rawIds = media.ids || raw.ids || {}
     const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
+    const imdb = rawIds.imdb || null
     const imdbRating = media.ratings?.imdb?.rating
     return {
-      ids: { simkl },
+      ids: imdb ? { simkl, imdb } : { simkl },
       title: decodeSimklText(media.title) || "Unknown",
       year: media.year || "",
       poster: media.poster || media.img || "",
