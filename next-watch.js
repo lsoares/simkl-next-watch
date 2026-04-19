@@ -1066,12 +1066,16 @@ Output: a JSON array only, no prose, no markdown:
 
   // ── OAuth ──
 
+  function getRedirectUri() {
+    return window.__SIMKL_REDIRECT_URI__ || `${location.origin}${location.pathname}`;
+  }
+
   function startOAuth() {
     const clientId = window.__SIMKL_CLIENT_ID__;
     if (!clientId) { showToast("App is not configured.", true); return; }
     const state = Math.random().toString(36).slice(2);
     sessionStorage.setItem("oauth-state", state);
-    const redirectUri = `${location.origin}${location.pathname}`;
+    const redirectUri = getRedirectUri();
     location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
   }
 
@@ -1087,8 +1091,7 @@ Output: a JSON array only, no prose, no markdown:
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
       if (expected && state && expected !== state) throw new ApiError("State mismatch.");
-      const redirectUri = `${location.origin}${location.pathname}`;
-      const token = await simkl.exchangeOAuthCode(code, redirectUri);
+      const token = await simkl.exchangeOAuthCode(code, getRedirectUri());
       writeStorage(STORAGE.accessToken, token.access_token);
       sessionStorage.removeItem("oauth-state");
       hydrateUI();
