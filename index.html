@@ -11,6 +11,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Next Watch" />
+    <meta name="description" content="The next episode or movie on your Simkl list — without the scroll. Trending, AI mood picks, and one-tap mark-watched." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Next Watch" />
+    <meta property="og:description" content="The next episode or movie on your Simkl list — without the scroll." />
+    <meta property="og:image" content="./icon.png" />
+    <meta name="twitter:card" content="summary" />
     <link rel="stylesheet" href="./next-watch.css" />
     <script>
       // PostHog: skip entirely when Do-Not-Track is on.
@@ -22,6 +28,11 @@
     </script>
   </head>
   <body>
+    <noscript>
+      <p style="padding:24px;text-align:center;color:#f9fafb;font:1rem system-ui">
+        Next Watch needs JavaScript to fetch your Simkl library. Enable JS and reload.
+      </p>
+    </noscript>
     <nav class="top-bar" id="topBar" hidden>
       <div class="top-bar-scroll">
         <a id="navNext" class="tiny-link active-nav" href="#">next</a>
