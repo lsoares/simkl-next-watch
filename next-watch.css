@@ -433,47 +433,6 @@
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
       .poster-top-text > * { pointer-events: auto; }
 
-      .poster-remove {
-        position: relative;
-        background: rgba(0,0,0,0.45);
-        border: 1px solid rgba(255,255,255,0.2);
-        color: rgba(255,255,255,0.75);
-        font-size: 1rem;
-        line-height: 1;
-        border-radius: 4px;
-        min-height: unset;
-        width: 20px;
-        height: 20px;
-        padding: 0;
-        cursor: pointer;
-        margin-left: auto;
-        margin-top: 2px;
-        flex-shrink: 0;
-        transition: color 0.15s, background 0.15s, opacity 0.15s;
-      }
-      .poster-remove:hover { color: #fca5a5; border-color: #fca5a5; background: rgba(239,68,68,0.25); }
-      @media (hover: hover) and (pointer: fine) {
-        .poster-remove { opacity: 0; }
-        .item-card:hover .poster-remove,
-        .poster-remove:focus-visible { opacity: 1; }
-      }
-      .poster-remove::after {
-        content: "Remove from list";
-        position: absolute;
-        top: calc(100% + 5px);
-        right: 0;
-        background: rgba(0,0,0,0.85);
-        color: #f9fafb;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        padding: 3px 7px;
-        border-radius: 4px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.15s;
-      }
-      .poster-remove:hover::after { opacity: 1; }
-
       /* IMDb rating badge */
       .imdb-badge {
         display: inline-flex;

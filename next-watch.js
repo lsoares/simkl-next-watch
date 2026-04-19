@@ -152,7 +152,6 @@ function formatWatchedAgo(iso) {
 const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const ICON_BOOKMARK = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
-const ICON_REMOVE = `&times;`;
 
 class PosterCard extends HTMLElement {
   variant = "next";
@@ -200,7 +199,6 @@ class PosterCard extends HTMLElement {
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : "";
 
     const showYear = isNext ? unstarted && year : !watched && year;
-    const showRemove = isNext && (type === "movie" || unstarted);
     const showMarkWatched = isNext;
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist;
     const showImdb = !watched && rating && (!isNext || unstarted);
@@ -227,7 +225,6 @@ class PosterCard extends HTMLElement {
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
             ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
           </div>
-          ${showRemove ? `<button class="poster-remove" title="Remove from list">${ICON_REMOVE}</button>` : ""}
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
@@ -240,7 +237,6 @@ class PosterCard extends HTMLElement {
     `;
 
     this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"));
-    this.querySelector(".poster-remove")?.addEventListener("click", (e) => { e.preventDefault(); this._emit("remove"); });
     this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); });
   }
 }
@@ -437,7 +433,6 @@ function initDockEffect(row) {
       card.item = item;
       card.watching = item.status === "watching";
       card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl));
-      card.addEventListener("poster:remove", () => removeFromWatchlist(item, type));
       rowEl.appendChild(frag);
     });
     initDockEffect(rowEl);
@@ -514,17 +509,6 @@ function initDockEffect(row) {
       if (card) card.classList.remove("marking-watched");
       handleError(err);
     }
-  }
-
-  // ── Remove ──
-
-  async function removeFromWatchlist(item, type) {
-    if (!confirm(`Remove "${item.title}" from your watchlist?`)) return;
-    try {
-      await simkl.removeFromHistory(item, type);
-      showToast(`Removed ${item.title}.`);
-      await loadSuggestions();
-    } catch (err) { handleError(err); }
   }
 
   // ── Episode title enrichment ──

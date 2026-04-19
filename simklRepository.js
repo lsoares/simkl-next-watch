@@ -103,17 +103,6 @@
       await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
     },
 
-    async removeFromHistory(item, type) {
-      const key = type === "tv" ? "shows" : "movies"
-      await apiPost("/sync/history/remove", { [key]: [{ ids: item.ids }] })
-      await patchSyncCache((cache) => {
-        const id = itemId(item)
-        if (!id) return cache
-        const drop = (arr) => (arr || []).filter((i) => itemId(i) !== id)
-        return { ...cache, shows: drop(cache.shows), movies: drop(cache.movies), anime: drop(cache.anime) }
-      })
-    },
-
     async addToWatchlist(item, type) {
       const key = type === "movie" ? "movies" : "shows"
       const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
@@ -187,16 +176,6 @@
       localStorage.removeItem(SYNC_CACHE_KEY)
       console.warn("Sync cache not persisted:", err?.message || err)
     }
-  }
-
-  async function patchSyncCache(mutator) {
-    const cache = await readSyncCache()
-    if (!cache) return
-    await writeSyncCache(mutator(cache))
-  }
-
-  function itemId(item) {
-    return String(item?.ids?.simkl || item?.ids?.simkl_id || "")
   }
 
   async function compressJson(obj) {
