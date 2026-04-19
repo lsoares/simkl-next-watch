@@ -6,3 +6,10 @@
 window.__SIMKL_CLIENT_ID__ ??= ""
 window.__SIMKL_CLIENT_SECRET__ ??= ""
 window.__REDIRECT_URI__ ??= ""
+
+// Register a Trakt app at https://trakt.tv/oauth/applications
+// __TRAKT_REDIRECT_URI__ must match exactly what's registered on the Trakt
+// app, including trailing slash.
+window.__TRAKT_CLIENT_ID__ ??= ""
+window.__TRAKT_CLIENT_SECRET__ ??= ""
+window.__TRAKT_REDIRECT_URI__ ??= ""

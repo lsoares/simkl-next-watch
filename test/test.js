@@ -6,6 +6,9 @@ export const test = base.extend({
       window.__SIMKL_CLIENT_ID__ = "test-client-id"
       window.__SIMKL_CLIENT_SECRET__ = "test-secret"
       window.__REDIRECT_URI__ = uri
+      window.__TRAKT_CLIENT_ID__ = "test-trakt-client-id"
+      window.__TRAKT_CLIENT_SECRET__ = "test-trakt-secret"
+      window.__TRAKT_REDIRECT_URI__ = uri
     }, `${baseURL}/`)
     await context.route("**/*", (route) => {
       if (route.request().url().startsWith(baseURL)) return route.continue()
