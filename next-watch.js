@@ -365,7 +365,7 @@ function initDockEffect(row) {
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
+    logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
@@ -1132,12 +1132,6 @@ Output: a JSON array only, no prose, no markdown:
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`);
   });
   el.logoutBtn.addEventListener("click", logout);
-  el.resetCacheBtn.addEventListener("click", () => {
-    localStorage.removeItem(STORAGE.syncCache);
-    localStorage.removeItem("next-watch-ratings-cache");
-    localStorage.removeItem("next-watch-episode-cache");
-    location.reload();
-  });
   el.getStartedBtn.addEventListener("click", startOAuth);
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
