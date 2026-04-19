@@ -172,7 +172,7 @@
 
   // ── Helpers ──
 
-  const SYNC_CACHE_KEY = "simkl-cache-v2"
+  const SYNC_CACHE_KEY = "simkl-cache-v3"
 
   async function readSyncCache() {
     const raw = localStorage.getItem(SYNC_CACHE_KEY)
