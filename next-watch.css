@@ -716,6 +716,7 @@
         gap: 5px;
       }
       .poster-status-icon { flex-shrink: 0; }
+      .poster-status-rating { opacity: 0.75; font-weight: 500; }
       .poster-status--watched { background: rgba(22,101,52,0.8); color: #d1fae5; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
       .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
       .item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)) .poster-bottom {
