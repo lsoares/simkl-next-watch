@@ -1060,9 +1060,9 @@ Output: a JSON array only, no prose, no markdown:
 
   function startOAuth() {
     const clientId = window.__SIMKL_CLIENT_ID__;
-    const redirectUri = window.__SIMKL_REDIRECT_URI__;
+    const redirectUri = window.__REDIRECT_URI__;
     if (!clientId) { showToast("Client ID is not configured.", true); return; }
-    if (!redirectUri) { showToast(`Redirect URI is not set. Register ${location.origin}${location.pathname} on Simkl and set SIMKL_REDIRECT_URI.`, true); return; }
+    if (!redirectUri) { showToast(`Redirect URI is not set. Register ${location.origin}${location.pathname} on Simkl and set REDIRECT_URI.`, true); return; }
     const state = Math.random().toString(36).slice(2);
     sessionStorage.setItem("oauth-state", state);
     location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
@@ -1076,11 +1076,11 @@ Output: a JSON array only, no prose, no markdown:
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
     el.spinner.hidden = false;
     try {
-      if (error) throw new ApiError(`${error} (sent redirect_uri=${window.__SIMKL_REDIRECT_URI__ || "<unset>"})`);
+      if (error) throw new ApiError(`${error} (sent redirect_uri=${window.__REDIRECT_URI__ || "<unset>"})`);
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
       if (expected && state && expected !== state) throw new ApiError("State mismatch.");
-      const token = await simkl.exchangeOAuthCode(code, window.__SIMKL_REDIRECT_URI__);
+      const token = await simkl.exchangeOAuthCode(code, window.__REDIRECT_URI__);
       writeStorage(STORAGE.accessToken, token.access_token);
       sessionStorage.removeItem("oauth-state");
       hydrateUI();
