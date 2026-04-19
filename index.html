@@ -109,22 +109,20 @@
             </div>
             <p class="field-help">Add a key for personalized recommendations.</p>
             <small class="field-disclaimer">Your key stays in this browser and is sent only to the provider you pick — we never receive or store it.</small>
-            <div>
-              <label for="aiProviderSelect">Provider</label>
-              <select id="aiProviderSelect">
-                <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+            <div class="provider-row">
+              <select id="aiProviderSelect" aria-label="Provider">
                 <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
+                <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
                 <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
                 <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
                 <option value="grok" data-url="https://console.x.ai">Grok</option>
                 <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
                 <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
               </select>
-              <a id="aiKeyLink" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Create key</a>
+              <a id="aiKeyLink" href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Create key</a>
             </div>
             <div>
-              <label for="aiKeyInput">API Key</label>
-              <input id="aiKeyInput" type="text" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
+              <input id="aiKeyInput" type="text" placeholder="API key" aria-label="API key" autocomplete="off" data-1p-ignore data-lpignore="true" style="-webkit-text-security:disc" />
             </div>
             <div class="ai-settings-actions">
               <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
