@@ -5,6 +5,7 @@ export const test = base.extend({
     await context.addInitScript(() => {
       window.__SIMKL_CLIENT_ID__ = "test-client-id"
       window.__SIMKL_CLIENT_SECRET__ = "test-secret"
+      window.__SIMKL_REDIRECT_URI__ = "http://localhost/"
     })
     await context.route("**/*", (route) => {
       if (route.request().url().startsWith(baseURL)) return route.continue()
