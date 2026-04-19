@@ -4,11 +4,6 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function simklId(item) {
-  const ids = item?.ids || {};
-  return String(ids.simkl || ids.simkl_id || "");
-}
-
 function parseNextEpisode(value) {
   if (!value) return null;
   if (typeof value === "object") {
@@ -68,30 +63,6 @@ function buildMovieSuggestions(movies) {
     .sort(sortByAddedDate);
 }
 
-function posterUrl(code) {
-  if (!code) return "";
-  if (code.startsWith("http")) return code;
-  return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_c.webp`;
-}
-
-function trendingPosterUrl(code) {
-  if (!code) return "";
-  return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_m.webp`;
-}
-
-function buildSimklUrl(item) {
-  const id = simklId(item);
-  if (!id) return "";
-  const slug = String(item.title || "").toLowerCase().normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  return `https://simkl.com/${item.type === "movie" ? "movies" : "tv"}/${id}/${slug}`;
-}
-
-function buildEpisodeUrl(item, ep) {
-  const base = buildSimklUrl(item);
-  return base && ep ? `${base}/season-${ep.season}/episode-${ep.episode}/` : "";
-}
-
 function isUnstarted(item, type) {
   if (type === "tv") {
     const ep = parseNextEpisode(item.next_to_watch);
@@ -100,16 +71,10 @@ function isUnstarted(item, type) {
   return item.status === "plantowatch";
 }
 
-function buildTrendingUrl(item, urlBase) {
-  const fixedPath = item.url ? item.url.replace(/^\/movie\//, "/movies/") : null;
-  const id = String(item.ids?.simkl_id || item.ids?.simkl || "");
-  return fixedPath ? `https://simkl.com${fixedPath}` : id ? `https://simkl.com/${urlBase}/${id}` : "#";
-}
-
 function collectLibraryIndex(data) {
   return new Map(
     [...(data.shows || []), ...(data.anime || []), ...(data.movies || [])]
-      .map((item) => [simklId(item), {
+      .map((item) => [item.id, {
         watched: item.status === "completed",
         watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
         watching: item.status === "watching",
@@ -187,19 +152,16 @@ class PosterCard extends HTMLElement {
     if (!item) return;
 
     const isNext = variant === "next";
-    const id = simklId(item) || String(item.ids?.simkl_id || item.ids?.simkl || "");
+    const id = item.id || "";
     const title = item.title || "";
     const year = item.year || "";
     const rating = item.ratings?.imdb?.rating;
-    const urlBase = type === "movie" ? "movies" : "tv";
-    const posterCode = item.poster || item.img || "";
-    const img = isNext ? posterUrl(posterCode) : trendingPosterUrl(posterCode);
-    const itemWithType = { ...item, type };
-    const url = isNext ? buildSimklUrl(itemWithType) : buildTrendingUrl(item, urlBase);
+    const img = item.posterUrl || "";
+    const url = item.url || "";
 
     const ep = isNext && type === "tv" ? parseNextEpisode(item.next_to_watch) : null;
     const unstarted = isNext ? isUnstarted(item, type) : false;
-    const epUrl = !unstarted && ep ? buildEpisodeUrl(itemWithType, ep) : "";
+    const epUrl = !unstarted && ep && url ? `${url}/season-${ep.season}/episode-${ep.episode}/` : "";
     const epCode = !unstarted && ep ? formatEpisode(ep) : "";
     const showEpCount = type === "tv" && !epCode && !watching && (isNext || !watched);
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null;
@@ -217,7 +179,7 @@ class PosterCard extends HTMLElement {
 
     const dataAttrs = isNext
       ? `data-simkl-id="${id}" data-type="${type}"`
-      : `data-simkl-id="${id}" data-url-base="${urlBase}" data-title="${escapeHtml(title)}"`;
+      : `data-simkl-id="${id}" data-title="${escapeHtml(title)}"`;
     const imgLazy = isNext ? "" : ` loading="lazy"`;
     const posterHref = isNext ? (epUrl || url) : url;
     const posterTooltip = isNext && !unstarted && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : "";
@@ -462,7 +424,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched");
     const snapshot = { ...item };
     try {
-      await simklUserData.markWatched(item, type);
+      await simklUserData.markWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) });
       showToast(toastFrag("Marked ", snapshot, type, " watched."), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
@@ -474,7 +436,7 @@ function initDockEffect(row) {
 
   async function undoMarkWatched(item, type) {
     try {
-      await simklUserData.undoMarkWatched(item, type);
+      await simklUserData.undoMarkWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) });
       showToast(toastFrag("Undone — ", item, type, " unmarked."));
       await loadSuggestions();
     } catch (err) { handleError(err); }
@@ -482,8 +444,8 @@ function initDockEffect(row) {
 
   function toastFrag(prefix, item, type, suffix) {
     const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null
-    const typedItem = item.type ? item : { ...item, type }
-    const url = ep ? buildEpisodeUrl(typedItem, ep) : buildSimklUrl(typedItem)
+    const base = item.url || ""
+    const url = ep && base ? `${base}/season-${ep.season}/episode-${ep.episode}/` : base
     const label = ep ? `${item.title} ${formatEpisode(ep)}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -510,8 +472,8 @@ function initDockEffect(row) {
     const snapshot = { ...item };
     try {
       await Promise.all([
-        simklUserData.rate(item, type, rating),
-        simklUserData.markWatched(item, type),
+        simklUserData.rate({ ids: item.ids, type }, rating),
+        simklUserData.markWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) }),
       ]);
       showToast(toastFrag("Rated ", snapshot, type, ` ${rating}/10 and marked watched.`), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
@@ -526,7 +488,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched");
     const snapshot = { ...item };
     try {
-      await simklUserData.markWatched(item, "movie");
+      await simklUserData.markWatched({ ids: item.ids, type: "movie" });
       showToast(toastFrag("Marked ", snapshot, "movie", " watched."), false, () => undoMarkWatched(snapshot, "movie"));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
@@ -542,7 +504,7 @@ function initDockEffect(row) {
     const cache = readJsonStorage(STORAGE.episodeCache) || {};
     const results = await Promise.allSettled(tvItems.map(async (item) => {
       const ep = parseNextEpisode(item.next_to_watch);
-      const id = simklId(item);
+      const id = item.id;
       if (!ep || !id || item.status === "plantowatch") return null;
       const cacheKey = `${id}:${ep.season}:${ep.episode}`;
       if (cache[cacheKey]) return cache[cacheKey];
@@ -622,7 +584,7 @@ function initDockEffect(row) {
     if (!id || !btn) return;
     btn.disabled = true;
     try {
-      await simklUserData.addToWatchlist(item, card.type);
+      await simklUserData.addToWatchlist({ ids: item.ids, type: card.type });
       libraryIndex.set(id, { watched: false, watchedAt: null });
       card.inWatchlist = true;
       card._rendered = false;

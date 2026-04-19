@@ -19,18 +19,19 @@
       try {
         if (type === "tv") {
           const r = await apiFetch(`/search/tv?q=${q}&limit=1&extended=full`)
-          return (Array.isArray(r) && r[0]) ? decodeTitle(r[0]) : null
+          return (Array.isArray(r) && r[0]) ? enrich(r[0], "tv") : null
         }
         if (type === "movie") {
           const r = await apiFetch(`/search/movie?q=${q}&limit=1&extended=full`)
-          return (Array.isArray(r) && r[0]) ? decodeTitle(r[0]) : null
+          return (Array.isArray(r) && r[0]) ? enrich(r[0], "movie") : null
         }
         const [tv, movie] = await Promise.all([
           apiFetch(`/search/tv?q=${q}&limit=1&extended=full`),
           apiFetch(`/search/movie?q=${q}&limit=1&extended=full`),
         ])
-        const hit = (Array.isArray(tv) && tv[0]) || (Array.isArray(movie) && movie[0]) || null
-        return hit ? decodeTitle(hit) : null
+        if (Array.isArray(tv) && tv[0]) return enrich(tv[0], "tv")
+        if (Array.isArray(movie) && movie[0]) return enrich(movie[0], "movie")
+        return null
       } catch {
         return null
       }
@@ -42,8 +43,8 @@
         fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
       ])
       return {
-        tv: (tv || []).map(decodeTitle),
-        movies: (movies || []).map(decodeTitle),
+        tv: (tv || []).map((item) => enrichTrending(item, "tv")),
+        movies: (movies || []).map((item) => enrichTrending(item, "movie")),
       }
     },
   }
@@ -60,7 +61,55 @@
     return data
   }
 
-  function decodeTitle(item) {
-    return { ...item, title: String(item.title || "").replace(/\\(['"\\])/g, "$1") }
+  function decodeSimklText(s) {
+    return String(s || "").replace(/\\(['"\\])/g, "$1")
+  }
+
+  function simklId(item) {
+    const ids = item?.ids || {}
+    return String(ids.simkl || ids.simkl_id || "")
+  }
+
+  function posterThumb(code) {
+    if (!code) return ""
+    if (code.startsWith("http")) return code
+    return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_m.webp`
+  }
+
+  function buildSlugUrl(item, type) {
+    const id = simklId(item)
+    if (!id) return ""
+    const slug = String(item.title || "").toLowerCase().normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/${id}/${slug}`
+  }
+
+  function buildTrendingUrl(item, type) {
+    if (item.url) return `https://simkl.com${item.url.replace(/^\/movie\//, "/movies/")}`
+    const id = simklId(item)
+    const base = type === "movie" ? "movies" : "tv"
+    return id ? `https://simkl.com/${base}/${id}` : "#"
+  }
+
+  function enrich(item, type) {
+    return {
+      ...item,
+      title: decodeSimklText(item.title),
+      id: simklId(item),
+      type,
+      posterUrl: posterThumb(item.poster || item.img || ""),
+      url: buildSlugUrl(item, type),
+    }
+  }
+
+  function enrichTrending(item, type) {
+    return {
+      ...item,
+      title: decodeSimklText(item.title),
+      id: simklId(item),
+      type,
+      posterUrl: posterThumb(item.poster || item.img || ""),
+      url: buildTrendingUrl(item, type),
+    }
   }
 })()

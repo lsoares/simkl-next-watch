@@ -79,43 +79,37 @@
       return { shows, movies, anime, fresh }
     },
 
-    async markWatched(item, type) {
-      if (type === "tv") {
-        const ep = parseNextEpisode(item.next_to_watch)
-        if (ep) {
-          await apiPost("/sync/history", {
-            shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
-          })
-          return
-        }
+    async markWatched({ ids, type, nextEpisode }) {
+      if (type === "tv" && nextEpisode) {
+        await apiPost("/sync/history", {
+          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+        })
+        return
       }
-      await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
+      await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
     },
 
-    async undoMarkWatched(item, type) {
-      if (type === "tv") {
-        const ep = parseNextEpisode(item.next_to_watch)
-        if (ep) {
-          await apiPost("/sync/history/remove", {
-            shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
-          })
-          return
-        }
+    async undoMarkWatched({ ids, type, nextEpisode }) {
+      if (type === "tv" && nextEpisode) {
+        await apiPost("/sync/history/remove", {
+          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+        })
+        return
       }
-      await apiPost("/sync/history/remove", { movies: [{ ids: item.ids }] })
-      const id = Number(item.ids?.simkl || item.ids?.simkl_id)
+      await apiPost("/sync/history/remove", { movies: [{ ids }] })
+      const id = Number(ids?.simkl || ids?.simkl_id)
       if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
 
-    async rate(item, type, rating) {
+    async rate({ ids, type }, rating) {
       const key = type === "tv" ? "shows" : "movies"
-      await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
+      await apiPost("/sync/ratings", { [key]: [{ ids, rating, rated_at: new Date().toISOString() }] })
     },
 
-    async addToWatchlist(item, type) {
+    async addToWatchlist({ ids, type }) {
       const key = type === "movie" ? "movies" : "shows"
-      const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
-      await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: Number(id) } }] })
+      const id = Number(ids?.simkl_id || ids?.simkl)
+      await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
   }
 
@@ -191,11 +185,17 @@
     const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
     const imdb = rawIds.imdb || null
     const imdbRating = media.ratings?.imdb?.rating
+    const title = decodeSimklText(media.title) || "Unknown"
+    const type = raw.show ? "tv" : raw.movie ? "movie" : (raw.anime_type ? "tv" : null)
+    const posterCode = media.poster || media.img || ""
     return {
       ids: imdb ? { simkl, imdb } : { simkl },
-      title: decodeSimklText(media.title) || "Unknown",
+      id: String(simkl || ""),
+      title,
       year: media.year || "",
-      poster: media.poster || media.img || "",
+      poster: posterCode,
+      posterUrl: buildPosterUrl(posterCode),
+      url: buildShowUrl({ id: simkl, title, type }),
       runtime: media.runtime || 0,
       ratings: imdbRating != null ? { imdb: { rating: imdbRating } } : null,
       status: normalizeStatus(raw.status),
@@ -206,8 +206,21 @@
       total_episodes_count: raw.total_episodes_count ?? 0,
       not_aired_episodes_count: raw.not_aired_episodes_count ?? 0,
       user_rating: raw.user_rating ?? null,
-      type: raw.show ? "tv" : raw.movie ? "movie" : (raw.anime_type ? "tv" : null),
+      type,
     }
+  }
+
+  function buildPosterUrl(code) {
+    if (!code) return ""
+    if (code.startsWith("http")) return code
+    return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_c.webp`
+  }
+
+  function buildShowUrl({ id, title, type }) {
+    if (!id) return ""
+    const slug = String(title || "").toLowerCase().normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/${id}/${slug}`
   }
 
   // Reclaim space from prior-versioned caches so key bumps never leak quota.
