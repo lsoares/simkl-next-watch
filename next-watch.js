@@ -227,7 +227,7 @@ class PosterCard extends HTMLElement {
           </div>
         </div>
         <div class="poster-bottom">
-          ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? ` - ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
+          ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
@@ -458,15 +458,36 @@ function initDockEffect(row) {
   async function markWatched(item, type, card) {
     if (type === "movie") { promptRate(item, type, card); return; }
     if (card) card.classList.add("marking-watched");
+    const snapshot = { ...item };
     try {
       await simkl.markWatched(item, type);
-      showToast(`Marked ${item.title} watched.`);
+      showToast(toastFrag("Marked ", snapshot, type, " watched."), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
     } catch (err) {
       if (card) card.classList.remove("marking-watched");
       handleError(err);
     }
+  }
+
+  async function undoMarkWatched(item, type) {
+    try {
+      await simkl.undoMarkWatched(item, type);
+      showToast(toastFrag("Undone — ", item, type, " unmarked."));
+      await loadSuggestions();
+    } catch (err) { handleError(err); }
+  }
+
+  function toastFrag(prefix, item, type, suffix) {
+    const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null
+    const typedItem = item.type ? item : { ...item, type }
+    const url = ep ? buildEpisodeUrl(typedItem, ep) : buildSimklUrl(typedItem)
+    const label = ep ? `${item.title} ${formatEpisode(ep)}` : item.title
+    const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
+    link.style.color = "inherit"; link.style.textDecoration = "underline"
+    const frag = document.createDocumentFragment()
+    frag.append(prefix, link, suffix)
+    return frag
   }
 
   function promptRate(item, type, card) {
@@ -484,12 +505,13 @@ function initDockEffect(row) {
 
   async function rateAndMarkWatched(item, type, rating, card) {
     if (card) card.classList.add("marking-watched");
+    const snapshot = { ...item };
     try {
       await Promise.all([
         simkl.rate(item, type, rating),
         simkl.markWatched(item, type),
       ]);
-      showToast(`Rated ${item.title} ${rating}/10 and marked watched.`);
+      showToast(toastFrag("Rated ", snapshot, type, ` ${rating}/10 and marked watched.`), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
     } catch (err) {
@@ -500,9 +522,10 @@ function initDockEffect(row) {
 
   async function markMovieWatched(item, card) {
     if (card) card.classList.add("marking-watched");
+    const snapshot = { ...item };
     try {
       await simkl.markWatched(item, "movie");
-      showToast(`Marked ${item.title} watched.`);
+      showToast(toastFrag("Marked ", snapshot, "movie", " watched."), false, () => undoMarkWatched(snapshot, "movie"));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
     } catch (err) {

@@ -23,7 +23,7 @@ test.describe("next", () => {
     const card = page.getByRole("article", { name: "Breaking Bad" })
     await expect(card).toBeVisible()
     await expect(card.getByRole("link", { name: "Breaking Bad" })).toBeVisible()
-    await expect(card.getByRole("link", { name: "5x1 - Live Free or Die" })).toBeVisible()
+    await expect(card.getByRole("link", { name: "5x1: Live Free or Die" })).toBeVisible()
     await expect(card.getByRole("button", { name: /mark as watched/i })).toBeVisible()
     await expect(card.getByRole("button", { name: /remove/i })).toHaveCount(0)
   })

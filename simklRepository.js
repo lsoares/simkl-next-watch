@@ -98,6 +98,21 @@
       await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
     },
 
+    async undoMarkWatched(item, type) {
+      if (type === "tv") {
+        const ep = parseNextEpisode(item.next_to_watch)
+        if (ep) {
+          await apiPost("/sync/history/remove", {
+            shows: [{ ids: item.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.episode }] }] }],
+          })
+          return
+        }
+      }
+      await apiPost("/sync/history/remove", { movies: [{ ids: item.ids }] })
+      const id = Number(item.ids?.simkl || item.ids?.simkl_id)
+      if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
+    },
+
     async rate(item, type, rating) {
       const key = type === "tv" ? "shows" : "movies"
       await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
