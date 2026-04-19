@@ -100,6 +100,14 @@
         color: #86efac;
       }
 
+      .field-disclaimer {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.7rem;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+
       button {
         display: inline-flex;
         align-items: center;
