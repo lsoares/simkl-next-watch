@@ -134,9 +134,7 @@ function trendingBadgeInfo(period) {
 
 function buildImdbUrl(item) {
   const id = item?.ids?.imdb;
-  if (id) return `https://www.imdb.com/title/${encodeURIComponent(id)}/`;
-  const query = `${item?.title || ""} ${item?.year || ""}`.trim();
-  return query ? `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&s=tt` : "https://www.imdb.com/";
+  return id ? `https://www.imdb.com/title/${encodeURIComponent(id)}/` : "https://www.imdb.com/";
 }
 
 function trendingPeriodFor(simklId, sets) {
@@ -288,7 +286,7 @@ function buildRatingsInput(mediaType, shows, movies, anime) {
 
 const STORAGE = {
   accessToken: "next-watch-access-token",
-  syncCache: "simkl-cache-v2",
+  syncCache: "simkl-cache-v3",
   ratingsCache: "next-watch-ratings-cache",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
@@ -641,12 +639,12 @@ function initDockEffect(row) {
 
   function readRatingsCache() {
     const raw = readJsonStorage(STORAGE.ratingsCache);
-    if (raw?.schema !== 2 || !raw.entries) return {};
+    if (raw?.schema !== 3 || !raw.entries) return {};
     return raw.entries;
   }
 
   function writeRatingsCache(entries) {
-    writeStorage(STORAGE.ratingsCache, { schema: 2, entries });
+    writeStorage(STORAGE.ratingsCache, { schema: 3, entries });
   }
 
   function getCachedInfo(entries, id) {
