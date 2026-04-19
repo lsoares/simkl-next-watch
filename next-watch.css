@@ -176,10 +176,18 @@
         margin-bottom: 12px;
       }
       .ai-settings-dialog #aiKeyLink {
-        display: inline-block;
-        margin-top: 6px;
         color: #86efac;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+      .ai-settings-dialog .provider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .ai-settings-dialog .provider-row select {
+        flex: 1;
+        min-width: 0;
       }
 
       .ai-settings-header {

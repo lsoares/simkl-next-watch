@@ -817,20 +817,20 @@ function initDockEffect(row) {
   // ── AI ──
 
   function hydrateAiView() {
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq";
     syncAiKeyLink();
     el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value);
   }
 
   function openAiSettings() {
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq";
     syncAiKeyLink();
     el.aiSettings.showModal();
   }
 
   const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude, grok: STORAGE.aiKeyGrok, groq: STORAGE.aiKeyGroq, deepseek: STORAGE.aiKeyDeepseek, openrouter: STORAGE.aiKeyOpenrouter };
 
-  function getAiKey(provider) { return readStorage(AI_KEY_STORAGE[provider] || STORAGE.aiKeyGemini); }
+  function getAiKey(provider) { return readStorage(AI_KEY_STORAGE[provider] || STORAGE.aiKeyGroq); }
 
   function syncAiKeyLink() {
     const opt = el.aiProviderSelect.selectedOptions[0];
@@ -957,7 +957,7 @@ Output: a JSON array only, no prose, no markdown:
     const ratings = buildRatingsInput(mediaType, library.shows, library.movies, library.anime);
     if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
-    const provider = readStorage(STORAGE.aiProvider) || "gemini";
+    const provider = readStorage(STORAGE.aiProvider) || "groq";
     const key = getAiKey(provider);
     const systemPrompt = aiSystemPrompt(mediaType);
     const moodLine = mood.gloss ? `${mood.label} — ${mood.gloss}` : mood.label;
@@ -1011,7 +1011,7 @@ Output: a JSON array only, no prose, no markdown:
   el.aiPrompts.addEventListener("click", async (e) => {
     const btn = e.target.closest(".ai-prompt-btn");
     if (!btn) return;
-    if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) {
+    if (!getAiKey(readStorage(STORAGE.aiProvider) || "groq")) {
       openAiSettings()
       return
     }
@@ -1117,7 +1117,7 @@ Output: a JSON array only, no prose, no markdown:
   function hydrateUI() {
     const loggedIn = isLoggedIn();
     el.topBar.hidden = false;
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq";
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
     el.hideTrendingWatched.closest("label").hidden = !loggedIn;
     el.logoutBtn.hidden = !loggedIn;

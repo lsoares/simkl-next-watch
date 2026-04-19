@@ -108,11 +108,11 @@ test.describe("ai suggestions", () => {
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
     await page.getByRole("button", { name: /cozy night in/i }).click()
-    await page.getByRole("textbox", { name: /api key/i }).fill("my-gemini-key")
+    await page.getByRole("textbox", { name: /api key/i }).fill("my-groq-key")
 
     await page.getByRole("button", { name: /save.*key/i }).click()
 
-    await expect(page.getByRole("status")).toContainText(/gemini key saved/i)
+    await expect(page.getByRole("status")).toContainText(/groq key saved/i)
   })
 
 
