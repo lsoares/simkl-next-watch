@@ -232,7 +232,7 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</span>` : ""}
+          ${showWatchedBadge ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</a>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
