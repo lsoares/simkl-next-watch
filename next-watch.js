@@ -310,7 +310,7 @@ function clearAllStorage() { for (const key of Object.values(STORAGE)) localStor
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
 function isLoggedIn() { return !!getAccessToken(); }
 
-const ApiError = simkl.ApiError;
+const ApiError = simklCatalog.ApiError;
 
 // ── Dock effect (visual, self-contained) ──
 
@@ -548,7 +548,7 @@ function initDockEffect(row) {
       if (!ep || !id || item.status === "plantowatch") return null;
       const cacheKey = `${id}:${ep.season}:${ep.episode}`;
       if (cache[cacheKey]) return cache[cacheKey];
-      const episodes = await simkl.getEpisodes(id);
+      const episodes = await simklCatalog.getEpisodes(id);
       const title = findEpisodeTitle(episodes, ep.season, ep.episode);
       if (title) cache[cacheKey] = title;
       return title;
@@ -657,7 +657,7 @@ function initDockEffect(row) {
 
   async function fetchItemDetails(type, id) {
     try {
-      const data = await (type === "movie" ? simkl.getMovie(id) : simkl.getShow(id));
+      const data = await (type === "movie" ? simklCatalog.getMovie(id) : simklCatalog.getShow(id));
       const rating = data?.ratings?.imdb?.rating;
       return {
         rating: typeof rating === "number" ? rating : null,
@@ -764,7 +764,7 @@ function initDockEffect(row) {
   function loadTrendingBadgeSets() {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise;
     const periods = ["today", "week", "month"];
-    trendingBadgeSetsPromise = Promise.all(periods.map((p) => simkl.getTrending(p)))
+    trendingBadgeSetsPromise = Promise.all(periods.map((p) => simklCatalog.getTrending(p)))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() };
         results.forEach(({ tv, movies }, i) => {
@@ -809,7 +809,7 @@ function initDockEffect(row) {
     el.trendingTvContent.replaceChildren(tpl("tpl-spinner"));
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"));
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([simkl.getTrending(period), libraryReady]);
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([simklCatalog.getTrending(period), libraryReady]);
       const hideWatched = el.hideTrendingWatched.checked;
       const filterFn = (item) => !hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
       const tv = tvData.filter(filterFn).slice(0, 12);
@@ -940,7 +940,7 @@ Output: a JSON array only, no prose, no markdown:
 
   async function resolveSimkl(suggestions, mediaType) {
     const results = await Promise.all(
-      suggestions.map((s) => simkl.searchByTitle(s.title, s.year, mediaType))
+      suggestions.map((s) => simklCatalog.searchByTitle(s.title, s.year, mediaType))
     );
     return results.filter(Boolean);
   }
