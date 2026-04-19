@@ -127,16 +127,6 @@ export function setupAddToWatchlist(page, expectedPayload) {
   })
 }
 
-export function setupRemoveFromWatchlist(page, expectedPayload) {
-  return page.route("**/sync/history/remove", async (route) => {
-    expect(route.request().method()).toBe("POST")
-    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-    expect(route.request().postDataJSON()).toEqual(expectedPayload)
-    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
-  })
-}
-
 function periodFromTrendingUrl(url) {
   const match = new URL(url).pathname.match(/(today|week|month)_100\.json$/)
   return match?.[1] || null

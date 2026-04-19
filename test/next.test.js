@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
 import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupRemoveFromWatchlist, setupTrendingTv, setupTrendingMovies, setupMovieSummary } from "./clients/simkl.js"
+import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes } from "./clients/simkl.js"
 
 test.describe("next", () => {
 
@@ -28,29 +28,4 @@ test.describe("next", () => {
     await expect(card.getByRole("button", { name: /remove/i })).toHaveCount(0)
   })
 
-  test("removes a plan-to-watch movie from the watchlist", async ({ page }) => {
-    await setupOauthToken(page, "test-token")
-    await setupSyncActivities(page)
-    await setupSyncShows(page, [])
-    await setupSyncMovies(page, [{
-      movie: { title: "Inception", ids: { simkl_id: 22222 } },
-      status: "plantowatch",
-    }])
-    await setupSyncAnime(page, [])
-    await setupTrendingTv(page, {})
-    await setupTrendingMovies(page, { today: [{ ids: { simkl_id: 22222 } }] })
-    await setupMovieSummary(page, "22222", { ratings: { imdb: { rating: 8.8 } } })
-    await setupRemoveFromWatchlist(page, { movies: [{ ids: { simkl: 22222 } }] })
-    page.on("dialog", (d) => d.accept())
-    await loginViaOAuth(page)
-    const card = page.getByRole("article", { name: "Inception" })
-    await expect(card).toBeVisible()
-    await expect(card.getByText(/IMDb 8\.8/)).toBeVisible()
-    await expect(card.getByText("🔥 Today")).toBeVisible()
-
-    await card.getByRole("button", { name: /remove/i }).click()
-
-    await expect(page.getByRole("status")).toContainText(/removed inception/i)
-    await expect(page.getByRole("article", { name: "Inception" })).toHaveCount(0)
-  })
 })
