@@ -100,11 +100,12 @@
         color: #86efac;
       }
 
-      .field-disclaimer {
+      small.field-disclaimer {
         display: block;
         margin-top: 6px;
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         color: var(--muted);
+        opacity: 0.75;
         line-height: 1.4;
       }
 
