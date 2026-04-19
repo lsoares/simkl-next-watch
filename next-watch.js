@@ -835,7 +835,7 @@ function initDockEffect(row) {
   function syncAiKeyLink() {
     const opt = el.aiProviderSelect.selectedOptions[0];
     el.aiKeyLink.href = opt.dataset.url;
-    el.aiKeyLink.textContent = "Create key";
+    el.aiKeyLink.textContent = "Create";
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
     syncAiSaveLabel();
   }

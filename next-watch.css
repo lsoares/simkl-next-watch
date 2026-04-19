@@ -180,6 +180,14 @@
         font-size: 0.8rem;
         white-space: nowrap;
       }
+      .ai-settings-dialog select {
+        padding: 10px 12px;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.85rem;
+      }
       .ai-settings-dialog .provider-row {
         display: flex;
         align-items: center;
@@ -919,17 +927,6 @@
       }
 
 /* ── AI view ── */
-
-#aiView select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 1rem;
-  margin-top: 4px;
-}
 
 #logoutBtn { margin-left: auto; }
 
