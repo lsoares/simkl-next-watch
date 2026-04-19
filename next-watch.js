@@ -310,8 +310,6 @@ function clearAllStorage() { for (const key of Object.values(STORAGE)) localStor
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
 function isLoggedIn() { return !!getAccessToken(); }
 
-const ApiError = simklCatalog.ApiError;
-
 // ── Dock effect (visual, self-contained) ──
 
 function initDockEffect(row) {
@@ -821,10 +819,9 @@ function initDockEffect(row) {
       initDockEffect(el.trendingTvContent);
       initDockEffect(el.trendingMoviesContent);
     } catch (err) {
-      if (err?.name === "ApiError") {
-        setEmpty(el.trendingTvContent, err.message, true);
-        setEmpty(el.trendingMoviesContent, err.message, true);
-      } else console.error(err);
+      console.error(err);
+      setEmpty(el.trendingTvContent, err.message, true);
+      setEmpty(el.trendingMoviesContent, err.message, true);
     }
   }
 
@@ -925,14 +922,14 @@ Output: a JSON array only, no prose, no markdown:
 
   async function aiComplete(provider, key, userMessage, systemPrompt) {
     const config = AI_PROVIDERS[provider];
-    if (!config) throw new ApiError("Unknown AI provider");
+    if (!config) throw new Error("Unknown AI provider");
     const res = await fetch(config.url(key), {
       method: "POST",
       headers: config.headers(key),
       body: JSON.stringify(config.body(systemPrompt, userMessage)),
     });
     const data = await res.json();
-    if (!res.ok) throw new ApiError(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || (typeof data.error === "string" ? data.error : null) || `${provider} error ${res.status}`));
+    if (!res.ok) throw new Error(res.status === 429 ? "AI quota exceeded. Try again later." : (data.error?.message || (typeof data.error === "string" ? data.error : null) || `${provider} error ${res.status}`));
     return config.extract(data) || "";
   }
 
@@ -951,7 +948,7 @@ Output: a JSON array only, no prose, no markdown:
       const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
       return Array.isArray(parsed) ? parsed : [];
     } catch {
-      throw new ApiError("Couldn't parse AI suggestions. Try again.");
+      throw new Error("Couldn't parse AI suggestions. Try again.");
     }
   }
 
@@ -1097,10 +1094,10 @@ Output: a JSON array only, no prose, no markdown:
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
     el.spinner.hidden = false;
     try {
-      if (error) throw new ApiError(`${error} (sent redirect_uri=${getRedirectUri()})`);
+      if (error) throw new Error(`${error} (sent redirect_uri=${getRedirectUri()})`);
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
-      if (expected && state && expected !== state) throw new ApiError("State mismatch.");
+      if (expected && state && expected !== state) throw new Error("State mismatch.");
       const token = await simklUserData.exchangeOAuthCode(code, getRedirectUri());
       writeStorage(STORAGE.accessToken, token.access_token);
       sessionStorage.removeItem("oauth-state");

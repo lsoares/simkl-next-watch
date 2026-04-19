@@ -1,13 +1,7 @@
 (function () {
   "use strict"
 
-  class ApiError extends Error {
-    constructor(msg) { super(msg); this.name = "ApiError" }
-  }
-
   window.simklCatalog = {
-    ApiError,
-
     getEpisodes(showId) {
       return apiFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
     },
@@ -62,7 +56,7 @@
     }
     const res = await fetch(`https://api.simkl.com${path}`, { ...options, headers })
     const data = await res.json().catch(() => ({}))
-    if (!res.ok) throw new ApiError(data.error || data.message || `API error ${res.status}`)
+    if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
     return data
   }
 

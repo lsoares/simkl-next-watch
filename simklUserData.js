@@ -1,13 +1,7 @@
 (function () {
   "use strict"
 
-  class ApiError extends Error {
-    constructor(msg) { super(msg); this.name = "ApiError" }
-  }
-
   window.simklUserData = {
-    ApiError,
-
     async exchangeOAuthCode(code, redirectUri) {
       const res = await fetch("https://api.simkl.com/oauth/token", {
         method: "POST",
@@ -21,7 +15,7 @@
         }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!data.access_token) throw new ApiError(data.error || "Token exchange failed.")
+      if (!data.access_token) throw new Error(data.error || "Token exchange failed.")
       return data
     },
 
@@ -175,7 +169,7 @@
     if (token) headers.Authorization = `Bearer ${token}`
     const res = await fetch(`https://api.simkl.com${path}`, { ...options, headers })
     const data = await res.json().catch(() => ({}))
-    if (!res.ok) throw new ApiError(data.error || data.message || `API error ${res.status}`)
+    if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
     return data
   }
 
