@@ -132,10 +132,11 @@ function trendingBadgeInfo(period) {
   return null;
 }
 
-function buildTrendingListUrl(period, type) {
-  const wltime = period === "today" ? "day" : period;
-  const typeParam = type === "movie" ? "movies" : "tv";
-  return `https://simkl.com/lists/trending/?type=${typeParam}&list_type=auto&sort=trending&wltime=${wltime}&official=true`;
+function buildImdbUrl(item) {
+  const id = item?.ids?.imdb;
+  if (id) return `https://www.imdb.com/title/${encodeURIComponent(id)}/`;
+  const query = `${item?.title || ""} ${item?.year || ""}`.trim();
+  return query ? `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&s=tt` : "https://www.imdb.com/";
 }
 
 function trendingPeriodFor(simklId, sets) {
@@ -233,12 +234,12 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showImdb ? `<span class="imdb-badge">IMDb ${rating}</span>` : ""}
+            ${showImdb ? `<a class="imdb-badge" href="${escapeHtml(buildImdbUrl(item))}" target="_blank" rel="noreferrer">IMDb ${rating}</a>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchedBadge ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</a>` : ""}
+          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
@@ -662,6 +663,7 @@ function initDockEffect(row) {
       const rating = data?.ratings?.imdb?.rating;
       return {
         rating: typeof rating === "number" ? rating : null,
+        imdb: data?.ids?.imdb || null,
         total: data?.total_episodes,
         notAired: 0,
       };
@@ -676,11 +678,12 @@ function initDockEffect(row) {
     }
   }
 
-  function injectImdbBadge(card, rating) {
+  function injectImdbBadge(card, item, rating) {
     const host = card?.cardEl?.querySelector(".poster-top-text");
     if (!host || host.querySelector(".imdb-badge")) return;
     const badge = tpl("tpl-imdb-badge").firstElementChild;
     badge.textContent = `IMDb ${rating}`;
+    badge.href = buildImdbUrl(item);
     const anchor = host.querySelector(".trending-badge");
     if (anchor) host.insertBefore(badge, anchor);
     else host.appendChild(badge);
@@ -704,6 +707,7 @@ function initDockEffect(row) {
       if (!id) continue;
       const cached = getCachedInfo(entries, id);
       if (!cached) continue;
+      if (cached.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: cached.imdb };
       if (typeof cached.rating === "number") {
         if (item.ratings?.imdb?.rating == null) item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } };
       } else if (cached.rating === null) {
@@ -742,9 +746,10 @@ function initDockEffect(row) {
         card?.closest(".row-item")?.remove();
         return;
       }
+      if (details.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: details.imdb };
       if (details.rating != null) {
         item.ratings = { ...(item.ratings || {}), imdb: { rating: details.rating } };
-        if (card && isUnstarted(item, type)) injectImdbBadge(card, details.rating);
+        if (card && isUnstarted(item, type)) injectImdbBadge(card, item, details.rating);
       }
       if (type === "tv" && typeof details.total === "number") {
         item.total_episodes_count = details.total;
@@ -796,7 +801,6 @@ function initDockEffect(row) {
       badge.title = info.tooltip;
       badge.setAttribute("aria-label", info.tooltip);
       badge.textContent = `🔥 ${info.label}`;
-      badge.href = buildTrendingListUrl(period, item?.type);
       host.appendChild(badge);
     });
   }
