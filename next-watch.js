@@ -976,9 +976,12 @@ Output: a JSON array only, no prose, no markdown:
     return resolved
       .filter((i) => i.release_status !== "unreleased")
       .sort((a, b) => {
-        const aw = libraryIndex.has(String(a.ids?.simkl_id || a.ids?.simkl || "")) ? 1 : 0;
-        const bw = libraryIndex.has(String(b.ids?.simkl_id || b.ids?.simkl || "")) ? 1 : 0;
+        const ea = libraryIndex.get(String(a.ids?.simkl_id || a.ids?.simkl || ""));
+        const eb = libraryIndex.get(String(b.ids?.simkl_id || b.ids?.simkl || ""));
+        const aw = ea?.watched ? 1 : 0;
+        const bw = eb?.watched ? 1 : 0;
         if (aw !== bw) return aw - bw;
+        if (aw) return new Date(ea?.watchedAt || 0) - new Date(eb?.watchedAt || 0);
         return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0);
       });
   }
