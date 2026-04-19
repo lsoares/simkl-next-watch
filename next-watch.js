@@ -113,6 +113,7 @@ function collectLibraryIndex(data) {
         watched: item.status === "completed",
         watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
         watching: item.status === "watching",
+        userRating: item.user_rating ?? null,
       }])
       .filter(([id]) => id)
   );
@@ -159,6 +160,7 @@ class PosterCard extends HTMLElement {
   item = null;
   watched = false;
   watchedAt = null;
+  userRating = null;
   inWatchlist = false;
   watching = false;
   loggedIn = false;
@@ -176,7 +178,7 @@ class PosterCard extends HTMLElement {
   }
 
   _render() {
-    const { item, variant, type, watched, watchedAt, inWatchlist, watching, loggedIn } = this;
+    const { item, variant, type, watched, watchedAt, userRating, inWatchlist, watching, loggedIn } = this;
     if (!item) return;
 
     const isNext = variant === "next";
@@ -204,6 +206,8 @@ class PosterCard extends HTMLElement {
     const showImdb = !watched && rating && (!isNext || unstarted);
     const showWatchedBadge = !isNext && watched;
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : "";
+    const watchedRating = showWatchedBadge && userRating != null ? userRating : null;
+    const watchedBadgeLabel = `Watched${watchedAgo ? ` ${watchedAgo}` : ""}${watchedRating != null ? ` · rated ${watchedRating}/10` : ""}`;
     const showWatchlistBadge = !isNext && inWatchlist && !watched;
 
     const dataAttrs = isNext
@@ -228,7 +232,7 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}" aria-label="Watched${watchedAgo ? ` ${escapeHtml(watchedAgo)}` : ""}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}</span>` : ""}
+          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
@@ -598,6 +602,7 @@ function initDockEffect(row) {
       const entry = libraryIndex.get(id);
       card.watched = !!entry?.watched;
       card.watchedAt = entry?.watchedAt || null;
+      card.userRating = entry?.userRating ?? null;
       card.inWatchlist = !!entry && !entry.watched;
       card.watching = !!entry?.watching;
       card.loggedIn = loggedIn;
@@ -996,6 +1001,7 @@ Output: a JSON array only, no prose, no markdown:
       const entry = libraryIndex.get(id);
       card.watched = !!entry?.watched;
       card.watchedAt = entry?.watchedAt || null;
+      card.userRating = entry?.userRating ?? null;
       card.inWatchlist = !!entry && !entry.watched;
       card.watching = !!entry?.watching;
       card.loggedIn = true;
