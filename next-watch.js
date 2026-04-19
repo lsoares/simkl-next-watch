@@ -132,6 +132,12 @@ function trendingBadgeInfo(period) {
   return null;
 }
 
+function buildTrendingListUrl(period, type) {
+  const wltime = period === "today" ? "day" : period;
+  const typeParam = type === "movie" ? "movies" : "tv";
+  return `https://simkl.com/lists/trending/?type=${typeParam}&list_type=auto&sort=trending&wltime=${wltime}&official=true`;
+}
+
 function trendingPeriodFor(simklId, sets) {
   if (!simklId || !sets) return null;
   if (sets.today.has(simklId)) return "today";
@@ -790,6 +796,7 @@ function initDockEffect(row) {
       badge.title = info.tooltip;
       badge.setAttribute("aria-label", info.tooltip);
       badge.textContent = `🔥 ${info.label}`;
+      badge.href = buildTrendingListUrl(period, item?.type);
       host.appendChild(badge);
     });
   }
