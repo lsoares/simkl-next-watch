@@ -1,3 +1,6 @@
+import { simklCatalog } from "./simklCatalog.js"
+import { simklUserData } from "./simklUserData.js"
+
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
 function escapeHtml(s) {
