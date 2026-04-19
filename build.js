@@ -16,21 +16,19 @@ const minified = await minify(html, {
 })
 await writeFile("dist/index.html", minified)
 
-for (const f of ["next-watch.css", "next-watch.js", "manifest.json", "favicon.ico", "icon.png", "sw.js", "simklRepository.js"]) {
+for (const f of ["next-watch.css", "next-watch.js", "manifest.json", "favicon.ico", "icon.png", "sw.js", "simklCatalog.js", "simklUserData.js"]) {
   await copyFile(f, `dist/${f}`)
 }
 
-const clientId = process.env.SIMKL_CLIENT_ID || ""
-const clientSecret = process.env.SIMKL_CLIENT_SECRET || ""
-const redirectUri = process.env.REDIRECT_URI || ""
+const clientId = process.env.SIMKL_CLIENT_ID
+const clientSecret = process.env.SIMKL_CLIENT_SECRET
 if (clientId && clientSecret) {
-  await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__=${JSON.stringify(clientId)};window.__SIMKL_CLIENT_SECRET__=${JSON.stringify(clientSecret)};window.__REDIRECT_URI__=${JSON.stringify(redirectUri)}\n`)
+  await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__=${JSON.stringify(clientId)};window.__SIMKL_CLIENT_SECRET__=${JSON.stringify(clientSecret)}\n`)
 } else {
   try {
     await copyFile("config.local.js", "dist/config.local.js")
   } catch {
-    await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__="";window.__SIMKL_CLIENT_SECRET__="";window.__REDIRECT_URI__=""\n`)
-    console.warn("No SIMKL_CLIENT_ID/SECRET env vars and no config.local.js — shipped with empty credentials.")
+    throw new Error("Missing SIMKL_CLIENT_ID or SIMKL_CLIENT_SECRET env vars and no config.local.js present — cannot build without credentials.")
   }
 }
 

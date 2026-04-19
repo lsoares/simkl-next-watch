@@ -310,7 +310,7 @@ function clearAllStorage() { for (const key of Object.values(STORAGE)) localStor
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
 function isLoggedIn() { return !!getAccessToken(); }
 
-const ApiError = simkl.ApiError;
+const ApiError = simklCatalog.ApiError;
 
 // ── Dock effect (visual, self-contained) ──
 
@@ -464,7 +464,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched");
     const snapshot = { ...item };
     try {
-      await simkl.markWatched(item, type);
+      await simklUserData.markWatched(item, type);
       showToast(toastFrag("Marked ", snapshot, type, " watched."), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
@@ -476,7 +476,7 @@ function initDockEffect(row) {
 
   async function undoMarkWatched(item, type) {
     try {
-      await simkl.undoMarkWatched(item, type);
+      await simklUserData.undoMarkWatched(item, type);
       showToast(toastFrag("Undone — ", item, type, " unmarked."));
       await loadSuggestions();
     } catch (err) { handleError(err); }
@@ -512,8 +512,8 @@ function initDockEffect(row) {
     const snapshot = { ...item };
     try {
       await Promise.all([
-        simkl.rate(item, type, rating),
-        simkl.markWatched(item, type),
+        simklUserData.rate(item, type, rating),
+        simklUserData.markWatched(item, type),
       ]);
       showToast(toastFrag("Rated ", snapshot, type, ` ${rating}/10 and marked watched.`), false, () => undoMarkWatched(snapshot, type));
       await waitForWatchedAnimation(card);
@@ -528,7 +528,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched");
     const snapshot = { ...item };
     try {
-      await simkl.markWatched(item, "movie");
+      await simklUserData.markWatched(item, "movie");
       showToast(toastFrag("Marked ", snapshot, "movie", " watched."), false, () => undoMarkWatched(snapshot, "movie"));
       await waitForWatchedAnimation(card);
       await loadSuggestions();
@@ -548,7 +548,7 @@ function initDockEffect(row) {
       if (!ep || !id || item.status === "plantowatch") return null;
       const cacheKey = `${id}:${ep.season}:${ep.episode}`;
       if (cache[cacheKey]) return cache[cacheKey];
-      const episodes = await simkl.getEpisodes(id);
+      const episodes = await simklCatalog.getEpisodes(id);
       const title = findEpisodeTitle(episodes, ep.season, ep.episode);
       if (title) cache[cacheKey] = title;
       return title;
@@ -570,7 +570,7 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
-      const data = await simkl.getLibrary()
+      const data = await simklUserData.getLibrary()
       const allShows = [...(data.shows || []), ...(data.anime || [])]
       const allMovies = data.movies || []
       applyCachedDetails(allShows, "tv")
@@ -624,7 +624,7 @@ function initDockEffect(row) {
     if (!id || !btn) return;
     btn.disabled = true;
     try {
-      await simkl.addToWatchlist(item, card.type);
+      await simklUserData.addToWatchlist(item, card.type);
       libraryIndex.set(id, { watched: false, watchedAt: null });
       card.inWatchlist = true;
       card._rendered = false;
@@ -657,7 +657,7 @@ function initDockEffect(row) {
 
   async function fetchItemDetails(type, id) {
     try {
-      const data = await (type === "movie" ? simkl.getMovie(id) : simkl.getShow(id));
+      const data = await (type === "movie" ? simklCatalog.getMovie(id) : simklCatalog.getShow(id));
       const rating = data?.ratings?.imdb?.rating;
       return {
         rating: typeof rating === "number" ? rating : null,
@@ -764,7 +764,7 @@ function initDockEffect(row) {
   function loadTrendingBadgeSets() {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise;
     const periods = ["today", "week", "month"];
-    trendingBadgeSetsPromise = Promise.all(periods.map((p) => simkl.getTrending(p)))
+    trendingBadgeSetsPromise = Promise.all(periods.map((p) => simklCatalog.getTrending(p)))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() };
         results.forEach(({ tv, movies }, i) => {
@@ -809,7 +809,7 @@ function initDockEffect(row) {
     el.trendingTvContent.replaceChildren(tpl("tpl-spinner"));
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"));
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([simkl.getTrending(period), libraryReady]);
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([simklCatalog.getTrending(period), libraryReady]);
       const hideWatched = el.hideTrendingWatched.checked;
       const filterFn = (item) => !hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || ""));
       const tv = tvData.filter(filterFn).slice(0, 12);
@@ -821,7 +821,7 @@ function initDockEffect(row) {
       initDockEffect(el.trendingTvContent);
       initDockEffect(el.trendingMoviesContent);
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err?.name === "ApiError") {
         setEmpty(el.trendingTvContent, err.message, true);
         setEmpty(el.trendingMoviesContent, err.message, true);
       } else console.error(err);
@@ -940,7 +940,7 @@ Output: a JSON array only, no prose, no markdown:
 
   async function resolveSimkl(suggestions, mediaType) {
     const results = await Promise.all(
-      suggestions.map((s) => simkl.searchByTitle(s.title, s.year, mediaType))
+      suggestions.map((s) => simklCatalog.searchByTitle(s.title, s.year, mediaType))
     );
     return results.filter(Boolean);
   }
@@ -966,7 +966,7 @@ Output: a JSON array only, no prose, no markdown:
 
   async function getRecommendations(mood) {
     const mediaType = getAiMediaType();
-    const library = await simkl.getLibrary();
+    const library = await simklUserData.getLibrary();
     const ratings = buildRatingsInput(mediaType, library.shows, library.movies, library.anime);
     if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
@@ -1076,11 +1076,14 @@ Output: a JSON array only, no prose, no markdown:
 
   // ── OAuth ──
 
+  function getRedirectUri() {
+    return window.__REDIRECT_URI__ || `${location.origin}/`;
+  }
+
   function startOAuth() {
     const clientId = window.__SIMKL_CLIENT_ID__;
-    const redirectUri = window.__REDIRECT_URI__;
     if (!clientId) { showToast("Client ID is not configured.", true); return; }
-    if (!redirectUri) { showToast(`Redirect URI is not set. Register ${location.origin}${location.pathname} on Simkl and set REDIRECT_URI.`, true); return; }
+    const redirectUri = getRedirectUri();
     const state = Math.random().toString(36).slice(2);
     sessionStorage.setItem("oauth-state", state);
     location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
@@ -1094,11 +1097,11 @@ Output: a JSON array only, no prose, no markdown:
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
     el.spinner.hidden = false;
     try {
-      if (error) throw new ApiError(`${error} (sent redirect_uri=${window.__REDIRECT_URI__ || "<unset>"})`);
+      if (error) throw new ApiError(`${error} (sent redirect_uri=${getRedirectUri()})`);
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
       if (expected && state && expected !== state) throw new ApiError("State mismatch.");
-      const token = await simkl.exchangeOAuthCode(code, window.__REDIRECT_URI__);
+      const token = await simklUserData.exchangeOAuthCode(code, getRedirectUri());
       writeStorage(STORAGE.accessToken, token.access_token);
       sessionStorage.removeItem("oauth-state");
       hydrateUI();

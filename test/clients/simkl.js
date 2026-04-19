@@ -91,7 +91,6 @@ export function setupSearchTv(page) {
   return page.route("**/search/tv?**", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
     const params = new URL(route.request().url()).searchParams
     expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
@@ -104,7 +103,6 @@ export function setupSearchMovie(page, results) {
   return page.route("**/search/movie?**", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
     const params = new URL(route.request().url()).searchParams
     expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
