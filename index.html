@@ -94,9 +94,19 @@
 
       <!-- AI view -->
       <div id="aiView" hidden>
-        <details id="aiSettings">
-          <summary>AI key</summary>
+        <div class="ai-toolbar">
+          <div class="range-tabs">
+            <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
+            <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
+          </div>
+          <button class="tiny-link ai-key-btn" id="aiKeyBtn" type="button" hidden>AI key</button>
+        </div>
+        <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
           <form autocomplete="off" onsubmit="return false">
+            <div class="ai-settings-header">
+              <h3>AI key</h3>
+              <button class="dialog-close" id="aiSettingsClose" type="button" aria-label="Close">×</button>
+            </div>
             <p class="field-help">Optional: add a key for personalized recommendations.</p>
             <p class="field-help">Your key stays in this browser and is sent only to the provider you pick — we never receive or store it.</p>
             <div>
@@ -120,11 +130,7 @@
               <button class="secondary" id="aiSaveBtn" type="button">Save AI key</button>
             </div>
           </form>
-        </details>
-        <div class="range-tabs">
-          <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
-          <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
-        </div>
+        </dialog>
         <div class="ai-prompts" id="aiPrompts">
           <button class="ai-prompt-btn" type="button" data-gloss="warm, low-stakes, comforting; nothing bleak or violent">Cozy night in</button>
           <button class="ai-prompt-btn" type="button" data-gloss="tense thrillers or action; sustained suspense">Edge of my seat</button>

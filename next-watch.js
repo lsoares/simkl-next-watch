@@ -370,7 +370,8 @@ function initDockEffect(row) {
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiSettings: $("aiSettings"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
+    aiView: $("aiView"), aiSettings: $("aiSettings"), aiSettingsClose: $("aiSettingsClose"),
+    aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
@@ -818,7 +819,13 @@ function initDockEffect(row) {
   function hydrateAiView() {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
     syncAiKeyLink();
-    el.aiSettings.open = !getAiKey(el.aiProviderSelect.value);
+    el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value);
+  }
+
+  function openAiSettings() {
+    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
+    syncAiKeyLink();
+    el.aiSettings.showModal();
   }
 
   const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude, grok: STORAGE.aiKeyGrok, groq: STORAGE.aiKeyGroq, deepseek: STORAGE.aiKeyDeepseek, openrouter: STORAGE.aiKeyOpenrouter };
@@ -1005,9 +1012,7 @@ Output: a JSON array only, no prose, no markdown:
     const btn = e.target.closest(".ai-prompt-btn");
     if (!btn) return;
     if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) {
-      el.aiSettings.open = true
-      el.aiSettings.scrollIntoView({ behavior: "smooth", block: "start" })
-      showToast("Add an AI key first.", true)
+      openAiSettings()
       return
     }
     el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
@@ -1129,8 +1134,12 @@ Output: a JSON array only, no prose, no markdown:
     writeStorage(STORAGE.aiProvider, provider);
     writeStorage(AI_KEY_STORAGE[provider], aiKey);
     syncAiSaveLabel();
+    el.aiKeyBtn.hidden = false;
+    el.aiSettings.close();
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`);
   });
+  el.aiKeyBtn.addEventListener("click", openAiSettings);
+  el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close());
   el.logoutBtn.addEventListener("click", logout);
   el.getStartedBtn.addEventListener("click", startOAuth);
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
