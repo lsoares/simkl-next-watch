@@ -55,6 +55,7 @@ test.describe("ai suggestions", () => {
         Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
       })
       await page.getByRole("link", { name: /ai suggested/i }).click()
+      await page.getByRole("button", { name: /make me laugh/i }).click()
       await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
       await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
       await page.getByRole("button", { name: /save.*key/i }).click()
@@ -70,7 +71,7 @@ test.describe("ai suggestions", () => {
     })
   })
 
-  test("clicking AI mood without a key shows error toast", async ({ page }) => {
+  test("clicking AI mood without a key opens the key dialog", async ({ page }) => {
     await setupOauthToken(page, "test-token")
     await setupSyncActivities(page)
     await setupSyncShows(page, [{
@@ -90,7 +91,7 @@ test.describe("ai suggestions", () => {
 
     await page.getByRole("button", { name: /cozy night in/i }).click()
 
-    await expect(page.getByRole("status")).toContainText(/add an ai key/i)
+    await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
   })
 
 
@@ -106,6 +107,7 @@ test.describe("ai suggestions", () => {
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
+    await page.getByRole("button", { name: /cozy night in/i }).click()
     await page.getByRole("textbox", { name: /api key/i }).fill("my-gemini-key")
 
     await page.getByRole("button", { name: /save.*key/i }).click()
@@ -126,6 +128,7 @@ test.describe("ai suggestions", () => {
     await loginViaOAuth(page)
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
+    await page.getByRole("button", { name: /cozy night in/i }).click()
 
     await page.getByRole("button", { name: /save.*key/i }).click()
 

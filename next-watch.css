@@ -143,46 +143,74 @@
         text-decoration: underline;
       }
 
-      #aiSettings {
-        margin-bottom: 20px;
-        padding: 10px 14px;
+      .ai-settings-dialog {
+        background: #1e2d3d;
+        color: var(--text);
         border: 1px solid var(--panel-border);
-        border-radius: 8px;
+        border-radius: 12px;
+        padding: 20px;
+        max-width: 420px;
+        width: calc(100vw - 32px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.5);
       }
-
-      #aiSettings summary {
-        cursor: pointer;
-        font-size: 0.85rem;
-        user-select: none;
+      .ai-settings-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.6);
       }
-
-      #aiSettings[open] summary {
-        margin-bottom: 12px;
-      }
-
-      #aiSettings label {
+      .ai-settings-dialog label {
         font-size: 0.74rem;
       }
-
-      #aiSettings input {
+      .ai-settings-dialog input {
         font-size: 0.78rem;
       }
-
-      #aiSettings > form > div {
+      .ai-settings-dialog > form > div {
         margin-bottom: 12px;
       }
-
-      #aiSettings #aiKeyLink {
+      .ai-settings-dialog #aiKeyLink {
         display: inline-block;
         margin-top: 6px;
         color: #86efac;
         font-size: 0.85rem;
       }
 
+      .ai-settings-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .ai-settings-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .dialog-close {
+        background: transparent;
+        border: 0;
+        color: var(--muted);
+        font-size: 1.6rem;
+        line-height: 1;
+        min-height: unset;
+        padding: 0 4px;
+        cursor: pointer;
+      }
+      .dialog-close:hover { color: var(--text); }
+
       .ai-settings-actions {
         display: flex;
         align-items: center;
         gap: 12px;
+      }
+
+      .ai-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .ai-key-btn {
+        color: var(--muted);
+        font-size: 0.78rem;
       }
 
 
@@ -707,10 +735,6 @@
       .trending-toolbar .range-tabs {
         margin-left: auto;
         margin-right: 12px;
-      }
-
-      #aiView > .range-tabs {
-        margin-bottom: 12px;
       }
 
       .range-tab {
