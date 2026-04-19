@@ -364,14 +364,13 @@ function initDockEffect(row) {
   };
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
-    nextSetup: $("nextSetup"), nextContent: $("nextContent"), editSimklSettings: $("editSimklSettings"), aiSettingsSection: $("aiSettingsSection"),
-    appIntro: $("appIntro"), authSetup: $("authSetup"), connectBtn: $("connectBtn"),
-    logoutArea: $("logoutArea"), logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
+    nextSetup: $("nextSetup"), nextContent: $("nextContent"),
+    logoutBtn: $("logoutBtn"), resetCacheBtn: $("resetCacheBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
+    aiView: $("aiView"), aiSettings: $("aiSettings"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
@@ -819,6 +818,7 @@ function initDockEffect(row) {
   function hydrateAiView() {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
     syncAiKeyLink();
+    el.aiSettings.open = !getAiKey(el.aiProviderSelect.value);
   }
 
   const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude, grok: STORAGE.aiKeyGrok, groq: STORAGE.aiKeyGroq, deepseek: STORAGE.aiKeyDeepseek, openrouter: STORAGE.aiKeyOpenrouter };
@@ -1005,11 +1005,9 @@ Output: a JSON array only, no prose, no markdown:
     const btn = e.target.closest(".ai-prompt-btn");
     if (!btn) return;
     if (!getAiKey(readStorage(STORAGE.aiProvider) || "gemini")) {
-      const link = Object.assign(document.createElement("a"), { href: "#settings", className: "tiny-link", textContent: "settings", style: "color:inherit;text-decoration:underline" })
-      link.addEventListener("click", (ev) => { ev.preventDefault(); el.toast.hidden = true; showView("settings") })
-      const frag = document.createDocumentFragment()
-      frag.append("Add an AI key in ", link, " first.")
-      showToast(frag, true)
+      el.aiSettings.open = true
+      el.aiSettings.scrollIntoView({ behavior: "smooth", block: "start" })
+      showToast("Add an AI key first.", true)
       return
     }
     el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"));
@@ -1040,26 +1038,16 @@ Output: a JSON array only, no prose, no markdown:
 
   function showView(name) {
     currentView = name;
-    el.nextView.hidden = name !== "next" && name !== "settings";
+    el.nextView.hidden = name !== "next";
     el.trendingView.hidden = name !== "trending";
     el.aiView.hidden = name !== "ai";
-    [el.navNext, el.navTrending, el.navAi, el.editSimklSettings].forEach((btn) => btn.classList.remove("active-nav"));
+    [el.navNext, el.navTrending, el.navAi].forEach((btn) => btn.classList.remove("active-nav"));
     if (name === "next") el.navNext.classList.add("active-nav");
     if (name === "trending") el.navTrending.classList.add("active-nav");
     if (name === "ai") el.navAi.classList.add("active-nav");
-    if (name === "settings") el.editSimklSettings.classList.add("active-nav");
     if (name === "trending") loadTrending();
     if (name === "ai") hydrateAiView();
     if (name === "next") hydrateNextView();
-    if (name === "settings") {
-      el.nextSetup.hidden = false;
-      el.nextContent.hidden = true;
-      el.appIntro.hidden = true;
-      el.authSetup.hidden = false;
-      el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
-      el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
-      syncAiKeyLink();
-    }
     const hash = name === "next" ? "" : `#${name}`;
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
   }
@@ -1122,10 +1110,6 @@ Output: a JSON array only, no prose, no markdown:
     const loggedIn = isLoggedIn();
     el.nextSetup.hidden = loggedIn;
     el.nextContent.hidden = !loggedIn;
-    if (!loggedIn) {
-      el.appIntro.hidden = false;
-      el.authSetup.hidden = true;
-    }
   }
 
   function hydrateUI() {
@@ -1133,17 +1117,14 @@ Output: a JSON array only, no prose, no markdown:
     el.topBar.hidden = false;
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "gemini";
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value);
-    el.logoutArea.hidden = !loggedIn;
-    el.aiSettingsSection.hidden = !loggedIn;
     el.hideTrendingWatched.closest("label").hidden = !loggedIn;
-    el.editSimklSettings.hidden = !loggedIn;
+    el.logoutBtn.hidden = !loggedIn;
     hydrateNextView();
     syncViewportMetrics();
   }
 
   // ── Wire events ──
 
-  el.connectBtn.addEventListener("click", startOAuth);
   el.aiSaveBtn.addEventListener("click", () => {
     const provider = el.aiProviderSelect.value;
     const aiKey = el.aiKeyInput.value.trim();
@@ -1164,7 +1145,6 @@ Output: a JSON array only, no prose, no markdown:
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });
-  el.editSimklSettings.addEventListener("click", (e) => { e.preventDefault(); showView("settings"); });
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); });
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); });
   el.trendingPeriodTabs.addEventListener("click", (e) => {
@@ -1201,9 +1181,7 @@ Output: a JSON array only, no prose, no markdown:
   }
   handleOAuthCallback();
   const hash = location.hash.replace("#", "").split("/")[0];
-  if (hash === "settings") {
-    showView("settings");
-  } else if (isLoggedIn()) {
+  if (isLoggedIn()) {
     showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next");
     loadSuggestions();
   } else {

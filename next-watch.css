@@ -143,20 +143,46 @@
         text-decoration: underline;
       }
 
-      #authSetup {
-        margin-top: 28px;
+      #aiSettings {
+        margin-bottom: 20px;
+        padding: 10px 14px;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
       }
 
-      #authSetup label {
+      #aiSettings summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+        user-select: none;
+      }
+
+      #aiSettings[open] summary {
+        margin-bottom: 12px;
+      }
+
+      #aiSettings label {
         font-size: 0.74rem;
       }
 
-      #authSetup input {
+      #aiSettings input {
         font-size: 0.78rem;
       }
 
-      #authSetup input::placeholder {
-        font-size: 0.74rem;
+      #aiSettings > form > div {
+        margin-bottom: 12px;
+      }
+
+      #aiSettings #aiKeyLink {
+        display: inline-block;
+        margin-top: 6px;
+        color: #86efac;
+        font-size: 0.85rem;
+      }
+
+      .ai-settings-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
 
 
@@ -863,7 +889,7 @@
   margin-top: 4px;
 }
 
-#editSimklSettings { margin-left: auto; }
+#logoutBtn { margin-left: auto; }
 
 .ai-prompts {
   display: flex;
