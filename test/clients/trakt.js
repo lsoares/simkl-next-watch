@@ -45,6 +45,16 @@ export function setupWatchedShows(page, shows) {
   })
 }
 
+export function setupHiddenProgressWatched(page, hidden) {
+  return page.route("https://api.trakt.tv/users/hidden/progress_watched?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(new URL(route.request().url()).searchParams.get("type")).toBe("show")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(hidden) })
+  })
+}
+
 export function setupProgress(page, slugOrId, data) {
   return page.route(`https://api.trakt.tv/shows/${slugOrId}/progress/watched`, async (route) => {
     expect(route.request().method()).toBe("GET")

@@ -5,7 +5,7 @@ export function createTraktUserData() {
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v0")
-  const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v0")
+  const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v2")
   const progressCache = loadProgressCache()
 
   function loadProgressCache() {
@@ -61,11 +61,16 @@ export function createTraktUserData() {
     async getWatchingShows() {
       const cached = await watchedShowsCache.read()
       if (cached?.items) return { items: cached.items, fresh: false }
-      const data = await apiFetch("/sync/watched/shows?extended=full")
-      const cutoff = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000
+      const [data, hidden] = await Promise.all([
+        apiFetch("/sync/watched/shows?extended=full"),
+        apiFetch("/users/hidden/progress_watched?type=show"),
+      ])
+      const droppedIds = new Set((Array.isArray(hidden) ? hidden : []).map((h) => h.show?.ids?.trakt).filter(Boolean))
       const items = (Array.isArray(data) ? data : [])
         .map(normalizeTraktWatchedShow)
-        .filter((s) => s.nextEpisode && new Date(s.last_watched_at || 0).getTime() >= cutoff)
+        .filter((s) => (s.ids.slug || s.ids.trakt) && s.watched_episodes_count > 0)
+        .filter((s) => !droppedIds.has(s.ids.trakt))
+        .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
         .sort(byLastWatchedDesc)
       await watchedShowsCache.write({ items })
       return { items, fresh: true }
@@ -131,8 +136,7 @@ const byLastWatchedDesc = (a, b) => new Date(b.last_watched_at || 0) - new Date(
 function normalizeTraktWatchedShow(entry) {
   const show = entry.show || {}
   const ids = show.ids || {}
-  const episodes = (entry.seasons || []).flatMap((s) => (s.episodes || []).map((e) => ({ season: s.number, number: e.number })))
-  const last = episodes.reduce((m, e) => (e.season > m.season || (e.season === m.season && e.number > m.number)) ? e : m, { season: 0, number: 0 })
+  const watchedCount = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
   return {
     ids: { trakt: ids.trakt || "", imdb: ids.imdb || "", tmdb: ids.tmdb || null, slug: ids.slug || "" },
     id: String(ids.imdb || ids.trakt || ""),
@@ -144,11 +148,11 @@ function normalizeTraktWatchedShow(entry) {
     runtime: show.runtime || 0,
     ratings: null,
     status: "watching",
-    nextEpisode: last.season > 0 ? { season: last.season, episode: last.number + 1 } : null,
+    nextEpisode: null,
     added_at: null,
     last_watched_at: entry.last_watched_at || null,
-    watched_episodes_count: episodes.length,
-    total_episodes_count: 0,
+    watched_episodes_count: watchedCount,
+    total_episodes_count: show.aired_episodes || 0,
     not_aired_episodes_count: 0,
     user_rating: null,
     type: "tv",
