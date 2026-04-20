@@ -51,7 +51,11 @@ export function createTraktUserData() {
     startOAuth,
 
     browseUrl(type) {
-      return `https://app.trakt.tv/search?mode=media&m=${type === "movie" ? "movie" : "show"}`
+      return `https://app.trakt.tv/search?m=${type === "movie" ? "movie" : "show"}`
+    },
+
+    episodeUrl(item, ep) {
+      return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
     },
 
     // NOTE: when markWatched / undoMarkWatched are implemented on this
@@ -152,7 +156,7 @@ function normalizeTraktWatchedShow(entry) {
     year: show.year || "",
     poster: "",
     posterUrl: "",
-    url: ids.slug ? `https://trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
+    url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
     runtime: show.runtime || 0,
     ratings: null,
     status: "watching",
@@ -179,7 +183,7 @@ function normalizeTraktShow(entry) {
     year: show.year || "",
     poster: "",
     posterUrl: "",
-    url: ids.slug ? `https://trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
+    url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
     runtime: show.runtime || 0,
     ratings: null,
     status: "plantowatch",

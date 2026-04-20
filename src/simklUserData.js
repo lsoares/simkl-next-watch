@@ -101,6 +101,10 @@ export function createSimklUserData() {
       return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
     },
 
+    episodeUrl(item, ep) {
+      return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
+    },
+
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.simkl.com/oauth/token", {
         method: "POST",

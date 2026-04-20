@@ -128,7 +128,7 @@ class PosterCard extends HTMLElement {
 
     const ep = isNext && type === "tv" ? item.nextEpisode : null
     const unstarted = isNext ? isUnstarted(item, type) : false
-    const epUrl = !unstarted && ep && url ? `${url}/season-${ep.season}/episode-${ep.episode}/` : ""
+    const epUrl = !unstarted && ep ? (currentUserData().episodeUrl?.(item, ep) || "") : ""
     const epCode = !unstarted && ep ? formatEpisode(ep) : ""
     const showEpCount = type === "tv" && !epCode && !watching && (isNext || !watched)
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null
@@ -153,7 +153,7 @@ class PosterCard extends HTMLElement {
 
     this.innerHTML = `
       <article class="item-card${watched ? " trending-watched" : ""}${!watched && inWatchlist && !isNext ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
-        ${img ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}><img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" /></a>` : ""}
+        ${posterHref ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true"><span class="poster-placeholder-title">${escapeHtml(title)}</span>${year ? `<span class="poster-placeholder-year">${escapeHtml(String(year))}</span>` : ""}</div>`}</a>` : ""}
         <div class="poster-top">
           <div class="poster-top-text">
             <div class="poster-title">
@@ -425,7 +425,7 @@ function initDockEffect(row) {
   function toastFrag(prefix, item, type, suffix) {
     const ep = type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep && base ? `${base}/season-${ep.season}/episode-${ep.episode}/` : base
+    const url = ep ? (currentUserData().episodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${formatEpisode(ep)}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -608,18 +608,21 @@ function initDockEffect(row) {
 
   function injectPoster(card, item) {
     const cardEl = card.cardEl
-    if (!cardEl || cardEl.querySelector(".poster-anchor") || !item.posterUrl) return
-    const anchor = document.createElement("a")
-    anchor.className = "poster-anchor"
-    anchor.href = item.url || "#"
-    anchor.target = "_blank"
-    anchor.rel = "noreferrer"
+    if (!cardEl || !item.posterUrl) return
     const img = document.createElement("img")
     img.className = "poster"
     img.src = item.posterUrl
     img.alt = ""
     img.draggable = false
     img.loading = "lazy"
+    const placeholder = cardEl.querySelector(".poster-anchor .poster--placeholder")
+    if (placeholder) { placeholder.replaceWith(img); return }
+    if (cardEl.querySelector(".poster-anchor")) return
+    const anchor = document.createElement("a")
+    anchor.className = "poster-anchor"
+    anchor.href = item.url || "#"
+    anchor.target = "_blank"
+    anchor.rel = "noreferrer"
     anchor.appendChild(img)
     cardEl.insertBefore(anchor, cardEl.firstChild)
   }
