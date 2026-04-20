@@ -5,7 +5,7 @@ export function createTraktUserData() {
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v0")
-  const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v2")
+  const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
   const progressCache = loadProgressCache()
 
   function loadProgressCache() {
@@ -63,7 +63,7 @@ export function createTraktUserData() {
       if (cached?.items) return { items: cached.items, fresh: false }
       const [data, hidden] = await Promise.all([
         apiFetch("/sync/watched/shows?extended=full"),
-        apiFetch("/users/hidden/progress_watched?type=show"),
+        apiFetch("/users/hidden/dropped?limit=1000"),
       ])
       const droppedIds = new Set((Array.isArray(hidden) ? hidden : []).map((h) => h.show?.ids?.trakt).filter(Boolean))
       const items = (Array.isArray(data) ? data : [])
@@ -71,7 +71,7 @@ export function createTraktUserData() {
         .filter((s) => (s.ids.slug || s.ids.trakt) && s.watched_episodes_count > 0)
         .filter((s) => !droppedIds.has(s.ids.trakt))
         .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
-        .sort(byLastWatchedDesc)
+        .sort(byWatchingPriority)
       await watchedShowsCache.write({ items })
       return { items, fresh: true }
     },
@@ -131,7 +131,15 @@ export function createTraktUserData() {
 }
 
 const byListedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
-const byLastWatchedDesc = (a, b) => new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
+function byWatchingPriority(a, b) {
+  const left = (s) => (s.total_episodes_count || 0) > 0
+    ? Math.max(0, (s.total_episodes_count || 0) - (s.not_aired_episodes_count || 0) - (s.watched_episodes_count || 0))
+    : Infinity
+  const aLeft = left(a), bLeft = left(b)
+  if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
+  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
+  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
+}
 
 function normalizeTraktWatchedShow(entry) {
   const show = entry.show || {}

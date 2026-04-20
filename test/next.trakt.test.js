@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchedShows, setupHiddenProgressWatched, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
 
 test.describe("next", () => {
 
@@ -23,7 +23,7 @@ test.describe("next", () => {
         seasons: [{ number: 1, episodes: [{ number: 1 }, { number: 2 }] }],
       },
     ])
-    await setupHiddenProgressWatched(page, [
+    await setupDroppedShows(page, [
       { hidden_at: "2025-01-01T00:00:00Z", type: "show", show: { title: "Lost", year: 2004, ids: { trakt: 3000, slug: "lost", imdb: "tt0411008" } } },
     ])
     await setupProgress(page, "breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
