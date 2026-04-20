@@ -1,5 +1,8 @@
-export async function loginViaOAuth(page) {
-  await page.route("https://simkl.com/oauth/authorize**", async (route) => {
+export async function loginViaOAuth(page, provider = "simkl") {
+  const authorizeUrl = provider === "trakt"
+    ? "https://trakt.tv/oauth/authorize**"
+    : "https://simkl.com/oauth/authorize**"
+  await page.route(authorizeUrl, async (route) => {
     const url = new URL(route.request().url())
     const state = url.searchParams.get("state")
     const redirectUri = url.searchParams.get("redirect_uri")
@@ -9,5 +12,6 @@ export async function loginViaOAuth(page) {
     })
   })
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  const buttonName = provider === "trakt" ? /get started \(trakt\)/i : /get started \(simkl\)/i
+  await page.getByRole("button", { name: buttonName }).click()
 }
