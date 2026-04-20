@@ -76,7 +76,7 @@ function isUnstarted(item, type) {
 
 function collectLibraryIndex(data) {
   return new Map(
-    [...(data.shows || []), ...(data.anime || []), ...(data.movies || [])]
+    [...(data.shows || []), ...(data.movies || [])]
       .map((item) => [item.id, {
         watched: item.status === "completed",
         watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
@@ -227,13 +227,13 @@ function formatBand(items, cap) {
   return shuffle(items).slice(0, cap).map((item) => `${item.title}${item.year ? ` (${item.year})` : ""}:${item.user_rating}`).join(", ");
 }
 
-function buildRatingsInput(mediaType, shows, movies, anime) {
-  const includeTv = mediaType !== "movie";
-  const includeFilm = mediaType !== "tv";
+function buildRatingsInput(mediaType, shows, movies) {
+  const includeTv = mediaType !== "movie"
+  const includeFilm = mediaType !== "tv"
   const pool = [
-    ...(includeTv ? [...(shows || []), ...(anime || [])] : []),
+    ...(includeTv ? (shows || []) : []),
     ...(includeFilm ? (movies || []) : []),
-  ].filter((item) => item.user_rating != null);
+  ].filter((item) => item.user_rating != null)
   const liked = pool.filter((i) => i.user_rating >= 8);
   const mixed = pool.filter((i) => i.user_rating >= 6 && i.user_rating < 8);
   const disliked = pool.filter((i) => i.user_rating < 6);
@@ -534,7 +534,7 @@ function initDockEffect(row) {
     el.spinner.hidden = false
     try {
       const data = await simklUserData.getLibrary()
-      const allShows = [...(data.shows || []), ...(data.anime || [])]
+      const allShows = data.shows || []
       const allMovies = data.movies || []
       applyCachedDetails(allShows, "tv")
       applyCachedDetails(allMovies, "movie")
@@ -929,7 +929,7 @@ Output: a JSON array only, no prose, no markdown:
   async function getRecommendations(mood) {
     const mediaType = getAiMediaType();
     const library = await simklUserData.getLibrary();
-    const ratings = buildRatingsInput(mediaType, library.shows, library.movies, library.anime);
+    const ratings = buildRatingsInput(mediaType, library.shows, library.movies)
     if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 
     const provider = readStorage(STORAGE.aiProvider) || "groq";

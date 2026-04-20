@@ -23,7 +23,7 @@ export const simklUserData = {
     const fresh = !cache
 
     if (cache?.sig === sig && cache.shows && cache.movies) {
-      return { shows: cache.shows, movies: cache.movies, anime: cache.anime || [], fresh: false }
+      return { shows: [...cache.shows, ...(cache.anime || [])], movies: cache.movies, fresh: false }
     }
 
     const fetchItems = async (type, dateFrom) => {
@@ -73,7 +73,7 @@ export const simklUserData = {
     })(activities)
 
     await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies, anime })
-    return { shows, movies, anime, fresh }
+    return { shows: [...shows, ...anime], movies, fresh }
   },
 
   async markWatched({ ids, type, nextEpisode }) {
