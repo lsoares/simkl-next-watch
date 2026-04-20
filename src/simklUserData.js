@@ -5,6 +5,65 @@ export function createSimklUserData() {
   const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const cache = createCacheClient(SYNC_CACHE_KEY)
+  let inFlight = null
+
+  async function loadRawLibrary() {
+    if (inFlight) return inFlight
+    inFlight = (async () => {
+      try {
+        const activities = await apiFetch("/sync/activities", { method: "POST" })
+        const sig = JSON.stringify(activities)
+        const cached = await cache.read()
+
+        if (cached?.sig === sig && cached.shows && cached.movies) {
+          return { shows: cached.shows, movies: cached.movies, fresh: false }
+        }
+
+        const fetchItems = async (type, dateFrom) => {
+          const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
+          if (dateFrom) params.set("date_from", dateFrom)
+          const data = await apiFetch(`/sync/all-items/${type}/?${params}`)
+          return (data?.[type] ?? []).map(normalizeItem)
+        }
+
+        const mergeById = (existing, updated) => {
+          const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
+          for (const item of updated) {
+            if (!item.id) continue
+            if (item.status === "deleted") byId.delete(item.id)
+            else byId.set(item.id, item)
+          }
+          return [...byId.values()]
+        }
+
+        const dateFrom = cached?.lastActivity || null
+        const fresh = !cached?.shows || !cached?.movies || !dateFrom
+        const [rawShows, rawMovies, rawAnime] = await Promise.all([
+          fetchItems("shows", fresh ? null : dateFrom),
+          fetchItems("movies", fresh ? null : dateFrom),
+          fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
+        ])
+
+        const incomingShows = [...rawShows, ...rawAnime]
+        const shows = fresh ? incomingShows : mergeById(cached.shows, incomingShows)
+        const movies = fresh ? rawMovies : mergeById(cached.movies, rawMovies)
+
+        const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
+          .reduce((max, x) => x > max ? x : max, "")
+
+        await cache.write({ sig, lastActivity: latestActivity, shows, movies })
+        return { shows, movies, fresh }
+      } finally {
+        inFlight = null
+      }
+    })()
+    return inFlight
+  }
+
+  async function loadAndFilter(predicate) {
+    const { shows, movies, fresh } = await loadRawLibrary()
+    return { shows: shows.filter(predicate), movies: movies.filter(predicate), fresh }
+  }
 
   function startOAuth() {
     const state = Math.random().toString(36).slice(2)
@@ -59,50 +118,9 @@ export function createSimklUserData() {
       return data
     },
 
-    async getLibrary() {
-      const activities = await apiFetch("/sync/activities", { method: "POST" })
-      const sig = JSON.stringify(activities)
-      const cached = await cache.read()
-
-      if (cached?.sig === sig && cached.shows && cached.movies) {
-        return { shows: cached.shows, movies: cached.movies, fresh: false }
-      }
-
-      const fetchItems = async (type, dateFrom) => {
-        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
-        if (dateFrom) params.set("date_from", dateFrom)
-        const data = await apiFetch(`/sync/all-items/${type}/?${params}`)
-        return (data?.[type] ?? []).map(normalizeItem)
-      }
-
-      const mergeById = (existing, updated) => {
-        const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
-        for (const item of updated) {
-          if (!item.id) continue
-          if (item.status === "deleted") byId.delete(item.id)
-          else byId.set(item.id, item)
-        }
-        return [...byId.values()]
-      }
-
-      const dateFrom = cached?.lastActivity || null
-      const fresh = !cached?.shows || !cached?.movies || !dateFrom
-      const [rawShows, rawMovies, rawAnime] = await Promise.all([
-        fetchItems("shows", fresh ? null : dateFrom),
-        fetchItems("movies", fresh ? null : dateFrom),
-        fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
-      ])
-
-      const incomingShows = [...rawShows, ...rawAnime]
-      const shows = fresh ? incomingShows : mergeById(cached.shows, incomingShows)
-      const movies = fresh ? rawMovies : mergeById(cached.movies, rawMovies)
-
-      const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
-        .reduce((max, x) => x > max ? x : max, "")
-
-      await cache.write({ sig, lastActivity: latestActivity, shows, movies })
-      return { shows, movies, fresh }
-    },
+    getWatching: () => loadAndFilter((i) => i.status === "watching"),
+    getWatchlist: () => loadAndFilter((i) => i.status === "plantowatch"),
+    getCompleted: () => loadAndFilter((i) => i.status !== "watching" && i.status !== "plantowatch"),
 
     async markWatched(item) {
       if (item.type === "tv" && item.nextEpisode) {

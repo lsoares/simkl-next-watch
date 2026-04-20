@@ -535,9 +535,11 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
-      const data = await currentUserData().getLibrary()
-      const allShows = data.shows || []
-      const allMovies = data.movies || []
+      const user = currentUserData()
+      const [watching, watchlist, completed] = await Promise.all([user.getWatching(), user.getWatchlist(), user.getCompleted()])
+      const allShows = [...watching.shows, ...watchlist.shows, ...completed.shows]
+      const allMovies = [...watching.movies, ...watchlist.movies, ...completed.movies]
+      const data = { shows: allShows, movies: allMovies, fresh: watching.fresh || watchlist.fresh || completed.fresh }
       applyCachedDetails(allShows, "tv")
       applyCachedDetails(allMovies, "movie")
       tvItems = buildTvSuggestions(allShows)
@@ -916,7 +918,12 @@ Output: a JSON array only, no prose, no markdown:
 
   async function getRecommendations(mood) {
     const mediaType = getAiMediaType()
-    const library = await currentUserData().getLibrary()
+    const user = currentUserData()
+    const [watching, watchlist, completed] = await Promise.all([user.getWatching(), user.getWatchlist(), user.getCompleted()])
+    const library = {
+      shows: [...watching.shows, ...watchlist.shows, ...completed.shows],
+      movies: [...watching.movies, ...watchlist.movies, ...completed.movies],
+    }
     const ratings = buildRatingsInput(mediaType, library.shows, library.movies)
     if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
 

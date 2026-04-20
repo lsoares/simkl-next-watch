@@ -13,7 +13,9 @@ export function createTraktUserData() {
       location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
     },
 
-    async getLibrary() { throw notImplemented() },
+    async getWatching() { throw notImplemented() },
+    async getWatchlist() { throw notImplemented() },
+    async getCompleted() { throw notImplemented() },
     async markWatched() { throw notImplemented() },
     async undoMarkWatched() { throw notImplemented() },
     async rate() { throw notImplemented() },
