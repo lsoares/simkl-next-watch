@@ -1,7 +1,10 @@
+import { createCacheClient } from "./cacheClient.js"
+
 export function createSimklUserData() {
   const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
   const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
+  const cache = createCacheClient(SYNC_CACHE_KEY)
 
   async function apiFetch(path, options = {}) {
     const headers = {
@@ -49,10 +52,10 @@ export function createSimklUserData() {
     async getLibrary() {
       const activities = await apiFetch("/sync/activities", { method: "POST" })
       const sig = JSON.stringify(activities)
-      const cache = await readSyncCache()
+      const cached = await cache.read()
 
-      if (cache?.sig === sig && cache.shows && cache.movies) {
-        return { shows: cache.shows, movies: cache.movies, fresh: false }
+      if (cached?.sig === sig && cached.shows && cached.movies) {
+        return { shows: cached.shows, movies: cached.movies, fresh: false }
       }
 
       const fetchItems = async (type, dateFrom) => {
@@ -72,8 +75,8 @@ export function createSimklUserData() {
         return [...byId.values()]
       }
 
-      const dateFrom = cache?.lastActivity || null
-      const fresh = !cache?.shows || !cache?.movies || !dateFrom
+      const dateFrom = cached?.lastActivity || null
+      const fresh = !cached?.shows || !cached?.movies || !dateFrom
       const [rawShows, rawMovies, rawAnime] = await Promise.all([
         fetchItems("shows", fresh ? null : dateFrom),
         fetchItems("movies", fresh ? null : dateFrom),
@@ -81,13 +84,13 @@ export function createSimklUserData() {
       ])
 
       const incomingShows = [...rawShows, ...rawAnime]
-      const shows = fresh ? incomingShows : mergeById(cache.shows, incomingShows)
-      const movies = fresh ? rawMovies : mergeById(cache.movies, rawMovies)
+      const shows = fresh ? incomingShows : mergeById(cached.shows, incomingShows)
+      const movies = fresh ? rawMovies : mergeById(cached.movies, rawMovies)
 
       const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
         .reduce((max, x) => x > max ? x : max, "")
 
-      await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies })
+      await cache.write({ sig, lastActivity: latestActivity, shows, movies })
       return { shows, movies, fresh }
     },
 
@@ -132,42 +135,6 @@ function requireGlobal(key) {
   const value = window[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-async function readSyncCache() {
-  const raw = localStorage.getItem(SYNC_CACHE_KEY)
-  if (!raw) return null
-  try {
-    return await decompressJson(raw)
-  } catch {
-    return null
-  }
-}
-
-async function writeSyncCache(payload) {
-  try {
-    localStorage.setItem(SYNC_CACHE_KEY, await compressJson(payload))
-  } catch (err) {
-    localStorage.removeItem(SYNC_CACHE_KEY)
-    console.warn("Sync cache not persisted:", err?.message || err)
-  }
-}
-
-async function compressJson(obj) {
-  const bytes = new TextEncoder().encode(JSON.stringify(obj))
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"))
-  const compressed = new Uint8Array(await new Response(stream).arrayBuffer())
-  let bin = ""
-  for (const b of compressed) bin += String.fromCharCode(b)
-  return btoa(bin)
-}
-
-async function decompressJson(b64) {
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))
-  return JSON.parse(await new Response(stream).text())
 }
 
 function decodeSimklText(s) {
