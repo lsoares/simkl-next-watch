@@ -1,7 +1,7 @@
 const CACHE = "next-watch-v6";
 const SHELL = [
   "./index.html",
-  "./icon.png",
+  "./assets/icon.png",
 ];
 
 self.addEventListener("install", (e) => {
