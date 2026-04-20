@@ -24,7 +24,7 @@ for (const f of ["sw.js"]) {
 for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.png"]) {
   await copyFile(`assets/${f}`, `dist/assets/${f}`)
 }
-for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUserData.js"]) {
+for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUserData.js", "traktUserData.js"]) {
   await copyFile(`src/${f}`, `dist/src/${f}`)
 }
 

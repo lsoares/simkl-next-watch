@@ -1,101 +1,138 @@
-export const simklUserData = {
-  async exchangeOAuthCode(code, redirectUri) {
-    const res = await fetch("https://api.simkl.com/oauth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code,
-        client_id: window.__SIMKL_CLIENT_ID__,
-        client_secret: window.__SIMKL_CLIENT_SECRET__,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }),
-    })
+export function createSimklUserData() {
+  const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
+  const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
+  const redirectUri = requireGlobal("__REDIRECT_URI__")
+
+  async function apiFetch(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      "simkl-api-key": clientId,
+      ...options.headers,
+    }
+    const token = localStorage.getItem("next-watch-access-token")
+    if (token) headers.Authorization = `Bearer ${token}`
+    const res = await fetch(`https://api.simkl.com${path}`, { ...options, headers })
     const data = await res.json().catch(() => ({}))
-    if (!data.access_token) throw new Error(data.error || "Token exchange failed.")
+    if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
     return data
-  },
+  }
 
-  async getLibrary() {
-    const activities = await apiFetch("/sync/activities", { method: "POST" })
-    const sig = JSON.stringify(activities)
-    const cache = await readSyncCache()
+  const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
 
-    if (cache?.sig === sig && cache.shows && cache.movies) {
-      return { shows: cache.shows, movies: cache.movies, fresh: false }
-    }
+  return {
+    name: "Simkl",
 
-    const fetchItems = async (type, dateFrom) => {
-      const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
-      if (dateFrom) params.set("date_from", dateFrom)
-      const data = await apiFetch(`/sync/all-items/${type}/?${params}`)
-      return (data?.[type] ?? []).map(normalizeItem)
-    }
+    startOAuth() {
+      const state = Math.random().toString(36).slice(2)
+      sessionStorage.setItem("oauth-state", state)
+      sessionStorage.setItem("oauth-provider", "simkl")
+      location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
+    },
 
-    const mergeById = (existing, updated) => {
-      const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
-      for (const item of updated) {
-        if (!item.id) continue
-        if (item.status === "deleted") byId.delete(item.id)
-        else byId.set(item.id, item)
+    async exchangeOAuthCode(code) {
+      const res = await fetch("https://api.simkl.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!data.access_token) throw new Error(data.error || "Token exchange failed.")
+      return data
+    },
+
+    async getLibrary() {
+      const activities = await apiFetch("/sync/activities", { method: "POST" })
+      const sig = JSON.stringify(activities)
+      const cache = await readSyncCache()
+
+      if (cache?.sig === sig && cache.shows && cache.movies) {
+        return { shows: cache.shows, movies: cache.movies, fresh: false }
       }
-      return [...byId.values()]
-    }
 
-    const dateFrom = cache?.lastActivity || null
-    const fresh = !cache?.shows || !cache?.movies || !dateFrom
-    const [rawShows, rawMovies, rawAnime] = await Promise.all([
-      fetchItems("shows", fresh ? null : dateFrom),
-      fetchItems("movies", fresh ? null : dateFrom),
-      fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
-    ])
+      const fetchItems = async (type, dateFrom) => {
+        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
+        if (dateFrom) params.set("date_from", dateFrom)
+        const data = await apiFetch(`/sync/all-items/${type}/?${params}`)
+        return (data?.[type] ?? []).map(normalizeItem)
+      }
 
-    const incomingShows = [...rawShows, ...rawAnime]
-    const shows = fresh ? incomingShows : mergeById(cache.shows, incomingShows)
-    const movies = fresh ? rawMovies : mergeById(cache.movies, rawMovies)
+      const mergeById = (existing, updated) => {
+        const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
+        for (const item of updated) {
+          if (!item.id) continue
+          if (item.status === "deleted") byId.delete(item.id)
+          else byId.set(item.id, item)
+        }
+        return [...byId.values()]
+      }
 
-    const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
-      .reduce((max, x) => x > max ? x : max, "")
+      const dateFrom = cache?.lastActivity || null
+      const fresh = !cache?.shows || !cache?.movies || !dateFrom
+      const [rawShows, rawMovies, rawAnime] = await Promise.all([
+        fetchItems("shows", fresh ? null : dateFrom),
+        fetchItems("movies", fresh ? null : dateFrom),
+        fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
+      ])
 
-    await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies })
-    return { shows, movies, fresh }
-  },
+      const incomingShows = [...rawShows, ...rawAnime]
+      const shows = fresh ? incomingShows : mergeById(cache.shows, incomingShows)
+      const movies = fresh ? rawMovies : mergeById(cache.movies, rawMovies)
 
-  async markWatched({ ids, type, nextEpisode }) {
-    if (type === "tv" && nextEpisode) {
-      await apiPost("/sync/history", {
-        shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
-      })
-      return
-    }
-    await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
-  },
+      const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
+        .reduce((max, x) => x > max ? x : max, "")
 
-  async undoMarkWatched({ ids, type, nextEpisode }) {
-    if (type === "tv" && nextEpisode) {
-      await apiPost("/sync/history/remove", {
-        shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
-      })
-      return
-    }
-    await apiPost("/sync/history/remove", { movies: [{ ids }] })
-    const id = Number(ids?.simkl || ids?.simkl_id)
-    if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
-  },
+      await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies })
+      return { shows, movies, fresh }
+    },
 
-  async rate({ ids, type }, rating) {
-    const key = type === "tv" ? "shows" : "movies"
-    await apiPost("/sync/ratings", { [key]: [{ ids, rating, rated_at: new Date().toISOString() }] })
-  },
+    async markWatched({ ids, type, nextEpisode }) {
+      if (type === "tv" && nextEpisode) {
+        await apiPost("/sync/history", {
+          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+        })
+        return
+      }
+      await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
+    },
 
-  async addToWatchlist({ ids, type }) {
-    const key = type === "movie" ? "movies" : "shows"
-    const id = Number(ids?.simkl_id || ids?.simkl)
-    await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
-  },
+    async undoMarkWatched({ ids, type, nextEpisode }) {
+      if (type === "tv" && nextEpisode) {
+        await apiPost("/sync/history/remove", {
+          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+        })
+        return
+      }
+      await apiPost("/sync/history/remove", { movies: [{ ids }] })
+      const id = Number(ids?.simkl || ids?.simkl_id)
+      if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
+    },
+
+    async rate({ ids, type }, rating) {
+      const key = type === "tv" ? "shows" : "movies"
+      await apiPost("/sync/ratings", { [key]: [{ ids, rating, rated_at: new Date().toISOString() }] })
+    },
+
+    async addToWatchlist({ ids, type }) {
+      const key = type === "movie" ? "movies" : "shows"
+      const id = Number(ids?.simkl_id || ids?.simkl)
+      await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
+    },
+  }
 }
 
 const SYNC_CACHE_KEY = "simkl-cache-v5"
+
+function requireGlobal(key) {
+  const value = window[key]
+  if (!value) throw new Error(`${key} is not configured.`)
+  return value
+}
 
 async function readSyncCache() {
   const raw = localStorage.getItem(SYNC_CACHE_KEY)
@@ -131,24 +168,6 @@ async function decompressJson(b64) {
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))
   return JSON.parse(await new Response(stream).text())
-}
-
-async function apiFetch(path, options = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-    "simkl-api-key": window.__SIMKL_CLIENT_ID__,
-    ...options.headers,
-  }
-  const token = localStorage.getItem("next-watch-access-token")
-  if (token) headers.Authorization = `Bearer ${token}`
-  const res = await fetch(`https://api.simkl.com${path}`, { ...options, headers })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
-  return data
-}
-
-function apiPost(path, payload) {
-  return apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
 }
 
 function decodeSimklText(s) {

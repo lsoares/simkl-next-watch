@@ -1,5 +1,9 @@
 import { simklCatalog } from "./simklCatalog.js"
-import { simklUserData } from "./simklUserData.js"
+import { createSimklUserData } from "./simklUserData.js"
+import { createTraktUserData } from "./traktUserData.js"
+
+const simklUserData = createSimklUserData()
+const traktUserData = window.__TRAKT_CLIENT_ID__ ? createTraktUserData() : null
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
@@ -1038,27 +1042,6 @@ Output: a JSON array only, no prose, no markdown:
 
   // ── OAuth ──
 
-  function getRedirectUri() {
-    return window.__REDIRECT_URI__ || `${location.origin}/`;
-  }
-
-  function startOAuth() {
-    const clientId = window.__SIMKL_CLIENT_ID__;
-    if (!clientId) { showToast("Client ID is not configured.", true); return; }
-    const redirectUri = getRedirectUri();
-    const state = Math.random().toString(36).slice(2);
-    sessionStorage.setItem("oauth-state", state);
-    location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
-  }
-
-  function startTraktOAuth() {
-    const clientId = window.__TRAKT_CLIENT_ID__;
-    if (!clientId) return;
-    const state = Math.random().toString(36).slice(2);
-    sessionStorage.setItem("oauth-state", state);
-    location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(getRedirectUri())}&state=${state}`);
-  }
-
   async function handleOAuthCallback() {
     const params = new URLSearchParams(location.search);
     const code = params.get("code");
@@ -1067,16 +1050,20 @@ Output: a JSON array only, no prose, no markdown:
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`);
     el.spinner.hidden = false;
     try {
-      if (error) throw new Error(`${error} (sent redirect_uri=${getRedirectUri()})`);
+      if (error) throw new Error(error);
       const expected = sessionStorage.getItem("oauth-state");
       const state = params.get("state") || "";
       if (expected && state && expected !== state) throw new Error("State mismatch.");
-      const token = await simklUserData.exchangeOAuthCode(code, getRedirectUri());
+      const provider = sessionStorage.getItem("oauth-provider") || "simkl";
+      const userData = provider === "trakt" ? traktUserData : simklUserData;
+      if (!userData) throw new Error(`Provider "${provider}" is not configured.`);
+      const token = await userData.exchangeOAuthCode(code);
       writeStorage(STORAGE.accessToken, token.access_token);
       sessionStorage.removeItem("oauth-state");
+      sessionStorage.removeItem("oauth-provider");
       hydrateUI();
       showView("next");
-      showToast("Connected to Simkl.");
+      showToast(`Connected to ${userData.name}.`);
       await loadSuggestions();
     } catch (err) {
       handleError(err);
@@ -1131,9 +1118,11 @@ Output: a JSON array only, no prose, no markdown:
   el.aiKeyBtn.addEventListener("click", openAiSettings);
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close());
   el.logoutBtn.addEventListener("click", logout);
-  el.getStartedBtn.addEventListener("click", startOAuth);
-  el.getStartedTraktBtn.addEventListener("click", startTraktOAuth);
-  if (window.__TRAKT_CLIENT_ID__) el.getStartedTraktBtn.hidden = false;
+  el.getStartedBtn.addEventListener("click", () => simklUserData.startOAuth());
+  if (traktUserData) {
+    el.getStartedTraktBtn.addEventListener("click", () => traktUserData.startOAuth());
+    el.getStartedTraktBtn.hidden = false;
+  }
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });
