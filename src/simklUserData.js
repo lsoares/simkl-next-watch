@@ -168,18 +168,6 @@ export function createSimklUserData() {
       await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
     },
 
-    async undoMarkWatched(item) {
-      if (item.type === "tv" && item.nextEpisode) {
-        await apiPost("/sync/history/remove", {
-          shows: [{ ids: item.ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
-        })
-        return
-      }
-      await apiPost("/sync/history/remove", { movies: [{ ids: item.ids }] })
-      const id = Number(item.ids?.simkl || item.ids?.simkl_id)
-      if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
-    },
-
     async addToWatchlist(item) {
       const key = item.type === "movie" ? "movies" : "shows"
       const id = Number(item.ids?.simkl_id || item.ids?.simkl)

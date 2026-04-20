@@ -336,17 +336,12 @@ function initDockEffect(row) {
 
   // ── Toast ──
 
-  function showToast(msg, isError = false, undoFn = null) {
+  function showToast(msg, isError = false) {
     clearTimeout(toastTimer)
     el.toast.hidden = false
     el.toast.style.color = isError ? "#fca5a5" : ""
     if (typeof msg === "string") el.toast.textContent = msg
     else el.toast.replaceChildren(msg)
-    if (undoFn) {
-      const undo = tpl("tpl-toast-undo").firstElementChild
-      undo.addEventListener("click", () => { el.toast.hidden = true; undoFn(); })
-      el.toast.append(" ", undo)
-    }
     toastTimer = setTimeout(() => { el.toast.hidden = true; }, 8000)
   }
 
@@ -410,21 +405,13 @@ function initDockEffect(row) {
     const snapshot = { ...item }
     try {
       await currentUserData().markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, type, " watched — rate it?"), false, () => undoMarkWatched(snapshot, type))
+      showToast(toastFrag("Marked ", snapshot, type, " watched — rate it?"))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
       if (card) card.classList.remove("marking-watched")
       handleError(err)
     }
-  }
-
-  async function undoMarkWatched(item, type) {
-    try {
-      await currentUserData().undoMarkWatched(item)
-      showToast(toastFrag("Undone — ", item, type, " unmarked."))
-      await loadSuggestions()
-    } catch (err) { handleError(err); }
   }
 
   function toastFrag(prefix, item, type, suffix) {
