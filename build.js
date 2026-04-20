@@ -16,8 +16,12 @@ const minified = await minify(html, {
 })
 await writeFile("dist/index.html", minified)
 
-for (const f of ["next-watch.css", "next-watch.js", "manifest.json", "favicon.ico", "icon.png", "sw.js", "simklCatalog.js", "simklUserData.js"]) {
+await mkdir("dist/src", { recursive: true })
+for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.png", "sw.js"]) {
   await copyFile(f, `dist/${f}`)
+}
+for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUserData.js"]) {
+  await copyFile(`src/${f}`, `dist/src/${f}`)
 }
 
 const clientId = process.env.SIMKL_CLIENT_ID

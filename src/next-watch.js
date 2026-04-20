@@ -337,7 +337,7 @@ function initDockEffect(row) {
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), aiSaveBtn: $("aiSaveBtn"),
+    logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), getStartedTraktBtn: $("getStartedTraktBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
@@ -1051,6 +1051,14 @@ Output: a JSON array only, no prose, no markdown:
     location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
   }
 
+  function startTraktOAuth() {
+    const clientId = window.__TRAKT_CLIENT_ID__;
+    if (!clientId) return;
+    const state = Math.random().toString(36).slice(2);
+    sessionStorage.setItem("oauth-state", state);
+    location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(getRedirectUri())}&state=${state}`);
+  }
+
   async function handleOAuthCallback() {
     const params = new URLSearchParams(location.search);
     const code = params.get("code");
@@ -1124,6 +1132,8 @@ Output: a JSON array only, no prose, no markdown:
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close());
   el.logoutBtn.addEventListener("click", logout);
   el.getStartedBtn.addEventListener("click", startOAuth);
+  el.getStartedTraktBtn.addEventListener("click", startTraktOAuth);
+  if (window.__TRAKT_CLIENT_ID__) el.getStartedTraktBtn.hidden = false;
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); });
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); });
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); });
@@ -1146,7 +1156,7 @@ Output: a JSON array only, no prose, no markdown:
   let deferredInstallPrompt = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; el.installBtn.classList.remove("hidden"); });
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {});
 
   // ── Boot ──
 

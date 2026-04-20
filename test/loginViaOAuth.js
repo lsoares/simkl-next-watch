@@ -9,5 +9,5 @@ export async function loginViaOAuth(page) {
     })
   })
   await page.goto("/")
-  await page.getByRole("button", { name: /get started/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 }
