@@ -235,7 +235,13 @@ const STORAGE = {
 function readStorage(key) { return localStorage.getItem(key) || ""; }
 function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
-function clearAllStorage() { for (const key of Object.values(STORAGE)) localStorage.removeItem(key); }
+function clearAllStorage() {
+  for (const storage of [localStorage, sessionStorage]) {
+    Object.keys(storage).forEach((k) => {
+      if (k.startsWith("next-watch-") || k.startsWith("simkl-") || k.startsWith("trakt-") || k.startsWith("oauth-")) storage.removeItem(k)
+    })
+  }
+}
 
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
 function isLoggedIn() { return !!getAccessToken(); }
@@ -1091,11 +1097,7 @@ Output: a JSON array only, no prose, no markdown:
 
   function logout() {
     clearAllStorage()
-    tvItems = []
-    movieItems = []
-    libraryIndex.clear()
-    hydrateUI()
-    showView("next")
+    location.reload()
   }
 
   // ── UI hydration ──

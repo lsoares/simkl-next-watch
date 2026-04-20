@@ -44,9 +44,10 @@ export function createSimklUserData() {
           fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
         ])
 
-        const incomingShows = [...rawShows, ...rawAnime]
+        const incomingShows = [...rawShows, ...rawAnime.filter((a) => a.type === "tv")]
+        const incomingMovies = [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")]
         const shows = fresh ? incomingShows : mergeById(cached.shows, incomingShows)
-        const movies = fresh ? rawMovies : mergeById(cached.movies, rawMovies)
+        const movies = fresh ? incomingMovies : mergeById(cached.movies, incomingMovies)
 
         const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
           .reduce((max, x) => x > max ? x : max, "")
@@ -188,7 +189,7 @@ export function createSimklUserData() {
   }
 }
 
-const SYNC_CACHE_KEY = "simkl-cache-v6"
+const SYNC_CACHE_KEY = "simkl-cache-v7"
 
 const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
 const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
@@ -234,7 +235,12 @@ function normalizeItem(raw) {
   const imdb = rawIds.imdb || null
   const imdbRating = media.ratings?.imdb?.rating
   const title = decodeSimklText(media.title) || "Unknown"
-  const type = raw.show ? "tv" : raw.movie ? "movie" : (raw.anime_type ? "tv" : null)
+  const animeType = String(raw.anime_type || "").toLowerCase()
+  const type = animeType === "movie" ? "movie"
+    : raw.show ? "tv"
+    : raw.movie ? "movie"
+    : animeType ? "tv"
+    : null
   const posterCode = media.poster || media.img || ""
   return {
     ids: imdb ? { simkl, imdb } : { simkl },
