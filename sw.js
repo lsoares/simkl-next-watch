@@ -1,4 +1,4 @@
-const CACHE = "next-watch-v6"
+const CACHE = "next-watch-v7"
 const SHELL = [
   "./index.html",
   "./assets/icon.png",
@@ -20,10 +20,14 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const { request } = e
+  if (request.method !== "GET") return
   const url = new URL(request.url)
 
-  // Let Simkl API and auth calls through untouched
-  if (url.hostname === "api.simkl.com" || url.hostname === "simkl.com") return
+  // Let Simkl and Trakt API/auth calls through untouched
+  if (
+    url.hostname === "api.simkl.com" || url.hostname === "simkl.com"
+    || url.hostname === "api.trakt.tv" || url.hostname === "trakt.tv"
+  ) return
 
   // Let PostHog through untouched — event POSTs must not be cached,
   // and the SDK handles its own asset caching.
