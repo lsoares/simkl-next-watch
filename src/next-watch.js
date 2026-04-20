@@ -1162,6 +1162,9 @@ Output: a JSON array only, no prose, no markdown:
 
   // ── Boot ──
 
+  if (readStorage(STORAGE.accessToken) && !readStorage(STORAGE.provider)) {
+    clearAllStorage()
+  }
   hydrateUI()
   el.hideTrendingWatched.checked = readStorage(STORAGE.hideWatched) === "true"
   const savedMediaType = readStorage(STORAGE.aiMediaType)
