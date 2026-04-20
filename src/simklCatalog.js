@@ -15,11 +15,14 @@ export const simklCatalog = {
     try {
       const data = await (type === "movie" ? this.getMovie(id) : this.getShow(id))
       const rating = data?.ratings?.imdb?.rating
+      const releaseDate = type === "movie" ? data?.released : data?.first_aired
+      const released = releaseDate ? new Date(releaseDate).getTime() <= Date.now() : true
       return {
         rating: typeof rating === "number" ? rating : null,
         imdb: data?.ids?.imdb || null,
         total: data?.total_episodes,
         notAired: 0,
+        released,
       }
     } catch {
       return null

@@ -297,6 +297,42 @@
       }
       .row-item .item-card { width: 100%; aspect-ratio: 2/3; height: auto; }
 
+      .add-more-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 2/3;
+        border: 1.5px dashed rgba(255,255,255,0.22);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.02);
+        color: var(--muted);
+        text-decoration: none;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .add-more-card:hover {
+        border-color: var(--accent);
+        color: var(--text);
+        background: rgba(34,197,94,0.08);
+      }
+      .add-more-plus {
+        font-size: 2.4rem;
+        font-weight: 300;
+        line-height: 1;
+      }
+      .add-more-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+      @media (max-width: 680px) {
+        .row-item--add-more { height: 100%; }
+        .add-more-card { aspect-ratio: 2/3; height: 100%; width: auto; }
+      }
+
       /* Mobile: fit both rows on screen without vertical scroll */
       @media (max-width: 680px) {
         :root {

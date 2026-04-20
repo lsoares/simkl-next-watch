@@ -13,9 +13,15 @@ export function createTraktUserData() {
       location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
     },
 
-    async getWatching() { throw notImplemented() },
-    async getWatchlist() { throw notImplemented() },
-    async getCompleted() { throw notImplemented() },
+    browseUrl(type) {
+      return `https://app.trakt.tv/search?mode=media&m=${type === "movie" ? "movie" : "show"}`
+    },
+
+    async getWatchingShows() { throw notImplemented() },
+    async getWatchlistShows() { throw notImplemented() },
+    async getWatchlistMovies() { throw notImplemented() },
+    async getCompletedShows() { throw notImplemented() },
+    async getCompletedMovies() { throw notImplemented() },
     async markWatched() { throw notImplemented() },
     async undoMarkWatched() { throw notImplemented() },
     async rate() { throw notImplemented() },

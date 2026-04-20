@@ -60,11 +60,6 @@ export function createSimklUserData() {
     return inFlight
   }
 
-  async function loadAndFilter(predicate) {
-    const { shows, movies, fresh } = await loadRawLibrary()
-    return { shows: shows.filter(predicate), movies: movies.filter(predicate), fresh }
-  }
-
   function startOAuth() {
     const state = Math.random().toString(36).slice(2)
     sessionStorage.setItem("oauth-state", state)
@@ -101,6 +96,10 @@ export function createSimklUserData() {
 
     startOAuth,
 
+    browseUrl(type) {
+      return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
+    },
+
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.simkl.com/oauth/token", {
         method: "POST",
@@ -118,9 +117,41 @@ export function createSimklUserData() {
       return data
     },
 
-    getWatching: () => loadAndFilter((i) => i.status === "watching"),
-    getWatchlist: () => loadAndFilter((i) => i.status === "plantowatch"),
-    getCompleted: () => loadAndFilter((i) => i.status !== "watching" && i.status !== "plantowatch"),
+    async getWatchingShows() {
+      const { shows, fresh } = await loadRawLibrary()
+      return {
+        items: shows.filter((s) => s.status === "watching" && s.nextEpisode && hasAiredEpisodes(s)).sort(byWatchingPriority),
+        fresh,
+      }
+    },
+    async getWatchlistShows() {
+      const { shows, fresh } = await loadRawLibrary()
+      return {
+        items: shows.filter((s) => s.status === "plantowatch" && hasAiredEpisodes(s)).sort(byAddedDate),
+        fresh,
+      }
+    },
+    async getWatchlistMovies() {
+      const { movies, fresh } = await loadRawLibrary()
+      return {
+        items: movies.filter((m) => m.status === "plantowatch").sort(byAddedDate),
+        fresh,
+      }
+    },
+    async getCompletedShows() {
+      const { shows, fresh } = await loadRawLibrary()
+      return {
+        items: shows.filter((s) => s.status !== "watching" && s.status !== "plantowatch"),
+        fresh,
+      }
+    },
+    async getCompletedMovies() {
+      const { movies, fresh } = await loadRawLibrary()
+      return {
+        items: movies.filter((m) => m.status !== "plantowatch"),
+        fresh,
+      }
+    },
 
     async markWatched(item) {
       if (item.type === "tv" && item.nextEpisode) {
@@ -158,6 +189,18 @@ export function createSimklUserData() {
 }
 
 const SYNC_CACHE_KEY = "simkl-cache-v6"
+
+const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
+const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
+function byWatchingPriority(a, b) {
+  const left = (s) => (s.total_episodes_count || 0) > 0
+    ? Math.max(0, (s.total_episodes_count || 0) - (s.not_aired_episodes_count || 0) - (s.watched_episodes_count || 0))
+    : Infinity
+  const aLeft = left(a), bLeft = left(b)
+  if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
+  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
+  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
+}
 
 function requireGlobal(key) {
   const value = window[key]

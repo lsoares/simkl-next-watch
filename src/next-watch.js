@@ -31,43 +31,6 @@ function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - notAired - watched) : Infinity
 }
 
-function hasAiredEpisodes(show) {
-  return show.total_episodes_count === 0 || show.total_episodes_count > show.not_aired_episodes_count
-}
-
-function isReleased(item) {
-  return item.release_status !== "unreleased"
-}
-
-function sortWatching(a, b) {
-  const aLeft = availableEpisodesLeft(a)
-  const bLeft = availableEpisodesLeft(b)
-  if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
-  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
-  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
-}
-
-function sortByAddedDate(a, b) {
-  return new Date(a.added_at || 0) - new Date(b.added_at || 0)
-}
-
-function buildTvSuggestions(shows) {
-  const released = shows.filter(isReleased)
-  const watching = released
-    .filter((s) => s.status === "watching" && s.nextEpisode && hasAiredEpisodes(s))
-    .sort(sortWatching)
-  const planToWatch = released
-    .filter((s) => s.status === "plantowatch" && hasAiredEpisodes(s))
-    .sort(sortByAddedDate)
-  return [...watching, ...planToWatch]
-}
-
-function buildMovieSuggestions(movies) {
-  return movies
-    .filter((m) => (m.status === "plantowatch" || m.status === "watching") && isReleased(m))
-    .sort(sortByAddedDate)
-}
-
 function isUnstarted(item, type) {
   if (type === "tv") {
     return item.status === "plantowatch" || (item.watched_episodes_count === 0 && item.nextEpisode?.episode === 1)
@@ -404,6 +367,14 @@ function initDockEffect(row) {
       card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl))
       rowEl.appendChild(frag)
     })
+    const browseUrl = currentUserData().browseUrl?.(type)
+    if (browseUrl) {
+      const tile = document.createElement("div")
+      tile.className = "row-item row-item--add-more"
+      const addLabel = type === "tv" ? "Add series" : "Add movie"
+      tile.innerHTML = `<a class="add-more-card" href="${browseUrl}" target="_blank" rel="noreferrer" aria-label="${addLabel}"><span class="add-more-plus" aria-hidden="true">+</span><span class="add-more-label">${addLabel}</span></a>`
+      rowEl.appendChild(tile)
+    }
     initDockEffect(rowEl)
     if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave)
     rowEl._scrollSave = () => { sessionStorage.setItem(scrollKey, rowEl.scrollLeft); }
@@ -535,15 +506,18 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
-      const user = currentUserData()
-      const [watching, watchlist, completed] = await Promise.all([user.getWatching(), user.getWatchlist(), user.getCompleted()])
-      const allShows = [...watching.shows, ...watchlist.shows, ...completed.shows]
-      const allMovies = [...watching.movies, ...watchlist.movies, ...completed.movies]
-      const data = { shows: allShows, movies: allMovies, fresh: watching.fresh || watchlist.fresh || completed.fresh }
+      const u = currentUserData()
+      const [ws, wls, wlm, cs, cm] = await Promise.all([
+        u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
+        u.getCompletedShows(), u.getCompletedMovies(),
+      ])
+      const allShows = [...ws.items, ...wls.items, ...cs.items]
+      const allMovies = [...wlm.items, ...cm.items]
+      const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
       applyCachedDetails(allShows, "tv")
       applyCachedDetails(allMovies, "movie")
-      tvItems = buildTvSuggestions(allShows)
-      movieItems = buildMovieSuggestions(allMovies)
+      tvItems = [...ws.items, ...wls.items].filter((i) => i.release_status !== "unreleased")
+      movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
@@ -606,12 +580,12 @@ function initDockEffect(row) {
 
   function readRatingsCache() {
     const raw = readJsonStorage(STORAGE.ratingsCache)
-    if (raw?.schema !== 3 || !raw.entries) return {}
+    if (raw?.schema !== 0 || !raw.entries) return {}
     return raw.entries
   }
 
   function writeRatingsCache(entries) {
-    writeStorage(STORAGE.ratingsCache, { schema: 3, entries })
+    writeStorage(STORAGE.ratingsCache, { schema: 0, entries })
   }
 
   function getCachedInfo(entries, id) {
@@ -658,11 +632,10 @@ function initDockEffect(row) {
       const cached = getCachedInfo(entries, id)
       if (!cached) continue
       if (cached.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: cached.imdb }
-      if (typeof cached.rating === "number") {
-        if (item.ratings?.imdb?.rating == null) item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } }
-      } else if (cached.rating === null) {
-        item.release_status = "unreleased"
+      if (typeof cached.rating === "number" && item.ratings?.imdb?.rating == null) {
+        item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } }
       }
+      if (cached.released === false) item.release_status = "unreleased"
       if (type === "tv" && typeof cached.total === "number") {
         if (!(item.total_episodes_count > 0)) item.total_episodes_count = cached.total
         if (item.not_aired_episodes_count == null) item.not_aired_episodes_count = cached.notAired || 0
@@ -680,10 +653,10 @@ function initDockEffect(row) {
       if (!id) return
       const type = getType(item)
       const cached = getCachedInfo(entries, id)
+      if (cached) return
       const needsRating = item.ratings?.imdb?.rating == null && isUnstarted(item, type)
       const needsCount = type === "tv" && !(item.total_episodes_count > 0)
       if (!needsRating && !needsCount) return
-      if (cached && (!needsRating || cached.rating != null) && (!needsCount || typeof cached.total === "number")) return
       pending.push({ item, id, type, card: cards[i] })
     })
     if (!pending.length) return
@@ -691,7 +664,7 @@ function initDockEffect(row) {
       const details = await simklCatalog.getDetails(type, id)
       if (!details) return
       entries[id] = { ...details, fetchedAt: new Date().toISOString() }
-      if (details.rating == null && isUnstarted(item, type)) {
+      if (details.released === false && isUnstarted(item, type)) {
         item.release_status = "unreleased"
         card?.closest(".row-item")?.remove()
         return
@@ -918,11 +891,14 @@ Output: a JSON array only, no prose, no markdown:
 
   async function getRecommendations(mood) {
     const mediaType = getAiMediaType()
-    const user = currentUserData()
-    const [watching, watchlist, completed] = await Promise.all([user.getWatching(), user.getWatchlist(), user.getCompleted()])
+    const u = currentUserData()
+    const [ws, wls, wlm, cs, cm] = await Promise.all([
+      u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
+      u.getCompletedShows(), u.getCompletedMovies(),
+    ])
     const library = {
-      shows: [...watching.shows, ...watchlist.shows, ...completed.shows],
-      movies: [...watching.movies, ...watchlist.movies, ...completed.movies],
+      shows: [...ws.items, ...wls.items, ...cs.items],
+      movies: [...wlm.items, ...cm.items],
     }
     const ratings = buildRatingsInput(mediaType, library.shows, library.movies)
     if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
