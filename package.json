@@ -9,8 +9,7 @@
   "scripts": {
     "test": "npx playwright test",
     "build": "node build.js",
-    "expose:s": "trap 'kill 0' EXIT; npx serve -l 8080 -s . & open https://simkl.com/settings/developer/edit/61491; ngrok http 8080",
-    "expose:t": "trap 'kill 0' EXIT; npx serve -l 8080 -s . & open https://trakt.tv/oauth/applications/195099; ngrok http 8080"
+    "expose": "trap 'kill 0' EXIT; npx serve -l 8080 -s . & open https://simkl.com/settings/developer/edit/61491 https://trakt.tv/oauth/applications/195099/edit; ngrok http 8080"
   },
   "repository": {
     "type": "git",
