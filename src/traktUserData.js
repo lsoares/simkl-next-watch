@@ -4,13 +4,21 @@ export function createTraktUserData() {
   const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
-  const watchlistShowsCache = createCacheClient("trakt-watchlist-shows-v0")
-  const watchedShowsCache = createCacheClient("trakt-watched-shows-v0")
+  const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v0")
+  const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v0")
+  const progressCache = loadProgressCache()
+
+  function loadProgressCache() {
+    try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
+  }
+  function persistProgressCache() {
+    try { localStorage.setItem("next-watch-trakt-progress-v0", JSON.stringify(progressCache)) } catch {}
+  }
 
   function startOAuth() {
     const state = Math.random().toString(36).slice(2)
-    sessionStorage.setItem("oauth-state", state)
-    sessionStorage.setItem("oauth-provider", "trakt")
+    sessionStorage.setItem("next-watch-oauth-state", state)
+    sessionStorage.setItem("next-watch-oauth-provider", "trakt")
     location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
   }
 
@@ -47,20 +55,36 @@ export function createTraktUserData() {
     },
 
     // NOTE: when markWatched / undoMarkWatched are implemented on this
-    // provider, they MUST invalidate watchedShowsCache so next-episode
-    // inference reflects the new state. External plays on trakt.tv won't
-    // be reflected until cleared another way.
+    // provider, they MUST invalidate watchedShowsCache AND progressCache so
+    // next-episode inference reflects the new state. External plays on
+    // trakt.tv won't be reflected until cleared another way.
     async getWatchingShows() {
       const cached = await watchedShowsCache.read()
       if (cached?.items) return { items: cached.items, fresh: false }
       const data = await apiFetch("/sync/watched/shows?extended=full")
-      const cutoff = Date.now() - 6 * 30 * 24 * 60 * 60 * 1000
+      const cutoff = Date.now() - 4 * 7 * 24 * 60 * 60 * 1000
       const items = (Array.isArray(data) ? data : [])
         .map(normalizeTraktWatchedShow)
         .filter((s) => s.nextEpisode && new Date(s.last_watched_at || 0).getTime() >= cutoff)
         .sort(byLastWatchedDesc)
       await watchedShowsCache.write({ items })
       return { items, fresh: true }
+    },
+
+    async getProgress(traktIdOrSlug) {
+      const key = String(traktIdOrSlug || "")
+      if (!key) return null
+      if (progressCache[key] !== undefined) return progressCache[key]
+      try {
+        const data = await apiFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
+        const next = data?.next_episode
+        const result = next ? { nextEpisode: { season: next.season, episode: next.number }, title: next.title || "" } : null
+        progressCache[key] = result
+        persistProgressCache()
+        return result
+      } catch {
+        return null
+      }
     },
     // NOTE: when addToWatchlist / undoMarkWatched (movie→re-watchlist) etc. are
     // implemented on this provider, they MUST call watchlistShowsCache.write(null)

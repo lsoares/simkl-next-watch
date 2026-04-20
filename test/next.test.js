@@ -30,13 +30,11 @@ test.describe("next", () => {
     await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toBeVisible()
     await expect(showCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
     await expect(showCard.getByRole("button", { name: /remove/i })).toHaveCount(0)
-
     const movieCard = page.getByRole("article", { name: "The Matrix" })
     await expect(movieCard).toBeVisible()
     await expect(movieCard.getByRole("link", { name: "The Matrix" })).toBeVisible()
     await expect(movieCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
     await expect(movieCard.getByRole("button", { name: /remove/i })).toHaveCount(0)
-
     await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://simkl.com/search/?type=tv")
   })
 

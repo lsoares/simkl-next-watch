@@ -237,9 +237,7 @@ function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key
 function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
 function clearAllStorage() {
   for (const storage of [localStorage, sessionStorage]) {
-    Object.keys(storage).forEach((k) => {
-      if (k.startsWith("next-watch-") || k.startsWith("simkl-") || k.startsWith("trakt-") || k.startsWith("oauth-")) storage.removeItem(k)
-    })
+    Object.keys(storage).forEach((k) => { if (k.startsWith("next-watch-")) storage.removeItem(k) })
   }
 }
 
@@ -360,7 +358,7 @@ function initDockEffect(row) {
   // ── Render rows ──
 
   function renderRow(rowEl, items, type) {
-    const scrollKey = `scroll:${rowEl.id}`
+    const scrollKey = `next-watch-scroll:${rowEl.id}`
     applyCachedDetails(items, type)
     rowEl.replaceChildren()
     items.forEach((item) => {
@@ -387,7 +385,7 @@ function initDockEffect(row) {
     rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     hydrateMissingDetails(rowEl, items, type)
-    observeLazyPosters(rowEl)
+    observeLazyHydration(rowEl)
   }
 
   // ── Mark watched ──
@@ -626,20 +624,48 @@ function initDockEffect(row) {
     cardEl.insertBefore(anchor, cardEl.firstChild)
   }
 
-  let posterObserver = null
-  function observeLazyPosters(rowEl) {
-    if (!posterObserver) {
-      posterObserver = new IntersectionObserver((entries) => {
+  let lazyObserver = null
+  function observeLazyHydration(rowEl) {
+    if (!lazyObserver) {
+      lazyObserver = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue
-          posterObserver.unobserve(entry.target)
-          hydratePoster(entry.target)
+          lazyObserver.unobserve(entry.target)
+          hydrateLazy(entry.target)
         }
       }, { rootMargin: "200px" })
     }
     rowEl.querySelectorAll("poster-card").forEach((c) => {
-      if (c.item?.ids?.imdb && !c.item.posterUrl) posterObserver.observe(c)
+      if (needsLazyHydration(c.item)) lazyObserver.observe(c)
     })
+  }
+
+  function needsLazyHydration(item) {
+    if (!item) return false
+    if (item.ids?.imdb && !item.posterUrl) return true
+    if (currentUserData().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) return true
+    return false
+  }
+
+  async function hydrateLazy(card) {
+    const item = card.item
+    if (!item) return
+    if (item.ids?.imdb && !item.posterUrl) await hydratePoster(card)
+    const getProgress = currentUserData().getProgress
+    if (getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) {
+      const key = item.ids.slug || item.ids.trakt
+      const progress = await getProgress(key)
+      if (progress === null) {
+        card.closest(".row-item")?.remove()
+        return
+      }
+      if (progress?.nextEpisode) {
+        item.nextEpisode = progress.nextEpisode
+        if (progress.title) item.episodeTitle = progress.title
+        card._rendered = false
+        card._render()
+      }
+    }
   }
 
   async function hydratePoster(card) {
@@ -1070,24 +1096,24 @@ Output: a JSON array only, no prose, no markdown:
     el.spinner.hidden = false
     try {
       if (error) throw new Error(error)
-      const expected = sessionStorage.getItem("oauth-state")
+      const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw new Error("State mismatch.")
-      const provider = sessionStorage.getItem("oauth-provider") || "simkl"
+      const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
       const userData = provider === "trakt" ? traktUserData : simklUserData
       if (!userData) throw new Error(`Provider "${provider}" is not configured.`)
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
-      sessionStorage.removeItem("oauth-state")
-      sessionStorage.removeItem("oauth-provider")
+      sessionStorage.removeItem("next-watch-oauth-state")
+      sessionStorage.removeItem("next-watch-oauth-provider")
       hydrateUI()
       showView("next")
       showToast(`Connected to ${userData.name}.`)
       await loadSuggestions()
     } catch (err) {
-      sessionStorage.removeItem("oauth-state")
-      sessionStorage.removeItem("oauth-provider")
+      sessionStorage.removeItem("next-watch-oauth-state")
+      sessionStorage.removeItem("next-watch-oauth-provider")
       handleError(err)
       showView("next")
     } finally {
@@ -1115,6 +1141,7 @@ Output: a JSON array only, no prose, no markdown:
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.hideTrendingWatched.closest("label").hidden = !loggedIn
     el.logoutBtn.hidden = !loggedIn
+    if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
     hydrateNextView()
     syncViewportMetrics()
   }

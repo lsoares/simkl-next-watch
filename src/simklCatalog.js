@@ -1,4 +1,4 @@
-const IMDB_LOOKUP_CACHE_KEY = "simkl-imdb-lookup-v0"
+const IMDB_LOOKUP_CACHE_KEY = "next-watch-simkl-imdb-lookup-v0"
 const imdbLookupInFlight = new Map()
 const imdbLookupCache = loadImdbLookupCache()
 

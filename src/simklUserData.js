@@ -63,8 +63,8 @@ export function createSimklUserData() {
 
   function startOAuth() {
     const state = Math.random().toString(36).slice(2)
-    sessionStorage.setItem("oauth-state", state)
-    sessionStorage.setItem("oauth-provider", "simkl")
+    sessionStorage.setItem("next-watch-oauth-state", state)
+    sessionStorage.setItem("next-watch-oauth-provider", "simkl")
     location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
   }
 
@@ -189,7 +189,7 @@ export function createSimklUserData() {
   }
 }
 
-const SYNC_CACHE_KEY = "simkl-cache-v7"
+const SYNC_CACHE_KEY = "next-watch-simkl-cache-v7"
 
 const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
 const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
@@ -278,5 +278,5 @@ function buildShowUrl({ id, title, type }) {
 }
 
 Object.keys(localStorage)
-  .filter((k) => (k === "next-watch-sync-cache" || k.startsWith("simkl-cache-")) && k !== SYNC_CACHE_KEY)
+  .filter((k) => k.startsWith("next-watch-simkl-cache-") && k !== SYNC_CACHE_KEY)
   .forEach((k) => localStorage.removeItem(k))
