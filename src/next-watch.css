@@ -900,7 +900,8 @@
       }
       .app-intro-actions {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
         gap: 12px;
         margin-top: 40px;
       }
