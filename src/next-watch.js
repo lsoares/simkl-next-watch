@@ -355,7 +355,6 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     const scrollKey = `scroll:${rowEl.id}`
-    if (!items.length) { setEmpty(rowEl, "Nothing here."); return; }
     applyCachedDetails(items, type)
     rowEl.replaceChildren()
     items.forEach((item) => {
@@ -382,6 +381,7 @@ function initDockEffect(row) {
     rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     hydrateMissingDetails(rowEl, items, type)
+    observeLazyPosters(rowEl)
   }
 
   // ── Mark watched ──
@@ -600,6 +600,52 @@ function initDockEffect(row) {
     for (let i = 0; i < items.length; i += size) {
       await Promise.all(items.slice(i, i + size).map(fn))
     }
+  }
+
+  function injectPoster(card, item) {
+    const cardEl = card.cardEl
+    if (!cardEl || cardEl.querySelector(".poster-anchor") || !item.posterUrl) return
+    const anchor = document.createElement("a")
+    anchor.className = "poster-anchor"
+    anchor.href = item.url || "#"
+    anchor.target = "_blank"
+    anchor.rel = "noreferrer"
+    const img = document.createElement("img")
+    img.className = "poster"
+    img.src = item.posterUrl
+    img.alt = ""
+    img.draggable = false
+    img.loading = "lazy"
+    anchor.appendChild(img)
+    cardEl.insertBefore(anchor, cardEl.firstChild)
+  }
+
+  let posterObserver = null
+  function observeLazyPosters(rowEl) {
+    if (!posterObserver) {
+      posterObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          posterObserver.unobserve(entry.target)
+          hydratePoster(entry.target)
+        }
+      }, { rootMargin: "200px" })
+    }
+    rowEl.querySelectorAll("poster-card").forEach((c) => {
+      if (c.item?.ids?.imdb && !c.item.posterUrl) posterObserver.observe(c)
+    })
+  }
+
+  async function hydratePoster(card) {
+    const item = card.item
+    if (!item?.ids?.imdb) return
+    const hit = await simklCatalog.lookupByImdb(item.ids.imdb)
+    if (!hit?.poster) return
+    item.ids = { ...item.ids, simkl: hit.simklId }
+    if (!item.id) item.id = String(hit.simklId || "")
+    item.poster = hit.poster
+    item.posterUrl = `https://wsrv.nl/?url=https://simkl.in/posters/${hit.poster}_c.webp`
+    injectPoster(card, item)
   }
 
   function injectImdbBadge(card, item, rating) {

@@ -1,3 +1,14 @@
+const IMDB_LOOKUP_CACHE_KEY = "simkl-imdb-lookup-v0"
+const imdbLookupInFlight = new Map()
+const imdbLookupCache = loadImdbLookupCache()
+
+function loadImdbLookupCache() {
+  try { return JSON.parse(localStorage.getItem(IMDB_LOOKUP_CACHE_KEY) || "{}") } catch { return {} }
+}
+function persistImdbLookupCache() {
+  try { localStorage.setItem(IMDB_LOOKUP_CACHE_KEY, JSON.stringify(imdbLookupCache)) } catch {}
+}
+
 export const simklCatalog = {
   getEpisodes(showId) {
     return apiFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
@@ -50,6 +61,34 @@ export const simklCatalog = {
     } catch {
       return null
     }
+  },
+
+  async lookupByImdb(imdbId) {
+    if (!imdbId) return null
+    if (imdbLookupCache[imdbId] !== undefined) return imdbLookupCache[imdbId]
+    if (imdbLookupInFlight.has(imdbId)) return imdbLookupInFlight.get(imdbId)
+    const p = (async () => {
+      try {
+        const r = await apiFetch(`/search/id?imdb=${encodeURIComponent(imdbId)}`)
+        const hit = Array.isArray(r) && r[0]
+        const result = hit ? {
+          simklId: hit.ids?.simkl || hit.ids?.simkl_id || null,
+          poster: hit.poster || "",
+          title: hit.title || "",
+          year: hit.year || "",
+          total: hit.total_episodes || 0,
+        } : null
+        imdbLookupCache[imdbId] = result
+        persistImdbLookupCache()
+        return result
+      } catch {
+        return null
+      } finally {
+        imdbLookupInFlight.delete(imdbId)
+      }
+    })()
+    imdbLookupInFlight.set(imdbId, p)
+    return p
   },
 
   async getTrending(period) {
