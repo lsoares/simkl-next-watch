@@ -1067,7 +1067,6 @@ Output: a JSON array only, no prose, no markdown:
     libraryIndex.clear()
     hydrateUI()
     showView("next")
-    showToast("Logged out.")
   }
 
   // ── UI hydration ──
@@ -1133,7 +1132,7 @@ Output: a JSON array only, no prose, no markdown:
   let deferredInstallPrompt = null
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; el.installBtn.classList.remove("hidden"); })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {})
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {})
 
   // ── Boot ──
 
