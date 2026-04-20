@@ -4,15 +4,15 @@ import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, 
 
 test.describe("logged out from simkl", () => {
 
-  test("shows the intro with Sign in with Simkl button", async ({ page }) => {
+  test("shows the intro with Get started (Simkl) button", async ({ page }) => {
     await page.goto("/")
 
     await expect(page.getByRole("heading", { name: /next episode or movie/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
+    await expect(page.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
   })
 
 
-  test("Sign in with Simkl redirects to Simkl OAuth", async ({ page }) => {
+  test("Get started (Simkl) redirects to Simkl OAuth", async ({ page }) => {
     let authorizeHit = false
     await page.route("https://simkl.com/oauth/authorize**", async (route) => {
       authorizeHit = true
@@ -23,7 +23,7 @@ test.describe("logged out from simkl", () => {
     })
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
 
     await expect.poll(() => authorizeHit).toBe(true)
   })
@@ -74,7 +74,7 @@ test.describe("logged out from simkl", () => {
 
     await page.getByRole("button", { name: /logout/i }).click()
 
-    await expect(page.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
+    await expect(page.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
     await expect(page.getByRole("heading", { name: /next episode or movie/i })).toBeVisible()
   })
 })
