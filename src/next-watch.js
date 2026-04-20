@@ -1051,6 +1051,8 @@ Output: a JSON array only, no prose, no markdown:
       showToast(`Connected to ${userData.name}.`)
       await loadSuggestions()
     } catch (err) {
+      sessionStorage.removeItem("oauth-state")
+      sessionStorage.removeItem("oauth-provider")
       handleError(err)
       showView("next")
     } finally {
