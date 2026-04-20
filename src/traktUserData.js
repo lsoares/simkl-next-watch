@@ -13,6 +13,12 @@ export function createTraktUserData() {
       location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
     },
 
+    async getLibrary() { throw notImplemented() },
+    async markWatched() { throw notImplemented() },
+    async undoMarkWatched() { throw notImplemented() },
+    async rate() { throw notImplemented() },
+    async addToWatchlist() { throw notImplemented() },
+
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.trakt.tv/oauth/token", {
         method: "POST",
@@ -30,6 +36,10 @@ export function createTraktUserData() {
       return data
     },
   }
+}
+
+function notImplemented() {
+  return new Error("Trakt support is in progress — this action isn’t available yet.")
 }
 
 function requireGlobal(key) {
