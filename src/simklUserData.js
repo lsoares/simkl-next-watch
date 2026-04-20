@@ -20,10 +20,9 @@ export const simklUserData = {
     const activities = await apiFetch("/sync/activities", { method: "POST" })
     const sig = JSON.stringify(activities)
     const cache = await readSyncCache()
-    const fresh = !cache
 
     if (cache?.sig === sig && cache.shows && cache.movies) {
-      return { shows: [...cache.shows, ...(cache.anime || [])], movies: cache.movies, fresh: false }
+      return { shows: cache.shows, movies: cache.movies, fresh: false }
     }
 
     const fetchItems = async (type, dateFrom) => {
@@ -33,47 +32,33 @@ export const simklUserData = {
       return (data?.[type] ?? []).map(normalizeItem)
     }
 
-    const merge = (existing, updated) => {
-      const byId = new Map()
-      for (const item of existing) {
-        const id = String(item?.ids?.simkl || item?.ids?.simkl_id || "")
-        if (id) byId.set(id, item)
-      }
+    const mergeById = (existing, updated) => {
+      const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
       for (const item of updated) {
-        const id = String(item?.ids?.simkl || item?.ids?.simkl_id || "")
-        if (!id) continue
-        if (item.status === "deleted") byId.delete(id)
-        else byId.set(id, item)
+        if (!item.id) continue
+        if (item.status === "deleted") byId.delete(item.id)
+        else byId.set(item.id, item)
       }
       return [...byId.values()]
     }
 
     const dateFrom = cache?.lastActivity || null
-    const needsFull = !cache?.shows || !cache?.movies || !dateFrom
-    let shows, movies, anime
+    const fresh = !cache?.shows || !cache?.movies || !dateFrom
+    const [rawShows, rawMovies, rawAnime] = await Promise.all([
+      fetchItems("shows", fresh ? null : dateFrom),
+      fetchItems("movies", fresh ? null : dateFrom),
+      fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
+    ])
 
-    if (needsFull) {
-      [shows, movies, anime] = await Promise.all([
-        fetchItems("shows"), fetchItems("movies"), fetchItems("anime").catch(() => []),
-      ])
-    } else {
-      const [deltaShows, deltaMovies, deltaAnime] = await Promise.all([
-        fetchItems("shows", dateFrom), fetchItems("movies", dateFrom), fetchItems("anime", dateFrom).catch(() => []),
-      ])
-      shows = merge(cache.shows, deltaShows)
-      movies = merge(cache.movies, deltaMovies)
-      anime = merge(cache.anime || [], deltaAnime)
-    }
+    const incomingShows = [...rawShows, ...rawAnime]
+    const shows = fresh ? incomingShows : mergeById(cache.shows, incomingShows)
+    const movies = fresh ? rawMovies : mergeById(cache.movies, rawMovies)
 
-    let latestActivity = ""
-    ;(function walk(node) {
-      if (!node) return
-      if (typeof node === "string" && /^\d{4}-\d{2}-\d{2}T/.test(node)) { if (node > latestActivity) latestActivity = node; return }
-      if (typeof node === "object") for (const v of Object.values(node)) walk(v)
-    })(activities)
+    const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
+      .reduce((max, x) => x > max ? x : max, "")
 
-    await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies, anime })
-    return { shows: [...shows, ...anime], movies, fresh }
+    await writeSyncCache({ sig, lastActivity: latestActivity, shows, movies })
+    return { shows, movies, fresh }
   },
 
   async markWatched({ ids, type, nextEpisode }) {
@@ -110,7 +95,7 @@ export const simklUserData = {
   },
 }
 
-const SYNC_CACHE_KEY = "simkl-cache-v4"
+const SYNC_CACHE_KEY = "simkl-cache-v5"
 
 async function readSyncCache() {
   const raw = localStorage.getItem(SYNC_CACHE_KEY)
