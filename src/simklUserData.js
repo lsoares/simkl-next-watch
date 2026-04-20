@@ -6,15 +6,30 @@ export function createSimklUserData() {
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const cache = createCacheClient(SYNC_CACHE_KEY)
 
+  function startOAuth() {
+    const state = Math.random().toString(36).slice(2)
+    sessionStorage.setItem("oauth-state", state)
+    sessionStorage.setItem("oauth-provider", "simkl")
+    location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
+  }
+
   async function apiFetch(path, options = {}) {
-    const headers = {
-      "Content-Type": "application/json",
-      "simkl-api-key": clientId,
-      ...options.headers,
-    }
     const token = localStorage.getItem("next-watch-access-token")
-    if (token) headers.Authorization = `Bearer ${token}`
-    const res = await fetch(`https://api.simkl.com${path}`, { ...options, headers })
+    if (!token) throw new Error("Not signed in to Simkl.")
+    const res = await fetch(`https://api.simkl.com${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "simkl-api-key": clientId,
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+    })
+    if (res.status === 401) {
+      localStorage.removeItem("next-watch-access-token")
+      startOAuth()
+      throw new Error("Simkl session expired — redirecting to sign in.")
+    }
     const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
     return data
@@ -25,12 +40,7 @@ export function createSimklUserData() {
   return {
     name: "Simkl",
 
-    startOAuth() {
-      const state = Math.random().toString(36).slice(2)
-      sessionStorage.setItem("oauth-state", state)
-      sessionStorage.setItem("oauth-provider", "simkl")
-      location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
-    },
+    startOAuth,
 
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.simkl.com/oauth/token", {
