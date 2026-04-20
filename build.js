@@ -28,10 +28,17 @@ for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUse
   await copyFile(`src/${f}`, `dist/src/${f}`)
 }
 
-const clientId = process.env.SIMKL_CLIENT_ID
-const clientSecret = process.env.SIMKL_CLIENT_SECRET
-if (clientId && clientSecret) {
-  await writeFile("dist/config.local.js", `window.__SIMKL_CLIENT_ID__=${JSON.stringify(clientId)};window.__SIMKL_CLIENT_SECRET__=${JSON.stringify(clientSecret)}\n`)
+const globals = {
+  __SIMKL_CLIENT_ID__: process.env.SIMKL_CLIENT_ID,
+  __SIMKL_CLIENT_SECRET__: process.env.SIMKL_CLIENT_SECRET,
+  __REDIRECT_URI__: process.env.REDIRECT_URI,
+}
+if (globals.__SIMKL_CLIENT_ID__ && globals.__SIMKL_CLIENT_SECRET__) {
+  const body = Object.entries(globals)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `window.${k}=${JSON.stringify(v)}`)
+    .join(";") + "\n"
+  await writeFile("dist/config.local.js", body)
 } else {
   try {
     await copyFile("config.local.js", "dist/config.local.js")
