@@ -1,6 +1,5 @@
 import { test, expect } from "./test.js"
-import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupWatchlistShows, setupWatchedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
 
 test.describe("next", () => {
 
@@ -19,8 +18,10 @@ test.describe("next", () => {
     //   listed_at: "2025-01-01T00:00:00Z",
     // }])
     // await setupSearchById(page, "tt0133093", { ids: { simkl: 53992 }, poster: "80/8008234e702d8ed33", title: "The Matrix", year: 1999 })
+    await setupAuthorize(page)
+    await page.goto("/")
 
-    await loginViaOAuth(page, "trakt")
+    await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
 
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
     await expect(showCard).toBeVisible()

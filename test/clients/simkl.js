@@ -1,5 +1,17 @@
 import { expect } from "@playwright/test"
 
+export function setupAuthorize(page) {
+  return page.route("https://simkl.com/oauth/authorize**", async (route) => {
+    const url = new URL(route.request().url())
+    const state = url.searchParams.get("state")
+    const redirectUri = url.searchParams.get("redirect_uri")
+    await route.fulfill({
+      status: 302,
+      headers: { Location: `${redirectUri}?code=test-code&state=${state}` },
+    })
+  })
+}
+
 export function setupOauthToken(page, accessToken) {
   return page.route("**/oauth/token", async (route) => {
     expect(route.request().method()).toBe("POST")

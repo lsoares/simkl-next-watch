@@ -1,6 +1,5 @@
 import { test, expect } from "./test.js"
-import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTrendingTv, setupTrendingMovies, setupAddToWatchlist, setupTvSummary } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTrendingTv, setupTrendingMovies, setupAddToWatchlist, setupTvSummary } from "./clients/simkl.js"
 
 test.describe("trending", () => {
 
@@ -19,7 +18,9 @@ test.describe("trending", () => {
       { title: "The Boys", ids: { simkl_id: 99002 } },
     ] })
     await setupTrendingMovies(page, {})
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
     await page.getByRole("link", { name: /trending/i }).click()
@@ -45,7 +46,9 @@ test.describe("trending", () => {
       { title: "Dune", ids: { simkl_id: 99003 } },
     ] })
     await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /trending/i }).click()
     const card = page.getByRole("article", { name: "Dune" })

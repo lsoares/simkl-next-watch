@@ -1,6 +1,5 @@
 import { test, expect } from "./test.js"
-import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSearchTv, setupSearchMovie, setupTvEpisodes } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSearchTv, setupSearchMovie, setupTvEpisodes } from "./clients/simkl.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 import { setupOpenaiChat } from "./clients/openai.js"
 import { setupClaudeChat } from "./clients/claude.js"
@@ -40,7 +39,9 @@ test.describe("ai suggestions", () => {
       ])
       await setupSyncAnime(page, [])
       await setupTvEpisodes(page, "11121")
-      await loginViaOAuth(page)
+      await setupAuthorize(page)
+      await page.goto("/")
+      await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
       await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
       await setupAiChat(page,
         '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010}]',
@@ -85,7 +86,9 @@ test.describe("ai suggestions", () => {
     }])
     await setupSyncAnime(page, [])
     await setupTvEpisodes(page, "11121")
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
 
@@ -104,7 +107,9 @@ test.describe("ai suggestions", () => {
     }])
     await setupSyncMovies(page, [])
     await setupSyncAnime(page, [])
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
     await page.getByRole("button", { name: /cozy night in/i }).click()
@@ -125,7 +130,9 @@ test.describe("ai suggestions", () => {
     }])
     await setupSyncMovies(page, [])
     await setupSyncAnime(page, [])
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await page.getByRole("link", { name: /ai suggested/i }).click()
     await page.getByRole("button", { name: /cozy night in/i }).click()

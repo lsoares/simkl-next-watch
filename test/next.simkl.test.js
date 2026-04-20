@@ -1,6 +1,5 @@
 import { test, expect } from "./test.js"
-import { loginViaOAuth } from "./loginViaOAuth.js"
-import { setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes } from "./clients/simkl.js"
 
 test.describe("next", () => {
 
@@ -21,8 +20,10 @@ test.describe("next", () => {
     await setupTvEpisodes(page, "11121", [
       { season: 5, episode: 1, type: "episode", title: "Live Free or Die" },
     ])
-
-    await loginViaOAuth(page)
+    await setupAuthorize(page)
+    await page.goto("/")
+   
+    await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
 
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
     await expect(showCard).toBeVisible()
