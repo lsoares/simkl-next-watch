@@ -11,6 +11,21 @@ export const simklCatalog = {
     return apiFetch(`/movies/${id}?extended=full`)
   },
 
+  async getDetails(type, id) {
+    try {
+      const data = await (type === "movie" ? this.getMovie(id) : this.getShow(id))
+      const rating = data?.ratings?.imdb?.rating
+      return {
+        rating: typeof rating === "number" ? rating : null,
+        imdb: data?.ids?.imdb || null,
+        total: data?.total_episodes,
+        notAired: 0,
+      }
+    } catch {
+      return null
+    }
+  },
+
   async searchByTitle(title, year, type) {
     const q = encodeURIComponent(`${title} ${year || ""}`.trim())
     try {

@@ -20,17 +20,6 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
 }
 
-function parseNextEpisode(value) {
-  if (!value) return null
-  if (typeof value === "object") {
-    const s = Number(value.season ?? value.season_number)
-    const e = Number(value.episode ?? value.episode_number ?? value.number)
-    return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null
-  }
-  const m = String(value).match(/S(\d+)E(\d+)/i)
-  return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
-}
-
 function formatEpisode({ season, episode }) {
   return `${season}x${episode}`
 }
@@ -65,7 +54,7 @@ function sortByAddedDate(a, b) {
 function buildTvSuggestions(shows) {
   const released = shows.filter(isReleased)
   const watching = released
-    .filter((s) => s.status === "watching" && parseNextEpisode(s.next_to_watch) && hasAiredEpisodes(s))
+    .filter((s) => s.status === "watching" && s.nextEpisode && hasAiredEpisodes(s))
     .sort(sortWatching)
   const planToWatch = released
     .filter((s) => s.status === "plantowatch" && hasAiredEpisodes(s))
@@ -81,8 +70,7 @@ function buildMovieSuggestions(movies) {
 
 function isUnstarted(item, type) {
   if (type === "tv") {
-    const ep = parseNextEpisode(item.next_to_watch)
-    return item.status === "plantowatch" || (item.watched_episodes_count === 0 && ep?.episode === 1)
+    return item.status === "plantowatch" || (item.watched_episodes_count === 0 && item.nextEpisode?.episode === 1)
   }
   return item.status === "plantowatch"
 }
@@ -175,7 +163,7 @@ class PosterCard extends HTMLElement {
     const img = item.posterUrl || ""
     const url = item.url || ""
 
-    const ep = isNext && type === "tv" ? parseNextEpisode(item.next_to_watch) : null
+    const ep = isNext && type === "tv" ? item.nextEpisode : null
     const unstarted = isNext ? isUnstarted(item, type) : false
     const epUrl = !unstarted && ep && url ? `${url}/season-${ep.season}/episode-${ep.episode}/` : ""
     const epCode = !unstarted && ep ? formatEpisode(ep) : ""
@@ -441,7 +429,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await currentUserData().markWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) })
+      await currentUserData().markWatched(item)
       showToast(toastFrag("Marked ", snapshot, type, " watched."), false, () => undoMarkWatched(snapshot, type))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -453,14 +441,14 @@ function initDockEffect(row) {
 
   async function undoMarkWatched(item, type) {
     try {
-      await currentUserData().undoMarkWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) })
+      await currentUserData().undoMarkWatched(item)
       showToast(toastFrag("Undone — ", item, type, " unmarked."))
       await loadSuggestions()
     } catch (err) { handleError(err); }
   }
 
   function toastFrag(prefix, item, type, suffix) {
-    const ep = type === "tv" ? parseNextEpisode(item.next_to_watch) : null
+    const ep = type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
     const url = ep && base ? `${base}/season-${ep.season}/episode-${ep.episode}/` : base
     const label = ep ? `${item.title} ${formatEpisode(ep)}` : item.title
@@ -489,8 +477,8 @@ function initDockEffect(row) {
     const snapshot = { ...item }
     try {
       await Promise.all([
-        currentUserData().rate({ ids: item.ids, type }, rating),
-        currentUserData().markWatched({ ids: item.ids, type, nextEpisode: parseNextEpisode(item.next_to_watch) }),
+        currentUserData().rate(item, rating),
+        currentUserData().markWatched(item),
       ])
       showToast(toastFrag("Rated ", snapshot, type, ` ${rating}/10 and marked watched.`), false, () => undoMarkWatched(snapshot, type))
       await waitForWatchedAnimation(card)
@@ -505,7 +493,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await currentUserData().markWatched({ ids: item.ids, type: "movie" })
+      await currentUserData().markWatched(item)
       showToast(toastFrag("Marked ", snapshot, "movie", " watched."), false, () => undoMarkWatched(snapshot, "movie"))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -520,7 +508,7 @@ function initDockEffect(row) {
   async function enrichEpisodeTitles() {
     const cache = readJsonStorage(STORAGE.episodeCache) || {}
     const results = await Promise.allSettled(tvItems.map(async (item) => {
-      const ep = parseNextEpisode(item.next_to_watch)
+      const ep = item.nextEpisode
       const id = item.id
       if (!ep || !id || item.status === "plantowatch") return null
       const cacheKey = `${id}:${ep.season}:${ep.episode}`
@@ -601,7 +589,7 @@ function initDockEffect(row) {
     if (!id || !btn) return
     btn.disabled = true
     try {
-      await currentUserData().addToWatchlist({ ids: item.ids, type: card.type })
+      await currentUserData().addToWatchlist(item)
       libraryIndex.set(id, { watched: false, watchedAt: null })
       card.inWatchlist = true
       card._rendered = false
@@ -630,21 +618,6 @@ function initDockEffect(row) {
     const age = Date.now() - new Date(entry.fetchedAt).getTime()
     if (age > 30 * 24 * 60 * 60 * 1000) return null
     return entry
-  }
-
-  async function fetchItemDetails(type, id) {
-    try {
-      const data = await (type === "movie" ? simklCatalog.getMovie(id) : simklCatalog.getShow(id))
-      const rating = data?.ratings?.imdb?.rating
-      return {
-        rating: typeof rating === "number" ? rating : null,
-        imdb: data?.ids?.imdb || null,
-        total: data?.total_episodes,
-        notAired: 0,
-      }
-    } catch {
-      return null
-    }
   }
 
   async function chunkedForEach(items, size, fn) {
@@ -713,7 +686,7 @@ function initDockEffect(row) {
     })
     if (!pending.length) return
     await chunkedForEach(pending, 5, async ({ item, id, type, card }) => {
-      const details = await fetchItemDetails(type, id)
+      const details = await simklCatalog.getDetails(type, id)
       if (!details) return
       entries[id] = { ...details, fetchedAt: new Date().toISOString() }
       if (details.rating == null && isUnstarted(item, type)) {

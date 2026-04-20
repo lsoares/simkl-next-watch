@@ -94,42 +94,42 @@ export function createSimklUserData() {
       return { shows, movies, fresh }
     },
 
-    async markWatched({ ids, type, nextEpisode }) {
-      if (type === "tv" && nextEpisode) {
+    async markWatched(item) {
+      if (item.type === "tv" && item.nextEpisode) {
         await apiPost("/sync/history", {
-          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+          shows: [{ ids: item.ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
         })
         return
       }
-      await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
+      await apiPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
     },
 
-    async undoMarkWatched({ ids, type, nextEpisode }) {
-      if (type === "tv" && nextEpisode) {
+    async undoMarkWatched(item) {
+      if (item.type === "tv" && item.nextEpisode) {
         await apiPost("/sync/history/remove", {
-          shows: [{ ids, seasons: [{ number: nextEpisode.season, episodes: [{ number: nextEpisode.episode }] }] }],
+          shows: [{ ids: item.ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
         })
         return
       }
-      await apiPost("/sync/history/remove", { movies: [{ ids }] })
-      const id = Number(ids?.simkl || ids?.simkl_id)
+      await apiPost("/sync/history/remove", { movies: [{ ids: item.ids }] })
+      const id = Number(item.ids?.simkl || item.ids?.simkl_id)
       if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
 
-    async rate({ ids, type }, rating) {
-      const key = type === "tv" ? "shows" : "movies"
-      await apiPost("/sync/ratings", { [key]: [{ ids, rating, rated_at: new Date().toISOString() }] })
+    async rate(item, rating) {
+      const key = item.type === "tv" ? "shows" : "movies"
+      await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
     },
 
-    async addToWatchlist({ ids, type }) {
-      const key = type === "movie" ? "movies" : "shows"
-      const id = Number(ids?.simkl_id || ids?.simkl)
+    async addToWatchlist(item) {
+      const key = item.type === "movie" ? "movies" : "shows"
+      const id = Number(item.ids?.simkl_id || item.ids?.simkl)
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
   }
 }
 
-const SYNC_CACHE_KEY = "simkl-cache-v5"
+const SYNC_CACHE_KEY = "simkl-cache-v6"
 
 function requireGlobal(key) {
   const value = window[key]
@@ -143,6 +143,17 @@ function decodeSimklText(s) {
 
 function normalizeStatus(s) {
   return String(s || "").toLowerCase().replace(/\s+/g, "")
+}
+
+function parseNextEpisode(value) {
+  if (!value) return null
+  if (typeof value === "object") {
+    const s = Number(value.season ?? value.season_number)
+    const e = Number(value.episode ?? value.episode_number ?? value.number)
+    return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null
+  }
+  const m = String(value).match(/S(\d+)E(\d+)/i)
+  return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
 }
 
 function normalizeItem(raw) {
@@ -165,7 +176,7 @@ function normalizeItem(raw) {
     runtime: media.runtime || 0,
     ratings: imdbRating != null ? { imdb: { rating: imdbRating } } : null,
     status: normalizeStatus(raw.status),
-    next_to_watch: raw.next_to_watch || "",
+    nextEpisode: parseNextEpisode(raw.next_to_watch),
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
     last_watched_at: raw.last_watched_at || null,
     watched_episodes_count: raw.watched_episodes_count ?? 0,
