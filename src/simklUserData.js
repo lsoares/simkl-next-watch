@@ -237,7 +237,7 @@ function normalizeItem(raw) {
   const rawIds = media.ids || raw.ids || {}
   const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
   const imdb = rawIds.imdb || null
-  const imdbRating = media.ratings?.imdb?.rating
+  const simklRating = media.ratings?.simkl?.rating
   const title = decodeSimklText(media.title) || "Unknown"
   const animeType = String(raw.anime_type || "").toLowerCase()
   const type = animeType === "movie" ? "movie"
@@ -255,7 +255,7 @@ function normalizeItem(raw) {
     posterUrl: buildPosterUrl(posterCode),
     url: buildShowUrl({ id: simkl, title, type }),
     runtime: media.runtime || 0,
-    ratings: imdbRating != null ? { imdb: { rating: imdbRating } } : null,
+    rating: typeof simklRating === "number" ? simklRating : null,
     status: normalizeStatus(raw.status),
     nextEpisode: parseNextEpisode(raw.next_to_watch),
     added_at: raw.added_to_watchlist_at || raw.added_at || null,

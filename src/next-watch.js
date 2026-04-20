@@ -64,17 +64,25 @@ function trendingBadgeInfo(period) {
   return null
 }
 
-function buildImdbUrl(item) {
-  const id = item?.ids?.imdb
-  return id ? `https://www.imdb.com/title/${encodeURIComponent(id)}/` : "https://www.imdb.com/"
+function formatRatingValue(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return ""
+  return Number.isInteger(num) ? String(num) : num.toFixed(1)
 }
 
-function trendingPeriodFor(simklId, sets) {
-  if (!simklId || !sets) return null
-  if (sets.today.has(simklId)) return "today"
-  if (sets.week.has(simklId)) return "week"
-  if (sets.month.has(simklId)) return "month"
+function trendingPeriodFor(candidateIds, sets) {
+  if (!sets) return null
+  const ids = candidateIds.filter(Boolean).map(String)
+  if (!ids.length) return null
+  for (const period of ["today", "week", "month"]) {
+    if (ids.some((id) => sets[period].has(id))) return period
+  }
   return null
+}
+
+function trendingIdsOf(item) {
+  const ids = item?.ids || {}
+  return [ids.simkl_id, ids.simkl, ids.imdb, ids.tmdb]
 }
 
 const relativeTimeUnits = [["year", 31536e6], ["month", 2592e6], ["week", 6048e5], ["day", 864e5], ["hour", 36e5], ["minute", 6e4], ["second", 1e3]]
@@ -122,7 +130,7 @@ class PosterCard extends HTMLElement {
     const id = item.id || ""
     const title = item.title || ""
     const year = item.year || ""
-    const rating = item.ratings?.imdb?.rating
+    const rating = item.rating
     const img = item.posterUrl || ""
     const url = item.url || ""
 
@@ -137,7 +145,8 @@ class PosterCard extends HTMLElement {
     const showYear = isNext ? unstarted && year : !watched && year
     const showMarkWatched = isNext
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist
-    const showImdb = !watched && rating && (!isNext || unstarted)
+    const showRating = !watched && rating != null && (!isNext || unstarted)
+    const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
     const showWatchedBadge = !isNext && watched
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
     const watchedRating = showWatchedBadge && userRating != null ? userRating : null
@@ -161,7 +170,7 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showImdb ? `<a class="imdb-badge" href="${escapeHtml(buildImdbUrl(item))}" target="_blank" rel="noreferrer">IMDb ${rating}</a>` : ""}
+            ${showRating ? `<a class="rating-badge rating-badge--${ratingLabel.toLowerCase()}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${ratingLabel} ${formatRatingValue(rating)}</a>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
@@ -217,7 +226,6 @@ const STORAGE = {
   accessToken: "next-watch-access-token",
   provider: "next-watch-provider",
   syncCache: "simkl-cache-v3",
-  ratingsCache: "next-watch-ratings-cache",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
   episodeCache: "next-watch-episode-cache",
@@ -359,7 +367,6 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     const scrollKey = `next-watch-scroll:${rowEl.id}`
-    applyCachedDetails(items, type)
     rowEl.replaceChildren()
     items.forEach((item) => {
       const { frag, card } = makeRowItem()
@@ -384,7 +391,6 @@ function initDockEffect(row) {
     rowEl.addEventListener("scroll", rowEl._scrollSave, { passive: true })
     rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
-    hydrateMissingDetails(rowEl, items, type)
     observeLazyHydration(rowEl)
   }
 
@@ -518,8 +524,6 @@ function initDockEffect(row) {
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
-      applyCachedDetails(allShows, "tv")
-      applyCachedDetails(allMovies, "movie")
       tvItems = [...ws.items, ...wls.items].filter((i) => i.release_status !== "unreleased")
       movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
       libraryIndex = collectLibraryIndex(data)
@@ -540,7 +544,6 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type) {
     const loggedIn = isLoggedIn()
-    applyCachedDetails(items, type)
     containerEl.replaceChildren()
     items.forEach((item) => {
       const { frag, card } = makeRowItem()
@@ -558,7 +561,6 @@ function initDockEffect(row) {
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
       containerEl.appendChild(frag)
     })
-    hydrateMissingDetails(containerEl, items, type)
   }
 
   async function addToWatchlist(card) {
@@ -578,30 +580,6 @@ function initDockEffect(row) {
     } catch (err) {
       btn.disabled = false
       handleError(err)
-    }
-  }
-
-  function readRatingsCache() {
-    const raw = readJsonStorage(STORAGE.ratingsCache)
-    if (raw?.schema !== 0 || !raw.entries) return {}
-    return raw.entries
-  }
-
-  function writeRatingsCache(entries) {
-    writeStorage(STORAGE.ratingsCache, { schema: 0, entries })
-  }
-
-  function getCachedInfo(entries, id) {
-    const entry = entries[id]
-    if (!entry) return null
-    const age = Date.now() - new Date(entry.fetchedAt).getTime()
-    if (age > 30 * 24 * 60 * 60 * 1000) return null
-    return entry
-  }
-
-  async function chunkedForEach(items, size, fn) {
-    for (let i = 0; i < items.length; i += size) {
-      await Promise.all(items.slice(i, i + size).map(fn))
     }
   }
 
@@ -682,89 +660,6 @@ function initDockEffect(row) {
     injectPoster(card, item)
   }
 
-  function injectImdbBadge(card, item, rating) {
-    const host = card?.cardEl?.querySelector(".poster-top-text")
-    if (!host || host.querySelector(".imdb-badge")) return
-    const badge = tpl("tpl-imdb-badge").firstElementChild
-    badge.textContent = `IMDb ${rating}`
-    badge.href = buildImdbUrl(item)
-    const anchor = host.querySelector(".trending-badge")
-    if (anchor) host.insertBefore(badge, anchor)
-    else host.appendChild(badge)
-  }
-
-  function injectEpisodeCount(card, count) {
-    const host = card?.cardEl?.querySelector(".poster-top-text")
-    if (!host || host.querySelector(".poster-episode-count")) return
-    const label = document.createElement("span")
-    label.className = "poster-episode-count"
-    label.textContent = `${count} episode${count === 1 ? "" : "s"}`
-    const anchor = host.querySelector(".imdb-badge, .trending-badge")
-    if (anchor) host.insertBefore(label, anchor)
-    else host.appendChild(label)
-  }
-
-  function applyCachedDetails(items, type) {
-    const entries = readRatingsCache()
-    for (const item of items) {
-      const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "")
-      if (!id) continue
-      const cached = getCachedInfo(entries, id)
-      if (!cached) continue
-      if (cached.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: cached.imdb }
-      if (typeof cached.rating === "number" && item.ratings?.imdb?.rating == null) {
-        item.ratings = { ...(item.ratings || {}), imdb: { rating: cached.rating } }
-      }
-      if (cached.released === false) item.release_status = "unreleased"
-      if (type === "tv" && typeof cached.total === "number") {
-        if (!(item.total_episodes_count > 0)) item.total_episodes_count = cached.total
-        if (item.not_aired_episodes_count == null) item.not_aired_episodes_count = cached.notAired || 0
-      }
-    }
-  }
-
-  async function hydrateMissingDetails(rowEl, items, typeOrFn) {
-    const getType = typeof typeOrFn === "function" ? typeOrFn : () => typeOrFn
-    const entries = readRatingsCache()
-    const cards = rowEl ? rowEl.querySelectorAll("poster-card") : []
-    const pending = []
-    items.forEach((item, i) => {
-      const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "")
-      if (!id) return
-      const type = getType(item)
-      const cached = getCachedInfo(entries, id)
-      if (cached) return
-      const needsRating = item.ratings?.imdb?.rating == null && isUnstarted(item, type)
-      const needsCount = type === "tv" && !(item.total_episodes_count > 0)
-      if (!needsRating && !needsCount) return
-      pending.push({ item, id, type, card: cards[i] })
-    })
-    if (!pending.length) return
-    await chunkedForEach(pending, 5, async ({ item, id, type, card }) => {
-      const details = await simklCatalog.getDetails(type, id)
-      if (!details) return
-      entries[id] = { ...details, fetchedAt: new Date().toISOString() }
-      if (details.released === false && isUnstarted(item, type)) {
-        item.release_status = "unreleased"
-        card?.closest(".row-item")?.remove()
-        return
-      }
-      if (details.imdb && !item.ids?.imdb) item.ids = { ...(item.ids || {}), imdb: details.imdb }
-      if (details.rating != null) {
-        item.ratings = { ...(item.ratings || {}), imdb: { rating: details.rating } }
-        if (card && isUnstarted(item, type)) injectImdbBadge(card, item, details.rating)
-      }
-      if (type === "tv" && typeof details.total === "number") {
-        item.total_episodes_count = details.total
-        item.not_aired_episodes_count = details.notAired || 0
-        const count = availableEpisodesLeft(item)
-        const showCount = card && !card.watching && (card.variant === "next" || !card.watched)
-        if (showCount && Number.isFinite(count) && count > 0) injectEpisodeCount(card, count)
-      }
-    })
-    writeRatingsCache(entries)
-  }
-
   let trendingBadgeSetsPromise = null
   function loadTrendingBadgeSets() {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
@@ -775,8 +670,9 @@ function initDockEffect(row) {
         results.forEach(({ tv, movies }, i) => {
           const period = periods[i]
           for (const item of [...(tv || []), ...(movies || [])]) {
-            const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "")
-            if (id) sets[period].add(id)
+            for (const id of trendingIdsOf(item)) {
+              if (id) sets[period].add(String(id))
+            }
           }
         })
         return sets
@@ -792,8 +688,7 @@ function initDockEffect(row) {
       const card = cards[i]
       if (!card) return
       if (isEligible && !isEligible(item)) return
-      const id = String(item?.ids?.simkl_id || item?.ids?.simkl || "")
-      const period = trendingPeriodFor(id, sets)
+      const period = trendingPeriodFor(trendingIdsOf(item), sets)
       if (!period) return
       const info = trendingBadgeInfo(period)
       if (!info) return
@@ -816,7 +711,8 @@ function initDockEffect(row) {
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([simklCatalog.getTrending(period), libraryReady])
       const hideWatched = el.hideTrendingWatched.checked
-      const filterFn = (item) => !hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || ""))
+      const filterFn = (item) => item.release_status !== "unreleased"
+        && (!hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")))
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
       if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv")
@@ -992,9 +888,6 @@ Output: a JSON array only, no prose, no markdown:
     const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt)
     const resolved = await resolveSimkl(suggestions, mediaType)
     const getType = (item) => item.type === "movie" ? "movie" : "tv"
-    applyCachedDetails(resolved.filter((i) => getType(i) === "tv"), "tv")
-    applyCachedDetails(resolved.filter((i) => getType(i) === "movie"), "movie")
-    await hydrateMissingDetails(null, resolved, getType)
     return resolved
       .filter((i) => i.release_status !== "unreleased")
       .sort((a, b) => {
@@ -1004,7 +897,7 @@ Output: a JSON array only, no prose, no markdown:
         const bw = eb?.watched ? 1 : 0
         if (aw !== bw) return aw - bw
         if (aw) return new Date(ea?.watchedAt || 0) - new Date(eb?.watchedAt || 0)
-        return (b.ratings?.imdb?.rating || 0) - (a.ratings?.imdb?.rating || 0)
+        return (b.rating || 0) - (a.rating || 0)
       })
   }
 

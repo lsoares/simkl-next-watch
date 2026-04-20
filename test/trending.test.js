@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTrendingTv, setupTrendingMovies, setupAddToWatchlist, setupTvSummary } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTrendingTv, setupTrendingMovies, setupAddToWatchlist } from "./clients/simkl.js"
 
 test("shows trending shows and movies", async ({ page }) => {
   await setupOauthToken(page, "test-token")
@@ -10,7 +10,6 @@ test("shows trending shows and movies", async ({ page }) => {
   }])
   await setupSyncMovies(page, [])
   await setupSyncAnime(page, [])
-  await setupTvSummary(page, "11121", { ratings: { imdb: { rating: 9.5 } } })
   await setupTrendingTv(page, { today: [
     { title: "The Rookie", ids: { simkl_id: 99001 } },
     { title: "The Boys", ids: { simkl_id: 99002 } },
@@ -38,7 +37,6 @@ test("adds a trending movie to the watchlist", async ({ page }) => {
   }])
   await setupSyncMovies(page, [])
   await setupSyncAnime(page, [])
-  await setupTvSummary(page, "11121", { ratings: { imdb: { rating: 9.5 } } })
   await setupTrendingTv(page, {})
   await setupTrendingMovies(page, { today: [
     { title: "Dune", ids: { simkl_id: 99003 } },

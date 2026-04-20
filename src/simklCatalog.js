@@ -14,32 +14,6 @@ export const simklCatalog = {
     return apiFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
   },
 
-  getShow(id) {
-    return apiFetch(`/tv/${id}?extended=full`)
-  },
-
-  getMovie(id) {
-    return apiFetch(`/movies/${id}?extended=full`)
-  },
-
-  async getDetails(type, id) {
-    try {
-      const data = await (type === "movie" ? this.getMovie(id) : this.getShow(id))
-      const rating = data?.ratings?.imdb?.rating
-      const releaseDate = type === "movie" ? data?.released : data?.first_aired
-      const released = releaseDate ? new Date(releaseDate).getTime() <= Date.now() : true
-      return {
-        rating: typeof rating === "number" ? rating : null,
-        imdb: data?.ids?.imdb || null,
-        total: data?.total_episodes,
-        notAired: 0,
-        released,
-      }
-    } catch {
-      return null
-    }
-  },
-
   async searchByTitle(title, year, type) {
     const q = encodeURIComponent(`${title} ${year || ""}`.trim())
     try {
@@ -146,6 +120,8 @@ function buildTrendingUrl(item, type) {
 }
 
 function enrich(item, type) {
+  const simklRating = item?.ratings?.simkl?.rating
+  const releaseDate = type === "movie" ? item?.released : item?.first_aired
   return {
     ...item,
     title: decodeSimklText(item.title),
@@ -153,10 +129,13 @@ function enrich(item, type) {
     type,
     posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildSlugUrl(item, type),
+    rating: typeof simklRating === "number" ? simklRating : null,
+    release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }
 
 function enrichTrending(item, type) {
+  const simklRating = item?.ratings?.simkl?.rating
   return {
     ...item,
     title: decodeSimklText(item.title),
@@ -164,5 +143,7 @@ function enrichTrending(item, type) {
     type,
     posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildTrendingUrl(item, type),
+    rating: typeof simklRating === "number" ? simklRating : null,
+    release_status: item?.release_date && new Date(item.release_date).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }

@@ -60,6 +60,30 @@ test("filters out completed and dropped shows from the watching list", async ({ 
   await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
 })
 
+test("watchlist shows hide unreleased entries", async ({ page }) => {
+  await setupOauthToken(page, "test-token")
+  await setupWatchedShows(page, [])
+  await setupDroppedShows(page, [])
+  await setupWatchlistMovies(page, [])
+  await setupWatchlistShows(page, [
+    {
+      listed_at: "2025-01-01T00:00:00Z",
+      show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
+    },
+    {
+      listed_at: "2025-01-01T00:00:00Z",
+      show: { title: "Unreleased Show", year: 2099, first_aired: "2099-01-01", aired_episodes: 0, ids: { trakt: 9999, slug: "unreleased-show", imdb: "tt9999999" } },
+    },
+  ])
+  await setupAuthorize(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+
+  await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
+  await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
+})
+
 test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupWatchlistShows(page, [])

@@ -79,26 +79,6 @@ export function setupTvEpisodes(page, expectedId, episodes = []) {
   })
 }
 
-export function setupTvSummary(page, id, data) {
-  return page.route(`**/tv/${id}?**`, async (route) => {
-    expect(route.request().method()).toBe("GET")
-    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    const params = new URL(route.request().url()).searchParams
-    expect(params.get("extended")).toBe("full")
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) })
-  })
-}
-
-export function setupMovieSummary(page, id, data) {
-  return page.route(`**/movies/${id}?**`, async (route) => {
-    expect(route.request().method()).toBe("GET")
-    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    const params = new URL(route.request().url()).searchParams
-    expect(params.get("extended")).toBe("full")
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) })
-  })
-}
-
 export function setupSearchTv(page) {
   return page.route("**/search/tv?**", async (route) => {
     expect(route.request().method()).toBe("GET")

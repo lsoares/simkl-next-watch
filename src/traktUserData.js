@@ -73,7 +73,7 @@ export function createTraktUserData() {
       ])
       const droppedIds = new Set((Array.isArray(hidden) ? hidden : []).map((h) => h.show?.ids?.trakt).filter(Boolean))
       const items = (Array.isArray(data) ? data : [])
-        .map(normalizeTraktWatchedShow)
+        .map((entry) => normalizeTraktShow(entry, { status: "watching", addedAt: null }))
         .filter((s) => (s.ids.slug || s.ids.trakt) && s.watched_episodes_count > 0)
         .filter((s) => !droppedIds.has(s.ids.trakt))
         .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
@@ -105,8 +105,12 @@ export function createTraktUserData() {
     async getWatchlistShows() {
       const cached = await watchlistShowsCache.read()
       if (cached?.items) return { items: cached.items, fresh: false }
-      const data = await apiFetch("/sync/watchlist/shows")
-      const items = (Array.isArray(data) ? data : []).map(normalizeTraktShow).sort(byListedDate)
+      const data = await apiFetch("/sync/watchlist/shows?extended=full")
+      const now = Date.now()
+      const items = (Array.isArray(data) ? data : [])
+        .filter((entry) => !entry?.show?.first_aired || new Date(entry.show.first_aired).getTime() <= now)
+        .map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
+        .sort(byListedDate)
       await watchlistShowsCache.write({ items })
       return { items, fresh: true }
     },
@@ -161,10 +165,12 @@ function byWatchingPriority(a, b) {
   return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
 }
 
-function normalizeTraktWatchedShow(entry) {
-  const show = entry.show || {}
+function normalizeTraktShow(entry, { status, addedAt }) {
+  const show = entry.show || entry
   const ids = show.ids || {}
-  const watchedCount = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
+  const watched = status === "watching"
+    ? (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
+    : 0
   return {
     ids: { trakt: ids.trakt || "", imdb: ids.imdb || "", tmdb: ids.tmdb || null, slug: ids.slug || "" },
     id: String(ids.imdb || ids.trakt || ""),
@@ -174,40 +180,13 @@ function normalizeTraktWatchedShow(entry) {
     posterUrl: "",
     url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
     runtime: show.runtime || 0,
-    ratings: null,
-    status: "watching",
+    rating: typeof show.rating === "number" ? Math.round(show.rating * 10) / 10 : null,
+    status,
     nextEpisode: null,
-    added_at: null,
+    added_at: addedAt,
     last_watched_at: entry.last_watched_at || null,
-    watched_episodes_count: watchedCount,
+    watched_episodes_count: watched,
     total_episodes_count: show.aired_episodes || 0,
-    not_aired_episodes_count: 0,
-    user_rating: null,
-    type: "tv",
-  }
-}
-
-function normalizeTraktShow(entry) {
-  const show = entry.show || entry
-  const ids = show.ids || {}
-  const imdb = ids.imdb || ""
-  const traktId = ids.trakt || ""
-  return {
-    ids: { trakt: traktId, imdb, tmdb: ids.tmdb || null, slug: ids.slug || "" },
-    id: String(imdb || traktId),
-    title: show.title || "Unknown",
-    year: show.year || "",
-    poster: "",
-    posterUrl: "",
-    url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
-    runtime: show.runtime || 0,
-    ratings: null,
-    status: "plantowatch",
-    nextEpisode: null,
-    added_at: entry.listed_at || null,
-    last_watched_at: null,
-    watched_episodes_count: 0,
-    total_episodes_count: 0,
     not_aired_episodes_count: 0,
     user_rating: null,
     type: "tv",
@@ -228,7 +207,7 @@ function normalizeTraktMovie(entry) {
     posterUrl: "",
     url: ids.slug ? `https://app.trakt.tv/movies/${encodeURIComponent(ids.slug)}` : "",
     runtime: movie.runtime || 0,
-    ratings: null,
+    rating: typeof movie.rating === "number" ? Math.round(movie.rating * 10) / 10 : null,
     status: "plantowatch",
     nextEpisode: null,
     added_at: entry.listed_at || null,
