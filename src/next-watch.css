@@ -920,20 +920,7 @@
         object-fit: contain;
         vertical-align: middle;
       }
-      .dev-badge {
-        display: inline-block;
-        margin-left: 10px;
-        padding: 2px 6px;
-        font-size: 0.7em;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        background: #facc15;
-        color: #111;
-        border-radius: 4px;
-        vertical-align: middle;
-      }
-      .app-intro-features {
+.app-intro-features {
         list-style: none;
         padding: 0;
         margin: 40px 0 0;
