@@ -656,49 +656,6 @@
       }
       .item-card.marking-watched { animation: watchedOut 0.55s ease-out forwards; pointer-events: none; }
 
-      /* rating prompt overlay */
-      .rating-prompt {
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        z-index: 20;
-      }
-      .rating-prompt-label { font-size: 0.75rem; color: #94a3b8; }
-      .rating-prompt-row { display: flex; gap: 2px; }
-      .rating-btn {
-        background: transparent;
-        border: 1px solid #334155;
-        color: #94a3b8;
-        font-size: 0.7rem;
-        font-weight: 600;
-        width: 22px;
-        height: 22px;
-        min-height: unset;
-        border-radius: 4px;
-        cursor: pointer;
-        padding: 0;
-        transition: background 0.1s, color 0.1s, border-color 0.1s;
-      }
-      .rating-btn:hover { background: #fbbf24; border-color: #fbbf24; color: #000; }
-      .rating-skip { font-size: 0.65rem; color: #475569; background: none; border: none; cursor: pointer; min-height: unset; padding: 2px; }
-      .rating-skip:hover { color: #94a3b8; }
-      @media (max-width: 680px) {
-        .rating-prompt-row {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 4px;
-          width: min(100%, 180px);
-        }
-        .rating-btn { width: 100%; height: 32px; font-size: 0.85rem; }
-      }
-
-
       /* install button — desktop hides it, only mobile/PWA context */
       @media (hover: hover) and (pointer: fine) { #installButton { display: none; } }
 

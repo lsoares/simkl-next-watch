@@ -180,11 +180,6 @@ export function createSimklUserData() {
       if (id) await apiPost("/sync/add-to-list", { movies: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
 
-    async rate(item, rating) {
-      const key = item.type === "tv" ? "shows" : "movies"
-      await apiPost("/sync/ratings", { [key]: [{ ids: item.ids, rating, rated_at: new Date().toISOString() }] })
-    },
-
     async addToWatchlist(item) {
       const key = item.type === "movie" ? "movies" : "shows"
       const id = Number(item.ids?.simkl_id || item.ids?.simkl)

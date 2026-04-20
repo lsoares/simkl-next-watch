@@ -406,12 +406,11 @@ function initDockEffect(row) {
   }
 
   async function markWatched(item, type, card) {
-    if (type === "movie") { promptRate(item, type, card); return; }
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
       await currentUserData().markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, type, " watched."), false, () => undoMarkWatched(snapshot, type))
+      showToast(toastFrag("Marked ", snapshot, type, " watched — rate it?"), false, () => undoMarkWatched(snapshot, type))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
@@ -438,50 +437,6 @@ function initDockEffect(row) {
     const frag = document.createDocumentFragment()
     frag.append(prefix, link, suffix)
     return frag
-  }
-
-  function promptRate(item, type, card) {
-    if (!card) return
-    const frag = tpl("tpl-rating-prompt")
-    const prompt = frag.firstElementChild
-    prompt.querySelectorAll(".rating-btn").forEach((btn) =>
-      btn.addEventListener("click", () => rateAndMarkWatched(item, type, Number(btn.dataset.rating), card)))
-    prompt.querySelector(".rating-skip").addEventListener("click", () => {
-      prompt.remove()
-      markMovieWatched(item, card)
-    })
-    card.appendChild(prompt)
-  }
-
-  async function rateAndMarkWatched(item, type, rating, card) {
-    if (card) card.classList.add("marking-watched")
-    const snapshot = { ...item }
-    try {
-      await Promise.all([
-        currentUserData().rate(item, rating),
-        currentUserData().markWatched(item),
-      ])
-      showToast(toastFrag("Rated ", snapshot, type, ` ${rating}/10 and marked watched.`), false, () => undoMarkWatched(snapshot, type))
-      await waitForWatchedAnimation(card)
-      await loadSuggestions()
-    } catch (err) {
-      if (card) card.classList.remove("marking-watched")
-      handleError(err)
-    }
-  }
-
-  async function markMovieWatched(item, card) {
-    if (card) card.classList.add("marking-watched")
-    const snapshot = { ...item }
-    try {
-      await currentUserData().markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, "movie", " watched."), false, () => undoMarkWatched(snapshot, "movie"))
-      await waitForWatchedAnimation(card)
-      await loadSuggestions()
-    } catch (err) {
-      if (card) card.classList.remove("marking-watched")
-      handleError(err)
-    }
   }
 
   // ── Episode title enrichment ──

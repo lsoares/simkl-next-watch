@@ -132,7 +132,6 @@ export function createTraktUserData() {
     async getCompletedMovies() { return { items: [], fresh: false } },
     async markWatched() { throw notImplemented() },
     async undoMarkWatched() { throw notImplemented() },
-    async rate() { throw notImplemented() },
     async addToWatchlist() { throw notImplemented() },
 
     async exchangeOAuthCode(code) {
