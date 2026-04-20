@@ -5,12 +5,14 @@ export function createTraktUserData() {
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v0")
+  const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
   const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
   const progressCache = loadProgressCache()
 
   function loadProgressCache() {
     try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
   }
+  
   function persistProgressCache() {
     try { localStorage.setItem("next-watch-trakt-progress-v0", JSON.stringify(progressCache)) } catch {}
   }
@@ -95,6 +97,7 @@ export function createTraktUserData() {
         return null
       }
     },
+
     // NOTE: when addToWatchlist / undoMarkWatched (movie→re-watchlist) etc. are
     // implemented on this provider, they MUST call watchlistShowsCache.write(null)
     // (or equivalent) to invalidate this cache. External mutations on trakt.tv
@@ -107,7 +110,20 @@ export function createTraktUserData() {
       await watchlistShowsCache.write({ items })
       return { items, fresh: true }
     },
-    async getWatchlistMovies() { return { items: [], fresh: false } },
+
+    async getWatchlistMovies() {
+      const cached = await watchlistMoviesCache.read()
+      if (cached?.items) return { items: cached.items, fresh: false }
+      const data = await apiFetch("/sync/watchlist/movies?extended=full")
+      const now = Date.now()
+      const items = (Array.isArray(data) ? data : [])
+        .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
+        .map(normalizeTraktMovie)
+        .sort(byListedDate)
+      await watchlistMoviesCache.write({ items })
+      return { items, fresh: true }
+    },
+
     async getCompletedShows() { return { items: [], fresh: false } },
     async getCompletedMovies() { return { items: [], fresh: false } },
     async markWatched() { throw notImplemented() },
@@ -195,6 +211,33 @@ function normalizeTraktShow(entry) {
     not_aired_episodes_count: 0,
     user_rating: null,
     type: "tv",
+  }
+}
+
+function normalizeTraktMovie(entry) {
+  const movie = entry.movie || entry
+  const ids = movie.ids || {}
+  const imdb = ids.imdb || ""
+  const traktId = ids.trakt || ""
+  return {
+    ids: { trakt: traktId, imdb, tmdb: ids.tmdb || null, slug: ids.slug || "" },
+    id: String(imdb || traktId),
+    title: movie.title || "Unknown",
+    year: movie.year || "",
+    poster: "",
+    posterUrl: "",
+    url: ids.slug ? `https://app.trakt.tv/movies/${encodeURIComponent(ids.slug)}` : "",
+    runtime: movie.runtime || 0,
+    ratings: null,
+    status: "plantowatch",
+    nextEpisode: null,
+    added_at: entry.listed_at || null,
+    last_watched_at: null,
+    watched_episodes_count: 0,
+    total_episodes_count: 0,
+    not_aired_episodes_count: 0,
+    user_rating: null,
+    type: "movie",
   }
 }
 

@@ -164,7 +164,7 @@ Columns: **Simkl** (state today) / **Trakt** (state today) / **Importance** (use
 | Feature | Simkl | Trakt | Importance | Easiness |
 |---|---|---|---|---|
 | **Unified `loadRawLibrary()`** (signature-gated, per-section refetch) | ✅ [simklUserData.js:10](src/simklUserData.js#L10) | ❌ ad-hoc per-method caches today [traktUserData.js:7-16](src/traktUserData.js#L7-L16) | High — foundation for everything below | Medium — Step 2 |
-| `getWatchlistMovies` | ✅ | ❌ stub [traktUserData.js:101](src/traktUserData.js#L101) | High — movies row blank | Falls out of Step 2 |
+| `getWatchlistMovies` | ✅ | ✅ [traktUserData.js](src/traktUserData.js) (`/sync/watchlist/movies?extended=full`, cached as `-v0`, filters unreleased by `movie.released` date) | High — movies row blank | Done |
 | `getShowById` / `getMovieById` (Map lookup) | new on both | new on both | High — replaces `getCompleted*` for trending badges | Easy — Step 3 |
 | `getRatedPool({type})` (filter cache to `user_rating != null`) | new on both | new on both | High — AI-suggestions input | Easy — Step 3 |
 | **Poster image** (`posterUrl`) | native | ❌ always `""` | High — Trakt cards blank otherwise | Medium — lazy `GET /search/id?imdb=…` at render, Step 4 |

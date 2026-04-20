@@ -34,6 +34,17 @@ export function setupWatchlistShows(page, shows) {
   })
 }
 
+export function setupWatchlistMovies(page, movies) {
+  return page.route("https://api.trakt.tv/sync/watchlist/movies?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(new URL(route.request().url()).searchParams.get("extended")).toBe("full")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(movies) })
+  })
+}
+
 export function setupWatchedShows(page, shows) {
   return page.route("https://api.trakt.tv/sync/watched/shows?**", async (route) => {
     expect(route.request().method()).toBe("GET")

@@ -527,7 +527,6 @@ function initDockEffect(row) {
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
       enrichEpisodeTitles()
-      if (!tvItems.length && !movieItems.length && currentView === "next") showView("trending")
       if (data.fresh) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()

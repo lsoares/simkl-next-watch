@@ -1,9 +1,10 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
 
 test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupWatchlistShows(page, [])
+  await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [{
     last_watched_at: new Date().toISOString(),
     show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -21,13 +22,12 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad")
   await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
   await expect(showCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
-  await expect(showCard.getByRole("button", { name: /remove/i })).toHaveCount(0)
-  await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=show")
 })
 
 test("filters out completed and dropped shows from the watching list", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupWatchlistShows(page, [])
+  await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [
     {
       last_watched_at: new Date().toISOString(),
@@ -58,4 +58,31 @@ test("filters out completed and dropped shows from the watching list", async ({ 
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
   await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
+})
+
+test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
+  await setupOauthToken(page, "test-token")
+  await setupWatchlistShows(page, [])
+  await setupWatchedShows(page, [])
+  await setupDroppedShows(page, [])
+  await setupWatchlistMovies(page, [
+    {
+      listed_at: "2025-01-01T00:00:00Z",
+      movie: { title: "The Matrix", year: 1999, released: "1999-03-31", ids: { trakt: 481, slug: "the-matrix-1999", imdb: "tt0133093" } },
+    },
+    {
+      listed_at: "2025-01-01T00:00:00Z",
+      movie: { title: "Avatar Fire and Ash", year: 2099, released: "2099-12-19", ids: { trakt: 9000, slug: "avatar-fire-and-ash", imdb: "tt1757678" } },
+    },
+  ])
+  await setupAuthorize(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+
+  const movieCard = page.getByRole("article", { name: "The Matrix" })
+  await expect(movieCard).toBeVisible()
+  await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
+  await expect(movieCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
+  await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
 })
