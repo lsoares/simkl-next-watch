@@ -1152,7 +1152,6 @@ Output: a JSON array only, no prose, no markdown:
     e.preventDefault()
     const provider = el.aiProviderSelect.value
     const aiKey = el.aiKeyInput.value.trim()
-    if (!aiKey) { showToast("Enter an AI API key.", true); return; }
     writeStorage(STORAGE.aiProvider, provider)
     writeStorage(AI_KEY_STORAGE[provider], aiKey)
     syncAiSaveLabel()
