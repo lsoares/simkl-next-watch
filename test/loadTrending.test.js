@@ -20,6 +20,7 @@ test("shows trending shows and movies", async ({ page }) => {
   await page.goto("/")
   await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+  await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText(/🔥/)).toBeVisible()
 
   await page.getByRole("link", { name: /trending/i }).click()
 
@@ -28,6 +29,24 @@ test("shows trending shows and movies", async ({ page }) => {
   await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
   await expect(rookie.getByText(/🔥/)).toHaveCount(0)
   await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText("Watchlist")).toBeVisible()
+})
+
+test("switching the period tab shows that period's items", async ({ page }) => {
+  await setupTrendingTv(page, {
+    today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }],
+    week: [{ title: "Severance", ids: { simkl_id: 99010 } }],
+    month: [{ title: "House of the Dragon", ids: { simkl_id: 99020 } }],
+  })
+  await setupTrendingMovies(page, {})
+  await page.goto("/")
+
+  await page.getByRole("link", { name: /trending/i }).click()
+
+  await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+  await page.getByRole("button", { name: /week/i }).click()
+  await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
+  await page.getByRole("button", { name: /month/i }).click()
+  await expect(page.getByRole("article", { name: "House of the Dragon" })).toBeVisible()
 })
 
 test("trending view loads without login", async ({ page }) => {
