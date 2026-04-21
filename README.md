@@ -19,3 +19,7 @@ brew install ngrok   # only needed for `npm run expose`
 
 GitHub Actions builds on push to `main` and deploys `dist/` to GitHub Pages.
 One-time setup: in repo Settings → Pages, set **Source** to **GitHub Actions**.
+
+## Monitoring
+
+[PostHog dashboard](https://us.posthog.com/project/202528/dashboard/491269) — pageviews and exception capture.
