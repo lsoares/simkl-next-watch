@@ -1,7 +1,7 @@
 import { test, expect } from "./test.js"
 import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById, setupMarkWatchedMovie, setupMarkWatchedShow } from "./clients/trakt.js"
 
-test.skip("marks the next episode of a watching TV show", async ({ page }) => {
+test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchlistShows(page, [])
@@ -28,7 +28,7 @@ test.skip("marks the next episode of a watching TV show", async ({ page }) => {
       { number: 5, episodes: [{ number: 1, plays: 1 }] },
     ],
   }])
-  await setupProgress(page, "breaking-bad", { next_episode: { season: 5, number: 2, title: "Madrigal" } })
+  await setupProgress(page, "breaking-bad", { next_episode: { season: 5, number: 2 } })
 
   await showCard.getByRole("button", { name: /mark as watched/i }).click()
 

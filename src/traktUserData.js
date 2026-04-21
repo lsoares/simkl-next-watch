@@ -135,12 +135,20 @@ export function createTraktUserData() {
     async getCompletedShows() { return { items: [], fresh: false } },
     async getCompletedMovies() { return { items: [], fresh: false } },
     async markWatched(item) {
-      if (item.type !== "movie") throw notImplemented()
       const ids = {
         ...(item.ids?.trakt && { trakt: item.ids.trakt }),
         ...(item.ids?.imdb && { imdb: item.ids.imdb }),
         ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
         ...(item.ids?.slug && { slug: item.ids.slug }),
+      }
+      if (item.type === "tv" && item.nextEpisode) {
+        await apiPost("/sync/history", {
+          shows: [{ ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
+        })
+        await watchedShowsCache.write(null)
+        delete progressCache[item.ids?.slug || item.ids?.trakt]
+        persistProgressCache()
+        return
       }
       await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
       await watchlistMoviesCache.write(null)
