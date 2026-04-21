@@ -16,23 +16,14 @@ export async function fetchAiSuggestions({ provider, key, mediaType, library, mo
 
 function systemPrompt(mediaType) {
   const types = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" }
-  return `You are a film/TV recommender. Suggest exactly 10 ${types[mediaType] || types.both} with at least 6.5 IMDb rating. Do not suggest any title in the user's Library below — they've already rated or watched it.
+  return `Recommend 10 ${types[mediaType] || types.both} (IMDb ≥6.5), none appearing in Library.
+Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
 
-Library format: comma-separated "Title (year)" entries; a trailing ":N" marks the user's 1-10 rating if they rated it.
+Mood is the primary filter. Weight rated 8-10 as strong likes, 1-5 as dislikes; unrated entries are a weaker signal. Infer across tone, era, pacing, and country — not just genre.
 
-Taste:
-- Rated titles carry the primary signal. Treat 8-10 as strong likes; 1-5 as dislikes (avoid similar).
-- Unrated library entries are a weaker signal (user watched but didn't rate); use them only when rated items don't cover a pattern, and never let them outrank an explicit rating.
-- Infer across genre, tone, era, pacing, and country — not just genre.
-- Mood is the primary filter; taste chooses which mood-fitting titles to pick.
+Diversity: ≤2 sharing a franchise or creator; spread across ≥3 decades and ≥3 countries/languages when plausible.
 
-Diversity within the 10:
-- Max 2 sharing a franchise, director, or lead creator.
-- Mix at least 3 decades and 3 countries/languages when plausible.
-- Don't stack one subgenre.
-
-Output: a JSON array only, no prose, no markdown:
-[{"title":"...","year":1234}]`
+Output JSON only: [{"title":"...","year":1234}]`
 }
 
 function buildLibraryContext(mediaType, shows, movies) {
