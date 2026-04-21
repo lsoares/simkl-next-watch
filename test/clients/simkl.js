@@ -24,12 +24,12 @@ export function setupOauthToken(page, accessToken) {
   })
 }
 
-export function setupSyncActivities(page) {
+export function setupSyncActivities(page, allTimestamp = "2025-01-01T00:00:00Z") {
   return page.route("**/sync/activities", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ all: "2025-01-01T00:00:00Z" }) })
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ all: allTimestamp }) })
   })
 }
 
