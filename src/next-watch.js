@@ -163,7 +163,7 @@ function initDockEffect(row) {
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
     logoutBtn: $("logoutBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
-    trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
+    trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiToolbar: $("aiToolbar"),
@@ -518,9 +518,6 @@ function initDockEffect(row) {
   function hydrateAiView() {
     const loggedIn = isLoggedIn()
     el.aiSetup.hidden = loggedIn
-    el.aiToolbar.hidden = !loggedIn
-    el.aiPrompts.hidden = !loggedIn
-    el.aiResults.hidden = !loggedIn
     if (!loggedIn) {
       el.aiKeyBtn.hidden = true
       el.aiNoRatingsNotice.hidden = true
@@ -642,6 +639,10 @@ function initDockEffect(row) {
   el.aiPrompts.addEventListener("click", async (e) => {
     const btn = e.target.closest(".ai-prompt-btn")
     if (!btn) return
+    if (!isLoggedIn()) {
+      showToast("Sign in to get personalized picks.")
+      return
+    }
     if (!getAiKey(readStorage(STORAGE.aiProvider) || "groq")) {
       openAiSettings()
       return
@@ -681,7 +682,7 @@ function initDockEffect(row) {
     if (name === "next") el.navNext.classList.add("active-nav")
     if (name === "trending") el.navTrending.classList.add("active-nav")
     if (name === "ai") el.navAi.classList.add("active-nav")
-    if (name === "trending") loadTrending()
+    if (name === "trending") { el.trendingSetup.hidden = isLoggedIn(); loadTrending() }
     if (name === "ai") hydrateAiView()
     if (name === "next") hydrateNextView()
     const hash = name === "next" ? "" : `#${name}`

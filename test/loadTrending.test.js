@@ -62,6 +62,16 @@ test("trending view loads without login", async ({ page }) => {
   await expect(page.getByRole("checkbox", { name: /hide listed/i })).toBeHidden()
 })
 
+test("trending view shows sign-in CTAs when logged out", async ({ page }) => {
+  await setupTrendingTv(page, { today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }] })
+  await setupTrendingMovies(page, {})
+  await page.goto("/#trending")
+
+  const trendingView = page.locator("#trendingView")
+  await expect(trendingView.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
+  await expect(trendingView.getByRole("button", { name: /get started \(trakt\)/i })).toBeVisible()
+})
+
 test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupSyncActivities(page)
