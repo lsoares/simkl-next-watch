@@ -96,6 +96,25 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
   await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
 })
 
+test("AI view shows a generic-suggestions notice when the library has no rated items", async ({ page }) => {
+  await setupOauthToken(page, "test-token")
+  await setupSyncActivities(page)
+  await setupSyncShows(page, [{
+    show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+    status: "plantowatch",
+  }])
+  await setupSyncMovies(page, [])
+  await setupSyncAnime(page, [])
+  await setupAuthorize(page)
+  await page.goto("/")
+  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+
+  await page.getByRole("link", { name: /ai suggested/i }).click()
+
+  await expect(page.getByText(/rate some titles to personalize/i)).toBeVisible()
+})
+
 test("saving AI key shows confirmation toast", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupSyncActivities(page)

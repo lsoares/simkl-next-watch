@@ -331,7 +331,7 @@ function initDockEffect(row) {
     aiView: $("aiView"), aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
-    aiPrompts: $("aiPrompts"), aiResults: $("aiResults"),
+    aiPrompts: $("aiPrompts"), aiResults: $("aiResults"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -686,6 +686,10 @@ function initDockEffect(row) {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
     el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
+    libraryReady.then(() => {
+      const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
+      el.aiNoRatingsNotice.hidden = hasRated
+    })
   }
 
   function openAiSettings() {
@@ -829,7 +833,7 @@ Output: a JSON array only, no prose, no markdown:
       movies: [...wlm.items, ...cm.items],
     }
     const ratings = buildRatingsInput(mediaType, library.shows, library.movies)
-    if (!ratings) { showToast("No ratings found. Rate some titles first.", true); return []; }
+    if (!ratings) return []
 
     const provider = readStorage(STORAGE.aiProvider) || "groq"
     const key = getAiKey(provider)

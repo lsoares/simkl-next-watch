@@ -938,6 +938,16 @@
 
 #logoutBtn { margin-left: auto; }
 
+.ai-no-ratings-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+
 .ai-prompts {
   display: flex;
   flex-wrap: wrap;
