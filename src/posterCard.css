@@ -103,6 +103,7 @@
 .poster-bottom > * { pointer-events: auto; }
 .item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)) .poster-bottom {
   padding-right: 10px;
+  padding-bottom: 10px;
 }
 
 .poster-title {
