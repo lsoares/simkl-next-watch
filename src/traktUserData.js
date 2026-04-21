@@ -4,7 +4,7 @@ export function createTraktUserData() {
   const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
-  const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v0")
+  const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v1")
   const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
   const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
   const progressCache = loadProgressCache()
@@ -141,16 +141,22 @@ export function createTraktUserData() {
         ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
         ...(item.ids?.slug && { slug: item.ids.slug }),
       }
-      if (item.type === "tv" && item.nextEpisode) {
+      if (item.type === "tv") {
+        if (!item.nextEpisode) throw new Error("Next episode unknown — can’t mark as watched.")
         await apiPost("/sync/history", {
           shows: [{ ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
         })
+        if (item.status === "plantowatch") {
+          await apiPost("/sync/watchlist/remove", { shows: [{ ids }] })
+          await watchlistShowsCache.write(null)
+        }
         await watchedShowsCache.write(null)
         delete progressCache[item.ids?.slug || item.ids?.trakt]
         persistProgressCache()
         return
       }
       await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
+      await apiPost("/sync/watchlist/remove", { movies: [{ ids }] })
       await watchlistMoviesCache.write(null)
     },
 
@@ -213,7 +219,7 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     runtime: show.runtime || 0,
     rating: typeof show.rating === "number" ? Math.round(show.rating * 10) / 10 : null,
     status,
-    nextEpisode: null,
+    nextEpisode: status === "plantowatch" ? { season: 1, episode: 1 } : null,
     added_at: addedAt,
     last_watched_at: entry.last_watched_at || null,
     watched_episodes_count: watched,

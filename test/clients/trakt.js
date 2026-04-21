@@ -121,6 +121,28 @@ export function setupMarkWatchedShow(page, expectedShows) {
   })
 }
 
+export function setupRemoveFromWatchlistShow(page, expectedShows) {
+  return page.route("https://api.trakt.tv/sync/watchlist/remove", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(route.request().postDataJSON()).toEqual({ shows: expectedShows })
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
+  })
+}
+
+export function setupRemoveFromWatchlistMovie(page, expectedMovies) {
+  return page.route("https://api.trakt.tv/sync/watchlist/remove", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(route.request().postDataJSON()).toEqual({ movies: expectedMovies })
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
+  })
+}
+
 export function setupAddToWatchlist(page, expectedPayload) {
   return page.route("https://api.trakt.tv/sync/watchlist", async (route) => {
     expect(route.request().method()).toBe("POST")
