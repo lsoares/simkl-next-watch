@@ -75,31 +75,39 @@
       }
       .top-bar .tiny-link {
         text-decoration: none;
-        transition: color 0.15s ease;
-      }
-      .top-bar .tiny-link:hover { color: var(--text); }
-      .top-bar .tiny-link:focus-visible {
         color: var(--text);
+        font-weight: 600;
+        opacity: 0.55;
+        transition: opacity 0.15s ease;
+      }
+      .top-bar .tiny-link:hover { opacity: 1; }
+      .top-bar .tiny-link:focus-visible {
+        opacity: 1;
         outline: 2px solid var(--accent);
         outline-offset: 3px;
         border-radius: 4px;
       }
       .top-bar .active-nav {
-        color: var(--text);
-        font-weight: 600;
+        opacity: 1;
         text-decoration: none;
         position: relative;
       }
       .top-bar .active-nav::after {
         content: "";
         position: absolute;
-        left: 0;
-        right: 0;
+        left: 50%;
+        transform: translateX(-50%);
         bottom: -6px;
+        width: 60%;
         height: 2px;
         border-radius: 2px;
         background: var(--accent);
         opacity: 0.6;
+      }
+      .top-bar-divider {
+        width: 1px;
+        height: 14px;
+        background: rgba(148, 163, 184, 0.3);
       }
 
       label {
@@ -708,7 +716,6 @@
         .app-intro-tagline { font-size: 1.5rem; }
       }
 
-#coffeeLink { margin-left: 16px; }
 
 /* ── AI view ── */
 

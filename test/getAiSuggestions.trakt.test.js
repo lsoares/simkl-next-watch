@@ -39,7 +39,7 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
   await setupSearchMovie(page, {
     Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
   })
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
   await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
@@ -87,7 +87,7 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
     Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222, slug: "inception", tmdb: "27205" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
     Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001, slug: "parasite", tmdb: "496243" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
   })
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
   await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")

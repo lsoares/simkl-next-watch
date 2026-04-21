@@ -48,7 +48,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
       Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.1 } } },
       Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
     })
-    await page.getByRole("link", { name: /ai suggested/i }).click()
+    await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
     await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
@@ -88,7 +88,7 @@ test("AI results show the user rating on rated items even when not watched", asy
   await setupSearchMovie(page, {
     Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
   })
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
   await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
@@ -112,7 +112,7 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
       status: "completed", user_rating: 8,
     }],
   })
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
 
   await page.getByRole("button", { name: /cozy night in/i }).click()
 
@@ -127,7 +127,7 @@ test("AI view shows a generic-suggestions notice when the library has no rated i
     }],
   })
 
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
 
   await expect(page.getByText(/rate some titles for sharper.*watched history/i)).toBeVisible()
 })
@@ -139,7 +139,7 @@ test("saving AI key shows confirmation toast", async ({ page }) => {
       status: "plantowatch",
     }],
   })
-  await page.getByRole("link", { name: /ai suggested/i }).click()
+  await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /cozy night in/i }).click()
   await page.getByRole("textbox", { name: /api key/i }).fill("my-groq-key")
 
