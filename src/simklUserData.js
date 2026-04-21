@@ -196,11 +196,13 @@ function normalizeItem(raw) {
     : animeType ? "tv"
     : null
   const posterCode = media.poster || media.img || ""
+  const releaseDate = type === "movie" ? media.released : media.first_aired
+  const year = media.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : "")
   return {
     ids: imdb ? { simkl, imdb } : { simkl },
     id: String(simkl || ""),
     title,
-    year: media.year || "",
+    year,
     poster: posterCode,
     posterUrl: buildPosterUrl(posterCode),
     url: buildShowUrl({ id: simkl, title, type }),

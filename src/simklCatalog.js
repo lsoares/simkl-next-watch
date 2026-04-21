@@ -161,15 +161,17 @@ function enrich(item, type) {
 function enrichTrending(item, type) {
   const ids = canonicalIds(item.ids)
   const simklRating = item?.ratings?.simkl?.rating
+  const releaseDate = item?.release_date
   return {
     ...item,
     ids,
     title: decodeSimklText(item.title),
     id: ids.simkl ? String(ids.simkl) : "",
     type,
+    year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildTrendingUrl(item, ids.simkl, type),
     rating: typeof simklRating === "number" ? simklRating : null,
-    release_status: item?.release_date && new Date(item.release_date).getTime() > Date.now() ? "unreleased" : undefined,
+    release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }
