@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupMarkWatched } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupMarkWatchedMovie, setupMarkWatchedShow } from "./clients/simkl.js"
 
 test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
@@ -14,9 +14,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupTvEpisodes(page, "11121", [
     { season: 5, episode: 1, type: "episode", title: "Live Free or Die" },
   ])
-  await setupMarkWatched(page, {
-    shows: [{ ids: { simkl: 11121 }, seasons: [{ number: 5, episodes: [{ number: 1 }] }] }],
-  })
+  await setupMarkWatchedShow(page, [{ ids: { simkl: 11121 }, seasons: [{ number: 5, episodes: [{ number: 1 }] }] }])
   await setupAuthorize(page)
   await page.goto("/")
   await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
@@ -40,9 +38,7 @@ test("marks a watchlist movie as watched", async ({ page }) => {
     added_to_watchlist_at: "2025-01-01T00:00:00Z",
   }])
   await setupSyncAnime(page, [])
-  await setupMarkWatched(page, {
-    movies: [{ ids: { simkl: 53992 } }],
-  })
+  await setupMarkWatchedMovie(page, [{ ids: { simkl: 53992 } }])
   await setupAuthorize(page)
   await page.goto("/")
   await page.getByRole("button", { name: /get started \(simkl\)/i }).click()

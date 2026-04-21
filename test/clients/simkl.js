@@ -107,21 +107,27 @@ export function setupSearchMovie(page, results) {
   })
 }
 
-export function setupMarkWatched(page, expectedPayload) {
+export function setupMarkWatchedMovie(page, expectedMovies) {
   return page.route("**/sync/history", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
     const body = route.request().postDataJSON()
-    if (expectedPayload.movies) {
-      expect(body.movies).toHaveLength(expectedPayload.movies.length)
-      expectedPayload.movies.forEach((expected, i) => {
-        expect(body.movies[i].ids).toEqual(expected.ids)
-        expect(body.movies[i].watched_at).toBeTruthy()
-      })
-    } else {
-      expect(body).toEqual(expectedPayload)
-    }
+    expect(body.movies).toHaveLength(expectedMovies.length)
+    expectedMovies.forEach((expected, i) => {
+      expect(body.movies[i].ids).toEqual(expected.ids)
+      expect(body.movies[i].watched_at).toBeTruthy()
+    })
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
+  })
+}
+
+export function setupMarkWatchedShow(page, expectedShows) {
+  return page.route("**/sync/history", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    expect(route.request().postDataJSON()).toEqual({ shows: expectedShows })
     await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
   })
 }

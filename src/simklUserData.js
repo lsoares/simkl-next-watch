@@ -265,6 +265,3 @@ function buildShowUrl({ id, title, type }) {
   return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/${id}/${slug}`
 }
 
-Object.keys(localStorage)
-  .filter((k) => k.startsWith("next-watch-simkl-cache-") && k !== SYNC_CACHE_KEY)
-  .forEach((k) => localStorage.removeItem(k))

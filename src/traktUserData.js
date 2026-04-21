@@ -12,7 +12,7 @@ export function createTraktUserData() {
   function loadProgressCache() {
     try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
   }
-  
+
   function persistProgressCache() {
     try { localStorage.setItem("next-watch-trakt-progress-v0", JSON.stringify(progressCache)) } catch {}
   }
@@ -132,7 +132,17 @@ export function createTraktUserData() {
 
     async getCompletedShows() { return { items: [], fresh: false } },
     async getCompletedMovies() { return { items: [], fresh: false } },
-    async markWatched() { throw notImplemented() },
+    async markWatched(item) {
+      if (item.type !== "movie") throw notImplemented()
+      const ids = {
+        ...(item.ids?.trakt && { trakt: item.ids.trakt }),
+        ...(item.ids?.imdb && { imdb: item.ids.imdb }),
+        ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
+        ...(item.ids?.slug && { slug: item.ids.slug }),
+      }
+      await apiPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
+      await watchlistMoviesCache.write(null)
+    },
 
     async addToWatchlist(item) {
       const type = item.type === "movie" ? "movies" : "shows"
