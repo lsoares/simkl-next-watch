@@ -52,41 +52,22 @@ export const simklUserData = (() => {
           return { shows: cached.shows, movies: cached.movies, fresh: false }
         }
 
-        const fetchItems = async (type, dateFrom) => {
+        const fetchItems = async (type) => {
           const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
-          if (dateFrom) params.set("date_from", dateFrom)
           const data = await apiFetch(`/sync/all-items/${type}/?${params}`)
           return (data?.[type] ?? []).map(normalizeItem)
         }
 
-        const mergeById = (existing, updated) => {
-          const byId = new Map(existing.filter((i) => i.id).map((i) => [i.id, i]))
-          for (const item of updated) {
-            if (!item.id) continue
-            if (item.status === "deleted") byId.delete(item.id)
-            else byId.set(item.id, item)
-          }
-          return [...byId.values()]
-        }
-
-        const dateFrom = cached?.lastActivity || null
-        const fresh = !cached?.shows || !cached?.movies || !dateFrom
         const [rawShows, rawMovies, rawAnime] = await Promise.all([
-          fetchItems("shows", fresh ? null : dateFrom),
-          fetchItems("movies", fresh ? null : dateFrom),
-          fetchItems("anime", fresh ? null : dateFrom).catch(() => []),
+          fetchItems("shows"),
+          fetchItems("movies"),
+          fetchItems("anime").catch(() => []),
         ])
+        const shows = [...rawShows, ...rawAnime.filter((a) => a.type === "tv")]
+        const movies = [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")]
 
-        const incomingShows = [...rawShows, ...rawAnime.filter((a) => a.type === "tv")]
-        const incomingMovies = [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")]
-        const shows = fresh ? incomingShows : mergeById(cached.shows, incomingShows)
-        const movies = fresh ? incomingMovies : mergeById(cached.movies, incomingMovies)
-
-        const latestActivity = (sig.match(/\d{4}-\d{2}-\d{2}T[\d:.Z+-]+/g) || [])
-          .reduce((max, x) => x > max ? x : max, "")
-
-        await cache.write({ sig, lastActivity: latestActivity, shows, movies })
-        return { shows, movies, fresh }
+        await cache.write({ sig, shows, movies })
+        return { shows, movies, fresh: true }
       } finally {
         inFlight = null
       }
