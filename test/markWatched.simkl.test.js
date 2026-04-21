@@ -20,12 +20,19 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
   const showCard = page.getByRole("article", { name: "Breaking Bad" })
   await expect(showCard).toBeVisible()
+  await setupSyncActivities(page, "2025-02-01T00:00:00Z")
+  await setupSyncShows(page, [{
+    show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+    status: "watching", next_to_watch: "S05E02",
+    watched_episodes_count: 47, total_episodes_count: 62, not_aired_episodes_count: 0,
+  }])
 
   await showCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
   await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched.*rate it/i)
   await expect(toast.getByRole("link", { name: "Breaking Bad 5x1" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
+  await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-2/")
 })
 
 test("marks a watchlist movie as watched", async ({ page }) => {
@@ -44,10 +51,16 @@ test("marks a watchlist movie as watched", async ({ page }) => {
   await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
   const movieCard = page.getByRole("article", { name: "The Matrix" })
   await expect(movieCard).toBeVisible()
+  await setupSyncActivities(page, "2025-02-01T00:00:00Z")
+  await setupSyncMovies(page, [{
+    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
+    status: "completed",
+  }])
 
   await movieCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
   await expect(toast).toContainText(/marked.*matrix.*watched.*rate it/i)
   await expect(toast.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
+  await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
 })
