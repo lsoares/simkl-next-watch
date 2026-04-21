@@ -159,7 +159,6 @@ class PosterCard extends HTMLElement {
     const showWatchedBadge = !isNext && watched
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
     const watchedRating = showWatchedBadge && userRating != null ? userRating : null
-    const watchedBadgeLabel = `Watched${watchedAgo ? ` ${watchedAgo}` : ""}${watchedRating != null ? ` · rated ${watchedRating}/10` : ""}`
     const showWatchlistBadge = !isNext && inWatchlist && !watched
 
     const dataAttrs = isNext
@@ -184,7 +183,8 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchedBadge ? `<span class="poster-status poster-status--watched" title="${escapeHtml(watchedBadgeLabel)}" aria-label="${escapeHtml(watchedBadgeLabel)}">${ICON_EYE}${watchedAgo ? `<span>${escapeHtml(watchedAgo)}</span>` : ""}${watchedRating != null ? `<span class="poster-status-rating">${watchedRating}☆</span>` : ""}</span>` : ""}
+          ${watchedRating != null ? `<span class="poster-status poster-status--watched" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
+          ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watched" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
@@ -205,28 +205,19 @@ function shuffle(arr) {
   return arr.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
 }
 
-function formatBand(items, cap) {
-  return shuffle(items).slice(0, cap).map((item) => `${item.title}${item.year ? ` (${item.year})` : ""}:${item.user_rating}`).join(", ")
-}
-
-function buildRatingsInput(mediaType, shows, movies) {
+function buildLibraryContext(mediaType, shows, movies) {
   const includeTv = mediaType !== "movie"
   const includeFilm = mediaType !== "tv"
   const pool = [
     ...(includeTv ? (shows || []) : []),
     ...(includeFilm ? (movies || []) : []),
-  ].filter((item) => item.user_rating != null)
-  const liked = pool.filter((i) => i.user_rating >= 8)
-  const mixed = pool.filter((i) => i.user_rating >= 6 && i.user_rating < 8)
-  const disliked = pool.filter((i) => i.user_rating < 6)
-  const parts = []
-  const likedStr = formatBand(liked, 120)
-  const mixedStr = formatBand(mixed, 30)
-  const dislikedStr = formatBand(disliked, 20)
-  if (likedStr) parts.push(`Liked (8-10): ${likedStr}`)
-  if (mixedStr) parts.push(`Mixed (6-7): ${mixedStr}`)
-  if (dislikedStr) parts.push(`Disliked (1-5): ${dislikedStr}`)
-  return parts.join("\n")
+  ].filter((i) => i.user_rating != null || i.status === "completed" || i.status === "watching")
+  if (!pool.length) return ""
+  const listed = shuffle(pool).slice(0, 150).map((i) => {
+    const year = i.year ? ` (${i.year})` : ""
+    return i.user_rating != null ? `${i.title}${year}:${i.user_rating}` : `${i.title}${year}`
+  }).join(", ")
+  return `Library: ${listed}`
 }
 
 // ── Storage ──
@@ -719,10 +710,13 @@ function initDockEffect(row) {
 
   const AI_SYSTEM_TYPES = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" }
   function aiSystemPrompt(mediaType) {
-    return `You are a film/TV recommender. Suggest exactly 10 ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Do not suggest any title the user has rated — they are already in my library.
+    return `You are a film/TV recommender. Suggest exactly 10 ${AI_SYSTEM_TYPES[mediaType] || AI_SYSTEM_TYPES.both} with at least 6.5 IMDb rating. Do not suggest any title in the user's Library below — they've already rated or watched it.
+
+Library format: comma-separated "Title (year)" entries; a trailing ":N" marks the user's 1-10 rating if they rated it.
 
 Taste:
-- Treat 8-10 ratings as strong likes; 1-5 as dislikes (avoid similar).
+- Rated titles carry the primary signal. Treat 8-10 as strong likes; 1-5 as dislikes (avoid similar).
+- Unrated library entries are a weaker signal (user watched but didn't rate); use them only when rated items don't cover a pattern, and never let them outrank an explicit rating.
 - Infer across genre, tone, era, pacing, and country — not just genre.
 - Mood is the primary filter; taste chooses which mood-fitting titles to pick.
 
@@ -832,14 +826,14 @@ Output: a JSON array only, no prose, no markdown:
       shows: [...ws.items, ...wls.items, ...cs.items],
       movies: [...wlm.items, ...cm.items],
     }
-    const ratings = buildRatingsInput(mediaType, library.shows, library.movies)
-    if (!ratings) return []
+    const context = buildLibraryContext(mediaType, library.shows, library.movies)
+    if (!context) return []
 
     const provider = readStorage(STORAGE.aiProvider) || "groq"
     const key = getAiKey(provider)
     const systemPrompt = aiSystemPrompt(mediaType)
     const moodLine = mood.gloss ? `${mood.label} — ${mood.gloss}` : mood.label
-    const userMessage = `${ratings}\nMood: ${moodLine}`
+    const userMessage = `${context}\nMood: ${moodLine}`
 
     const suggestions = await fetchAiSuggestions(provider, key, userMessage, systemPrompt)
     const resolved = await resolveSimkl(suggestions, mediaType)

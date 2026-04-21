@@ -28,7 +28,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
     await setupSyncMovies(page, [
       {
         movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
-        status: "completed", user_rating: 8,
+        status: "completed", user_rating: 8, last_watched_at: "2024-01-01T00:00:00Z",
       },
       {
         movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, poster: "test" },
@@ -44,7 +44,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
     await setupAiChat(page,
       '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010}]',
       "apiAiKey",
-      ["Breaking Bad (2008):9", "Inception (2010):8"],
+      ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999)"],
     )
     await setupSearchTv(page)
     await setupSearchMovie(page, {
@@ -67,7 +67,8 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
     await expect(aiResults.getByRole("article", { name: "Oldboy" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "Inception" })).toHaveClass(/trending-watched/)
-    await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/watched/i)).toBeVisible()
+    await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/rated 8 out of 10/i)).toBeVisible()
+    await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/^watched /i)).toBeVisible()
   })
 })
 
@@ -112,7 +113,7 @@ test("AI view shows a generic-suggestions notice when the library has no rated i
 
   await page.getByRole("link", { name: /ai suggested/i }).click()
 
-  await expect(page.getByText(/rate some titles to personalize/i)).toBeVisible()
+  await expect(page.getByText(/rate some titles for sharper.*watched history/i)).toBeVisible()
 })
 
 test("saving AI key shows confirmation toast", async ({ page }) => {
