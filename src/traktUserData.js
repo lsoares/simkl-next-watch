@@ -77,20 +77,19 @@ export function createTraktUserData() {
         apiFetch("/sync/watched/shows?extended=full"),
         apiFetch("/users/hidden/dropped?limit=1000"),
       ])
-      const droppedIds = new Set((Array.isArray(hidden) ? hidden : []).map((h) => h.show?.ids?.trakt).filter(Boolean))
-      const items = (Array.isArray(data) ? data : [])
+      const droppedIds = new Set(hidden.map((h) => h.show?.ids?.trakt).filter(Boolean))
+      const items = data
         .map((entry) => normalizeTraktShow(entry, { status: "watching", addedAt: null }))
         .filter((s) => (s.ids.slug || s.ids.trakt) && s.watched_episodes_count > 0)
         .filter((s) => !droppedIds.has(s.ids.trakt))
         .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
-        .sort(byWatchingPriority)
       await watchedShowsCache.write({ ts, items })
       return { items, fresh: true }
     },
 
     async getProgress(traktIdOrSlug) {
-      const key = String(traktIdOrSlug || "")
-      if (!key) return null
+      if (!traktIdOrSlug) return null
+      const key = String(traktIdOrSlug)
       if (progressCache[key] !== undefined) return progressCache[key]
       try {
         const data = await apiFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
@@ -110,10 +109,9 @@ export function createTraktUserData() {
       if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
       const data = await apiFetch("/sync/watchlist/shows?extended=full")
       const now = Date.now()
-      const items = (Array.isArray(data) ? data : [])
+      const items = data
         .filter((entry) => !entry?.show?.first_aired || new Date(entry.show.first_aired).getTime() <= now)
         .map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
-        .sort(byListedDate)
       await watchlistShowsCache.write({ ts, items })
       return { items, fresh: true }
     },
@@ -124,10 +122,9 @@ export function createTraktUserData() {
       if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
       const data = await apiFetch("/sync/watchlist/movies?extended=full")
       const now = Date.now()
-      const items = (Array.isArray(data) ? data : [])
+      const items = data
         .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
         .map(normalizeTraktMovie)
-        .sort(byListedDate)
       await watchlistMoviesCache.write({ ts, items })
       return { items, fresh: true }
     },
@@ -135,12 +132,7 @@ export function createTraktUserData() {
     async getCompletedShows() { return { items: [], fresh: false } },
     async getCompletedMovies() { return { items: [], fresh: false } },
     async markWatched(item) {
-      const ids = {
-        ...(item.ids?.trakt && { trakt: item.ids.trakt }),
-        ...(item.ids?.imdb && { imdb: item.ids.imdb }),
-        ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
-        ...(item.ids?.slug && { slug: item.ids.slug }),
-      }
+      const ids = traktIdsOf(item)
       if (item.type === "tv") {
         if (!item.nextEpisode) throw new Error("Next episode unknown — can’t mark as watched.")
         await apiPost("/sync/history", {
@@ -162,13 +154,7 @@ export function createTraktUserData() {
 
     async addToWatchlist(item) {
       const type = item.type === "movie" ? "movies" : "shows"
-      const ids = {
-        ...(item.ids?.trakt && { trakt: item.ids.trakt }),
-        ...(item.ids?.imdb && { imdb: item.ids.imdb }),
-        ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
-        ...(item.ids?.slug && { slug: item.ids.slug }),
-      }
-      await apiPost("/sync/watchlist", { [type]: [{ ids }] })
+      await apiPost("/sync/watchlist", { [type]: [{ ids: traktIdsOf(item) }] })
       await (type === "movies" ? watchlistMoviesCache : watchlistShowsCache).write(null)
     },
 
@@ -189,17 +175,6 @@ export function createTraktUserData() {
       return data
     },
   }
-}
-
-const byListedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
-function byWatchingPriority(a, b) {
-  const left = (s) => (s.total_episodes_count || 0) > 0
-    ? Math.max(0, (s.total_episodes_count || 0) - (s.not_aired_episodes_count || 0) - (s.watched_episodes_count || 0))
-    : Infinity
-  const aLeft = left(a), bLeft = left(b)
-  if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
-  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
-  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
 }
 
 function normalizeTraktShow(entry, { status, addedAt }) {
@@ -257,8 +232,13 @@ function normalizeTraktMovie(entry) {
   }
 }
 
-function notImplemented() {
-  return new Error("Trakt support is in progress — this action isn’t available yet.")
+function traktIdsOf(item) {
+  return {
+    ...(item.ids?.trakt && { trakt: item.ids.trakt }),
+    ...(item.ids?.imdb && { imdb: item.ids.imdb }),
+    ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
+    ...(item.ids?.slug && { slug: item.ids.slug }),
+  }
 }
 
 function requireGlobal(key) {

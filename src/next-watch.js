@@ -31,6 +31,15 @@ function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - notAired - watched) : Infinity
 }
 
+const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
+
+function byWatchingPriority(a, b) {
+  const aLeft = availableEpisodesLeft(a), bLeft = availableEpisodesLeft(b)
+  if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
+  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
+  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
+}
+
 function isUnstarted(item, type) {
   if (type === "tv") {
     return item.status === "plantowatch" || (item.watched_episodes_count === 0 && item.nextEpisode?.episode === 1)
@@ -466,8 +475,9 @@ function initDockEffect(row) {
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
-      tvItems = [...ws.items, ...wls.items].filter((i) => i.release_status !== "unreleased")
-      movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
+      tvItems = [...[...ws.items].sort(byWatchingPriority), ...[...wls.items].sort(byAddedDate)]
+        .filter((i) => i.release_status !== "unreleased")
+      movieItems = [...wlm.items].sort(byAddedDate).filter((i) => i.release_status !== "unreleased")
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
