@@ -563,29 +563,12 @@
       .poster-top > * { pointer-events: auto; }
       .poster-top-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
       .poster-top-text > * { pointer-events: auto; }
+      .poster-top-text .poster-status { margin-top: 6px; }
 
-      /* Rating badge (provider-native score) */
-      .rating-badge {
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.6rem;
-        font-weight: 800;
-        padding: 1px 4px;
-        border-radius: 3px;
-        white-space: nowrap;
-        align-self: flex-start;
-        margin-top: 6px;
-        background: rgba(180, 83, 9, 0.8);
-        color: #fff;
-        opacity: 0.75;
-        pointer-events: none;
-        transition: opacity 0.15s;
-      }
       @media (hover: hover) and (pointer: fine) {
-        .item-card .rating-badge,
         .item-card .trending-badge { opacity: 0; }
-        .item-card:hover .rating-badge,
-        .item-card:hover .trending-badge { opacity: 1; }
+        .item-card:hover .trending-badge,
+        .item-card:hover .poster-status { opacity: 1; }
       }
 
       /* Trending period badge (posters in Next and AI views).
@@ -733,11 +716,14 @@
         align-items: center;
         gap: 5px;
         pointer-events: none;
+        transition: opacity 0.15s;
       }
       .poster-status-icon { flex-shrink: 0; }
       .poster-status-rating { opacity: 0.75; font-weight: 500; }
       .poster-status--watched { background: rgba(22,101,52,0.8); color: #d1fae5; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
       .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
+      .poster-status--simkl { background: rgba(30,111,182,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
+      .poster-status--trakt { background: rgba(237,28,36,0.8); color: #fee2e2; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
       .item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)) .poster-bottom {
         padding-right: 10px;
       }
