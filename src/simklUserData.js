@@ -150,7 +150,7 @@ export const simklUserData = (() => {
     async getCompletedShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
-        items: shows.filter((s) => s.status !== "watching" && s.status !== "plantowatch"),
+        items: shows.filter((s) => s.status !== "plantowatch" && (s.status !== "watching" || !s.nextEpisode)),
         fresh,
       }
     },
