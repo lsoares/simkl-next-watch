@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { minify } from "html-minifier-terser"
-import { readFile, writeFile, mkdir, copyFile, rm } from "node:fs/promises"
+import { readFile, writeFile, mkdir, copyFile, readdir, rm } from "node:fs/promises"
 
 await rm("dist", { recursive: true, force: true })
 await mkdir("dist", { recursive: true })
@@ -24,8 +24,8 @@ for (const f of ["sw.js"]) {
 for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.png"]) {
   await copyFile(`assets/${f}`, `dist/assets/${f}`)
 }
-for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUserData.js", "traktUserData.js", "cacheClient.js"]) {
-  await copyFile(`src/${f}`, `dist/src/${f}`)
+for (const f of await readdir("src")) {
+  if (f.endsWith(".js") || f.endsWith(".css")) await copyFile(`src/${f}`, `dist/src/${f}`)
 }
 
 const globals = {
