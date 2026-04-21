@@ -1,4 +1,5 @@
 import { createCacheClient } from "./cacheClient.js"
+import { simklCatalog } from "./simklCatalog.js"
 
 export const simklUserData = (() => {
   const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
@@ -177,6 +178,17 @@ export const simklUserData = (() => {
       const key = item.type === "movie" ? "movies" : "shows"
       const id = Number(item.ids?.simkl)
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
+    },
+
+    getTrending(period) {
+      return simklCatalog.getTrending(period)
+    },
+
+    trendingBrowseUrl(type, { period = "today" } = {}) {
+      const base = type === "movie"
+        ? "https://simkl.com/movies/best-movies/most-watched/"
+        : "https://simkl.com/tv/best-shows/most-watched/"
+      return `${base}?wltime=${period}`
     },
   }
 })()

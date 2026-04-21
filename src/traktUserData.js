@@ -232,6 +232,23 @@ export const traktUserData = (() => {
       await apiPost("/sync/watchlist", { [type]: [{ ids: traktIdsOf(item) }] })
       await (type === "movies" ? watchlistMoviesCache : watchlistShowsCache).write(null)
     },
+
+    async getTrending(period) {
+      const traktPeriod = period === "today" ? "daily" : period === "week" ? "weekly" : "monthly"
+      const [tvData, movieData] = await Promise.all([
+        apiFetch(`/shows/watched/${traktPeriod}?limit=24`).catch(() => []),
+        apiFetch(`/movies/watched/${traktPeriod}?limit=24`).catch(() => []),
+      ])
+      return {
+        tv: tvData.map((entry) => normalizeTraktShow(entry, { status: undefined, addedAt: null })),
+        movies: movieData.map((entry) => normalizeTraktMovie(entry)),
+      }
+    },
+
+    trendingBrowseUrl(type, { ignoreWatched = false } = {}) {
+      const mode = type === "movie" ? "movie" : "show"
+      return `https://app.trakt.tv/discover/trending?mode=${mode}&ignore_watched=${ignoreWatched}`
+    },
   }
 })()
 
@@ -302,3 +319,4 @@ function traktIdsOf(item) {
     ...(item.ids?.slug && { slug: item.ids.slug }),
   }
 }
+

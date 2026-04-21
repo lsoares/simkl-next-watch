@@ -327,7 +327,7 @@ function initDockEffect(row) {
 
   // ── Trending ──
 
-  function renderDiscoveryRow(containerEl, items, type) {
+  function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     const loggedIn = isLoggedIn()
     containerEl.replaceChildren()
     items.forEach((item) => {
@@ -345,6 +345,14 @@ function initDockEffect(row) {
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
       containerEl.appendChild(frag)
     })
+    const u = currentUserData()
+    const moreUrl = u.trendingBrowseUrl(type, browseParams)
+    const moreLabel = `More on ${u.name}`
+    const moreTile = document.createElement("div")
+    moreTile.className = "row-item row-item--add-more"
+    moreTile.innerHTML = `<a class="add-more-card" href="${moreUrl}" target="_blank" rel="noreferrer" aria-label="${moreLabel}"><span class="add-more-plus" aria-hidden="true">→</span><span class="add-more-label">${moreLabel}</span></a>`
+    containerEl.appendChild(moreTile)
+    observeLazyHydration(containerEl)
   }
 
   async function addToWatchlist(card) {
@@ -494,15 +502,16 @@ function initDockEffect(row) {
     el.trendingTvContent.replaceChildren(tpl("tpl-spinner"))
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"))
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([simklCatalog.getTrending(period), libraryReady])
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([currentUserData().getTrending(period), libraryReady])
       const hideWatched = el.hideTrendingWatched.checked
       const filterFn = (item) => item.release_status !== "unreleased"
         && (!hideWatched || !libraryLookup(libraryIndex, item))
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
-      if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv")
+      const browseParams = { period, ignoreWatched: hideWatched }
+      if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv", browseParams)
       else setEmpty(el.trendingTvContent, "No results.")
-      if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie")
+      if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", browseParams)
       else setEmpty(el.trendingMoviesContent, "No results.")
       initDockEffect(el.trendingTvContent)
       initDockEffect(el.trendingMoviesContent)

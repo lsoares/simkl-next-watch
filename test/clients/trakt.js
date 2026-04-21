@@ -204,3 +204,25 @@ export function setupSearchById(page, imdbId, result) {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(result ? [result] : []) })
   })
 }
+
+export function setupWatchedShowsByPeriod(page, byPeriod) {
+  return page.route("https://api.trakt.tv/shows/watched/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    const period = new URL(route.request().url()).pathname.match(/\/shows\/watched\/(daily|weekly|monthly)/)?.[1]
+    const items = byPeriod[period] || []
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
+}
+
+export function setupWatchedMoviesByPeriod(page, byPeriod) {
+  return page.route("https://api.trakt.tv/movies/watched/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    const period = new URL(route.request().url()).pathname.match(/\/movies\/watched\/(daily|weekly|monthly)/)?.[1]
+    const items = byPeriod[period] || []
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
+}

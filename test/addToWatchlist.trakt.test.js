@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
 import { setupTrendingTv, setupTrendingMovies } from "./clients/simkl.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupAddToWatchlist } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupAddToWatchlist, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
 
 test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupOauthToken(page, "test-token")
@@ -10,9 +10,11 @@ test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])
   await setupTrendingTv(page, {})
-  await setupTrendingMovies(page, { today: [
-    { title: "Dune", ids: { simkl_id: 99003, imdb: "tt1160419", tmdb: 438631 } },
-  ] })
+  await setupTrendingMovies(page, {})
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {
+    daily: [{ watcher_count: 100, movie: { title: "Dune", year: 2021, ids: { imdb: "tt1160419", tmdb: 438631 } } }],
+  })
   await setupAddToWatchlist(page, { movies: [{ ids: { imdb: "tt1160419", tmdb: 438631 } }] })
   await setupAuthorize(page)
   await page.goto("/")
