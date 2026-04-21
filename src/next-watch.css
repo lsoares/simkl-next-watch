@@ -328,11 +328,6 @@
         font-weight: 600;
         letter-spacing: 0.04em;
       }
-      @media (max-width: 680px) {
-        .row-item--add-more { height: 100%; }
-        .add-more-card { aspect-ratio: 2/3; height: 100%; width: auto; }
-      }
-
       /* Mobile: fit both rows on screen without vertical scroll */
       @media (max-width: 680px) {
         :root {
