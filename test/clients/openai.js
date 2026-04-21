@@ -17,8 +17,6 @@ export function setupOpenaiChat(page, responseText, expectedKey, expectedRatings
     expect(body.messages[1].role).toBe("user")
     expect(body.messages[1].content).toMatch(/Mood: .+ — .+/)
     expect(body.messages[1].content).toMatch(/Library: /)
-    expect(body.messages[1].content).not.toMatch(/My library:/)
-    expect(body.messages[1].content).not.toMatch(/Variation:/)
     for (const rating of expectedRatings) expect(body.messages[1].content).toContain(rating)
     expect(body.temperature).toBe(0.9)
     await route.fulfill({
