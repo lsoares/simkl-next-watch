@@ -1,10 +1,11 @@
 import { createCacheClient } from "./cacheClient.js"
 
-export function createSimklUserData() {
+export const simklUserData = (() => {
   const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
   const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
-  const cache = createCacheClient(SYNC_CACHE_KEY)
+  const cache = createCacheClient("next-watch-simkl-cache-v8")
+  const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
   let inFlight = null
 
   async function loadRawLibrary() {
@@ -174,11 +175,7 @@ export function createSimklUserData() {
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
   }
-}
-
-const SYNC_CACHE_KEY = "next-watch-simkl-cache-v8"
-
-const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
+})()
 
 function requireGlobal(key) {
   const value = window[key]

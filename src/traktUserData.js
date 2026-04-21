@@ -1,6 +1,6 @@
 import { createCacheClient } from "./cacheClient.js"
 
-export function createTraktUserData() {
+export const traktUserData = (() => {
   const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
   const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
@@ -175,7 +175,7 @@ export function createTraktUserData() {
       return data
     },
   }
-}
+})()
 
 function normalizeTraktShow(entry, { status, addedAt }) {
   const show = entry.show || entry

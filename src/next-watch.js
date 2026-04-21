@@ -1,11 +1,8 @@
 import { simklCatalog } from "./simklCatalog.js"
-import { createSimklUserData } from "./simklUserData.js"
-import { createTraktUserData } from "./traktUserData.js"
+import { simklUserData } from "./simklUserData.js"
+import { traktUserData } from "./traktUserData.js"
 import { fetchAiSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
-
-const simklUserData = createSimklUserData()
-const traktUserData = window.__TRAKT_CLIENT_ID__ ? createTraktUserData() : null
 
 function currentUserData() {
   return localStorage.getItem("next-watch-provider") === "trakt" ? traktUserData : simklUserData
@@ -680,7 +677,6 @@ function initDockEffect(row) {
       if (expected && state && expected !== state) throw new Error("State mismatch.")
       const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
       const userData = provider === "trakt" ? traktUserData : simklUserData
-      if (!userData) throw new Error(`Provider "${provider}" is not configured.`)
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
@@ -742,10 +738,8 @@ function initDockEffect(row) {
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
   el.getStartedBtn.addEventListener("click", () => simklUserData.startOAuth())
-  if (traktUserData) {
-    el.getStartedTraktBtn.addEventListener("click", () => traktUserData.startOAuth())
-    el.getStartedTraktBtn.hidden = false
-  }
+  el.getStartedTraktBtn.addEventListener("click", () => traktUserData.startOAuth())
+  el.getStartedTraktBtn.hidden = false
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); })
