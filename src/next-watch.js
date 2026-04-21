@@ -179,7 +179,7 @@ class PosterCard extends HTMLElement {
             </div>
             ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showRating ? `<a class="rating-badge rating-badge--${ratingLabel.toLowerCase()}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${ratingLabel} ${formatRatingValue(rating)}</a>` : ""}
+            ${showRating ? `<span class="rating-badge" title="${ratingLabel} rating: ${formatRatingValue(rating)}/10">${ratingLabel} ${formatRatingValue(rating)}</span>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
