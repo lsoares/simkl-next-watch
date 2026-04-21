@@ -35,7 +35,7 @@ function collectLibraryIndex(data) {
 
 function itemLookupKeys(item) {
   const ids = item?.ids || {}
-  return [item?.id, ids.simkl_id, ids.simkl, ids.imdb, ids.trakt, ids.tmdb]
+  return [ids.simkl, ids.imdb, ids.trakt, ids.tmdb, ids.slug]
     .filter((k) => k != null && k !== "")
     .map(String)
 }
@@ -67,7 +67,7 @@ function trendingPeriodFor(candidateIds, sets) {
 
 function trendingIdsOf(item) {
   const ids = item?.ids || {}
-  return [ids.simkl_id, ids.simkl, ids.imdb, ids.tmdb]
+  return [ids.simkl, ids.imdb, ids.tmdb]
 }
 
 // ── Storage ──

@@ -112,9 +112,14 @@ function decodeSimklText(s) {
   return String(s || "").replace(/\\(['"\\])/g, "$1")
 }
 
-function simklId(item) {
-  const ids = item?.ids || {}
-  return String(ids.simkl || ids.simkl_id || "")
+function canonicalIds(rawIds = {}) {
+  const simkl = rawIds.simkl ?? rawIds.simkl_id
+  return {
+    ...(simkl != null && simkl !== "" && { simkl: Number(simkl) }),
+    ...(rawIds.imdb && { imdb: rawIds.imdb }),
+    ...(rawIds.tmdb != null && rawIds.tmdb !== "" && { tmdb: rawIds.tmdb }),
+    ...(rawIds.slug && { slug: rawIds.slug }),
+  }
 }
 
 function posterThumb(code) {
@@ -123,45 +128,47 @@ function posterThumb(code) {
   return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_m.webp`
 }
 
-function buildSlugUrl(item, type) {
-  const id = simklId(item)
+function buildSlugUrl(id, title, type) {
   if (!id) return ""
-  const slug = String(item.title || "").toLowerCase().normalize("NFKD")
+  const slug = String(title || "").toLowerCase().normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
   return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/${id}/${slug}`
 }
 
-function buildTrendingUrl(item, type) {
+function buildTrendingUrl(item, id, type) {
   if (item.url) return `https://simkl.com${item.url.replace(/^\/movie\//, "/movies/")}`
-  const id = simklId(item)
   const base = type === "movie" ? "movies" : "tv"
   return id ? `https://simkl.com/${base}/${id}` : "#"
 }
 
 function enrich(item, type) {
+  const ids = canonicalIds(item.ids)
   const simklRating = item?.ratings?.simkl?.rating
   const releaseDate = type === "movie" ? item?.released : item?.first_aired
   return {
     ...item,
+    ids,
     title: decodeSimklText(item.title),
-    id: simklId(item),
+    id: ids.simkl ? String(ids.simkl) : "",
     type,
     posterUrl: posterThumb(item.poster || item.img || ""),
-    url: buildSlugUrl(item, type),
+    url: buildSlugUrl(ids.simkl, item.title, type),
     rating: typeof simklRating === "number" ? simklRating : null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }
 
 function enrichTrending(item, type) {
+  const ids = canonicalIds(item.ids)
   const simklRating = item?.ratings?.simkl?.rating
   return {
     ...item,
+    ids,
     title: decodeSimklText(item.title),
-    id: simklId(item),
+    id: ids.simkl ? String(ids.simkl) : "",
     type,
     posterUrl: posterThumb(item.poster || item.img || ""),
-    url: buildTrendingUrl(item, type),
+    url: buildTrendingUrl(item, ids.simkl, type),
     rating: typeof simklRating === "number" ? simklRating : null,
     release_status: item?.release_date && new Date(item.release_date).getTime() > Date.now() ? "unreleased" : undefined,
   }

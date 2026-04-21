@@ -175,7 +175,7 @@ export const simklUserData = (() => {
 
     async addToWatchlist(item) {
       const key = item.type === "movie" ? "movies" : "shows"
-      const id = Number(item.ids?.simkl_id || item.ids?.simkl)
+      const id = Number(item.ids?.simkl)
       await apiPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
     },
   }
