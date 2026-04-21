@@ -18,7 +18,7 @@ export const simklCatalog = {
     const key = `${showId}:${season}:${episode}`
     if (episodeTitleCache[key] !== undefined) return episodeTitleCache[key]
     const episodes = await fetchEpisodesOnce(showId)
-    const match = Array.isArray(episodes) && episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
+    const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
     const title = match?.title || null
     episodeTitleCache[key] = title
     persistJsonMap(EPISODE_TITLE_CACHE_KEY, episodeTitleCache)
@@ -30,18 +30,18 @@ export const simklCatalog = {
     try {
       if (type === "tv") {
         const r = await apiFetch(`/search/tv?q=${q}&limit=1&extended=full`)
-        return (Array.isArray(r) && r[0]) ? enrich(r[0], "tv") : null
+        return r[0] ? enrich(r[0], "tv") : null
       }
       if (type === "movie") {
         const r = await apiFetch(`/search/movie?q=${q}&limit=1&extended=full`)
-        return (Array.isArray(r) && r[0]) ? enrich(r[0], "movie") : null
+        return r[0] ? enrich(r[0], "movie") : null
       }
       const [tv, movie] = await Promise.all([
         apiFetch(`/search/tv?q=${q}&limit=1&extended=full`),
         apiFetch(`/search/movie?q=${q}&limit=1&extended=full`),
       ])
-      if (Array.isArray(tv) && tv[0]) return enrich(tv[0], "tv")
-      if (Array.isArray(movie) && movie[0]) return enrich(movie[0], "movie")
+      if (tv[0]) return enrich(tv[0], "tv")
+      if (movie[0]) return enrich(movie[0], "movie")
       return null
     } catch {
       return null
@@ -55,7 +55,7 @@ export const simklCatalog = {
     const p = (async () => {
       try {
         const r = await apiFetch(`/search/id?imdb=${encodeURIComponent(imdbId)}`)
-        const hit = Array.isArray(r) && r[0]
+        const hit = r[0]
         const result = hit ? {
           simklId: hit.ids?.simkl || hit.ids?.simkl_id || null,
           poster: hit.poster || "",
@@ -82,8 +82,8 @@ export const simklCatalog = {
       fetch(`https://data.simkl.in/discover/trending/movies/${period}_100.json`).then((r) => r.json()),
     ])
     return {
-      tv: (tv || []).map((item) => enrichTrending(item, "tv")),
-      movies: (movies || []).map((item) => enrichTrending(item, "movie")),
+      tv: tv.map((item) => enrichTrending(item, "tv")),
+      movies: movies.map((item) => enrichTrending(item, "movie")),
     }
   },
 }
