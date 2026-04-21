@@ -17,7 +17,7 @@ test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await page.getByRole("link", { name: /trending/i }).click()
   const card = page.getByRole("article", { name: "Dune" })

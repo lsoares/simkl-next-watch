@@ -18,7 +18,7 @@ test("shows trending shows and movies", async ({ page }) => {
   await setupTrendingMovies(page, {})
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText(/🔥/)).toBeVisible()
 
@@ -29,7 +29,7 @@ test("shows trending shows and movies", async ({ page }) => {
   await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
   await expect(rookie.getByText(/🔥/)).toHaveCount(0)
   await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText("Watchlist")).toBeVisible()
-  await expect(page.getByRole("link", { name: "More on Simkl" }).first()).toHaveAttribute("href", "https://simkl.com/tv/best-shows/most-watched/?wltime=today")
+  await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://simkl.com/tv/best-shows/most-watched/?wltime=today")
 })
 
 test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
@@ -53,7 +53,7 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
   await setupTrendingMovies(page, {})
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
   await page.getByRole("link", { name: /trending/i }).click()
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()

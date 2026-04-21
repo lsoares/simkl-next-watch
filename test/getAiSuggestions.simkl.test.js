@@ -152,8 +152,8 @@ test("AI view shows sign-in CTAs and keeps mood prompts as a teaser when logged 
   await page.goto("/#ai")
 
   const aiView = page.locator("#aiView")
-  await expect(aiView.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
-  await expect(aiView.getByRole("button", { name: /get started \(trakt\)/i })).toBeVisible()
+  await expect(aiView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
+  await expect(aiView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
 
   await page.getByRole("button", { name: /cozy night in/i }).click()
 

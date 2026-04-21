@@ -18,7 +18,7 @@ test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupAddToWatchlist(page, { movies: [{ ids: { imdb: "tt1160419", tmdb: 438631 } }] })
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
   await page.getByRole("link", { name: /trending/i }).click()
   const card = page.getByRole("article", { name: "Dune" })
   await expect(card).toBeVisible()

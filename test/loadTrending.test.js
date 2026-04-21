@@ -37,6 +37,6 @@ test("trending view shows sign-in CTAs when logged out", async ({ page }) => {
   await page.goto("/#trending")
 
   const trendingView = page.locator("#trendingView")
-  await expect(trendingView.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
-  await expect(trendingView.getByRole("button", { name: /get started \(trakt\)/i })).toBeVisible()
+  await expect(trendingView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
+  await expect(trendingView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
 })

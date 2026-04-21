@@ -17,7 +17,7 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await setupAuthorize(page)
   await page.goto("/")
   
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 
   const showCard = page.getByRole("article", { name: "Breaking Bad" })
   await expect(showCard).toBeVisible()
@@ -46,7 +46,7 @@ test("filters out completed shows from the watching list", async ({ page }) => {
   await setupAuthorize(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
@@ -70,7 +70,7 @@ test("watchlist shows hide unreleased entries", async ({ page }) => {
   await setupAuthorize(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 
   await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
@@ -94,7 +94,7 @@ test("watchlist movies link to the movie page and unreleased ones are hidden", a
   await setupAuthorize(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 
   const movieCard = page.getByRole("article", { name: "The Matrix" })
   await expect(movieCard).toBeVisible()
@@ -135,7 +135,7 @@ async function signInWithLibrary(page, library) {
   await setupSyncAnime(page, [])
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
 }
 
 async function externallyChangeLibrary(page, library) {

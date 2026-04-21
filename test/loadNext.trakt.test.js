@@ -16,7 +16,7 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await setupSearchById(page, "tt0903747", { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 })
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   const showCard = page.getByRole("article", { name: "Breaking Bad" })
   await expect(showCard).toBeVisible()
@@ -55,7 +55,7 @@ test("filters out completed and dropped shows from the watching list", async ({ 
   await setupAuthorize(page)
   await page.goto("/")
   
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
@@ -81,7 +81,7 @@ test("watchlist shows hide unreleased entries", async ({ page }) => {
   await setupAuthorize(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
@@ -106,7 +106,7 @@ test("watchlist movies link to the movie page and unreleased ones are hidden", a
   await setupAuthorize(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   const movieCard = page.getByRole("article", { name: "The Matrix" })
   await expect(movieCard).toBeVisible()
@@ -142,7 +142,7 @@ async function signInWithLibrary(page, library) {
   await publishLibrary(page, library, "2025-01-01T00:00:00Z")
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 }
 
 async function externallyChangeLibrary(page, library) {

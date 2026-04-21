@@ -348,7 +348,7 @@ function initDockEffect(row) {
       containerEl.appendChild(frag)
     })
     const u = currentUserData()
-    appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: `More on ${u.name}` })
+    appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
     observeLazyHydration(containerEl)
   }
 

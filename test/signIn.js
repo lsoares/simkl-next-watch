@@ -36,7 +36,7 @@ export async function signInToSimkl(page, { shows = [], movies = [], anime = [] 
   }
   await setupSimklAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
   const firstTitle = shows[0]?.show?.title
   if (firstTitle) await expect(page.getByRole("article", { name: firstTitle })).toBeVisible()
 }
@@ -65,7 +65,7 @@ export async function signInToTrakt(page, {
   for (const [imdb, result] of Object.entries(simklSearch)) await setupSearchById(page, imdb, result)
   await setupTraktAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
   const firstTitle = watchedShows[0]?.show?.title
   if (firstTitle) await expect(page.getByRole("article", { name: firstTitle })).toBeVisible()
 }

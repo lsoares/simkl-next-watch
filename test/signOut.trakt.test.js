@@ -13,12 +13,12 @@ test("logout clears session and shows intro", async ({ page }) => {
   }])
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
   await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
 
   await page.getByRole("button", { name: /logout/i }).click()
 
-  await expect(page.getByRole("button", { name: /get started \(trakt\)/i })).toBeVisible()
+  await expect(page.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
   await expect(page.getByRole("heading", { name: /next episode or movie/i })).toBeVisible()
   const leftover = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("next-watch")))
   expect(leftover).toEqual([])

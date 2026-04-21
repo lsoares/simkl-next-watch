@@ -38,7 +38,7 @@ test("trending rows list shows and movies from the watched-period feed", async (
   })
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   await page.getByRole("link", { name: /trending/i }).click()
 
@@ -47,7 +47,7 @@ test("trending rows list shows and movies from the watched-period feed", async (
   await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Severance" }).getByRole("link", { name: "Severance" })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance")
   await expect(page.getByRole("article", { name: "Dune" }).getByRole("link", { name: "Dune" })).toHaveAttribute("href", "https://app.trakt.tv/movies/dune-2021")
-  await expect(page.getByRole("link", { name: "More on Trakt" }).first()).toHaveAttribute("href", "https://app.trakt.tv/discover/trending?mode=show&ignore_watched=false")
+  await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://app.trakt.tv/discover/trending?mode=show&ignore_watched=false")
 })
 
 test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
@@ -78,7 +78,7 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
   await setupWatchedMoviesByPeriod(page, {})
   await setupAuthorize(page)
   await page.goto("/")
-  await page.getByRole("button", { name: /get started \(trakt\)/i }).click()
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
   await page.getByRole("link", { name: /trending/i }).click()
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
