@@ -75,7 +75,7 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${watchedRating != null ? `<span class="poster-status poster-status--watched" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
+          ${watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
           ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watched" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
