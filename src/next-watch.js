@@ -20,16 +20,32 @@ function byWatchingPriority(a, b) {
 }
 
 function collectLibraryIndex(data) {
-  return new Map(
-    [...(data.shows || []), ...(data.movies || [])]
-      .map((item) => [item.id, {
-        watched: item.status === "completed",
-        watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
-        watching: item.status === "watching",
-        userRating: item.user_rating ?? null,
-      }])
-      .filter(([id]) => id)
-  )
+  const index = new Map()
+  for (const item of [...(data.shows || []), ...(data.movies || [])]) {
+    const entry = {
+      watched: item.status === "completed",
+      watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
+      watching: item.status === "watching",
+      userRating: item.user_rating ?? null,
+    }
+    for (const key of itemLookupKeys(item)) index.set(key, entry)
+  }
+  return index
+}
+
+function itemLookupKeys(item) {
+  const ids = item?.ids || {}
+  return [item?.id, ids.simkl_id, ids.simkl, ids.imdb, ids.trakt, ids.tmdb]
+    .filter((k) => k != null && k !== "")
+    .map(String)
+}
+
+function libraryLookup(libraryIndex, item) {
+  for (const key of itemLookupKeys(item)) {
+    const entry = libraryIndex.get(key)
+    if (entry) return entry
+  }
+  return null
 }
 
 function trendingBadgeInfo(period) {
@@ -315,11 +331,10 @@ function initDockEffect(row) {
     containerEl.replaceChildren()
     items.forEach((item) => {
       const { frag, card } = makeRowItem()
-      const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
       card.variant = "discovery"
       card.type = type
       card.item = item
-      const entry = libraryIndex.get(id)
+      const entry = libraryLookup(libraryIndex, item)
       card.watched = !!entry?.watched
       card.watchedAt = entry?.watchedAt || null
       card.userRating = entry?.userRating ?? null
@@ -333,13 +348,14 @@ function initDockEffect(row) {
 
   async function addToWatchlist(card) {
     const item = card.item
-    const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
+    const keys = itemLookupKeys(item)
     const btn = card.cardEl?.querySelector(".add-watchlist-btn")
-    if (!id || !btn) return
+    if (!keys.length || !btn) return
     btn.disabled = true
     try {
       await currentUserData().addToWatchlist(item)
-      libraryIndex.set(id, { watched: false, watchedAt: null })
+      const entry = { watched: false, watchedAt: null }
+      for (const key of keys) libraryIndex.set(key, entry)
       card.inWatchlist = true
       card._rendered = false
       card._render()
@@ -480,7 +496,7 @@ function initDockEffect(row) {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([simklCatalog.getTrending(period), libraryReady])
       const hideWatched = el.hideTrendingWatched.checked
       const filterFn = (item) => item.release_status !== "unreleased"
-        && (!hideWatched || !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")))
+        && (!hideWatched || !libraryLookup(libraryIndex, item))
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
       if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv")
@@ -573,8 +589,8 @@ function initDockEffect(row) {
     return resolved
       .filter((i) => i.release_status !== "unreleased")
       .sort((a, b) => {
-        const ea = libraryIndex.get(String(a.ids?.simkl_id || a.ids?.simkl || ""))
-        const eb = libraryIndex.get(String(b.ids?.simkl_id || b.ids?.simkl || ""))
+        const ea = libraryLookup(libraryIndex, a)
+        const eb = libraryLookup(libraryIndex, b)
         const aw = ea?.watched ? 1 : 0
         const bw = eb?.watched ? 1 : 0
         if (aw !== bw) return aw - bw
@@ -594,11 +610,10 @@ function initDockEffect(row) {
     el.aiResults.replaceChildren()
     typed.forEach(({ item, type }) => {
       const { frag, card } = makeRowItem()
-      const id = String(item.ids?.simkl_id || item.ids?.simkl || "")
       card.variant = "discovery"
       card.type = type
       card.item = item
-      const entry = libraryIndex.get(id)
+      const entry = libraryLookup(libraryIndex, item)
       card.watched = !!entry?.watched
       card.watchedAt = entry?.watchedAt || null
       card.userRating = entry?.userRating ?? null
@@ -608,7 +623,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
       el.aiResults.appendChild(frag)
     })
-    annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryIndex.has(String(item.ids?.simkl_id || item.ids?.simkl || "")))
+    annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryLookup(libraryIndex, item))
   }
 
   el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => { if (b.dataset.gloss) b.title = b.dataset.gloss })

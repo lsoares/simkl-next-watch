@@ -7,6 +7,7 @@ export const traktUserData = (() => {
   const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v1")
   const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
   const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
+  const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v0")
   const progressCache = loadProgressCache()
   let activitiesInFlight = null
   let ratingsInFlight = null
@@ -167,7 +168,17 @@ export const traktUserData = (() => {
 
     async getCompletedShows() { return { items: [], fresh: false } },
 
-    async getCompletedMovies() { return { items: [], fresh: false } },
+    async getCompletedMovies() {
+      const ratings = await fetchUserRatings()
+      const applyRatings = (items) => items.map((m) => ({ ...m, user_rating: ratings.movies.get(m.ids.trakt) ?? null }))
+      const ts = (await fetchLastActivities())?.movies?.watched_at || ""
+      const cached = await watchedMoviesCache.read()
+      if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
+      const data = await apiFetch("/sync/watched/movies?extended=full").catch(() => [])
+      const items = (data || []).map((entry) => normalizeTraktMovie(entry, { status: "completed" }))
+      await watchedMoviesCache.write({ ts, items })
+      return { items: applyRatings(items), fresh: true }
+    },
 
     async markWatched(item) {
       const ids = traktIdsOf(item)
@@ -231,7 +242,7 @@ function normalizeTraktShow(entry, { status, addedAt }) {
   }
 }
 
-function normalizeTraktMovie(entry) {
+function normalizeTraktMovie(entry, { status = "plantowatch" } = {}) {
   const movie = entry.movie || entry
   const ids = movie.ids || {}
   const imdb = ids.imdb || ""
@@ -246,10 +257,10 @@ function normalizeTraktMovie(entry) {
     url: ids.slug ? `https://app.trakt.tv/movies/${encodeURIComponent(ids.slug)}` : "",
     runtime: movie.runtime || 0,
     rating: typeof movie.rating === "number" ? Math.round(movie.rating * 10) / 10 : null,
-    status: "plantowatch",
+    status,
     nextEpisode: null,
     added_at: entry.listed_at || null,
-    last_watched_at: null,
+    last_watched_at: entry.last_watched_at || null,
     watched_episodes_count: 0,
     total_episodes_count: 0,
     not_aired_episodes_count: 0,

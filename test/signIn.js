@@ -13,6 +13,7 @@ import {
   setupOauthToken as setupTraktOauthToken,
   setupLastActivities,
   setupWatchedShows,
+  setupWatchedMovies,
   setupWatchlistShows,
   setupWatchlistMovies,
   setupDroppedShows,
@@ -42,6 +43,7 @@ export async function signInToSimkl(page, { shows = [], movies = [], anime = [] 
 
 export async function signInToTrakt(page, {
   watchedShows = [],
+  watchedMovies = [],
   watchlistShows = [],
   watchlistMovies = [],
   droppedShows = [],
@@ -53,6 +55,7 @@ export async function signInToTrakt(page, {
   await setupTraktOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchedShows(page, watchedShows)
+  if (watchedMovies.length) await setupWatchedMovies(page, watchedMovies)
   await setupWatchlistShows(page, watchlistShows)
   await setupWatchlistMovies(page, watchlistMovies)
   await setupDroppedShows(page, droppedShows)
