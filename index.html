@@ -59,10 +59,7 @@
               <li><span class="app-intro-feature-icon">🔥</span><div><strong>Trending</strong> — what's hot today, this week, this month.</div></li>
               <li><span class="app-intro-feature-icon">✨</span><div><strong>AI picks</strong> — mood-based suggestions tuned to your ratings.</div></li>
             </ul>
-            <div class="app-intro-actions">
-              <button class="app-intro-cta" id="getStartedBtn" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Get started (Simkl)</button>
-              <button class="app-intro-cta" id="getStartedTraktBtn" type="button" hidden><img class="brand-mark" src="./assets/trakt.png" alt="" />Get started (Trakt)</button>
-            </div>
+            <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
         <div id="nextContent" class="suggestions-grid" hidden>
@@ -99,8 +96,9 @@
 
       <!-- AI view -->
       <div id="aiView" hidden>
+        <div id="aiSetup" class="app-intro-actions" data-signin-ctas hidden></div>
         <div class="ai-no-ratings-banner" id="aiNoRatingsNotice" hidden>Rate some titles for sharper AI picks. Without ratings we use your watched history.</div>
-        <div class="ai-toolbar">
+        <div id="aiToolbar" class="ai-toolbar">
           <div class="range-tabs">
             <button class="range-tab active" id="aiToggleTv" type="button">Series</button>
             <button class="range-tab active" id="aiToggleMovie" type="button">Movies</button>
@@ -161,6 +159,10 @@
     <template id="tpl-row-item"><div class="row-item"></div></template>
     <template id="tpl-rating-badge"><a class="rating-badge" target="_blank" rel="noreferrer"></a></template>
     <template id="tpl-trending-badge"><span class="trending-badge"></span></template>
+    <template id="tpl-signin-ctas">
+      <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Get started (Simkl)</button>
+      <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.png" alt="" />Get started (Trakt)</button>
+    </template>
     <script src="./config.local.js"></script>
     <script type="module" src="./src/next-watch.js"></script>
   </body>

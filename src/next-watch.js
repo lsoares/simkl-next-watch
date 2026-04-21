@@ -161,12 +161,13 @@ function initDockEffect(row) {
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), getStartedBtn: $("getStartedBtn"), getStartedTraktBtn: $("getStartedTraktBtn"), aiSaveBtn: $("aiSaveBtn"),
+    logoutBtn: $("logoutBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
+    aiView: $("aiView"), aiSetup: $("aiSetup"), aiToolbar: $("aiToolbar"),
+    aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"), aiResults: $("aiResults"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
@@ -515,6 +516,16 @@ function initDockEffect(row) {
   // ── AI ──
 
   function hydrateAiView() {
+    const loggedIn = isLoggedIn()
+    el.aiSetup.hidden = loggedIn
+    el.aiToolbar.hidden = !loggedIn
+    el.aiPrompts.hidden = !loggedIn
+    el.aiResults.hidden = !loggedIn
+    if (!loggedIn) {
+      el.aiKeyBtn.hidden = true
+      el.aiNoRatingsNotice.hidden = true
+      return
+    }
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
     el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
@@ -753,9 +764,14 @@ function initDockEffect(row) {
   el.aiKeyBtn.addEventListener("click", openAiSettings)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
-  el.getStartedBtn.addEventListener("click", () => simklUserData.startOAuth())
-  el.getStartedTraktBtn.addEventListener("click", () => traktUserData.startOAuth())
-  el.getStartedTraktBtn.hidden = false
+  for (const container of document.querySelectorAll("[data-signin-ctas]")) {
+    container.appendChild(tpl("tpl-signin-ctas"))
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-provider]")
+      if (btn?.dataset.provider === "simkl") simklUserData.startOAuth()
+      if (btn?.dataset.provider === "trakt") traktUserData.startOAuth()
+    })
+  }
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); })
@@ -798,11 +814,7 @@ function initDockEffect(row) {
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  if (isLoggedIn()) {
-    showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next")
-    loadSuggestions()
-  } else {
-    resolveLibraryReady()
-    showView(hash === "trending" ? "trending" : "next")
-  }
+  showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next")
+  if (isLoggedIn()) loadSuggestions()
+  else resolveLibraryReady()
 })()

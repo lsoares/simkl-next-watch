@@ -147,3 +147,12 @@ test("saving AI key shows confirmation toast", async ({ page }) => {
 
   await expect(page.getByRole("status")).toContainText(/groq key saved/i)
 })
+
+test("AI view shows sign-in CTAs instead of mood prompts when logged out", async ({ page }) => {
+  await page.goto("/#ai")
+
+  const aiView = page.locator("#aiView")
+  await expect(aiView.getByRole("button", { name: /get started \(simkl\)/i })).toBeVisible()
+  await expect(aiView.getByRole("button", { name: /get started \(trakt\)/i })).toBeVisible()
+  await expect(page.getByRole("button", { name: /cozy night in/i })).toBeHidden()
+})
