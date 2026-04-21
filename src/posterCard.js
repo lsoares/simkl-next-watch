@@ -50,7 +50,7 @@ class PosterCard extends HTMLElement {
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
     const showWatchedBadge = !isNext && watched
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
-    const watchedRating = showWatchedBadge && userRating != null ? userRating : null
+    const watchedRating = !isNext && userRating != null ? userRating : null
     const showWatchlistBadge = !isNext && inWatchlist && !watched
 
     const dataAttrs = isNext

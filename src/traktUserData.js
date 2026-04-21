@@ -9,6 +9,7 @@ export const traktUserData = (() => {
   const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
   const progressCache = loadProgressCache()
   let activitiesInFlight = null
+  let ratingsInFlight = null
 
   function loadProgressCache() {
     try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
@@ -56,6 +57,18 @@ export const traktUserData = (() => {
     return activitiesInFlight
   }
 
+  function fetchUserRatings() {
+    if (ratingsInFlight) return ratingsInFlight
+    ratingsInFlight = Promise.all([
+      apiFetch("/sync/ratings/shows").catch(() => []),
+      apiFetch("/sync/ratings/movies").catch(() => []),
+    ]).then(([shows, movies]) => ({
+      shows: new Map((shows || []).filter((e) => e?.show?.ids?.trakt != null).map((e) => [e.show.ids.trakt, e.rating])),
+      movies: new Map((movies || []).filter((e) => e?.movie?.ids?.trakt != null).map((e) => [e.movie.ids.trakt, e.rating])),
+    }))
+    return ratingsInFlight
+  }
+
   return {
     name: "Trakt",
 
@@ -87,9 +100,11 @@ export const traktUserData = (() => {
     },
 
     async getWatchingShows() {
+      const ratings = await fetchUserRatings()
+      const applyRatings = (items) => items.map((s) => ({ ...s, user_rating: ratings.shows.get(s.ids.trakt) ?? null }))
       const ts = (await fetchLastActivities())?.episodes?.watched_at || ""
       const cached = await watchedShowsCache.read()
-      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
       const [data, hidden] = await Promise.all([
         apiFetch("/sync/watched/shows?extended=full"),
         apiFetch("/users/hidden/dropped?limit=1000"),
@@ -101,7 +116,7 @@ export const traktUserData = (() => {
         .filter((s) => !droppedIds.has(s.ids.trakt))
         .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
       await watchedShowsCache.write({ ts, items })
-      return { items, fresh: true }
+      return { items: applyRatings(items), fresh: true }
     },
 
     async getProgress(traktIdOrSlug) {
@@ -121,29 +136,33 @@ export const traktUserData = (() => {
     },
 
     async getWatchlistShows() {
+      const ratings = await fetchUserRatings()
+      const applyRatings = (items) => items.map((s) => ({ ...s, user_rating: ratings.shows.get(s.ids.trakt) ?? null }))
       const ts = (await fetchLastActivities())?.shows?.watchlisted_at || ""
       const cached = await watchlistShowsCache.read()
-      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
       const data = await apiFetch("/sync/watchlist/shows?extended=full")
       const now = Date.now()
       const items = data
         .filter((entry) => !entry?.show?.first_aired || new Date(entry.show.first_aired).getTime() <= now)
         .map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
       await watchlistShowsCache.write({ ts, items })
-      return { items, fresh: true }
+      return { items: applyRatings(items), fresh: true }
     },
 
     async getWatchlistMovies() {
+      const ratings = await fetchUserRatings()
+      const applyRatings = (items) => items.map((m) => ({ ...m, user_rating: ratings.movies.get(m.ids.trakt) ?? null }))
       const ts = (await fetchLastActivities())?.movies?.watchlisted_at || ""
       const cached = await watchlistMoviesCache.read()
-      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
       const data = await apiFetch("/sync/watchlist/movies?extended=full")
       const now = Date.now()
       const items = data
         .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
         .map(normalizeTraktMovie)
       await watchlistMoviesCache.write({ ts, items })
-      return { items, fresh: true }
+      return { items: applyRatings(items), fresh: true }
     },
 
     async getCompletedShows() { return { items: [], fresh: false } },
@@ -208,7 +227,6 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     watched_episodes_count: watched,
     total_episodes_count: show.aired_episodes || 0,
     not_aired_episodes_count: 0,
-    user_rating: null,
     type: "tv",
   }
 }
@@ -235,7 +253,6 @@ function normalizeTraktMovie(entry) {
     watched_episodes_count: 0,
     total_episodes_count: 0,
     not_aired_episodes_count: 0,
-    user_rating: null,
     type: "movie",
   }
 }

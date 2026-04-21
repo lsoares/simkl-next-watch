@@ -75,6 +75,26 @@ export function setupWatchedShows(page, shows) {
   })
 }
 
+export function setupRatingsShows(page, ratings) {
+  return page.route("https://api.trakt.tv/sync/ratings/shows", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ratings) })
+  })
+}
+
+export function setupRatingsMovies(page, ratings) {
+  return page.route("https://api.trakt.tv/sync/ratings/movies", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ratings) })
+  })
+}
+
 export function setupDroppedShows(page, dropped) {
   return page.route("https://api.trakt.tv/users/hidden/dropped?**", async (route) => {
     expect(route.request().method()).toBe("GET")
