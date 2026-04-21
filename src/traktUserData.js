@@ -47,6 +47,8 @@ export function createTraktUserData() {
     return data
   }
 
+  const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
+
   return {
     name: "Trakt",
 
@@ -131,7 +133,18 @@ export function createTraktUserData() {
     async getCompletedShows() { return { items: [], fresh: false } },
     async getCompletedMovies() { return { items: [], fresh: false } },
     async markWatched() { throw notImplemented() },
-    async addToWatchlist() { throw notImplemented() },
+
+    async addToWatchlist(item) {
+      const type = item.type === "movie" ? "movies" : "shows"
+      const ids = {
+        ...(item.ids?.trakt && { trakt: item.ids.trakt }),
+        ...(item.ids?.imdb && { imdb: item.ids.imdb }),
+        ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
+        ...(item.ids?.slug && { slug: item.ids.slug }),
+      }
+      await apiPost("/sync/watchlist", { [type]: [{ ids }] })
+      await (type === "movies" ? watchlistMoviesCache : watchlistShowsCache).write(null)
+    },
 
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.trakt.tv/oauth/token", {

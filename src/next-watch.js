@@ -473,7 +473,7 @@ function initDockEffect(row) {
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
       enrichEpisodeTitles()
-      if (data.fresh) showToast("Synced library.")
+      if (data.fresh && el.toast.hidden) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
       handleError(err)
