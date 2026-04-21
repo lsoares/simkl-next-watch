@@ -12,6 +12,18 @@ export function setupAuthorize(page) {
   })
 }
 
+export function setupAuthorizeStub(page) {
+  let hits = 0
+  page.route("https://simkl.com/oauth/authorize**", async (route) => {
+    hits++
+    const url = new URL(route.request().url())
+    expect(url.searchParams.get("client_id")).toBe("test-client-id")
+    expect(url.searchParams.get("response_type")).toBe("code")
+    await route.fulfill({ status: 200, contentType: "text/html", body: "<html></html>" })
+  })
+  return () => hits
+}
+
 export function setupOauthToken(page, accessToken) {
   return page.route("**/oauth/token", async (route) => {
     expect(route.request().method()).toBe("POST")
