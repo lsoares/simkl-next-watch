@@ -184,11 +184,13 @@ export const simklUserData = (() => {
       return simklCatalog.getTrending(period)
     },
 
-    trendingBrowseUrl(type, { period = "today" } = {}) {
+    trendingBrowseUrl(type, { period = "today", ignoreWatched = false } = {}) {
       const base = type === "movie"
         ? "https://simkl.com/movies/best-movies/most-watched/"
         : "https://simkl.com/tv/best-shows/most-watched/"
-      return `${base}?wltime=${period}`
+      const params = [`wltime=${period}`]
+      if (ignoreWatched) params.push("not_in_list=true")
+      return `${base}?${params.join("&")}`
     },
   }
 })()

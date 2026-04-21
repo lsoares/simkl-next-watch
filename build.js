@@ -21,7 +21,7 @@ await mkdir("dist/assets", { recursive: true })
 for (const f of ["sw.js"]) {
   await copyFile(f, `dist/${f}`)
 }
-for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.png"]) {
+for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.svg"]) {
   await copyFile(`assets/${f}`, `dist/assets/${f}`)
 }
 for (const f of await readdir("src")) {

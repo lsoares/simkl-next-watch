@@ -158,10 +158,19 @@ function initDockEffect(row) {
     frag.firstElementChild.appendChild(card)
     return { frag, card }
   }
+  const appendAddMoreTile = (rowEl, { href, icon, label }) => {
+    const frag = tpl("tpl-add-more")
+    const anchor = frag.querySelector(".add-more-card")
+    anchor.href = href
+    anchor.setAttribute("aria-label", label)
+    anchor.querySelector(".add-more-plus").textContent = icon
+    anchor.querySelector(".add-more-label").textContent = label
+    rowEl.appendChild(frag)
+  }
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), aiSaveBtn: $("aiSaveBtn"),
+    logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
@@ -222,14 +231,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl))
       rowEl.appendChild(frag)
     })
-    const browseUrl = currentUserData().browseUrl?.(type)
-    if (browseUrl) {
-      const tile = document.createElement("div")
-      tile.className = "row-item row-item--add-more"
-      const addLabel = type === "tv" ? "Add series" : "Add movie"
-      tile.innerHTML = `<a class="add-more-card" href="${browseUrl}" target="_blank" rel="noreferrer" aria-label="${addLabel}"><span class="add-more-plus" aria-hidden="true">+</span><span class="add-more-label">${addLabel}</span></a>`
-      rowEl.appendChild(tile)
-    }
+    appendAddMoreTile(rowEl, { href: currentUserData().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave)
     rowEl._scrollSave = () => { sessionStorage.setItem(scrollKey, rowEl.scrollLeft); }
@@ -346,12 +348,7 @@ function initDockEffect(row) {
       containerEl.appendChild(frag)
     })
     const u = currentUserData()
-    const moreUrl = u.trendingBrowseUrl(type, browseParams)
-    const moreLabel = `More on ${u.name}`
-    const moreTile = document.createElement("div")
-    moreTile.className = "row-item row-item--add-more"
-    moreTile.innerHTML = `<a class="add-more-card" href="${moreUrl}" target="_blank" rel="noreferrer" aria-label="${moreLabel}"><span class="add-more-plus" aria-hidden="true">→</span><span class="add-more-label">${moreLabel}</span></a>`
-    containerEl.appendChild(moreTile)
+    appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: `More on ${u.name}` })
     observeLazyHydration(containerEl)
   }
 
@@ -753,6 +750,7 @@ function initDockEffect(row) {
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.hideTrendingWatched.closest("label").hidden = !loggedIn
     el.logoutBtn.hidden = !loggedIn
+    el.coffeeLink.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
     hydrateNextView()
     syncViewportMetrics()

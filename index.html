@@ -42,7 +42,7 @@
         <a id="navAi" class="tiny-link" href="#ai">ai suggested</a>
         <button id="installButton" class="tiny-link hidden" type="button">install</button>
         <button id="logoutBtn" class="tiny-link" type="button" hidden>logout</button>
-        <a class="tiny-link" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer" title="Support Next Watch" style="text-decoration:none">☕</a>
+        <a id="coffeeLink" class="tiny-link" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer" title="Support Next Watch" style="text-decoration:none" hidden>☕</a>
       </div>
     </nav>
 
@@ -52,12 +52,12 @@
         <div id="nextSetup">
           <div class="app-intro">
             <p class="app-intro-eyebrow">Next Watch</p>
-            <h2 class="app-intro-tagline">The next episode or movie on your list — without the scroll.</h2>
-            <p class="app-intro-desc">A no-clutter alternative to the Simkl UI — connects to your library so you always know what's up next.</p>
+            <h2 class="app-intro-tagline">The next episode or movie on your list, without the scroll.</h2>
+            <p class="app-intro-desc">A no-clutter companion for your <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> or <a href="https://trakt.tv" target="_blank" rel="noreferrer">Trakt</a> library, so you always know what's up next.</p>
             <ul class="app-intro-features">
-              <li><span class="app-intro-feature-icon">📺</span><div><strong>Next</strong> — the exact episode you're on across every show you're watching.</div></li>
-              <li><span class="app-intro-feature-icon">🔥</span><div><strong>Trending</strong> — what's hot today, this week, this month.</div></li>
-              <li><span class="app-intro-feature-icon">✨</span><div><strong>AI picks</strong> — mood-based suggestions tuned to your ratings.</div></li>
+              <li><span class="app-intro-feature-icon">📺</span><div><strong>Next:</strong> the exact episode you're on across every show you're watching.</div></li>
+              <li><span class="app-intro-feature-icon">🔥</span><div><strong>Trending:</strong> what's hot today, this week, this month.</div></li>
+              <li><span class="app-intro-feature-icon">✨</span><div><strong>AI picks:</strong> mood-based suggestions tuned to your ratings.</div></li>
             </ul>
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
@@ -161,8 +161,16 @@
     <template id="tpl-rating-badge"><a class="rating-badge" target="_blank" rel="noreferrer"></a></template>
     <template id="tpl-trending-badge"><span class="trending-badge"></span></template>
     <template id="tpl-signin-ctas">
+      <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.svg" alt="" />Get started (Trakt)</button>
       <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Get started (Simkl)</button>
-      <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.png" alt="" />Get started (Trakt)</button>
+    </template>
+    <template id="tpl-add-more">
+      <div class="row-item row-item--add-more">
+        <a class="add-more-card" target="_blank" rel="noreferrer">
+          <span class="add-more-plus" aria-hidden="true"></span>
+          <span class="add-more-label"></span>
+        </a>
+      </div>
     </template>
     <script src="./config.local.js"></script>
     <script type="module" src="./src/next-watch.js"></script>

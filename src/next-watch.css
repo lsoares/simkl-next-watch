@@ -63,6 +63,7 @@
       .top-bar > * { pointer-events: auto; }
       .top-bar-scroll {
         display: flex;
+        justify-content: center;
         gap: 28px;
         align-items: center;
         pointer-events: auto;
@@ -612,9 +613,19 @@
         line-height: 1.6;
         margin-bottom: 0;
       }
+      .app-intro-desc a {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        text-decoration-color: rgba(255,255,255,0.25);
+        transition: color 0.15s ease, text-decoration-color 0.15s ease;
+      }
+      .app-intro-desc a[href*="simkl"] { color: #5fa8d3; }
+      .app-intro-desc a[href*="trakt"] { color: #c27cdb; }
+      .app-intro-desc a:hover { text-decoration-color: currentColor; filter: brightness(1.15); }
       .app-intro-actions {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
         gap: 12px;
         margin-top: 40px;
@@ -623,11 +634,14 @@
         font-size: 1rem;
         padding: 14px 32px;
         font-weight: 600;
-        transition: filter 0.15s ease;
+        color: #ffffff;
+        transition: filter 0.15s ease, box-shadow 0.2s ease;
       }
-      .app-intro-cta:hover {
-        filter: brightness(1.1);
-      }
+      .app-intro-cta[data-provider="simkl"] { background: #1e6fb6; }
+      .app-intro-cta[data-provider="trakt"] { background: #9f42c6; }
+      .app-intro-cta:hover { filter: brightness(1.15); }
+      .app-intro-cta[data-provider="simkl"]:hover { box-shadow: 0 0 0 3px rgba(30,111,182,0.35); }
+      .app-intro-cta[data-provider="trakt"]:hover { box-shadow: 0 0 0 3px rgba(159,66,198,0.35); }
       .brand-mark {
         width: 20px;
         height: 20px;
@@ -668,8 +682,6 @@
       }
 
 /* ── AI view ── */
-
-#logoutBtn { margin-left: auto; }
 
 .ai-no-ratings-banner {
   margin: 0 0 16px;
