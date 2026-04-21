@@ -190,6 +190,14 @@ function initDockEffect(row) {
   let libraryReady = new Promise((r) => { resolveLibraryReady = r; })
   let tvItems = []
   let movieItems = []
+  const movieOrder = new Map()
+  const orderOf = (item) => {
+    const keys = itemLookupKeys(item)
+    for (const k of keys) if (movieOrder.has(k)) return movieOrder.get(k)
+    const o = Math.random()
+    for (const k of keys) movieOrder.set(k, o)
+    return o
+  }
 
   // ── Toast ──
 
@@ -307,7 +315,7 @@ function initDockEffect(row) {
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
       tvItems = [...[...ws.items].sort(byWatchingPriority), ...[...wls.items].sort(byAddedDate)]
         .filter((i) => i.release_status !== "unreleased")
-      movieItems = [...wlm.items].sort(() => Math.random() - 0.5).filter((i) => i.release_status !== "unreleased")
+      movieItems = wlm.items.filter((i) => i.release_status !== "unreleased").sort((a, b) => orderOf(a) - orderOf(b))
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
