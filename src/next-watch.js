@@ -178,6 +178,7 @@ function initDockEffect(row) {
 
   function handleError(err) {
     console.error(err)
+    window.posthog?.captureException?.(err)
     showToast(err?.message || String(err), true)
   }
 
