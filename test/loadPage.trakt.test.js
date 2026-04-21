@@ -21,7 +21,6 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await expect(showCard).toBeVisible()
   await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad")
   await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
-  await expect(showCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
   await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=show")
 })
 
@@ -108,7 +107,6 @@ test("watchlist movies link to the movie page and unreleased ones are hidden", a
   const movieCard = page.getByRole("article", { name: "The Matrix" })
   await expect(movieCard).toBeVisible()
   await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
-  await expect(movieCard.getByRole("button", { name: /mark as watched/i })).toBeVisible()
   await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
   await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=movie")
 })

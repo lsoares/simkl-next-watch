@@ -107,6 +107,25 @@ export function setupSearchMovie(page, results) {
   })
 }
 
+export function setupMarkWatched(page, expectedPayload) {
+  return page.route("**/sync/history", async (route) => {
+    expect(route.request().method()).toBe("POST")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const body = route.request().postDataJSON()
+    if (expectedPayload.movies) {
+      expect(body.movies).toHaveLength(expectedPayload.movies.length)
+      expectedPayload.movies.forEach((expected, i) => {
+        expect(body.movies[i].ids).toEqual(expected.ids)
+        expect(body.movies[i].watched_at).toBeTruthy()
+      })
+    } else {
+      expect(body).toEqual(expectedPayload)
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
+  })
+}
+
 export function setupAddToWatchlist(page, expectedPayload) {
   return page.route("**/sync/add-to-list", async (route) => {
     expect(route.request().method()).toBe("POST")
