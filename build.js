@@ -31,6 +31,8 @@ for (const f of ["next-watch.css", "next-watch.js", "simklCatalog.js", "simklUse
 const globals = {
   __SIMKL_CLIENT_ID__: process.env.SIMKL_CLIENT_ID,
   __SIMKL_CLIENT_SECRET__: process.env.SIMKL_CLIENT_SECRET,
+  __TRAKT_CLIENT_ID__: process.env.TRAKT_CLIENT_ID,
+  __TRAKT_CLIENT_SECRET__: process.env.TRAKT_CLIENT_SECRET,
   __REDIRECT_URI__: process.env.REDIRECT_URI,
 }
 if (globals.__SIMKL_CLIENT_ID__ && globals.__SIMKL_CLIENT_SECRET__) {

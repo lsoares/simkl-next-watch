@@ -43,6 +43,8 @@ jobs:
         env:
           SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
           SIMKL_CLIENT_SECRET: ${{ secrets.SIMKL_CLIENT_SECRET }}
+          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
           REDIRECT_URI: ${{ secrets.REDIRECT_URI }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
