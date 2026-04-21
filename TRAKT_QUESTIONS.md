@@ -27,9 +27,7 @@ Decisions to make before filling the Trakt stubs in [src/traktUserData.js](src/t
 
 ## 5. Watchlist semantics
 
-**Decisions:**
-- Single `watchlist` concept at the normalized boundary. Both providers expose the same shape; `next-watch.js` never branches. Cache absorbs any double-call cost on the Simkl side.
-- Mirror Simkl's undo-watched behavior on Trakt: for movies, undo = `POST /sync/history/remove` + `POST /sync/watchlist` in the same operation.
+**Decision:** Single `watchlist` concept at the normalized boundary. Both providers expose the same shape; `next-watch.js` never branches. Cache absorbs any double-call cost on the Simkl side.
 
 ## 6. Activities / delta sync
 
@@ -37,9 +35,9 @@ Decisions to make before filling the Trakt stubs in [src/traktUserData.js](src/t
 
 - **Simkl**: `/sync/activities` returns per-section timestamps; existing `date_from` delta on `/sync/all-items/{type}` handles slices that changed. Ratings ride inline on library items — no separate ratings endpoint needed.
 - **Trakt**: `/sync/last_activities` returns per-section timestamps. Six underlying endpoints, all parallelizable on a signature change:
-  - `GET /sync/watched/{shows,movies}` (compact — `extended=full` not worth the size)
+  - `GET /sync/watched/{shows,movies}?extended=full` (we need `show.rating` / `movie.rating` for the rating badge)
   - `GET /sync/watchlist/{shows,movies}?extended=full` (cheap; `aired_episodes` needed to filter unaired from the "to-watch" row)
-  - `GET /sync/ratings/{shows,movies}` (only rated items; small)
+  - `GET /sync/ratings/{shows,movies}` (only rated items; small — surfaces past ratings for AI context)
 - Cache stored per provider; provider switch clears the full cache.
 
 ## 6a. Mutation invalidation (selective)
@@ -50,9 +48,6 @@ Each mutation bumps only the section(s) it affects — no blanket cache clear. O
 |---|---|
 | `markWatched(show)` | `watched_shows` |
 | `markWatched(movie)` | `watched_movies` |
-| `undoMarkWatched(show)` | `watched_shows` |
-| `undoMarkWatched(movie)` | `watched_movies` + `watchlist_movies` (re-add quirk, Decision 5) |
-| `rate(item)` | `ratings_{type}` |
 | `addToWatchlist(item)` | `watchlist_{type}` |
 
 Simkl's existing signature-based sync achieves this implicitly via `date_from`. Trakt implements it explicitly.
@@ -96,9 +91,9 @@ Replace the current per-method ad-hoc caches [traktUserData.js:7-16](src/traktUs
 - `GET /sync/last_activities` → per-section timestamps, used as the cache signature.
 - Cache shape: `{ sig, sections: { watched_shows: { data, ts }, watched_movies, watchlist_shows, watchlist_movies, ratings_shows, ratings_movies } }`.
 - On load: compare each section's `ts` to `sig[section]`; refetch only bumped sections, in parallel:
-  - `/sync/watched/{shows,movies}` — compact (no `extended=full`; see Decision 4)
+  - `/sync/watched/{shows,movies}?extended=full` — `show.rating` / `movie.rating` feeds the rating badge
   - `/sync/watchlist/{shows,movies}?extended=full` — needs `aired_episodes` to gate the "to-watch" row
-  - `/sync/ratings/{shows,movies}` — small, only rated items
+  - `/sync/ratings/{shows,movies}` — past ratings used as AI "don't suggest what I already rated" input
 - Expose `getWatchingShows` / `getWatchlistShows` / `getWatchlistMovies` off the unified cache.
 - **User value:** all three rows populate for Trakt sessions.
 - **Tests:** `test/clients/trakt.js` handlers for `/sync/last_activities` + six slice endpoints; next-watch spec already duplicated as `next.trakt.test.js`.
@@ -122,24 +117,22 @@ Trakt removed images from its API in 2017 and officially points clients at TMDB.
 
 **Critical constraint: lazy, per-item lookup — never bulk-hydrate the library.** The UI only renders a handful of items at a time. Posters are fetched only for those.
 
-- Each normalized Trakt item carries `ids.imdb`. When the UI is about to render an item without a cached poster, look up `GET https://api.simkl.com/search/id?imdb={ttid}` to get `poster` (plus `title`, `year`, `status`, `total_episodes`, `ids.simkl`, and the IMDb rating for the badge).
+- Each normalized Trakt item carries `ids.imdb`. When the UI is about to render an item without a cached poster, look up `GET https://api.simkl.com/search/id?imdb={ttid}` to get `poster` (plus `title`, `year`, `ids.simkl`).
 - Cache per-item on first lookup (stash `poster` / `ids.simkl` alongside the item in the library cache). Subsequent renders are free.
 - Items Simkl doesn't index render with a placeholder — acceptable for v1.
 - **Evolution path:** if coverage gaps show up, swap to TMDB (`ids.tmdb` already on every Trakt item; `__TMDB_API_KEY__` already in `config.local.js`). Interface unchanged.
-- **User value:** Trakt cards render with posters and IMDb-rating badges.
+- **User value:** Trakt cards render with posters.
 - **Tests:** handler in `test/clients/simkl.js` for the id-lookup endpoint; assert the lookup fires only for rendered items.
 
 ## Step 5 — Mutations (with selective invalidation)
 
-One step for all four since they share the per-section invalidation pattern (Decision 6a):
+Two mutations share the per-section invalidation pattern (Decision 6a):
 
 - `markWatched(item)` → `POST /sync/history` (`{episodes}` for TV, `{movies, watched_at}` for movies; explicit `watched_at`, default is release date).
-- `undoMarkWatched(item)` → `POST /sync/history/remove`; movies also `POST /sync/watchlist` (Decision 5 re-add quirk).
-- `rate(item, rating)` → `POST /sync/ratings` with `rated_at`.
 - `addToWatchlist(item)` → `POST /sync/watchlist`.
 - Each mutation: optimistic in-memory patch of the affected slice + zero that slice's `ts` so the next load reconciles.
 - **User value:** full mutation parity.
-- **Tests:** paired spec per mutation; assert the right sections get refetched on next load (not all six).
+- **Tests:** paired spec per mutation; assert the right sections get refetched on next load.
 
 ## Step 6 — Progressive rendering (optional, both providers)
 
@@ -168,15 +161,13 @@ Columns: **Simkl** (state today) / **Trakt** (state today) / **Importance** (use
 | `getShowById` / `getMovieById` (Map lookup) | new on both | new on both | High — replaces `getCompleted*` for trending badges | Easy — Step 3 |
 | `getRatedPool({type})` (filter cache to `user_rating != null`) | new on both | new on both | High — AI-suggestions input | Easy — Step 3 |
 | **Poster image** (`posterUrl`) | native | ❌ always `""` | High — Trakt cards blank otherwise | Medium — lazy `GET /search/id?imdb=…` at render, Step 4 |
-| **IMDb rating badge** (`ratings.imdb.rating`) | inline in `/sync/all-items` | ❌ not in Trakt API | Medium — badge [next-watch.js:164](src/next-watch.js#L164) + AI sort fallback [next-watch.js:1005](src/next-watch.js#L1005) | Free — piggybacks on the Step 4 id-lookup |
+| **Rating badge** (provider-native) | ✅ `ratings.simkl.rating` via `extended=full` | ✅ `show.rating` / `movie.rating` via `extended=full` | Medium | Done |
 
 ## Write path
 
 | Feature | Simkl | Trakt | Importance | Easiness |
 |---|---|---|---|---|
 | `markWatched` | ✅ | ❌ throws [traktUserData.js:104](src/traktUserData.js#L104) | High — core interaction | Easy — `POST /sync/history` (explicit `watched_at`: default is release date) |
-| `undoMarkWatched` | ✅ (movie→re-watchlist quirk [simklUserData.js:174-176](src/simklUserData.js#L174-L176)) | ❌ throws | Medium | Medium — remove + re-add-to-watchlist for movies |
-| `rate` | ✅ | ❌ throws | Medium — feeds AI | Easy — `POST /sync/ratings` |
 | `addToWatchlist` | ✅ | ❌ throws | Medium | Easy — `POST /sync/watchlist` |
 | **Selective section invalidation** on mutate (Decision 6a) | implicit via `/sync/activities` + `date_from` | explicit per-section `ts` reset | High — avoids nuking 5 warm slices for one change | Medium — Step 5 (bakes in with mutations) |
 

@@ -176,7 +176,7 @@ export function createSimklUserData() {
   }
 }
 
-const SYNC_CACHE_KEY = "next-watch-simkl-cache-v7"
+const SYNC_CACHE_KEY = "next-watch-simkl-cache-v8"
 
 const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
 const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
@@ -240,6 +240,7 @@ function normalizeItem(raw) {
     runtime: media.runtime || 0,
     rating: typeof simklRating === "number" ? simklRating : null,
     status: normalizeStatus(raw.status),
+    release_status: media.year && media.year > new Date().getFullYear() ? "unreleased" : undefined,
     nextEpisode: parseNextEpisode(raw.next_to_watch),
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
     last_watched_at: raw.last_watched_at || null,
