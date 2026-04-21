@@ -19,7 +19,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
   const showCard = page.getByRole("article", { name: "Breaking Bad" })
-  await expect(showCard).toBeVisible()
+  await expect(showCard.getByRole("link", { name: /^5x1:/ })).toBeVisible()
   await setupWatchedShows(page, [{
     last_watched_at: new Date().toISOString(),
     show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
