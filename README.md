@@ -13,7 +13,7 @@ brew install ngrok   # only needed for `npm run expose`
 
 - `npm test` — run Playwright tests.
 - `npm run build` — minify `index.html` and copy assets into `dist/`.
-- `npm run expose` — serve on `:8080`, tunnel via ngrok, and open the Simkl developer page so you can paste the ngrok URL as the redirect URI.
+- `npm run expose` — serve on `:8080`, tunnel via ngrok, and open the developer pages so you can paste the ngrok URL as the redirect URI.
 
 ## Deploy
 
