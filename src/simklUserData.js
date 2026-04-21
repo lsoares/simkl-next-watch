@@ -8,6 +8,37 @@ export const simklUserData = (() => {
   const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
   let inFlight = null
 
+  function startOAuth() {
+    const state = Math.random().toString(36).slice(2)
+    sessionStorage.setItem("next-watch-oauth-state", state)
+    sessionStorage.setItem("next-watch-oauth-provider", "simkl")
+    location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
+  }
+
+  async function apiFetch(path, options = {}) {
+    const token = localStorage.getItem("next-watch-access-token")
+    if (!token) throw new Error("Not signed in to Simkl.")
+    const res = await fetch(`https://api.simkl.com${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "simkl-api-key": clientId,
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+    })
+    if (res.status === 401) {
+      localStorage.removeItem("next-watch-access-token")
+      startOAuth()
+      throw new Error("Simkl session expired — redirecting to sign in.")
+    }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
+    return data
+  }
+
+  const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
+
   async function loadRawLibrary() {
     if (inFlight) return inFlight
     inFlight = (async () => {
@@ -62,49 +93,10 @@ export const simklUserData = (() => {
     return inFlight
   }
 
-  function startOAuth() {
-    const state = Math.random().toString(36).slice(2)
-    sessionStorage.setItem("next-watch-oauth-state", state)
-    sessionStorage.setItem("next-watch-oauth-provider", "simkl")
-    location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
-  }
-
-  async function apiFetch(path, options = {}) {
-    const token = localStorage.getItem("next-watch-access-token")
-    if (!token) throw new Error("Not signed in to Simkl.")
-    const res = await fetch(`https://api.simkl.com${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        "simkl-api-key": clientId,
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
-    })
-    if (res.status === 401) {
-      localStorage.removeItem("next-watch-access-token")
-      startOAuth()
-      throw new Error("Simkl session expired — redirecting to sign in.")
-    }
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) throw new Error(data.error || data.message || `API error ${res.status}`)
-    return data
-  }
-
-  const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
-
   return {
     name: "Simkl",
 
     startOAuth,
-
-    browseUrl(type) {
-      return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
-    },
-
-    episodeUrl(item, ep) {
-      return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
-    },
 
     async exchangeOAuthCode(code) {
       const res = await fetch("https://api.simkl.com/oauth/token", {
@@ -123,6 +115,14 @@ export const simklUserData = (() => {
       return data
     },
 
+    browseUrl(type) {
+      return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
+    },
+
+    episodeUrl(item, ep) {
+      return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
+    },
+
     async getWatchingShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
@@ -130,6 +130,7 @@ export const simklUserData = (() => {
         fresh,
       }
     },
+
     async getWatchlistShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
@@ -137,6 +138,7 @@ export const simklUserData = (() => {
         fresh,
       }
     },
+
     async getWatchlistMovies() {
       const { movies, fresh } = await loadRawLibrary()
       return {
@@ -144,6 +146,7 @@ export const simklUserData = (() => {
         fresh,
       }
     },
+
     async getCompletedShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
@@ -151,6 +154,7 @@ export const simklUserData = (() => {
         fresh,
       }
     },
+
     async getCompletedMovies() {
       const { movies, fresh } = await loadRawLibrary()
       return {
@@ -181,25 +185,6 @@ function requireGlobal(key) {
   const value = window[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function decodeSimklText(s) {
-  return String(s || "").replace(/\\(['"\\])/g, "$1")
-}
-
-function normalizeStatus(s) {
-  return String(s || "").toLowerCase().replace(/\s+/g, "")
-}
-
-function parseNextEpisode(value) {
-  if (!value) return null
-  if (typeof value === "object") {
-    const s = Number(value.season ?? value.season_number)
-    const e = Number(value.episode ?? value.episode_number ?? value.number)
-    return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null
-  }
-  const m = String(value).match(/S(\d+)E(\d+)/i)
-  return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
 }
 
 function normalizeItem(raw) {
@@ -239,6 +224,25 @@ function normalizeItem(raw) {
   }
 }
 
+function decodeSimklText(s) {
+  return String(s || "").replace(/\\(['"\\])/g, "$1")
+}
+
+function normalizeStatus(s) {
+  return String(s || "").toLowerCase().replace(/\s+/g, "")
+}
+
+function parseNextEpisode(value) {
+  if (!value) return null
+  if (typeof value === "object") {
+    const s = Number(value.season ?? value.season_number)
+    const e = Number(value.episode ?? value.episode_number ?? value.number)
+    return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null
+  }
+  const m = String(value).match(/S(\d+)E(\d+)/i)
+  return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
+}
+
 function buildPosterUrl(code) {
   if (!code) return ""
   if (code.startsWith("http")) return code
@@ -251,4 +255,3 @@ function buildShowUrl({ id, title, type }) {
     .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
   return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/${id}/${slug}`
 }
-

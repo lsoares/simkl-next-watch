@@ -8,6 +8,7 @@ export const traktUserData = (() => {
   const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
   const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
   const progressCache = loadProgressCache()
+  let activitiesInFlight = null
 
   function loadProgressCache() {
     try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
@@ -49,7 +50,6 @@ export const traktUserData = (() => {
 
   const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
 
-  let activitiesInFlight = null
   function fetchLastActivities() {
     if (activitiesInFlight) return activitiesInFlight
     activitiesInFlight = apiFetch("/sync/last_activities").finally(() => { activitiesInFlight = null })
@@ -60,6 +60,23 @@ export const traktUserData = (() => {
     name: "Trakt",
 
     startOAuth,
+
+    async exchangeOAuthCode(code) {
+      const res = await fetch("https://api.trakt.tv/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.access_token) throw new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`)
+      return data
+    },
 
     browseUrl(type) {
       return `https://app.trakt.tv/search?m=${type === "movie" ? "movie" : "show"}`
@@ -130,7 +147,9 @@ export const traktUserData = (() => {
     },
 
     async getCompletedShows() { return { items: [], fresh: false } },
+
     async getCompletedMovies() { return { items: [], fresh: false } },
+
     async markWatched(item) {
       const ids = traktIdsOf(item)
       if (item.type === "tv") {
@@ -157,25 +176,14 @@ export const traktUserData = (() => {
       await apiPost("/sync/watchlist", { [type]: [{ ids: traktIdsOf(item) }] })
       await (type === "movies" ? watchlistMoviesCache : watchlistShowsCache).write(null)
     },
-
-    async exchangeOAuthCode(code) {
-      const res = await fetch("https://api.trakt.tv/oauth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
-        }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.access_token) throw new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`)
-      return data
-    },
   }
 })()
+
+function requireGlobal(key) {
+  const value = window[key]
+  if (!value) throw new Error(`${key} is not configured.`)
+  return value
+}
 
 function normalizeTraktShow(entry, { status, addedAt }) {
   const show = entry.show || entry
@@ -239,10 +247,4 @@ function traktIdsOf(item) {
     ...(item.ids?.tmdb && { tmdb: item.ids.tmdb }),
     ...(item.ids?.slug && { slug: item.ids.slug }),
   }
-}
-
-function requireGlobal(key) {
-  const value = window[key]
-  if (!value) throw new Error(`${key} is not configured.`)
-  return value
 }
