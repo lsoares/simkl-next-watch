@@ -681,6 +681,8 @@
         .app-intro-tagline { font-size: 1.5rem; }
       }
 
+#coffeeLink { margin-left: 16px; }
+
 /* ── AI view ── */
 
 .ai-no-ratings-banner {
