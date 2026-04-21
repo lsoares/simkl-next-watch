@@ -219,7 +219,6 @@ function initDockEffect(row) {
   // ── Render rows ──
 
   function renderRow(rowEl, items, type) {
-    const scrollKey = `next-watch-scroll:${rowEl.id}`
     rowEl.replaceChildren()
     items.forEach((item) => {
       const { frag, card } = makeRowItem()
@@ -233,10 +232,6 @@ function initDockEffect(row) {
     })
     appendAddMoreTile(rowEl, { href: currentUserData().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
-    if (rowEl._scrollSave) rowEl.removeEventListener("scroll", rowEl._scrollSave)
-    rowEl._scrollSave = () => { sessionStorage.setItem(scrollKey, rowEl.scrollLeft); }
-    rowEl.addEventListener("scroll", rowEl._scrollSave, { passive: true })
-    rowEl.scrollLeft = +(sessionStorage.getItem(scrollKey) || 0)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeLazyHydration(rowEl)
   }
@@ -312,7 +307,7 @@ function initDockEffect(row) {
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
       tvItems = [...[...ws.items].sort(byWatchingPriority), ...[...wls.items].sort(byAddedDate)]
         .filter((i) => i.release_status !== "unreleased")
-      movieItems = [...wlm.items].sort(byAddedDate).filter((i) => i.release_status !== "unreleased")
+      movieItems = [...wlm.items].sort(() => Math.random() - 0.5).filter((i) => i.release_status !== "unreleased")
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
