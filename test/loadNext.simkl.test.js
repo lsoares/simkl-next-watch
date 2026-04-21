@@ -26,14 +26,70 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://simkl.com/search/?type=tv")
 })
 
-test("watchlist movies link to the movie page", async ({ page }) => {
+test("filters out completed shows from the watching list", async ({ page }) => {
+  await setupOauthToken(page, "test-token")
+  await setupSyncActivities(page)
+  await setupSyncShows(page, [
+    {
+      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      status: "watching", next_to_watch: "S05E01",
+      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+    },
+    {
+      show: { title: "Chernobyl", ids: { simkl_id: 22000 } },
+      status: "completed",
+    },
+  ])
+  await setupSyncMovies(page, [])
+  await setupSyncAnime(page, [])
+  await setupTvEpisodes(page, "11121", [])
+  await setupAuthorize(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+
+  await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+  await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
+})
+
+test("watchlist shows hide unreleased entries", async ({ page }) => {
+  await setupOauthToken(page, "test-token")
+  await setupSyncActivities(page)
+  await setupSyncShows(page, [
+    {
+      show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } },
+      status: "plantowatch",
+    },
+    {
+      show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999 } },
+      status: "plantowatch",
+    },
+  ])
+  await setupSyncMovies(page, [])
+  await setupSyncAnime(page, [])
+  await setupAuthorize(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: /get started \(simkl\)/i }).click()
+
+  await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
+  await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
+})
+
+test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupSyncActivities(page)
   await setupSyncShows(page, [])
-  await setupSyncMovies(page, [{
-    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
-    status: "plantowatch",
-  }])
+  await setupSyncMovies(page, [
+    {
+      movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
+      status: "plantowatch",
+    },
+    {
+      movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000 } },
+      status: "plantowatch",
+    },
+  ])
   await setupSyncAnime(page, [])
   await setupAuthorize(page)
   await page.goto("/")
@@ -43,6 +99,7 @@ test("watchlist movies link to the movie page", async ({ page }) => {
   const movieCard = page.getByRole("article", { name: "The Matrix" })
   await expect(movieCard).toBeVisible()
   await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
+  await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
   await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://simkl.com/search/?type=movies")
 })
 
