@@ -24,6 +24,24 @@ export function setupOauthToken(page, accessToken) {
   })
 }
 
+export function setupLastActivities(page, { showsWatchlistedAt = "2025-01-01T00:00:00Z", moviesWatchlistedAt = "2025-01-01T00:00:00Z", episodesWatchedAt = "2025-01-01T00:00:00Z" } = {}) {
+  return page.route("https://api.trakt.tv/sync/last_activities", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        shows: { watchlisted_at: showsWatchlistedAt },
+        movies: { watchlisted_at: moviesWatchlistedAt },
+        episodes: { watched_at: episodesWatchedAt },
+      }),
+    })
+  })
+}
+
 export function setupWatchlistShows(page, shows) {
   return page.route("https://api.trakt.tv/sync/watchlist/shows?**", async (route) => {
     expect(route.request().method()).toBe("GET")

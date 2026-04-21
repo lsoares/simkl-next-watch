@@ -1,8 +1,9 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
 
 test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [{
@@ -26,6 +27,7 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
 
 test("filters out completed and dropped shows from the watching list", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [
@@ -62,6 +64,7 @@ test("filters out completed and dropped shows from the watching list", async ({ 
 
 test("watchlist shows hide unreleased entries", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])
   await setupWatchlistMovies(page, [])
@@ -86,6 +89,7 @@ test("watchlist shows hide unreleased entries", async ({ page }) => {
 
 test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])

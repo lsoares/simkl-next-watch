@@ -1,10 +1,11 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupMarkWatchedMovie } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupMarkWatchedMovie } from "./clients/trakt.js"
 
 test.skip("marks the next episode of a watching TV show", async () => {})
 
 test("marks a watchlist movie as watched", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])

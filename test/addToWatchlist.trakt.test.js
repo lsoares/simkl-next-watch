@@ -1,9 +1,10 @@
 import { test, expect } from "./test.js"
 import { setupTrendingTv, setupTrendingMovies } from "./clients/simkl.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupAddToWatchlist } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupAddToWatchlist } from "./clients/trakt.js"
 
 test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [])

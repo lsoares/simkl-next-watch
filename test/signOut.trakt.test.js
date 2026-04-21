@@ -1,8 +1,9 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows } from "./clients/trakt.js"
 
 test("logout clears session and shows intro", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])
   await setupWatchlistMovies(page, [])

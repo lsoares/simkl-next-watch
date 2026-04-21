@@ -49,6 +49,13 @@ export function createTraktUserData() {
 
   const apiPost = (path, payload) => apiFetch(path, { method: "POST", body: JSON.stringify(payload) })
 
+  let activitiesInFlight = null
+  function fetchLastActivities() {
+    if (activitiesInFlight) return activitiesInFlight
+    activitiesInFlight = apiFetch("/sync/last_activities").finally(() => { activitiesInFlight = null })
+    return activitiesInFlight
+  }
+
   return {
     name: "Trakt",
 
@@ -62,13 +69,10 @@ export function createTraktUserData() {
       return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
     },
 
-    // NOTE: when markWatched / undoMarkWatched are implemented on this
-    // provider, they MUST invalidate watchedShowsCache AND progressCache so
-    // next-episode inference reflects the new state. External plays on
-    // trakt.tv won't be reflected until cleared another way.
     async getWatchingShows() {
+      const ts = (await fetchLastActivities())?.episodes?.watched_at || ""
       const cached = await watchedShowsCache.read()
-      if (cached?.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
       const [data, hidden] = await Promise.all([
         apiFetch("/sync/watched/shows?extended=full"),
         apiFetch("/users/hidden/dropped?limit=1000"),
@@ -80,7 +84,7 @@ export function createTraktUserData() {
         .filter((s) => !droppedIds.has(s.ids.trakt))
         .filter((s) => s.total_episodes_count === 0 || s.watched_episodes_count < s.total_episodes_count)
         .sort(byWatchingPriority)
-      await watchedShowsCache.write({ items })
+      await watchedShowsCache.write({ ts, items })
       return { items, fresh: true }
     },
 
@@ -100,33 +104,31 @@ export function createTraktUserData() {
       }
     },
 
-    // NOTE: when addToWatchlist / undoMarkWatched (movie→re-watchlist) etc. are
-    // implemented on this provider, they MUST call watchlistShowsCache.write(null)
-    // (or equivalent) to invalidate this cache. External mutations on trakt.tv
-    // won't be reflected until the cache is cleared another way.
     async getWatchlistShows() {
+      const ts = (await fetchLastActivities())?.shows?.watchlisted_at || ""
       const cached = await watchlistShowsCache.read()
-      if (cached?.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
       const data = await apiFetch("/sync/watchlist/shows?extended=full")
       const now = Date.now()
       const items = (Array.isArray(data) ? data : [])
         .filter((entry) => !entry?.show?.first_aired || new Date(entry.show.first_aired).getTime() <= now)
         .map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
         .sort(byListedDate)
-      await watchlistShowsCache.write({ items })
+      await watchlistShowsCache.write({ ts, items })
       return { items, fresh: true }
     },
 
     async getWatchlistMovies() {
+      const ts = (await fetchLastActivities())?.movies?.watchlisted_at || ""
       const cached = await watchlistMoviesCache.read()
-      if (cached?.items) return { items: cached.items, fresh: false }
+      if (cached?.ts === ts && cached.items) return { items: cached.items, fresh: false }
       const data = await apiFetch("/sync/watchlist/movies?extended=full")
       const now = Date.now()
       const items = (Array.isArray(data) ? data : [])
         .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
         .map(normalizeTraktMovie)
         .sort(byListedDate)
-      await watchlistMoviesCache.write({ items })
+      await watchlistMoviesCache.write({ ts, items })
       return { items, fresh: true }
     },
 
