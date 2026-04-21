@@ -67,6 +67,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
     await expect(aiResults.getByRole("article", { name: "Oldboy" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "Inception" })).toHaveClass(/trending-watched/)
+    await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/watched/i)).toBeVisible()
   })
 })
 

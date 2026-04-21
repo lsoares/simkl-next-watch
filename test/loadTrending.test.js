@@ -11,6 +11,7 @@ test("shows trending shows and movies", async ({ page }) => {
   await setupSyncMovies(page, [])
   await setupSyncAnime(page, [])
   await setupTrendingTv(page, { today: [
+    { title: "Breaking Bad", ids: { simkl_id: 11121 } },
     { title: "The Rookie", ids: { simkl_id: 99001 } },
     { title: "The Boys", ids: { simkl_id: 99002 } },
   ] })
@@ -26,6 +27,7 @@ test("shows trending shows and movies", async ({ page }) => {
   await expect(rookie).toBeVisible()
   await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
   await expect(rookie.getByText(/🔥/)).toHaveCount(0)
+  await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText("Watchlist")).toBeVisible()
 })
 
 test("trending view loads without login", async ({ page }) => {
