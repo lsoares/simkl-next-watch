@@ -8,12 +8,7 @@ const simklUserData = createSimklUserData()
 const traktUserData = window.__TRAKT_CLIENT_ID__ ? createTraktUserData() : null
 
 function currentUserData() {
-  const provider = localStorage.getItem("next-watch-provider")
-  if (provider === "trakt") {
-    if (!traktUserData) throw new Error("Trakt is not configured.")
-    return traktUserData
-  }
-  return simklUserData
+  return localStorage.getItem("next-watch-provider") === "trakt" ? traktUserData : simklUserData
 }
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
@@ -38,12 +33,6 @@ function collectLibraryIndex(data) {
       }])
       .filter(([id]) => id)
   )
-}
-
-function findEpisodeTitle(episodes, season, episode) {
-  if (!Array.isArray(episodes)) return null
-  const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
-  return match?.title || null
 }
 
 function trendingBadgeInfo(period) {
@@ -73,10 +62,8 @@ function trendingIdsOf(item) {
 const STORAGE = {
   accessToken: "next-watch-access-token",
   provider: "next-watch-provider",
-  syncCache: "simkl-cache-v3",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
-  episodeCache: "next-watch-episode-cache",
   aiProvider: "next-watch-ai-provider",
   aiKeyGemini: "next-watch-ai-key-gemini",
   aiKeyOpenai: "next-watch-ai-key-openai",
@@ -89,7 +76,6 @@ const STORAGE = {
 }
 
 function readStorage(key) { return localStorage.getItem(key) || ""; }
-function readJsonStorage(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
 function clearAllStorage() {
   for (const storage of [localStorage, sessionStorage]) {
@@ -278,19 +264,11 @@ function initDockEffect(row) {
   // ── Episode title enrichment ──
 
   async function enrichEpisodeTitles() {
-    const cache = readJsonStorage(STORAGE.episodeCache) || {}
-    const results = await Promise.allSettled(tvItems.map(async (item) => {
+    const results = await Promise.allSettled(tvItems.map((item) => {
       const ep = item.nextEpisode
-      const id = item.id
-      if (!ep || !id || item.status === "plantowatch") return null
-      const cacheKey = `${id}:${ep.season}:${ep.episode}`
-      if (cache[cacheKey]) return cache[cacheKey]
-      const episodes = await simklCatalog.getEpisodes(id)
-      const title = findEpisodeTitle(episodes, ep.season, ep.episode)
-      if (title) cache[cacheKey] = title
-      return title
+      if (!ep || !item.id || item.status === "plantowatch") return null
+      return simklCatalog.getEpisodeTitle(item.id, ep.season, ep.episode)
     }))
-    writeStorage(STORAGE.episodeCache, cache)
     let changed = false
     results.forEach((r, i) => {
       if (r.status === "fulfilled" && r.value) {

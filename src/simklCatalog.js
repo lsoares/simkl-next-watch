@@ -1,17 +1,28 @@
 const IMDB_LOOKUP_CACHE_KEY = "next-watch-simkl-imdb-lookup-v0"
+const EPISODE_TITLE_CACHE_KEY = "next-watch-simkl-episode-title-v0"
 const imdbLookupInFlight = new Map()
-const imdbLookupCache = loadImdbLookupCache()
+const imdbLookupCache = loadJsonMap(IMDB_LOOKUP_CACHE_KEY)
+const episodeTitleCache = loadJsonMap(EPISODE_TITLE_CACHE_KEY)
+const episodesInFlight = new Map()
 
-function loadImdbLookupCache() {
-  try { return JSON.parse(localStorage.getItem(IMDB_LOOKUP_CACHE_KEY) || "{}") } catch { return {} }
+function loadJsonMap(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
 }
-function persistImdbLookupCache() {
-  try { localStorage.setItem(IMDB_LOOKUP_CACHE_KEY, JSON.stringify(imdbLookupCache)) } catch {}
+function persistJsonMap(key, map) {
+  try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 
 export const simklCatalog = {
-  getEpisodes(showId) {
-    return apiFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
+  async getEpisodeTitle(showId, season, episode) {
+    if (!showId || season == null || episode == null) return null
+    const key = `${showId}:${season}:${episode}`
+    if (episodeTitleCache[key] !== undefined) return episodeTitleCache[key]
+    const episodes = await fetchEpisodesOnce(showId)
+    const match = Array.isArray(episodes) && episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
+    const title = match?.title || null
+    episodeTitleCache[key] = title
+    persistJsonMap(EPISODE_TITLE_CACHE_KEY, episodeTitleCache)
+    return title
   },
 
   async searchByTitle(title, year, type) {
@@ -53,7 +64,7 @@ export const simklCatalog = {
           total: hit.total_episodes || 0,
         } : null
         imdbLookupCache[imdbId] = result
-        persistImdbLookupCache()
+        persistJsonMap(IMDB_LOOKUP_CACHE_KEY, imdbLookupCache)
         return result
       } catch {
         return null
@@ -75,6 +86,14 @@ export const simklCatalog = {
       movies: (movies || []).map((item) => enrichTrending(item, "movie")),
     }
   },
+}
+
+function fetchEpisodesOnce(showId) {
+  if (episodesInFlight.has(showId)) return episodesInFlight.get(showId)
+  const p = apiFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
+    .finally(() => episodesInFlight.delete(showId))
+  episodesInFlight.set(showId, p)
+  return p
 }
 
 async function apiFetch(path, options = {}) {
