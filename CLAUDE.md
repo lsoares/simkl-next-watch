@@ -11,6 +11,7 @@
 - **Handler functions receive only what varies** (response data, expected IDs) and hardcode the rest (URL, response wrapping).
 - **Assert inside MSW handlers** that the app sends correct headers, query params, and request bodies. Don't just return data — verify the request is well-formed.
 - **Only include handlers that are actually consumed.** Don't add handlers for endpoints the test doesn't hit. `onUnhandledRequest: "error"` catches missing ones.
+- **Minimal arrange.** Every `setup*` call and fixture field must be reached by the code path the test exercises. No preemptive stubs, no "just in case" fields, no extras carried over from copy-paste. If it's not needed, delete it.
 
 ## Queries & Assertions
 - **Use `findBy*` / `getBy*` from Testing Library**, not a custom `waitFor`. That's what `findBy*` exists for.

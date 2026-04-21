@@ -31,9 +31,8 @@ test("watchlist movies link to the movie page", async ({ page }) => {
   await setupSyncActivities(page)
   await setupSyncShows(page, [])
   await setupSyncMovies(page, [{
-    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 }, ratings: { imdb: { rating: 8.7 } } },
+    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
     status: "plantowatch",
-    added_to_watchlist_at: "2025-01-01T00:00:00Z",
   }])
   await setupSyncAnime(page, [])
   await setupAuthorize(page)

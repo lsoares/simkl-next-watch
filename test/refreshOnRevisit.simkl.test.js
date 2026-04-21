@@ -47,5 +47,5 @@ async function returnToApp(page) {
 async function publishLibrary(page, { shows, movies }, activityAt) {
   await setupSyncActivities(page, activityAt)
   await setupSyncShows(page, shows.map(({ title, id, status }) => ({ show: { title, ids: { simkl_id: id } }, status })))
-  await setupSyncMovies(page, movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id } }, status, added_to_watchlist_at: activityAt })))
+  await setupSyncMovies(page, movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id } }, status })))
 }
