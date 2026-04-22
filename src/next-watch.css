@@ -411,9 +411,6 @@
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
         #tvRow .row-item, #movieRow .row-item { flex-shrink: 0; width: max(130px, calc((100vw - 44px) / 2.4)); }
         #tvRow .row-item .item-card, #movieRow .row-item .item-card { width: 100%; height: 100%; }
-        #aiFavoritesRow { height: auto; }
-        #aiFavoritesRow .row-item { height: auto; width: max(130px, calc((100vw - 44px) / 2.4)); }
-        #aiFavoritesRow .row-item .item-card { width: 100%; height: auto; aspect-ratio: 2/3; }
 
         /* Trending: reuse suggestions-grid layout */
         #trendingContent {
@@ -785,18 +782,53 @@
   background: rgba(34, 197, 94, 0.15);
 }
 
-.ai-favorites {
-  margin-top: 24px;
+.similar-toolbar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
+  margin-bottom: 12px;
 }
 
-.ai-favorites-title {
+.similar-hint {
   margin: 0;
   font-size: 0.9rem;
-  font-weight: 600;
   color: var(--muted);
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.similar-grid .row-item {
+  width: 100%;
+  height: auto;
+}
+
+.similar-grid .row-item .item-card {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+}
+
+@media (max-width: 900px) {
+  .similar-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+
+@media (max-width: 600px) {
+  .similar-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+
+.similar-grid .item-card .more-like-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.similar-grid .item-card .more-like-btn svg {
+  width: 26px;
+  height: 26px;
 }
 
 .poster-skeleton {

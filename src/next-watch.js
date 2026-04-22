@@ -186,7 +186,9 @@ function initDockEffect(row) {
     aiPrompts: $("aiPrompts"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
     aiDialogClose: $("aiDialogClose"), aiDialogResults: $("aiDialogResults"),
-    aiFavorites: $("aiFavorites"), aiFavoritesRow: $("aiFavoritesRow"),
+    navSimilar: $("navSimilar"),
+    similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
+    similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -513,27 +515,39 @@ function initDockEffect(row) {
     libraryReady.then(() => {
       const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
       el.aiNoRatingsNotice.hidden = hasRated
-      renderFavorites()
     })
   }
 
-  async function renderFavorites() {
+  function hydrateSimilarView() {
+    const loggedIn = isLoggedIn()
+    el.similarSetup.hidden = loggedIn
+    el.similarContent.hidden = !loggedIn
+    if (!loggedIn) return
+    libraryReady.then(() => renderSimilar())
+  }
+
+  async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
-    const pool = [
+    const rated = [
       ...shows.filter((s) => (s.user_rating || 0) >= 7).map((s) => ({ item: s, type: "tv" })),
       ...movies.filter((m) => (m.user_rating || 0) >= 7).map((m) => ({ item: m, type: "movie" })),
     ]
+    const usingFallback = rated.length === 0
+    const pool = usingFallback
+      ? [
+          ...shows.map((s) => ({ item: s, type: "tv" })),
+          ...movies.map((m) => ({ item: m, type: "movie" })),
+        ]
+      : rated
     const picks = pool
       .map((p) => [Math.random(), p])
       .sort((a, b) => a[0] - b[0])
-      .slice(0, 10)
+      .slice(0, 9)
       .map(([, p]) => p)
-    el.aiFavorites.hidden = picks.length === 0
-    if (!picks.length) return
-    el.aiFavoritesRow.replaceChildren()
+    el.similarEmptyNotice.hidden = !usingFallback
+    el.similarGrid.replaceChildren()
     picks.forEach(({ item, type }) => {
-      const card = renderDiscoveryCard(el.aiFavoritesRow, item, type)
-      card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
+      renderDiscoveryCard(el.similarGrid, item, type)
     })
   }
 
@@ -748,6 +762,7 @@ function initDockEffect(row) {
       homepage: { view: el.homepageView, nav: null, hydrate: () => {} },
       next: { view: el.nextView, nav: el.navNext, hydrate: hydrateNextView },
       trending: { view: el.trendingView, nav: el.navTrending, hydrate: hydrateTrendingView },
+      similar: { view: el.similarView, nav: el.navSimilar, hydrate: hydrateSimilarView },
       mood: { view: el.aiView, nav: el.navAi, hydrate: hydrateAiView },
     }
     for (const [key, { view, nav }] of Object.entries(views)) {
@@ -856,7 +871,17 @@ function initDockEffect(row) {
   el.navHome.addEventListener("click", (e) => { e.preventDefault(); showView("homepage"); })
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
+  el.navSimilar.addEventListener("click", (e) => { e.preventDefault(); showView("similar"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
+  el.similarReload.addEventListener("click", () => renderSimilar())
+  el.similarGrid.addEventListener("click", (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    const anchor = e.target.closest("a[href]")
+    const card = anchor?.closest("poster-card")
+    if (!card?.item) return
+    e.preventDefault()
+    openSimilar({ ...card.item, type: card.type })
+  })
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
   el.trendingPeriodTabs.addEventListener("click", (e) => {
@@ -903,7 +928,7 @@ function initDockEffect(row) {
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  showView(["next", "trending", "mood"].includes(hash) ? hash : isLoggedIn() ? "next" : "homepage")
+  showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : isLoggedIn() ? "next" : "homepage")
   if (isLoggedIn()) loadSuggestions()
   else resolveLibraryReady()
 })()

@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie, setupAddToWatchlist } from "./clients/simkl.js"
-import { setupGeminiChat, setupGeminiSimilar } from "./clients/gemini.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
+import { setupGeminiChat } from "./clients/gemini.js"
 import { setupOpenaiChat } from "./clients/openai.js"
 import { setupClaudeChat } from "./clients/claude.js"
 import { setupGrokChat } from "./clients/grok.js"
@@ -99,7 +99,7 @@ test("AI results show the user rating on rated items even when not watched", asy
   await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
 })
 
-test("clicking AI mood without a key opens the key dialog", async ({ page }) => {
+test("clicking a mood prompt without a key opens the key dialog", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -118,50 +118,7 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
   await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
 })
 
-test("adds an unwatched similar pick to the watchlist from the 'More like this' dialog", async ({ page }) => {
-  await signInToSimkl(page, {
-    shows: [{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
-      status: "watching", user_rating: 9, next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62,
-    }],
-    movies: [{
-      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
-      status: "completed", user_rating: 8,
-    }],
-  })
-  await setupGeminiChat(page,
-    '[{"title":"Inception","year":2010}]',
-    "apiAiKey",
-    ["Breaking Bad (2008):9", "Inception (2010):8"],
-  )
-  await setupSearchTv(page)
-  await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
-    Prestige: { title: "The Prestige", year: 2006, ids: { simkl_id: 44444 }, type: "movie", ratings: { imdb: { rating: 8.5 } } },
-  })
-  await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
-  await page.getByRole("link", { name: /mood/i }).click()
-  await page.getByRole("button", { name: /make me laugh/i }).click()
-  await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-  await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-  await page.getByRole("button", { name: /save.*key/i }).click()
-  await expect(page.getByRole("status")).toContainText(/key saved/i)
-  await page.getByRole("button", { name: /make me laugh/i }).click()
-  const inceptionCard = page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" })
-  await expect(inceptionCard).toBeVisible()
-  await setupGeminiSimilar(page, '[{"title":"The Prestige","year":2006}]', "apiAiKey", "Inception (2010)")
-  await inceptionCard.getByRole("button", { name: /more like this/i }).click()
-  const dialog = page.getByRole("dialog", { name: /ai picks/i })
-  const prestigeCard = dialog.getByRole("article", { name: "The Prestige" })
-  await expect(prestigeCard).toBeVisible()
-
-  await prestigeCard.getByRole("button", { name: /add to watchlist/i }).click()
-
-  await expect(page.getByRole("status")).toContainText(/added.*prestige.*watchlist/i)
-})
-
-test("AI view shows a generic-suggestions notice when the library has no rated items", async ({ page }) => {
+test("mood view shows a generic-suggestions notice when the library has no rated items", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },

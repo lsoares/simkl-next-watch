@@ -40,6 +40,7 @@
         <a id="navHome" class="tiny-link tiny-link-home" href="./" aria-label="Home" hidden>⌂</a>
         <a id="navNext" class="tiny-link active-nav" href="#next">next</a>
         <a id="navTrending" class="tiny-link" href="#trending">trending</a>
+        <a id="navSimilar" class="tiny-link" href="#similar">similar</a>
         <a id="navAi" class="tiny-link" href="#mood">mood</a>
         <div class="spinner" id="loadingSpinner" role="progressbar" aria-label="Loading" hidden></div>
         <a id="coffeeLink" class="tiny-link" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer" title="Support Next Watch" style="text-decoration:none;display:inline-flex;align-items:center" hidden><img alt="Support" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 8h1a4 4 0 0 1 0 8h-1'/><path d='M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z'/><path d='M6 1v3M10 1v3M14 1v3'/></svg>" width="13" height="13" style="display:block" /></a>
@@ -114,6 +115,25 @@
         </div>
       </div>
 
+      <!-- Similar view -->
+      <div id="similarView" hidden>
+        <div id="similarSetup" class="view-teaser" hidden>
+          <img class="teaser-bg" src="./assets/teaser-mood.jpg" alt="" aria-hidden="true" />
+          <div class="view-teaser-cta">
+            <p>Sign in to find titles similar to what you've rated.</p>
+            <div class="app-intro-actions" data-signin-ctas></div>
+          </div>
+        </div>
+        <div id="similarContent" hidden>
+          <div class="similar-toolbar">
+            <p class="similar-hint" id="similarHint">Pick one to find more like it.</p>
+            <button class="tiny-link" id="similarReload" type="button">Refresh</button>
+          </div>
+          <div class="inline-banner" id="similarEmptyNotice" hidden>Rate some titles to seed this. Showing random picks from your library for now.</div>
+          <div class="similar-grid" id="similarGrid"></div>
+        </div>
+      </div>
+
       <!-- AI view -->
       <div id="aiView" hidden>
         <div id="aiSetup" class="view-teaser" hidden>
@@ -145,10 +165,6 @@
           <button class="ai-prompt-btn" type="button" data-gloss="strange, surreal, genre-defying, arthouse"><span class="ai-prompt-icon" aria-hidden="true">🌀</span><span class="ai-prompt-label">Weird &amp; wild</span></button>
           <button class="ai-prompt-btn" type="button" data-gloss="emotional, cathartic; prepare to feel things"><span class="ai-prompt-icon" aria-hidden="true">😭</span><span class="ai-prompt-label">Tear-jerker</span></button>
         </div>
-        <section class="ai-favorites" id="aiFavorites" hidden>
-          <h3 class="ai-favorites-title">Or find more like…</h3>
-          <posters-row id="aiFavoritesRow"></posters-row>
-        </section>
         </div>
       </div>
     </main>
