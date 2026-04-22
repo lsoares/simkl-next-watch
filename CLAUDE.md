@@ -19,6 +19,18 @@
 - **Prefer `*ByRole`** over `*ByText` when the element has an accessible role (buttons, images, headings, links).
 - **No `assert.ok(getBy*(...))`.** `getBy*` already throws if not found — just call it.
 
+## One Behavior Per Test
+- **Behavior = one user action → one reaction.** A page load counts as a user action.
+- **User actions in arrange are fine.** Signing in, navigating to a tab, opening a dialog — all legitimate setup for the *real* act, even though they involve clicks. The rule is about the *final* act and its reaction, not about forbidding clicks before it.
+- **Intermediate sanity-check assertions in arrange are fine.** Asserting the pre-state before the real act is allowed, both as a setup sync point and to frame before/after comparisons.
+- **Don't bundle two independent act→reaction pairs.** If the test has two user actions where neither is setup for the other (e.g. "page load shows X" *and* "clicking Y shows Z"), split them.
+- **Don't assert secondary reactions unrelated to the test's named behavior.** If a test is named "ongoing shows link to next episode", don't also assert the "Add series" link href in it.
+
+## AAA Structure
+- **Every test follows Arrange → Act → Assert.** Act is exactly one isolated line (the real user action). All prior setup clicks belong in arrange; all follow-up checks belong in assert.
+- **Separate the three phases with exactly one blank line each.** Arrange block, blank line, the single act line, blank line, assert block. No other blank lines anywhere in the test body.
+- **When a phase is absent, its separator is too.** A test with no arrange (pure act → assert) has just one blank line, not two.
+
 ## Test Isolation
 - **No shared/global variables in tests.** Each test must be self-contained. Only describe-level: server lifecycle. Only file-level: imports.
 - **No shared test data constants.** Inline data in each test or pass it to handler helpers.

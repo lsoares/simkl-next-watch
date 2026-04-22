@@ -134,7 +134,6 @@ test("removing items on Simkl clears them from the watchlist on return", async (
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
   await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-
   await externallyChangeLibrary(page, {
     shows: [{ title: "Chernobyl", id: 22000, status: "plantowatch" }],
     movies: [],

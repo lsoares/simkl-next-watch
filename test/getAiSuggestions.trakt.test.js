@@ -29,7 +29,6 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
     simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
   })
-
   await setupGeminiChat(page,
     '[{"title":"Parasite","year":2019}]',
     "apiAiKey",
@@ -76,7 +75,6 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
     simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
   })
-
   await setupGeminiChat(page,
     '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
     "apiAiKey",

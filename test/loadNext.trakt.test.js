@@ -16,6 +16,7 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await setupSearchById(page, "tt0903747", { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 })
   await setupAuthorize(page)
   await page.goto("/")
+
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   const showCard = page.getByRole("article", { name: "Breaking Bad" })
