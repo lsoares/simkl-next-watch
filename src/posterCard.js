@@ -1,3 +1,5 @@
+import { tmdbRepository } from "./tmdbRepository.js"
+
 class PosterCard extends HTMLElement {
   variant = "next"
   type = "tv"
@@ -14,6 +16,10 @@ class PosterCard extends HTMLElement {
     if (this._rendered) return
     this._render()
     this._rendered = true
+  }
+
+  disconnectedCallback() {
+    posterObserver?.unobserve(this)
   }
 
   get cardEl() { return this.querySelector(".item-card"); }
@@ -108,7 +114,41 @@ class PosterCard extends HTMLElement {
     this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"))
     this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); })
     this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("more-like-this"); })
+
+    this._maybeObservePoster()
   }
+
+  _maybeObservePoster() {
+    const { item, type } = this
+    if (!item || item.posterUrl) return posterObserver?.unobserve(this)
+    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && type)) return
+    getPosterObserver().observe(this)
+  }
+
+  async _hydratePoster() {
+    const { item, type } = this
+    if (!item || item.posterUrl) return
+    const url = (item.ids?.tmdb || item.ids?.imdb)
+      ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type })
+      : await tmdbRepository.getPosterByTitle(item.title, item.year, type)
+    if (!url || this.item !== item) return
+    item.posterUrl = url
+    this._rendered = false
+    this._render()
+  }
+}
+
+let posterObserver = null
+function getPosterObserver() {
+  if (posterObserver) return posterObserver
+  posterObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      posterObserver.unobserve(entry.target)
+      entry.target._hydratePoster()
+    }
+  }, { rootMargin: "200px" })
+  return posterObserver
 }
 customElements.define("poster-card", PosterCard)
 

@@ -1,6 +1,5 @@
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
-import { tmdbRepository } from "./tmdbRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
 
@@ -258,7 +257,7 @@ function initDockEffect(row) {
     appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
-    observeLazyHydration(rowEl)
+    observeProgressHydration(rowEl)
   }
 
   // ── Mark watched ──
@@ -370,7 +369,6 @@ function initDockEffect(row) {
     })
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
-    observeLazyHydration(containerEl)
   }
 
   async function addToWatchlist(card) {
@@ -394,80 +392,44 @@ function initDockEffect(row) {
     }
   }
 
-  function injectPoster(card, item) {
-    const cardEl = card.cardEl
-    if (!cardEl || !item.posterUrl) return
-    const img = document.createElement("img")
-    img.className = "poster"
-    img.src = item.posterUrl
-    img.alt = ""
-    img.draggable = false
-    img.loading = "lazy"
-    const placeholder = cardEl.querySelector(".poster-anchor .poster--placeholder")
-    if (placeholder) { placeholder.replaceWith(img); return }
-    if (cardEl.querySelector(".poster-anchor")) return
-    const anchor = document.createElement("a")
-    anchor.className = "poster-anchor"
-    anchor.href = item.url || "#"
-    anchor.target = "_blank"
-    anchor.rel = "noreferrer"
-    anchor.appendChild(img)
-    cardEl.insertBefore(anchor, cardEl.firstChild)
-  }
-
-  let lazyObserver = null
-  function observeLazyHydration(rowEl) {
-    if (!lazyObserver) {
-      lazyObserver = new IntersectionObserver((entries) => {
+  let progressObserver = null
+  function observeProgressHydration(rowEl) {
+    if (!progressObserver) {
+      progressObserver = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue
-          lazyObserver.unobserve(entry.target)
-          hydrateLazy(entry.target)
+          progressObserver.unobserve(entry.target)
+          hydrateProgress(entry.target)
         }
       }, { rootMargin: "200px" })
     }
     rowEl.querySelectorAll("poster-card").forEach((c) => {
-      if (needsLazyHydration(c.item)) lazyObserver.observe(c)
+      if (needsProgressHydration(c.item)) progressObserver.observe(c)
     })
   }
 
-  function needsLazyHydration(item) {
+  function needsProgressHydration(item) {
     if (!item) return false
-    if (!item.posterUrl && (item.ids?.tmdb || item.ids?.imdb || (item.title && item.year))) return true
-    if (mediaRepository().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) return true
-    return false
+    return !!(mediaRepository().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt))
   }
 
-  async function hydrateLazy(card) {
+  async function hydrateProgress(card) {
     const item = card.item
     if (!item) return
-    if (!item.posterUrl) await hydratePoster(card)
     const getProgress = mediaRepository().getProgress
-    if (getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) {
-      const key = item.ids.slug || item.ids.trakt
-      const progress = await getProgress(key)
-      if (progress === null) {
-        card.closest(".row-item")?.remove()
-        return
-      }
-      if (progress?.nextEpisode) {
-        item.nextEpisode = progress.nextEpisode
-        if (progress.title) item.episodeTitle = progress.title
-        card._rendered = false
-        card._render()
-      }
+    if (!getProgress) return
+    const key = item.ids.slug || item.ids.trakt
+    const progress = await getProgress(key)
+    if (progress === null) {
+      card.closest(".row-item")?.remove()
+      return
     }
-  }
-
-  async function hydratePoster(card) {
-    const item = card.item
-    if (!item) return
-    const url = (item.ids?.tmdb || item.ids?.imdb)
-      ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type: item.type })
-      : await tmdbRepository.getPosterByTitle(item.title, item.year, item.type)
-    if (!url) return
-    item.posterUrl = url
-    injectPoster(card, item)
+    if (progress?.nextEpisode) {
+      item.nextEpisode = progress.nextEpisode
+      if (progress.title) item.episodeTitle = progress.title
+      card._rendered = false
+      card._render()
+    }
   }
 
   let trendingBadgeSetsPromise = null
@@ -581,7 +543,6 @@ function initDockEffect(row) {
       card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
     })
     attachCatalogLinkResolver(el.aiFavoritesRow)
-    observeLazyHydration(el.aiFavoritesRow)
   }
 
   function openAiSettings() {
@@ -788,7 +749,6 @@ function initDockEffect(row) {
     card.watching = !!entry?.watching
     card._rendered = false
     card._render()
-    if (!resolved.posterUrl) hydratePoster(card)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())
