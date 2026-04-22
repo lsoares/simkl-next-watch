@@ -556,7 +556,6 @@ function initDockEffect(row) {
     if (!loggedIn) return
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
-    el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
     libraryReady.then(() => {
       const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
       el.aiNoRatingsNotice.hidden = hasRated
@@ -912,6 +911,7 @@ function initDockEffect(row) {
     el.navHome.hidden = loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
+    el.aiKeyBtn.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
     hydrateNextView()
     syncViewportMetrics()
@@ -926,7 +926,6 @@ function initDockEffect(row) {
     writeStorage(STORAGE.aiProvider, provider)
     writeStorage(AI_KEY_STORAGE[provider], aiKey)
     syncAiSaveLabel()
-    el.aiKeyBtn.hidden = false
     el.aiSettings.close()
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })

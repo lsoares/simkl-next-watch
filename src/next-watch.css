@@ -255,13 +255,8 @@
       .ai-toolbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 12px;
         margin-bottom: 12px;
-      }
-      .ai-key-btn {
-        color: var(--muted);
-        font-size: 0.78rem;
       }
 
 
