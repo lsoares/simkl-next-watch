@@ -788,6 +788,22 @@
     border-radius: 0;
     margin: 0;
     padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+  .more-like-dialog #moreLikeResults {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 0;
+    scroll-snap-type: none;
+  }
+  .more-like-dialog #moreLikeResults .row-item {
+    width: 100%;
+    scroll-snap-align: none;
   }
 }
 
