@@ -246,16 +246,7 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => {
-      const { frag, card } = makeRowItem()
-      card.variant = "next"
-      card.type = type
-      card.item = item
-      card.watching = item.status === "watching"
-      card.episodeUrlFn = mediaRepository().episodeUrl
-      card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl))
-      rowEl.appendChild(frag)
-    })
+    items.forEach((item) => renderPosterCard(rowEl, item, "next"))
     appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
@@ -273,12 +264,12 @@ function initDockEffect(row) {
     })
   }
 
-  async function markWatched(item, type, card) {
+  async function markWatched(item, card) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
       await mediaRepository().markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, type, " watched — rate it?"))
+      showToast(toastFrag("Marked ", snapshot, " watched — rate it?"))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
@@ -287,8 +278,8 @@ function initDockEffect(row) {
     }
   }
 
-  function toastFrag(prefix, item, type, suffix) {
-    const ep = type === "tv" ? item.nextEpisode : null
+  function toastFrag(prefix, item, suffix) {
+    const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
     const url = ep ? (mediaRepository().episodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
@@ -352,7 +343,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => renderDiscoveryCard(containerEl, item, type))
+    items.forEach((item) => renderPosterCard(containerEl, item, "discovery"))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -369,7 +360,7 @@ function initDockEffect(row) {
       for (const key of keys) libraryIndex.set(key, entry)
       card.inWatchlist = true
       card.refresh()
-      showToast(toastFrag("Added ", item, card.type, " to watchlist."))
+      showToast(toastFrag("Added ", item, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
       btn.disabled = false
@@ -517,17 +508,9 @@ function initDockEffect(row) {
 
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
-    const rated = [
-      ...shows.filter((s) => (s.user_rating || 0) >= 7).map((s) => ({ item: s, type: "tv" })),
-      ...movies.filter((m) => (m.user_rating || 0) >= 7).map((m) => ({ item: m, type: "movie" })),
-    ]
+    const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= 7)
     const usingFallback = rated.length === 0
-    const pool = usingFallback
-      ? [
-          ...shows.map((s) => ({ item: s, type: "tv" })),
-          ...movies.map((m) => ({ item: m, type: "movie" })),
-        ]
-      : rated
+    const pool = usingFallback ? [...shows, ...movies] : rated
     const picks = pool
       .map((p) => [Math.random(), p])
       .sort((a, b) => a[0] - b[0])
@@ -535,9 +518,7 @@ function initDockEffect(row) {
       .map(([, p]) => p)
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
-    picks.forEach(({ item, type }) => {
-      renderDiscoveryCard(el.similarGrid, item, type)
-    })
+    picks.forEach((item) => renderPosterCard(el.similarGrid, item, "discovery"))
   }
 
   function openAiSettings() {
@@ -602,15 +583,17 @@ function initDockEffect(row) {
   // ── AI Result Rendering ──
 
 
-  function renderDiscoveryCard(row, item, type) {
+  function renderPosterCard(row, item, variant) {
     const { frag, card } = makeRowItem()
-    card.variant = "discovery"
-    card.type = type
+    card.variant = variant
+    card.type = item.type
     card.item = item
     card.applyLibraryEntry(libraryLookup(libraryIndex, item))
     card.loggedIn = isLoggedIn()
+    card.episodeUrlFn = mediaRepository().episodeUrl
+    card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
-    card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
+    card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
     row.appendChild(frag)
     return card
   }
@@ -678,7 +661,7 @@ function initDockEffect(row) {
       const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderDiscoveryCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {} }, placeholderType)
+        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType }, "discovery")
       })
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
@@ -879,7 +862,7 @@ function initDockEffect(row) {
     const card = anchor?.closest("poster-card")
     if (!card?.item) return
     e.preventDefault()
-    openSimilar({ ...card.item, type: card.type })
+    openSimilar(card.item)
   })
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
