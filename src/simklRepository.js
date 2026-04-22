@@ -4,8 +4,6 @@ const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
 const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
 const redirectUri = requireGlobal("__REDIRECT_URI__")
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
-const imdbLookupCache = loadJsonMap("next-watch-simkl-imdb-lookup-v0")
-const imdbLookupInFlight = new Map()
 const episodeTitleCache = loadJsonMap("next-watch-simkl-episode-title-v0")
 const episodesInFlight = new Map()
 let libraryInFlight = null
@@ -26,7 +24,6 @@ export const simklRepository = {
   getTrending,
   trendingBrowseUrl,
   searchByTitle,
-  lookupByImdb,
   getEpisodeTitle,
 }
 
@@ -149,34 +146,6 @@ async function searchByTitle(title, year, type) {
   }
 }
 
-async function lookupByImdb(imdbId) {
-  if (!imdbId) return null
-  if (imdbLookupCache[imdbId] !== undefined) return imdbLookupCache[imdbId]
-  if (imdbLookupInFlight.has(imdbId)) return imdbLookupInFlight.get(imdbId)
-  const p = (async () => {
-    try {
-      const r = await publicFetch(`/search/id?imdb=${encodeURIComponent(imdbId)}`)
-      const hit = r[0]
-      const result = hit ? {
-        simklId: hit.ids?.simkl || hit.ids?.simkl_id || null,
-        poster: hit.poster || "",
-        title: hit.title || "",
-        year: hit.year || "",
-        total: hit.total_episodes || 0,
-      } : null
-      imdbLookupCache[imdbId] = result
-      persistJsonMap("next-watch-simkl-imdb-lookup-v0", imdbLookupCache)
-      return result
-    } catch {
-      return null
-    } finally {
-      imdbLookupInFlight.delete(imdbId)
-    }
-  })()
-  imdbLookupInFlight.set(imdbId, p)
-  return p
-}
-
 async function getEpisodeTitle(showId, season, episode) {
   if (!showId || season == null || episode == null) return null
   const key = `${showId}:${season}:${episode}`
@@ -294,7 +263,6 @@ function normalizeItem(raw) {
     : raw.movie ? "movie"
     : animeType ? "tv"
     : null
-  const posterCode = media.poster || media.img || ""
   const releaseDate = type === "movie" ? media.released : media.first_aired
   const year = media.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : "")
   return {
@@ -302,8 +270,6 @@ function normalizeItem(raw) {
     id: String(simkl || ""),
     title,
     year,
-    poster: posterCode,
-    posterUrl: buildLibraryPosterUrl(posterCode),
     url: buildShowUrl({ id: simkl, title, type }),
     runtime: media.runtime || 0,
     rating: typeof simklRating === "number" ? simklRating : null,
@@ -329,7 +295,6 @@ function enrichSearch(item, type) {
     title: decodeSimklText(item.title),
     id: ids.simkl ? String(ids.simkl) : "",
     type,
-    posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
     rating: typeof simklRating === "number" ? simklRating : null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
@@ -347,7 +312,6 @@ function enrichTrending(item, type) {
     id: ids.simkl ? String(ids.simkl) : "",
     type,
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
-    posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildTrendingUrl(item, ids.simkl, type),
     rating: typeof simklRating === "number" ? simklRating : null,
     runtime: parseRuntime(item.runtime),
@@ -382,18 +346,6 @@ function parseNextEpisode(value) {
   }
   const m = String(value).match(/S(\d+)E(\d+)/i)
   return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
-}
-
-function posterThumb(code) {
-  if (!code) return ""
-  if (code.startsWith("http")) return code
-  return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_m.webp`
-}
-
-function buildLibraryPosterUrl(code) {
-  if (!code) return ""
-  if (code.startsWith("http")) return code
-  return `https://wsrv.nl/?url=https://simkl.in/posters/${code}_c.webp`
 }
 
 function buildShowUrl({ id, title, type }) {

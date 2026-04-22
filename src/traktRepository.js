@@ -1,5 +1,4 @@
 import { createCacheClient } from "./cacheClient.js"
-import { simklRepository } from "./simklRepository.js"
 
 const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
 const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
@@ -31,7 +30,6 @@ export const traktRepository = {
   getTrending,
   trendingBrowseUrl,
   searchByTitle,
-  lookupByImdb,
 }
 
 function startOAuth() {
@@ -219,10 +217,6 @@ async function searchByTitle(title, year, type) {
   }
 }
 
-function lookupByImdb(imdbId) {
-  return simklRepository.lookupByImdb(imdbId)
-}
-
 async function publicFetch(path) {
   const res = await fetch(`https://api.trakt.tv${path}`, {
     headers: {
@@ -331,8 +325,6 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     id: String(ids.imdb || ids.trakt || ""),
     title: show.title || "Unknown",
     year: show.year || "",
-    poster: "",
-    posterUrl: "",
     url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
     runtime: show.runtime || 0,
     rating: typeof show.rating === "number" ? Math.round(show.rating * 10) / 10 : null,
@@ -356,8 +348,6 @@ function normalizeTraktMovie(entry, { status = "plantowatch" } = {}) {
     id: String(imdb || traktId),
     title: movie.title || "Unknown",
     year: movie.year || "",
-    poster: "",
-    posterUrl: "",
     url: ids.slug ? `https://app.trakt.tv/movies/${encodeURIComponent(ids.slug)}` : "",
     runtime: movie.runtime || 0,
     rating: typeof movie.rating === "number" ? Math.round(movie.rating * 10) / 10 : null,
@@ -386,7 +376,6 @@ function enrichSearch(media, type) {
     title: media.title || "",
     year: media.year || "",
     type,
-    posterUrl: "",
     url: rawIds.slug ? `https://app.trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(rawIds.slug)}` : "",
     runtime: media.runtime || 0,
     rating: typeof media.rating === "number" ? Math.round(media.rating * 10) / 10 : null,

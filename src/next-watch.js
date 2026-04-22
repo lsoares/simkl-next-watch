@@ -1,5 +1,6 @@
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
+import { tmdbRepository } from "./tmdbRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
 
@@ -432,7 +433,7 @@ function initDockEffect(row) {
 
   function needsLazyHydration(item) {
     if (!item) return false
-    if (item.ids?.imdb && !item.posterUrl) return true
+    if (!item.posterUrl && (item.ids?.tmdb || item.ids?.imdb || (item.title && item.year))) return true
     if (mediaRepository().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) return true
     return false
   }
@@ -440,7 +441,7 @@ function initDockEffect(row) {
   async function hydrateLazy(card) {
     const item = card.item
     if (!item) return
-    if (item.ids?.imdb && !item.posterUrl) await hydratePoster(card)
+    if (!item.posterUrl) await hydratePoster(card)
     const getProgress = mediaRepository().getProgress
     if (getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) {
       const key = item.ids.slug || item.ids.trakt
@@ -460,13 +461,12 @@ function initDockEffect(row) {
 
   async function hydratePoster(card) {
     const item = card.item
-    if (!item?.ids?.imdb) return
-    const hit = await mediaRepository().lookupByImdb(item.ids.imdb)
-    if (!hit?.poster) return
-    item.ids = { ...item.ids, simkl: hit.simklId }
-    if (!item.id) item.id = String(hit.simklId || "")
-    item.poster = hit.poster
-    item.posterUrl = `https://wsrv.nl/?url=https://simkl.in/posters/${hit.poster}_c.webp`
+    if (!item) return
+    const url = (item.ids?.tmdb || item.ids?.imdb)
+      ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type: item.type })
+      : await tmdbRepository.getPosterByTitle(item.title, item.year, item.type)
+    if (!url) return
+    item.posterUrl = url
     injectPoster(card, item)
   }
 
@@ -787,7 +787,7 @@ function initDockEffect(row) {
     card.watching = !!entry?.watching
     card._rendered = false
     card._render()
-    if (!resolved.posterUrl && resolved.ids?.imdb) hydratePoster(card)
+    if (!resolved.posterUrl) hydratePoster(card)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())

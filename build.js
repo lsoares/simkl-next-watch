@@ -33,6 +33,7 @@ const globals = {
   __SIMKL_CLIENT_SECRET__: process.env.SIMKL_CLIENT_SECRET,
   __TRAKT_CLIENT_ID__: process.env.TRAKT_CLIENT_ID,
   __TRAKT_CLIENT_SECRET__: process.env.TRAKT_CLIENT_SECRET,
+  __TMDB_API_KEY__: process.env.TMDB_API_KEY,
   __REDIRECT_URI__: process.env.REDIRECT_URI,
 }
 if (globals.__SIMKL_CLIENT_ID__ && globals.__SIMKL_CLIENT_SECRET__) {

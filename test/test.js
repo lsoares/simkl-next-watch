@@ -7,6 +7,7 @@ export const test = base.extend({
       window.__SIMKL_CLIENT_SECRET__ = "test-secret"
       window.__TRAKT_CLIENT_ID__ = "test-trakt-client-id"
       window.__TRAKT_CLIENT_SECRET__ = "test-trakt-secret"
+      window.__TMDB_API_KEY__ = "test-tmdb-key"
       window.__REDIRECT_URI__ = uri
     }, `${baseURL}/`)
     await context.route("**/*", (route) => {
