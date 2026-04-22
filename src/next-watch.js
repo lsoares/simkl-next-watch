@@ -581,6 +581,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
     })
     attachCatalogLinkResolver(el.aiFavoritesRow)
+    observeLazyHydration(el.aiFavoritesRow)
   }
 
   function openAiSettings() {
