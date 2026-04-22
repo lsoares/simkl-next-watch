@@ -187,6 +187,7 @@ function initDockEffect(row) {
     aiPrompts: $("aiPrompts"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
     aiDialogClose: $("aiDialogClose"), aiDialogResults: $("aiDialogResults"),
+    aiFavorites: $("aiFavorites"), aiFavoritesRow: $("aiFavoritesRow"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -550,7 +551,29 @@ function initDockEffect(row) {
     libraryReady.then(() => {
       const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
       el.aiNoRatingsNotice.hidden = hasRated
+      renderFavorites()
     })
+  }
+
+  async function renderFavorites() {
+    const { shows, movies } = await gatherLibrary()
+    const pool = [
+      ...shows.filter((s) => (s.user_rating || 0) >= 7).map((s) => ({ item: s, type: "tv" })),
+      ...movies.filter((m) => (m.user_rating || 0) >= 7).map((m) => ({ item: m, type: "movie" })),
+    ]
+    const picks = pool
+      .map((p) => [Math.random(), p])
+      .sort((a, b) => a[0] - b[0])
+      .slice(0, 10)
+      .map(([, p]) => p)
+    el.aiFavorites.hidden = picks.length === 0
+    if (!picks.length) return
+    el.aiFavoritesRow.replaceChildren()
+    picks.forEach(({ item, type }) => {
+      const card = renderDiscoveryCard(el.aiFavoritesRow, item, type)
+      card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
+    })
+    attachCatalogLinkResolver(el.aiFavoritesRow)
   }
 
   function openAiSettings() {

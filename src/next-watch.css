@@ -765,6 +765,20 @@
   background: rgba(34, 197, 94, 0.15);
 }
 
+.ai-favorites {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-favorites-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .poster-skeleton {
   width: 100%;
   aspect-ratio: 2 / 3;
