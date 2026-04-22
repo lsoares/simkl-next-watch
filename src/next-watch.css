@@ -762,6 +762,7 @@
   text-align: left;
 }
 
+.ai-prompt-icon { width: 16px; height: 16px; opacity: 0.8; margin-bottom: 4px; }
 .ai-prompt-label { font-size: 0.85rem; font-weight: 600; line-height: 1.2; }
 .ai-prompt-gloss { font-size: 0.7rem; color: var(--muted); line-height: 1.2; }
 
