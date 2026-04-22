@@ -796,12 +796,15 @@ function initDockEffect(row) {
   window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true })
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && isLoggedIn()) loadSuggestions(); })
 
-  // PWA install — mobile viewport only; desktop installs aren't the primary flow.
   let deferredInstallPrompt = null
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault()
     deferredInstallPrompt = e
-    if (window.matchMedia("(max-width: 680px)").matches) el.installBtn.classList.remove("hidden")
+    if (!window.matchMedia("(display-mode: standalone)").matches) el.installBtn.classList.remove("hidden")
+  })
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null
+    el.installBtn.classList.add("hidden")
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {})
