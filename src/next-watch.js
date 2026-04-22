@@ -1,4 +1,5 @@
 import { simklCatalog } from "./simklCatalog.js"
+import { traktCatalog } from "./traktCatalog.js"
 import { simklUserData } from "./simklUserData.js"
 import { traktUserData } from "./traktUserData.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
@@ -6,6 +7,10 @@ import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
 
 function currentUserData() {
   return localStorage.getItem("next-watch-provider") === "trakt" ? traktUserData : simklUserData
+}
+
+function currentCatalog() {
+  return localStorage.getItem("next-watch-provider") === "trakt" ? traktCatalog : simklCatalog
 }
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
@@ -609,13 +614,6 @@ function initDockEffect(row) {
 
   // ── Recommendation Flow ──
 
-  async function resolveSimkl(suggestions, mediaType) {
-    const results = await Promise.all(
-      suggestions.map((s) => simklCatalog.searchByTitle(s.title, s.year, mediaType))
-    )
-    return results.filter(Boolean)
-  }
-
   function getAiMediaType() {
     const tv = el.aiToggleTv.classList.contains("active")
     const movie = el.aiToggleMovie.classList.contains("active")
@@ -773,13 +771,13 @@ function initDockEffect(row) {
         observer.unobserve(entry.target)
         hydrateAiCard(entry.target, mediaType)
       }
-    }, { root: row, rootMargin: "200px" })
+    }, { root: row, rootMargin: "400px" })
     row.querySelectorAll("poster-card").forEach((c) => observer.observe(c))
   }
 
   async function hydrateAiCard(card, mediaType) {
     const { title, year } = card.item
-    const resolved = await simklCatalog.searchByTitle(title, year, mediaType)
+    const resolved = await currentCatalog().searchByTitle(title, year, mediaType)
     if (!resolved) return
     if (resolved.release_status === "unreleased") {
       card.closest(".row-item")?.remove()
@@ -795,6 +793,7 @@ function initDockEffect(row) {
     card.watching = !!entry?.watching
     card._rendered = false
     card._render()
+    if (!resolved.posterUrl && resolved.ids?.imdb) hydratePoster(card)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())

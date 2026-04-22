@@ -217,6 +217,40 @@ export function setupSearchById(page, imdbId, result) {
   })
 }
 
+export function setupSearchShow(page, results) {
+  return page.route("https://api.trakt.tv/search/show?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("query")).toBeTruthy()
+    expect(params.get("limit")).toBe("1")
+    expect(params.get("extended")).toBe("full")
+    const q = params.get("query")
+    for (const [keyword, item] of Object.entries(results)) {
+      if (q.includes(keyword)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([item]) })
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+  })
+}
+
+export function setupSearchMovie(page, results) {
+  return page.route("https://api.trakt.tv/search/movie?**", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
+    expect(route.request().headers()["trakt-api-version"]).toBe("2")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("query")).toBeTruthy()
+    expect(params.get("limit")).toBe("1")
+    expect(params.get("extended")).toBe("full")
+    const q = params.get("query")
+    for (const [keyword, item] of Object.entries(results)) {
+      if (q.includes(keyword)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([item]) })
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+  })
+}
+
 export function setupWatchedShowsByPeriod(page, byPeriod) {
   return page.route("https://api.trakt.tv/shows/watched/*", async (route) => {
     expect(route.request().method()).toBe("GET")

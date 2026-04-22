@@ -1,7 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
-import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchById } from "./clients/trakt.js"
-import { setupMovieDetail } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchById, setupSearchShow, setupSearchMovie } from "./clients/trakt.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 
 test("sends Trakt user ratings to the AI alongside library titles", async ({ page }) => {
@@ -35,9 +33,9 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
     "apiAiKey",
     ["Breaking Bad (2008):9", "Inception (2010):8"],
   )
-  await setupSearchTv(page)
+  await setupSearchShow(page, {})
   await setupSearchMovie(page, {
-    Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
+    Parasite: { type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 100, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } },
   })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
@@ -81,10 +79,10 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
     "apiAiKey",
     ["Breaking Bad (2008):9"],
   )
-  await setupSearchTv(page)
+  await setupSearchShow(page, {})
   await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222, slug: "inception", tmdb: "27205" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
-    Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001, slug: "parasite", tmdb: "496243" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
+    Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
+    Parasite: { type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } },
   })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
@@ -114,11 +112,10 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
     "apiAiKey",
     [],
   )
-  await setupSearchTv(page)
+  await setupSearchShow(page, {})
   await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
+    Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
   })
-  await setupMovieDetail(page, 22222, { ids: { simkl: 22222, imdb: "tt1375666" } })
   let navigatedTo = null
   await page.context().route("https://trakt.tv/**", async (route) => {
     navigatedTo = route.request().url()
