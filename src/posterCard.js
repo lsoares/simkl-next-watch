@@ -72,7 +72,12 @@ class PosterCard extends HTMLElement {
 
     this.innerHTML = `
       <article class="item-card${watched && !isCurrentlyWatching ? " trending-watched" : ""}${(isCurrentlyWatching || (!watched && inWatchlist && !isNext)) ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
-        ${posterHref ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`}</a>` : ""}
+        ${(() => {
+          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
+          return posterHref
+            ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${inner}</a>`
+            : `<div class="poster-anchor">${inner}</div>`
+        })()}
         <div class="poster-top">
           <div class="poster-top-text">
             <div class="poster-title">
