@@ -26,7 +26,7 @@
       body {
         margin: 0;
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: var(--bg);
+        background: var(--bg) linear-gradient(to bottom, rgba(59,130,246,0.08), transparent 240px) no-repeat;
         color: var(--text);
         min-height: var(--app-height);
         display: flex;
@@ -55,10 +55,8 @@
         display: flex;
         justify-content: center;
         gap: 20px;
-        padding: max(12px, env(safe-area-inset-top)) 0 20px;
-        background: linear-gradient(to top, transparent, rgba(17,24,39,0.6) 30%, rgba(17,24,39,0.92) 70%);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        padding: max(12px, env(safe-area-inset-top)) 0 12px;
+        background: linear-gradient(to top, transparent, rgba(17,24,39,0.95) 40%);
         z-index: 10;
         pointer-events: none;
       }
