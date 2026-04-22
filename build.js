@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { minify } from "html-minifier-terser"
 import { readFile, writeFile, mkdir, copyFile, readdir, rm } from "node:fs/promises"
+import { execSync } from "node:child_process"
+
+const appVersion = process.env.GITHUB_SHA?.slice(0, 7)
+  || (() => { try { return execSync("git rev-parse --short HEAD").toString().trim() } catch { return "dev" } })()
 
 await rm("dist", { recursive: true, force: true })
 await mkdir("dist", { recursive: true })
@@ -18,9 +22,8 @@ await writeFile("dist/index.html", minified)
 
 await mkdir("dist/src", { recursive: true })
 await mkdir("dist/assets", { recursive: true })
-for (const f of ["sw.js"]) {
-  await copyFile(f, `dist/${f}`)
-}
+const sw = await readFile("sw.js", "utf8")
+await writeFile("dist/sw.js", sw.replace("__APP_VERSION__", appVersion))
 for (const f of ["manifest.json", "favicon.ico", "icon.png", "simkl.png", "trakt.svg"]) {
   await copyFile(`assets/${f}`, `dist/assets/${f}`)
 }
@@ -50,3 +53,4 @@ if (globals.__SIMKL_CLIENT_ID__ && globals.__SIMKL_CLIENT_SECRET__) {
 }
 
 console.log(`index.html: ${html.length.toLocaleString()} → ${minified.length.toLocaleString()} bytes`)
+console.log(`sw.js cache: next-watch-${appVersion}`)
