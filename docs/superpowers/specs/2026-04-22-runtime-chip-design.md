@@ -19,15 +19,17 @@ Answer "do I have time for this tonight?" at a glance, without adding a row or a
 ## Scope
 
 - **Where it shows:** corner overlay (top-right) on the poster image.
-- **When it shows:** only when `isUnstarted(item, type) === true` (already computed in `src/posterCard.js`). In practice this means the Next view's plan-to-watch rows.
-- **When it is skipped:** runtime is `0`, missing, or not a finite number; or the card is not unstarted (ongoing TV, watched items, trending, mood results).
+- **When it shows:** on every card where the item is **not already watched** (`watched !== true`) and `runtime > 0`. That covers Next (unstarted and ongoing), Trending (unseen), and Mood results.
+- **When it is skipped:** `watched === true` (already seen), or `runtime` is `0`, missing, or not a finite number.
 
 ## Data
 
-- `runtime` is already on the normalized item for both providers:
-  - Trakt: `src/traktUserData.js` (shows and movies), populated from `?extended=full` on watchlist/watched endpoints.
+- `runtime` is already on the normalized item for both providers' library endpoints:
+  - Trakt: `src/traktUserData.js`, populated from `?extended=full` on watchlist/watched endpoints.
   - Simkl: `src/simklUserData.js`, populated from `?extended=full` on `sync/all-items`.
-- Zero additional network calls. No changes to data fetchers.
+- For **Trakt trending** (`/shows/watched/{period}` and `/movies/watched/{period}`): the base payload omits `runtime`, so add `&extended=full` to the existing call. This is the **same** endpoint — not a new request.
+- For **Simkl trending** (`data.simkl.in/discover/trending/...`): the public snapshot already includes `runtime` as a display string (e.g. `"2h 37m"`). Parse it to minutes inside `enrichTrending` so the normalized shape stays numeric.
+- **No new network requests.**
 
 ## Format
 
@@ -49,23 +51,22 @@ Answer "do I have time for this tonight?" at a glance, without adding a row or a
 
 ## Impact
 
-- `src/posterCard.js`: one render branch inside `_render` (gated on `isUnstarted && runtime > 0`).
+- `src/posterCard.js`: one render branch inside `_render` (gated on `!watched && runtime > 0`) plus a small internal formatter helper.
 - `src/posterCard.css`: one new rule for the overlay position/appearance.
-- Small internal formatter helper co-located in `posterCard.js`.
+- `src/traktUserData.js`: append `&extended=full` to the two trending calls in `getTrending`.
+- `src/simklCatalog.js`: parse `item.runtime` string to minutes inside `enrichTrending`.
 
 ## Tests
 
 Per project testing rules (one behavior per test, role-based locators, no shared state):
 
-- Unstarted TV with `runtime: 45` → chip present with text `45m`.
-- Unstarted movie with `runtime: 125` → chip present with text `~2h`.
-- Unstarted movie with `runtime: 100` → chip present with text `~1.5h`.
-- Unstarted item with `runtime: 0` → chip absent.
-- Ongoing TV (`watched_episodes_count > 0`) → chip absent.
-- Trending card with `variant !== "next"` → chip absent (unstarted is only computed in the `next` variant).
+- Watchlist show with `runtime: 45` → chip present with text `45m`.
+- Watchlist movie with `runtime: 125` → chip present with text `~2h`.
+- Watchlist movie with `runtime: 100` → chip present with text `~1.5h`.
+- Trending item that the user has already watched → chip absent.
 
 ## Non-goals
 
 - No persistence, no settings toggle, no user preference.
-- No runtime display on ongoing, watched, trending, or mood cards.
-- No changes to data fetchers or normalization.
+- No runtime display on already-watched items.
+- No new network requests (we enrich existing ones).

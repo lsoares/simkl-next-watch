@@ -172,6 +172,15 @@ function enrichTrending(item, type) {
     posterUrl: posterThumb(item.poster || item.img || ""),
     url: buildTrendingUrl(item, ids.simkl, type),
     rating: typeof simklRating === "number" ? simklRating : null,
+    runtime: parseRuntime(item.runtime),
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
+}
+
+function parseRuntime(v) {
+  if (typeof v === "number") return v
+  if (!v) return 0
+  const h = Number(/(\d+)\s*h/i.exec(v)?.[1]) || 0
+  const m = Number(/(\d+)\s*m/i.exec(v)?.[1]) || 0
+  return h * 60 + m
 }

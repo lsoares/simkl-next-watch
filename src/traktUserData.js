@@ -236,8 +236,8 @@ export const traktUserData = (() => {
     async getTrending(period) {
       const traktPeriod = period === "today" ? "daily" : period === "week" ? "weekly" : "monthly"
       const [tvData, movieData] = await Promise.all([
-        apiFetch(`/shows/watched/${traktPeriod}?limit=24`).catch(() => []),
-        apiFetch(`/movies/watched/${traktPeriod}?limit=24`).catch(() => []),
+        apiFetch(`/shows/watched/${traktPeriod}?limit=24&extended=full`).catch(() => []),
+        apiFetch(`/movies/watched/${traktPeriod}?limit=24&extended=full`).catch(() => []),
       ])
       return {
         tv: tvData.map((entry) => normalizeTraktShow(entry, { status: undefined, addedAt: null })),

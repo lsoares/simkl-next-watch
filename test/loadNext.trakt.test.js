@@ -137,6 +137,30 @@ test("reopening the app pulls changes made on Trakt's site since last visit", as
   await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
 })
 
+for (const { label, runtime, expected } of [
+  { label: "minutes under an hour", runtime: 45, expected: "45m" },
+  { label: "rounded to nearest half hour", runtime: 100, expected: "~1.5h" },
+  { label: "rounded to a whole hour", runtime: 125, expected: "~2h" },
+]) {
+  test(`watchlist movie shows runtime chip (${label})`, async ({ page }) => {
+    await setupOauthToken(page, "test-token")
+    await setupLastActivities(page)
+    await setupWatchlistShows(page, [])
+    await setupWatchedShows(page, [])
+    await setupDroppedShows(page, [])
+    await setupWatchlistMovies(page, [{
+      listed_at: "2025-01-01T00:00:00Z",
+      movie: { title: "Some Movie", year: 2020, released: "2020-01-01", runtime, ids: { trakt: 1, slug: "some-movie", imdb: "tt0000001" } },
+    }])
+    await setupAuthorize(page)
+    await page.goto("/")
+
+    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+
+    await expect(page.getByRole("article", { name: "Some Movie" }).getByText(expected, { exact: true })).toBeVisible()
+  })
+}
+
 async function signInWithLibrary(page, library) {
   await setupOauthToken(page, "test-token")
   await setupDroppedShows(page, [])
