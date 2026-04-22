@@ -255,13 +255,8 @@
       .ai-toolbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 12px;
         margin-bottom: 12px;
-      }
-      .ai-key-btn {
-        color: var(--muted);
-        font-size: 0.78rem;
       }
 
 
@@ -428,6 +423,14 @@
         #trendingGrid { flex: 1; min-height: 0; height: auto; }
         #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
+
+        /* Mood: bound to viewport and scroll the inner content */
+        #aiView {
+          display: flex;
+          flex-direction: column;
+          height: var(--mobile-content-height);
+        }
+        #aiContent { flex: 1; min-height: 0; overflow-y: auto; }
       }
 
       @media (hover: hover) and (pointer: fine) {
@@ -826,7 +829,7 @@
 
 .more-like-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
-.more-like-dialog #moreLikeResults { padding-right: 0; }
+.more-like-dialog #aiDialogResults { padding-right: 0; }
 
 @media (max-width: 520px) {
   .more-like-dialog {
@@ -840,7 +843,7 @@
     margin: 0;
     padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
   }
-  .more-like-dialog #moreLikeResults {
+  .more-like-dialog #aiDialogResults {
     flex: 1;
     min-height: 0;
     display: grid;
@@ -850,7 +853,7 @@
     overflow-y: auto;
     scroll-snap-type: none;
   }
-  .more-like-dialog #moreLikeResults .row-item {
+  .more-like-dialog #aiDialogResults .row-item {
     width: 100%;
     scroll-snap-align: none;
   }

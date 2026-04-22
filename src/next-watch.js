@@ -224,6 +224,15 @@ function initDockEffect(row) {
     showToast(err?.message || String(err), true)
   }
 
+  function showRetrySignInToast(userData, message) {
+    const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Try again" })
+    link.style.color = "inherit"
+    link.addEventListener("click", (e) => { e.preventDefault(); userData.startOAuth() })
+    const frag = document.createDocumentFragment()
+    frag.append(`${message} `, link)
+    showToast(frag, true)
+  }
+
   // ── Viewport ──
 
   function syncViewportMetrics() {
@@ -547,7 +556,6 @@ function initDockEffect(row) {
     if (!loggedIn) return
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
-    el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
     libraryReady.then(() => {
       const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
       el.aiNoRatingsNotice.hidden = hasRated
@@ -850,8 +858,15 @@ function initDockEffect(row) {
     try {
       const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
       const userData = provider === "trakt" ? traktUserData : simklUserData
-      if (error === "access_denied") throw new Error(`${userData.name} sign-in was cancelled.`)
-      if (error) throw new Error(`${userData.name} sign-in failed: ${error}`)
+      if (error) {
+        if (error !== "access_denied") console.error(`${userData.name} OAuth error: ${error}`)
+        const message = error === "access_denied"
+          ? `${userData.name} sign-in was cancelled.`
+          : `Couldn't finish signing in to ${userData.name}.`
+        showRetrySignInToast(userData, message)
+        showView("next")
+        return
+      }
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw new Error("State mismatch.")
@@ -896,6 +911,7 @@ function initDockEffect(row) {
     el.navHome.hidden = loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
+    el.aiKeyBtn.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
     hydrateNextView()
     syncViewportMetrics()
@@ -910,7 +926,6 @@ function initDockEffect(row) {
     writeStorage(STORAGE.aiProvider, provider)
     writeStorage(AI_KEY_STORAGE[provider], aiKey)
     syncAiSaveLabel()
-    el.aiKeyBtn.hidden = false
     el.aiSettings.close()
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
