@@ -607,25 +607,16 @@ function initDockEffect(row) {
   }
 
   async function getRecommendations(mood) {
-    const mediaType = getAiMediaType()
     const library = await gatherLibrary()
     const provider = readStorage(STORAGE.aiProvider) || "groq"
-    const suggestions = await fetchAiSuggestions({ provider, key: getAiKey(provider), mediaType, library, mood })
-    return sortResolved(await resolveSuggestions(suggestions, mediaType))
+    return await fetchAiSuggestions({ provider, key: getAiKey(provider), mediaType: getAiMediaType(), library, mood })
   }
 
   async function getSimilar(seed) {
-    const mediaType = getAiMediaType()
     const library = await gatherLibrary()
     const provider = readStorage(STORAGE.aiProvider) || "groq"
-    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), mediaType, library, seed })
-    const filtered = suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
-    return sortResolved(await resolveSuggestions(filtered, mediaType))
-  }
-
-  async function resolveSuggestions(suggestions, mediaType) {
-    if (!suggestions.length) return []
-    return await resolveSimkl(suggestions, mediaType)
+    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), mediaType: getAiMediaType(), library, seed })
+    return suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
   }
 
   function attachCatalogLinkResolver(row) {
@@ -648,19 +639,6 @@ function initDockEffect(row) {
     })
   }
 
-  function sortResolved(resolved) {
-    return resolved
-      .filter((i) => i.release_status !== "unreleased")
-      .sort((a, b) => {
-        const ea = libraryLookup(libraryIndex, a)
-        const eb = libraryLookup(libraryIndex, b)
-        const aw = ea?.watched ? 1 : 0
-        const bw = eb?.watched ? 1 : 0
-        if (aw !== bw) return aw - bw
-        if (aw) return new Date(ea?.watchedAt || 0) - new Date(eb?.watchedAt || 0)
-        return (b.rating || 0) - (a.rating || 0)
-      })
-  }
 
   // ── AI Result Rendering ──
 
@@ -735,24 +713,57 @@ function initDockEffect(row) {
     el.aiDialogBack.hidden = dialogStack.length <= 1
     fillPosterSkeletons(el.aiDialogResults)
     try {
-      const items = await entry.fetch()
+      const suggestions = await entry.fetch()
       if (dialogStack.at(-1) !== entry) return
-      if (!items.length) {
+      if (!suggestions.length) {
         setEmpty(el.aiDialogResults, entry.emptyMsg)
         return
       }
+      const mediaType = getAiMediaType()
+      const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
-      items.forEach((item) => {
-        const type = item.type === "movie" ? "movie" : "tv"
-        const card = renderDiscoveryCard(el.aiDialogResults, item, type)
-        card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
+      suggestions.forEach((s) => {
+        const item = { title: s.title, year: s.year, ids: {} }
+        const card = renderDiscoveryCard(el.aiDialogResults, item, placeholderType)
+        card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
       })
-      annotateTrendingBadges(el.aiDialogResults, items, (item) => !libraryLookup(libraryIndex, item))
       attachCatalogLinkResolver(el.aiDialogResults)
+      observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
       closeDialog()
       handleError(err)
     }
+  }
+
+  function observeAiLazyHydration(row, mediaType) {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        observer.unobserve(entry.target)
+        hydrateAiCard(entry.target, mediaType)
+      }
+    }, { root: row, rootMargin: "200px" })
+    row.querySelectorAll("poster-card").forEach((c) => observer.observe(c))
+  }
+
+  async function hydrateAiCard(card, mediaType) {
+    const { title, year } = card.item
+    const resolved = await simklCatalog.searchByTitle(title, year, mediaType)
+    if (!resolved) return
+    if (resolved.release_status === "unreleased") {
+      card.closest(".row-item")?.remove()
+      return
+    }
+    const entry = libraryLookup(libraryIndex, resolved)
+    card.item = resolved
+    card.type = resolved.type
+    card.watched = !!entry?.watched
+    card.watchedAt = entry?.watchedAt || null
+    card.userRating = entry?.userRating ?? null
+    card.inWatchlist = !!entry && !entry.watched
+    card.watching = !!entry?.watching
+    card._rendered = false
+    card._render()
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())

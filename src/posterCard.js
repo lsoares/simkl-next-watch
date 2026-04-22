@@ -49,8 +49,8 @@ class PosterCard extends HTMLElement {
     const showProgress = isNext && type === "tv" && totalEps > 0 && watchedEps > 0
     const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
     const showMarkWatched = isNext
-    const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist
-    const showMoreLike = variant === "discovery" && watched && !isCurrentlyWatching
+    const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist && !watching
+    const showMoreLike = variant === "discovery" && (watched || isCurrentlyWatching)
     const showRating = !isCurrentlyWatching && rating != null && (!isNext || unstarted)
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"

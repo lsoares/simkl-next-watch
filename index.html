@@ -130,35 +130,6 @@
           </div>
           <button class="tiny-link ai-key-btn" id="aiKeyBtn" type="button" hidden>AI key</button>
         </div>
-        <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
-          <form id="aiSettingsForm">
-            <div class="ai-settings-header">
-              <h3>AI key</h3>
-              <button class="dialog-close" id="aiSettingsClose" type="button" aria-label="Close">×</button>
-            </div>
-            <p class="field-help">Add a key for personalized recommendations.</p>
-            <div class="inline-banner">Your key stays in this browser and is sent only to the provider you pick — we never receive or store it.</div>
-            <div class="provider-row">
-              <select id="aiProviderSelect" aria-label="Provider">
-                <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
-                <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
-                <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
-                <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
-                <option value="grok" data-url="https://console.x.ai">Grok</option>
-                <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
-                <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
-              </select>
-              <a id="aiKeyLink" href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Create</a>
-            </div>
-            <div>
-              <input id="aiProviderUsername" name="username" type="text" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px" />
-              <input id="aiKeyInput" name="password" type="password" placeholder="API key" aria-label="API key" autocomplete="current-password" required />
-            </div>
-            <div class="ai-settings-actions">
-              <button class="secondary" id="aiSaveBtn" type="submit">Save AI key</button>
-            </div>
-          </form>
-        </dialog>
         <div class="ai-prompts" id="aiPrompts">
           <button class="ai-prompt-btn" type="button" data-gloss="warm, low-stakes, comforting; nothing bleak or violent">Cozy night in</button>
           <button class="ai-prompt-btn" type="button" data-gloss="tense thrillers or action; sustained suspense">Edge of my seat</button>
@@ -175,6 +146,36 @@
         </div>
       </div>
     </main>
+
+    <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
+      <form id="aiSettingsForm">
+        <div class="ai-settings-header">
+          <h3>AI key</h3>
+          <button class="dialog-close" id="aiSettingsClose" type="button" aria-label="Close">×</button>
+        </div>
+        <p class="field-help">Add a key for personalized recommendations.</p>
+        <div class="inline-banner">Your key stays in this browser and is sent only to the provider you pick — we never receive or store it.</div>
+        <div class="provider-row">
+          <select id="aiProviderSelect" aria-label="Provider">
+            <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
+            <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+            <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
+            <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
+            <option value="grok" data-url="https://console.x.ai">Grok</option>
+            <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
+            <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
+          </select>
+          <a id="aiKeyLink" href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Create</a>
+        </div>
+        <div>
+          <input id="aiProviderUsername" name="username" type="text" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px" />
+          <input id="aiKeyInput" name="password" type="password" placeholder="API key" aria-label="API key" autocomplete="current-password" required />
+        </div>
+        <div class="ai-settings-actions">
+          <button class="secondary" id="aiSaveBtn" type="submit">Save AI key</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="aiDialog" class="more-like-dialog" aria-label="AI picks">
       <header class="more-like-header">
