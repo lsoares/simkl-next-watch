@@ -356,12 +356,7 @@ function initDockEffect(row) {
       card.variant = "discovery"
       card.type = type
       card.item = item
-      const entry = libraryLookup(libraryIndex, item)
-      card.watched = !!entry?.watched
-      card.watchedAt = entry?.watchedAt || null
-      card.userRating = entry?.userRating ?? null
-      card.inWatchlist = !!entry && !entry.watched
-      card.watching = !!entry?.watching
+      card.applyLibraryEntry(libraryLookup(libraryIndex, item))
       card.loggedIn = loggedIn
       card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
       card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
@@ -382,8 +377,7 @@ function initDockEffect(row) {
       const entry = { watched: false, watchedAt: null }
       for (const key of keys) libraryIndex.set(key, entry)
       card.inWatchlist = true
-      card._rendered = false
-      card._render()
+      card.refresh()
       showToast(toastFrag("Added ", item, card.type, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
@@ -427,8 +421,7 @@ function initDockEffect(row) {
     if (progress?.nextEpisode) {
       item.nextEpisode = progress.nextEpisode
       if (progress.title) item.episodeTitle = progress.title
-      card._rendered = false
-      card._render()
+      card.refresh()
     }
   }
 
@@ -542,7 +535,6 @@ function initDockEffect(row) {
       const card = renderDiscoveryCard(el.aiFavoritesRow, item, type)
       card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
     })
-    attachCatalogLinkResolver(el.aiFavoritesRow)
   }
 
   function openAiSettings() {
@@ -604,27 +596,6 @@ function initDockEffect(row) {
     return suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
   }
 
-  function attachCatalogLinkResolver(row) {
-    row.addEventListener("click", async (e) => {
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-      const anchor = e.target.closest("a[href]")
-      if (!anchor || !row.contains(anchor)) return
-      const card = anchor.closest("poster-card")
-      if (!card?.item) return
-      const resolve = mediaRepository().catalogUrl
-      if (!resolve) return
-      e.preventDefault()
-      const win = window.open("", "_blank")
-      try {
-        const target = await resolve(card.item, card.type)
-        if (win) win.location.href = target || anchor.href
-      } catch {
-        if (win) win.location.href = anchor.href
-      }
-    })
-  }
-
-
   // ── AI Result Rendering ──
 
 
@@ -633,12 +604,7 @@ function initDockEffect(row) {
     card.variant = "discovery"
     card.type = type
     card.item = item
-    const entry = libraryLookup(libraryIndex, item)
-    card.watched = !!entry?.watched
-    card.watchedAt = entry?.watchedAt || null
-    card.userRating = entry?.userRating ?? null
-    card.inWatchlist = !!entry && !entry.watched
-    card.watching = !!entry?.watching
+    card.applyLibraryEntry(libraryLookup(libraryIndex, item))
     card.loggedIn = true
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     row.appendChild(frag)
@@ -712,7 +678,6 @@ function initDockEffect(row) {
         const card = renderDiscoveryCard(el.aiDialogResults, item, placeholderType)
         card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
       })
-      attachCatalogLinkResolver(el.aiDialogResults)
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
       closeDialog()
@@ -739,16 +704,10 @@ function initDockEffect(row) {
       card.closest(".row-item")?.remove()
       return
     }
-    const entry = libraryLookup(libraryIndex, resolved)
     card.item = resolved
     card.type = resolved.type
-    card.watched = !!entry?.watched
-    card.watchedAt = entry?.watchedAt || null
-    card.userRating = entry?.userRating ?? null
-    card.inWatchlist = !!entry && !entry.watched
-    card.watching = !!entry?.watching
-    card._rendered = false
-    card._render()
+    card.applyLibraryEntry(libraryLookup(libraryIndex, resolved))
+    card.refresh()
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())

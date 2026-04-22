@@ -110,7 +110,7 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
     Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
   })
   let navigatedTo = null
-  await page.context().route("https://trakt.tv/**", async (route) => {
+  await page.context().route("https://app.trakt.tv/**", async (route) => {
     navigatedTo = route.request().url()
     await route.fulfill({ status: 200, contentType: "text/html", body: "" })
   })
@@ -128,8 +128,8 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
   await inceptionLink.click()
 
   const popup = await popupPromise
-  await popup.waitForURL("https://trakt.tv/movies/tt1375666")
-  expect(navigatedTo).toBe("https://trakt.tv/movies/tt1375666")
+  await popup.waitForURL("https://app.trakt.tv/movies/inception-2010")
+  expect(navigatedTo).toBe("https://app.trakt.tv/movies/inception-2010")
 })
 
 async function signInToTrakt(page, {

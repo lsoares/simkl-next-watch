@@ -18,7 +18,6 @@ export const traktRepository = {
   exchangeOAuthCode,
   browseUrl,
   episodeUrl,
-  catalogUrl,
   getWatchingShows,
   getProgress,
   getWatchlistShows,
@@ -62,12 +61,6 @@ function browseUrl(type) {
 
 function episodeUrl(item, ep) {
   return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
-}
-
-function catalogUrl(item, type) {
-  const base = `https://trakt.tv/${type === "movie" ? "movies" : "shows"}`
-  if (item.ids?.imdb) return `${base}/${encodeURIComponent(item.ids.imdb)}`
-  return item.url || ""
 }
 
 async function getWatchingShows() {

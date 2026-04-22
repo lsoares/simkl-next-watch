@@ -24,6 +24,19 @@ class PosterCard extends HTMLElement {
 
   get cardEl() { return this.querySelector(".item-card"); }
 
+  refresh() {
+    this._rendered = false
+    this._render()
+  }
+
+  applyLibraryEntry(entry) {
+    this.watched = !!entry?.watched
+    this.watchedAt = entry?.watchedAt || null
+    this.userRating = entry?.userRating ?? null
+    this.inWatchlist = !!entry && !entry.watched
+    this.watching = !!entry?.watching
+  }
+
   _emit(name) {
     this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item, type: this.type } }))
   }
@@ -133,8 +146,7 @@ class PosterCard extends HTMLElement {
       : await tmdbRepository.getPosterByTitle(item.title, item.year, type)
     if (!url || this.item !== item) return
     item.posterUrl = url
-    this._rendered = false
-    this._render()
+    this.refresh()
   }
 }
 
