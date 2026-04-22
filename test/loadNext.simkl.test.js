@@ -7,7 +7,7 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
     status: "watching", next_to_watch: "S05E01",
-    watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+    watched_episodes_count: 46, total_episodes_count: 62,
   }])
   await setupSyncMovies(page, [])
   await setupSyncAnime(page, [])
@@ -33,7 +33,7 @@ test("filters out completed shows from the watching list", async ({ page }) => {
     {
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "watching", next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+      watched_episodes_count: 46, total_episodes_count: 62,
     },
     {
       show: { title: "Chernobyl", ids: { simkl_id: 22000 } },

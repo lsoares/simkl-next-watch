@@ -23,7 +23,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
-        watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+        watched_episodes_count: 46, total_episodes_count: 62,
       }],
       movies: [
         {
@@ -72,7 +72,7 @@ test("AI results show the user rating on rated items even when not watched", asy
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
       status: "watching", user_rating: 9, next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+      watched_episodes_count: 46, total_episodes_count: 62,
     }],
     movies: [{
       movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
@@ -105,7 +105,7 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
       status: "watching", user_rating: 9, next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+      watched_episodes_count: 46, total_episodes_count: 62,
     }],
     movies: [{
       movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },

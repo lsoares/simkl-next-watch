@@ -7,7 +7,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
     status: "watching", next_to_watch: "S05E01",
-    watched_episodes_count: 46, total_episodes_count: 62, not_aired_episodes_count: 0,
+    watched_episodes_count: 46, total_episodes_count: 62,
   }])
   await setupSyncMovies(page, [])
   await setupSyncAnime(page, [])
@@ -24,7 +24,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
     status: "watching", next_to_watch: "S05E02",
-    watched_episodes_count: 47, total_episodes_count: 62, not_aired_episodes_count: 0,
+    watched_episodes_count: 47, total_episodes_count: 62,
   }])
 
   await showCard.getByRole("button", { name: /mark as watched/i }).click()

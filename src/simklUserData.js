@@ -6,7 +6,6 @@ export const simklUserData = (() => {
   const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
   const redirectUri = requireGlobal("__REDIRECT_URI__")
   const cache = createCacheClient("next-watch-simkl-cache-v8")
-  const hasAiredEpisodes = (s) => s.total_episodes_count === 0 || s.total_episodes_count > s.not_aired_episodes_count
   let inFlight = null
 
   function startOAuth() {
@@ -108,7 +107,7 @@ export const simklUserData = (() => {
     async getWatchingShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
-        items: shows.filter((s) => s.status === "watching" && s.nextEpisode && hasAiredEpisodes(s)),
+        items: shows.filter((s) => s.status === "watching" && s.nextEpisode),
         fresh,
       }
     },
@@ -116,7 +115,7 @@ export const simklUserData = (() => {
     async getWatchlistShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
-        items: shows.filter((s) => s.status === "plantowatch" && hasAiredEpisodes(s)),
+        items: shows.filter((s) => s.status === "plantowatch"),
         fresh,
       }
     },
@@ -214,8 +213,7 @@ function normalizeItem(raw) {
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
     last_watched_at: raw.last_watched_at || null,
     watched_episodes_count: raw.watched_episodes_count ?? 0,
-    total_episodes_count: raw.total_episodes_count ?? 0,
-    not_aired_episodes_count: raw.not_aired_episodes_count ?? 0,
+    total_episodes_count: Math.max(0, (raw.total_episodes_count ?? 0) - (raw.not_aired_episodes_count ?? 0)),
     user_rating: raw.user_rating ?? null,
     type,
   }
