@@ -91,7 +91,8 @@
   justify-content: flex-end;
   align-items: flex-start;
   gap: 2px;
-  padding: 0 64px 18px 10px;
+  padding: 10px;
+  padding-right: 64px;
   pointer-events: none;
   overflow: hidden;
   background: transparent;
@@ -103,7 +104,6 @@
 .poster-bottom > * { pointer-events: auto; }
 .item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)):not(:has(.more-like-btn)) .poster-bottom {
   padding-right: 10px;
-  padding-bottom: 10px;
 }
 
 .poster-title {
