@@ -124,14 +124,29 @@
   color: inherit;
   text-decoration: none;
 }
-.poster-top-text > .poster-title-meta {
-  display: block;
+.poster-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  pointer-events: none;
+}
+.poster-title-meta {
   font-size: 0.78rem;
   font-weight: 500;
   line-height: 1.1;
   color: rgba(255,255,255,0.62);
   text-shadow: 0 1px 4px rgba(0,0,0,0.85);
   letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.poster-runtime {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.1;
+  color: rgba(255,255,255,0.5);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+  letter-spacing: 0.02em;
   pointer-events: none;
 }
 
@@ -186,24 +201,6 @@
 .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--simkl { background: rgba(30,111,182,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--trakt { background: rgba(237,28,36,0.8); color: #fee2e2; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-
-.poster-runtime {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 3;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
 
 .poster-progress {
   position: absolute;

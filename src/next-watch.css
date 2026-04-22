@@ -661,7 +661,8 @@
         color: var(--text);
         line-height: 1.2;
         letter-spacing: -0.01em;
-        margin-bottom: 16px;
+        margin: 0 auto 16px;
+        max-width: 22ch;
       }
       .app-intro-tagline a {
         text-decoration: none;
@@ -701,7 +702,7 @@
 .app-intro-features {
         list-style: none;
         padding: 0;
-        margin: 40px 0 0;
+        margin: 40px 0 32px;
         display: grid;
         gap: 20px;
         text-align: left;

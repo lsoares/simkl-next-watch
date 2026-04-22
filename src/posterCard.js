@@ -56,9 +56,9 @@ class PosterCard extends HTMLElement {
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
     const watchedRating = !isNext && userRating != null ? userRating : null
     const showWatchlistBadge = !isNext && inWatchlist && !watched
-    const showRuntime = !watched && Number.isFinite(item.runtime) && item.runtime > 0
+    const isUnstartedItem = isNext ? unstarted : (!watched && !watching)
+    const showRuntime = isUnstartedItem && Number.isFinite(item.runtime) && item.runtime > 0
     const runtimeLabel = showRuntime ? formatRuntime(item.runtime) : ""
-    const runtimeAria = showRuntime ? formatRuntimeAria(item.runtime) : ""
 
     const dataAttrs = isNext
       ? `data-simkl-id="${id}" data-type="${type}"`
@@ -75,7 +75,10 @@ class PosterCard extends HTMLElement {
             <div class="poster-title">
               ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}
             </div>
-            ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
+            ${(showYear || showRuntime) ? `<div class="poster-meta-row">
+              ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
+              ${showRuntime ? `<span class="poster-runtime">${escapeHtml(runtimeLabel)}</span>` : ""}
+            </div>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
             ${showRating ? `<span class="poster-status poster-status--${ratingLabel.toLowerCase()}" title="${ratingLabel} rating: ${ratingText}/10" aria-label="${ratingLabel} rating ${ratingText} out of 10">★ ${ratingText}</span>` : ""}
           </div>
@@ -86,7 +89,6 @@ class PosterCard extends HTMLElement {
           ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="${watching ? "Watching" : "On watchlist"}" aria-label="${watching ? "Watching" : "On watchlist"}">${watching ? ICON_EYE : ICON_BOOKMARK}<span>${watching ? "Watching" : "Watchlist"}</span></span>` : ""}
         </div>
-        ${showRuntime ? `<span class="poster-runtime" aria-label="${runtimeAria}">${escapeHtml(runtimeLabel)}</span>` : ""}
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
@@ -125,12 +127,6 @@ function formatRuntime(mins) {
   if (mins < 60) return `${mins}m`
   const halves = Math.round(mins / 30) / 2
   return `~${halves}h`
-}
-
-function formatRuntimeAria(mins) {
-  if (mins < 60) return `Runtime ${mins} minutes`
-  const halves = Math.round(mins / 30) / 2
-  return `Runtime about ${halves} hour${halves === 1 ? "" : "s"}`
 }
 
 const relativeTimeUnits = [["year", 31536e6], ["month", 2592e6], ["week", 6048e5], ["day", 864e5], ["hour", 36e5], ["minute", 6e4], ["second", 1e3]]
