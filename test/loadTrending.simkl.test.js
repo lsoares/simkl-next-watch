@@ -41,7 +41,7 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
     {
       show: { title: "Severance", ids: { simkl_id: 22222 } },
       status: "watching",
-      watched_episodes_count: 3, total_episodes_count: 9, not_aired_episodes_count: 0,
+      watched_episodes_count: 3, total_episodes_count: 9,
     },
   ])
   await setupSyncMovies(page, [])

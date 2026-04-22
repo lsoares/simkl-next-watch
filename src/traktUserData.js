@@ -280,7 +280,6 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     last_watched_at: entry.last_watched_at || null,
     watched_episodes_count: watched,
     total_episodes_count: show.aired_episodes || 0,
-    not_aired_episodes_count: 0,
     type: "tv",
   }
 }
@@ -306,7 +305,6 @@ function normalizeTraktMovie(entry, { status = "plantowatch" } = {}) {
     last_watched_at: entry.last_watched_at || null,
     watched_episodes_count: 0,
     total_episodes_count: 0,
-    not_aired_episodes_count: 0,
     type: "movie",
   }
 }

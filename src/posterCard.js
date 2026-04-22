@@ -43,6 +43,10 @@ class PosterCard extends HTMLElement {
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : ""
 
     const showYear = isNext ? unstarted && year : !watched && year
+    const totalEps = item.total_episodes_count || 0
+    const watchedEps = item.watched_episodes_count || 0
+    const showProgress = isNext && type === "tv" && totalEps > 0 && watchedEps > 0
+    const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
     const showMarkWatched = isNext
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist
     const showRating = !watched && rating != null && (!isNext || unstarted)
@@ -79,6 +83,7 @@ class PosterCard extends HTMLElement {
           ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="${watching ? "Watching" : "On watchlist"}" aria-label="${watching ? "Watching" : "On watchlist"}">${watching ? ICON_EYE : ICON_BOOKMARK}<span>${watching ? "Watching" : "Watchlist"}</span></span>` : ""}
         </div>
+        ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
         ${showAddWatchlist ? `<button class="add-watchlist-btn" title="Add to watchlist" aria-label="Add to watchlist" data-title="${escapeHtml(title)}">+</button>` : ""}
       </article>
@@ -102,9 +107,8 @@ export function isUnstarted(item, type) {
 
 export function availableEpisodesLeft(show) {
   const total = show.total_episodes_count || 0
-  const notAired = show.not_aired_episodes_count || 0
   const watched = show.watched_episodes_count || 0
-  return total > 0 ? Math.max(0, total - notAired - watched) : Infinity
+  return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
 // ── Internal helpers ──
