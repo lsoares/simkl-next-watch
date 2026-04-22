@@ -826,7 +826,7 @@
 
 .more-like-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
-.more-like-dialog #moreLikeResults { padding-right: 0; }
+.more-like-dialog #aiDialogResults { padding-right: 0; }
 
 @media (max-width: 520px) {
   .more-like-dialog {
@@ -840,7 +840,7 @@
     margin: 0;
     padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
   }
-  .more-like-dialog #moreLikeResults {
+  .more-like-dialog #aiDialogResults {
     flex: 1;
     min-height: 0;
     display: grid;
@@ -850,7 +850,7 @@
     overflow-y: auto;
     scroll-snap-type: none;
   }
-  .more-like-dialog #moreLikeResults .row-item {
+  .more-like-dialog #aiDialogResults .row-item {
     width: 100%;
     scroll-snap-align: none;
   }
