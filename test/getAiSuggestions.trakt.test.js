@@ -1,6 +1,6 @@
 import { test, expect } from "./test.js"
 import { setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
-import { signInToTrakt } from "./signIn.js"
+import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchById } from "./clients/trakt.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 
 test("sends Trakt user ratings to the AI alongside library titles", async ({ page }) => {
@@ -99,3 +99,31 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
   await expect(page.locator("#aiResults").getByRole("article", { name: "Inception" })).toHaveClass(/trending-watchlisted/)
   await expect(page.locator("#aiResults").getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
 })
+
+async function signInToTrakt(page, {
+  watchedShows = [],
+  watchedMovies = [],
+  watchlistShows = [],
+  watchlistMovies = [],
+  droppedShows = [],
+  ratingsShows = [],
+  ratingsMovies = [],
+  progressByShow = {},
+  simklSearch = {},
+} = {}) {
+  await setupOauthToken(page, "test-token")
+  await setupLastActivities(page)
+  await setupWatchedShows(page, watchedShows)
+  if (watchedMovies.length) await setupWatchedMovies(page, watchedMovies)
+  await setupWatchlistShows(page, watchlistShows)
+  await setupWatchlistMovies(page, watchlistMovies)
+  await setupDroppedShows(page, droppedShows)
+  await setupRatingsShows(page, ratingsShows)
+  await setupRatingsMovies(page, ratingsMovies)
+  for (const [slug, data] of Object.entries(progressByShow)) await setupProgress(page, slug, data)
+  for (const [imdb, result] of Object.entries(simklSearch)) await setupSearchById(page, imdb, result)
+  await setupAuthorize(page)
+  await page.goto("/")
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
+  await expect(page.getByRole("article", { name: watchedShows[0].show.title })).toBeVisible()
+}

@@ -1,6 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
-import { signInToSimkl } from "./signIn.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 import { setupOpenaiChat } from "./clients/openai.js"
 import { setupClaudeChat } from "./clients/claude.js"
@@ -159,3 +158,20 @@ test("AI view shows sign-in CTAs and keeps mood prompts as a teaser when logged 
 
   await expect(page.getByRole("status")).toContainText(/sign in/i)
 })
+
+async function signInToSimkl(page, { shows = [], movies = [], anime = [] } = {}) {
+  await setupOauthToken(page, "test-token")
+  await setupSyncActivities(page)
+  await setupSyncShows(page, shows)
+  await setupSyncMovies(page, movies)
+  await setupSyncAnime(page, anime)
+  for (const entry of shows) {
+    if (entry.status === "watching" && entry.show?.ids?.simkl_id) {
+      await setupTvEpisodes(page, String(entry.show.ids.simkl_id))
+    }
+  }
+  await setupAuthorize(page)
+  await page.goto("/")
+  await page.getByRole("button", { name: /sign in with simkl/i }).click()
+  await expect(page.getByRole("article", { name: shows[0].show.title })).toBeVisible()
+}
