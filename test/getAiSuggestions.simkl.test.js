@@ -118,7 +118,7 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
   await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
 })
 
-test("adds an unwatched similar pick to the watchlist from the 'More like this' row", async ({ page }) => {
+test("adds an unwatched similar pick to the watchlist from the 'More like this' dialog", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
@@ -152,7 +152,8 @@ test("adds an unwatched similar pick to the watchlist from the 'More like this' 
   await expect(inceptionCard).toBeVisible()
   await setupGeminiSimilar(page, '[{"title":"The Prestige","year":2006}]', "apiAiKey", "Inception (2010)")
   await inceptionCard.getByRole("button", { name: /more like this/i }).click()
-  const prestigeCard = page.locator("#aiSimilarResults").getByRole("article", { name: "The Prestige" })
+  const dialog = page.getByRole("dialog", { name: /more like this/i })
+  const prestigeCard = dialog.getByRole("article", { name: "The Prestige" })
   await expect(prestigeCard).toBeVisible()
 
   await prestigeCard.getByRole("button", { name: /add to watchlist/i }).click()

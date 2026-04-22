@@ -177,6 +177,15 @@
       </div>
     </main>
 
+    <dialog id="moreLikeDialog" class="more-like-dialog" aria-label="More like this">
+      <header class="more-like-header">
+        <button class="more-like-back" id="moreLikeBack" type="button" aria-label="Back" hidden>←</button>
+        <h3 class="more-like-title" id="moreLikeTitle"></h3>
+        <button class="dialog-close" id="moreLikeClose" type="button" aria-label="Close">×</button>
+      </header>
+      <posters-row id="moreLikeResults"></posters-row>
+    </dialog>
+
     <div class="spinner" id="loadingSpinner" role="progressbar" aria-label="Loading" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
 

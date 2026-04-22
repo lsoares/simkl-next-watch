@@ -765,40 +765,59 @@
   background: rgba(34, 197, 94, 0.15);
 }
 
-.ai-similar-section {
-  margin-top: 20px;
+.more-like-dialog {
+  background: #1e2d3d;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 680px;
+  width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
 }
 
-.ai-similar-header {
+.more-like-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+@media (max-width: 520px) {
+  .more-like-dialog {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+    padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+.more-like-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.ai-similar-title {
+.more-like-back {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  min-height: unset;
+}
+
+.more-like-title {
+  flex: 1;
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--muted);
 }
 
-.ai-similar-title em {
+.more-like-title em {
   font-style: normal;
-  color: var(--text);
-}
-
-.ai-similar-close {
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 8px;
-}
-
-.ai-similar-close:hover {
   color: var(--text);
 }
