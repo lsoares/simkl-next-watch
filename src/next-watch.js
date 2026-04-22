@@ -351,19 +351,8 @@ function initDockEffect(row) {
   // ── Trending ──
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
-    const loggedIn = isLoggedIn()
     containerEl.replaceChildren()
-    items.forEach((item) => {
-      const { frag, card } = makeRowItem()
-      card.variant = "discovery"
-      card.type = type
-      card.item = item
-      card.applyLibraryEntry(libraryLookup(libraryIndex, item))
-      card.loggedIn = loggedIn
-      card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
-      card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
-      containerEl.appendChild(frag)
-    })
+    items.forEach((item) => renderDiscoveryCard(containerEl, item, type))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -619,7 +608,7 @@ function initDockEffect(row) {
     card.type = type
     card.item = item
     card.applyLibraryEntry(libraryLookup(libraryIndex, item))
-    card.loggedIn = true
+    card.loggedIn = isLoggedIn()
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
     row.appendChild(frag)
@@ -689,9 +678,7 @@ function initDockEffect(row) {
       const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        const item = { title: s.title, year: s.year, ids: {} }
-        const card = renderDiscoveryCard(el.aiDialogResults, item, placeholderType)
-        card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
+        renderDiscoveryCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {} }, placeholderType)
       })
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
