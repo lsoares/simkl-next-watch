@@ -104,11 +104,7 @@
         background: var(--accent);
         opacity: 0.6;
       }
-      .top-bar-divider {
-        width: 1px;
-        height: 14px;
-        background: rgba(148, 163, 184, 0.3);
-      }
+      .top-bar #coffeeLink { margin-left: 32px; }
 
       label {
         display: block;

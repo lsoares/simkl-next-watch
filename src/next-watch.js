@@ -168,7 +168,7 @@ function initDockEffect(row) {
     rowEl.appendChild(frag)
   }
   const el = {
-    topBar: $("topBar"), topBarDivider: $("topBarDivider"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
+    topBar: $("topBar"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
     logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
@@ -760,7 +760,6 @@ function initDockEffect(row) {
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.hideTrendingWatched.closest("label").hidden = !loggedIn
     el.navHome.hidden = loggedIn
-    el.topBarDivider.hidden = !loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`

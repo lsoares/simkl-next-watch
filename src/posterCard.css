@@ -215,7 +215,7 @@
 .item-card:hover .poster-progress { opacity: 1; }
 .poster-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 55%, white 45%);
   transition: width 0.3s ease;
 }
 

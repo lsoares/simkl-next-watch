@@ -8,7 +8,7 @@ test("top-bar shows nav links and hides account controls when logged out", async
   await expect(page.getByRole("link", { name: "trending" })).toBeVisible()
   await expect(page.getByRole("link", { name: "mood" })).toBeVisible()
   await expect(page.getByRole("button", { name: /logout/i })).toBeHidden()
-  await expect(page.getByRole("link", { name: "☕" })).toBeHidden()
+  await expect(page.getByRole("link", { name: "Support" })).toBeHidden()
 })
 
 test("next view shows a sign-in CTA when logged out", async ({ page }) => {
