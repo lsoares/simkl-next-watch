@@ -136,16 +136,6 @@
         color: #86efac;
       }
 
-      small.field-disclaimer {
-        display: block;
-        margin-top: 6px;
-        margin-bottom: 18px;
-        font-size: 0.68rem;
-        color: var(--muted);
-        opacity: 0.75;
-        line-height: 1.4;
-      }
-
       button {
         display: inline-flex;
         align-items: center;
@@ -719,7 +709,7 @@
 
 /* ── AI view ── */
 
-.ai-no-ratings-banner {
+.inline-banner {
   margin: 0 0 16px;
   padding: 10px 14px;
   border-radius: 8px;
