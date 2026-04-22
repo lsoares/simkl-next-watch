@@ -66,3 +66,30 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
   await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
   await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
 })
+
+for (const { period, title } of [
+  { period: "week", title: "Severance" },
+  { period: "month", title: "House of the Dragon" },
+]) {
+  test(`the ${period} tab shows that period's items`, async ({ page }) => {
+    await setupOauthToken(page, "test-token")
+    await setupSyncActivities(page)
+    await setupSyncShows(page, [])
+    await setupSyncMovies(page, [])
+    await setupSyncAnime(page, [])
+    await setupTrendingTv(page, {
+      today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }],
+      week: [{ title: "Severance", ids: { simkl_id: 99010 } }],
+      month: [{ title: "House of the Dragon", ids: { simkl_id: 99020 } }],
+    })
+    await setupTrendingMovies(page, {})
+    await setupAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await page.getByRole("link", { name: /trending/i }).click()
+
+    await page.getByRole("button", { name: new RegExp(period, "i") }).click()
+
+    await expect(page.getByRole("article", { name: title })).toBeVisible()
+  })
+}

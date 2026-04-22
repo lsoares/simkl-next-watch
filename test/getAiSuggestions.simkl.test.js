@@ -131,22 +131,6 @@ test("AI view shows a generic-suggestions notice when the library has no rated i
   await expect(page.getByText(/rate some titles for sharper.*watched history/i)).toBeVisible()
 })
 
-test("AI view shows sign-in CTAs when logged out", async ({ page }) => {
-  await page.goto("/#mood")
-
-  const aiView = page.locator("#aiView")
-  await expect(aiView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
-  await expect(aiView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
-})
-
-test("clicking an AI mood while logged out prompts to sign in", async ({ page }) => {
-  await page.goto("/#mood")
-
-  await page.getByRole("button", { name: /cozy night in/i }).click()
-
-  await expect(page.getByRole("status")).toContainText(/sign in/i)
-})
-
 async function signInToSimkl(page, { shows = [], movies = [], anime = [] } = {}) {
   await setupOauthToken(page, "test-token")
   await setupSyncActivities(page)

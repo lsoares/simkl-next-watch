@@ -172,10 +172,10 @@ function initDockEffect(row) {
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
     logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
-    trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingPeriodTabs: $("trendingPeriodTabs"),
+    trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiSetup: $("aiSetup"), aiToolbar: $("aiToolbar"),
+    aiView: $("aiView"), aiToolbar: $("aiToolbar"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
@@ -496,11 +496,6 @@ function initDockEffect(row) {
     })
   }
 
-  function hydrateTrendingView() {
-    el.trendingSetup.hidden = isLoggedIn()
-    loadTrending()
-  }
-
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     writeStorage(STORAGE.trendingPeriod, period)
@@ -530,13 +525,6 @@ function initDockEffect(row) {
   // ── AI ──
 
   function hydrateAiView() {
-    const loggedIn = isLoggedIn()
-    el.aiSetup.hidden = loggedIn
-    if (!loggedIn) {
-      el.aiKeyBtn.hidden = true
-      el.aiNoRatingsNotice.hidden = true
-      return
-    }
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
     el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
@@ -691,7 +679,7 @@ function initDockEffect(row) {
     currentView = name
     const views = {
       next: { view: el.nextView, nav: el.navNext, hydrate: hydrateNextView },
-      trending: { view: el.trendingView, nav: el.navTrending, hydrate: hydrateTrendingView },
+      trending: { view: el.trendingView, nav: el.navTrending, hydrate: loadTrending },
       mood: { view: el.aiView, nav: el.navAi, hydrate: hydrateAiView },
     }
     for (const [key, { view, nav }] of Object.entries(views)) {
@@ -699,7 +687,6 @@ function initDockEffect(row) {
       nav.classList.toggle("active-nav", key === name)
     }
     views[name].hydrate()
-    const hash = name === "next" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
 
@@ -757,6 +744,9 @@ function initDockEffect(row) {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.hideTrendingWatched.closest("label").hidden = !loggedIn
+    el.navNext.hidden = !loggedIn
+    el.navTrending.hidden = !loggedIn
+    el.navAi.hidden = !loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
@@ -834,7 +824,7 @@ function initDockEffect(row) {
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  showView(hash === "trending" || hash === "mood" ? hash : "next")
+  showView(isLoggedIn() && (hash === "trending" || hash === "mood") ? hash : "next")
   if (isLoggedIn()) loadSuggestions()
   else resolveLibraryReady()
 })()
