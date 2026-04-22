@@ -158,6 +158,10 @@ function initDockEffect(row) {
     frag.firstElementChild.appendChild(card)
     return { frag, card }
   }
+  const fillPosterSkeletons = (row, count = 10) => {
+    row.replaceChildren()
+    for (let i = 0; i < count; i++) row.appendChild(tpl("tpl-poster-skeleton"))
+  }
   const appendAddMoreTile = (rowEl, { href, icon, label }) => {
     const frag = tpl("tpl-add-more")
     const anchor = frag.querySelector(".add-more-card")
@@ -722,7 +726,7 @@ function initDockEffect(row) {
     em.textContent = `${seed.title}${seed.year ? ` (${seed.year})` : ""}`
     el.moreLikeTitle.appendChild(em)
     el.moreLikeBack.hidden = similarStack.length <= 1
-    el.moreLikeResults.replaceChildren(tpl("tpl-spinner"))
+    fillPosterSkeletons(el.moreLikeResults)
     try {
       const items = await getSimilar(seed)
       if (similarStack.at(-1) !== seed) return

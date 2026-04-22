@@ -765,6 +765,20 @@
   background: rgba(34, 197, 94, 0.15);
 }
 
+.poster-skeleton {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1e2d3d 0%, #2a3c51 50%, #1e2d3d 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .more-like-dialog {
   background: #1e2d3d;
   color: var(--text);
