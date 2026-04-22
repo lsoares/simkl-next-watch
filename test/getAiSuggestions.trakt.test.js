@@ -99,7 +99,7 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
   await expect(page.locator("#aiResults").getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
 })
 
-test("AI hits link to Trakt pages for Trakt users", async ({ page }) => {
+test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
   await signInToTrakt(page, {
     watchedShows: [{
       last_watched_at: new Date().toISOString(),
@@ -119,16 +119,27 @@ test("AI hits link to Trakt pages for Trakt users", async ({ page }) => {
     Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
   })
   await setupMovieDetail(page, 22222, { ids: { simkl: 22222, imdb: "tt1375666" } })
+  let navigatedTo = null
+  await page.context().route("https://trakt.tv/**", async (route) => {
+    navigatedTo = route.request().url()
+    await route.fulfill({ status: 200, contentType: "text/html", body: "" })
+  })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
   await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
   await page.getByRole("button", { name: /save.*key/i }).click()
   await expect(page.getByRole("status")).toContainText(/key saved/i)
-
   await page.getByRole("button", { name: /make me laugh/i }).click()
+  const inceptionLink = page.locator("#aiResults").getByRole("link", { name: "Inception" })
+  await expect(inceptionLink).toBeVisible()
+  const popupPromise = page.waitForEvent("popup")
 
-  await expect(page.locator("#aiResults").getByRole("link", { name: "Inception" })).toHaveAttribute("href", "https://trakt.tv/movies/tt1375666")
+  await inceptionLink.click()
+
+  const popup = await popupPromise
+  await popup.waitForURL("https://trakt.tv/movies/tt1375666")
+  expect(navigatedTo).toBe("https://trakt.tv/movies/tt1375666")
 })
 
 async function signInToTrakt(page, {

@@ -618,10 +618,27 @@ function initDockEffect(row) {
 
   async function resolveSuggestions(suggestions, mediaType) {
     if (!suggestions.length) return []
-    const resolved = await resolveSimkl(suggestions, mediaType)
-    const catalogUrl = currentUserData().catalogUrl
-    const urls = await Promise.all(resolved.map((i) => catalogUrl(i, i.type)))
-    return resolved.map((i, idx) => ({ ...i, url: urls[idx] || i.url }))
+    return await resolveSimkl(suggestions, mediaType)
+  }
+
+  function attachCatalogLinkResolver(row) {
+    row.addEventListener("click", async (e) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const anchor = e.target.closest("a[href]")
+      if (!anchor || !row.contains(anchor)) return
+      const card = anchor.closest("poster-card")
+      if (!card?.item) return
+      const resolve = currentUserData().catalogUrl
+      if (!resolve) return
+      e.preventDefault()
+      const win = window.open("", "_blank")
+      try {
+        const target = await resolve(card.item, card.type)
+        if (win) win.location.href = target || anchor.href
+      } catch {
+        if (win) win.location.href = anchor.href
+      }
+    })
   }
 
   function sortResolved(resolved) {
@@ -655,6 +672,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:more-like-this", () => toggleSimilar(card, item))
     })
     annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryLookup(libraryIndex, item))
+    attachCatalogLinkResolver(el.aiResults)
   }
 
   function renderDiscoveryCard(row, item, type) {
@@ -712,6 +730,7 @@ function initDockEffect(row) {
         renderDiscoveryCard(row, item, type)
       })
       annotateTrendingBadges(row, items, (item) => !libraryLookup(libraryIndex, item))
+      attachCatalogLinkResolver(row)
       section.scrollIntoView({ behavior: "smooth", block: "nearest" })
     } catch (err) {
       if (activeSimilarSeedId === seedKey) clearSimilar()

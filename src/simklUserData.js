@@ -104,10 +104,6 @@ export const simklUserData = (() => {
       return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
     },
 
-    catalogUrl(item) {
-      return item.url || ""
-    },
-
     async getWatchingShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
