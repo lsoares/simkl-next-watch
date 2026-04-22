@@ -1,6 +1,7 @@
 import { test, expect } from "./test.js"
 import { setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
 import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupMovieDetail } from "./clients/simkl.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 
 test("sends Trakt user ratings to the AI alongside library titles", async ({ page }) => {
@@ -115,8 +116,9 @@ test("AI hits link to Trakt pages for Trakt users", async ({ page }) => {
   )
   await setupSearchTv(page)
   await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222, imdb: "tt1375666" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
+    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
   })
+  await setupMovieDetail(page, 22222, { ids: { simkl: 22222, imdb: "tt1375666" } })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")

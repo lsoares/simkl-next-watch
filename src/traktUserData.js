@@ -1,4 +1,5 @@
 import { createCacheClient } from "./cacheClient.js"
+import { simklCatalog } from "./simklCatalog.js"
 
 export const traktUserData = (() => {
   const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
@@ -126,9 +127,11 @@ export const traktUserData = (() => {
       return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
     },
 
-    catalogUrl(item, type) {
-      const imdb = item.ids?.imdb
-      if (imdb) return `https://trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(imdb)}`
+    async catalogUrl(item, type) {
+      const base = `https://trakt.tv/${type === "movie" ? "movies" : "shows"}`
+      if (item.ids?.imdb) return `${base}/${encodeURIComponent(item.ids.imdb)}`
+      const ext = item.ids?.simkl ? await simklCatalog.getExternalIds(item.ids.simkl, type) : null
+      if (ext?.imdb) return `${base}/${encodeURIComponent(ext.imdb)}`
       return item.url || ""
     },
 

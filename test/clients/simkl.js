@@ -144,6 +144,24 @@ export function setupMarkWatchedShow(page, expectedShows) {
   })
 }
 
+export function setupMovieDetail(page, simklId, response) {
+  return page.route(`https://api.simkl.com/movies/${simklId}?**`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(new URL(route.request().url()).searchParams.get("extended")).toBe("full")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) })
+  })
+}
+
+export function setupShowDetail(page, simklId, response) {
+  return page.route(`https://api.simkl.com/tv/${simklId}?**`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(new URL(route.request().url()).searchParams.get("extended")).toBe("full")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) })
+  })
+}
+
 export function setupAddToWatchlist(page, expectedPayload) {
   return page.route("**/sync/add-to-list", async (route) => {
     expect(route.request().method()).toBe("POST")

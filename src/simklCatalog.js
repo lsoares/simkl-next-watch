@@ -1,8 +1,11 @@
 const IMDB_LOOKUP_CACHE_KEY = "next-watch-simkl-imdb-lookup-v0"
 const EPISODE_TITLE_CACHE_KEY = "next-watch-simkl-episode-title-v0"
+const EXTERNAL_IDS_CACHE_KEY = "next-watch-simkl-external-ids-v0"
 const imdbLookupInFlight = new Map()
 const imdbLookupCache = loadJsonMap(IMDB_LOOKUP_CACHE_KEY)
 const episodeTitleCache = loadJsonMap(EPISODE_TITLE_CACHE_KEY)
+const externalIdsCache = loadJsonMap(EXTERNAL_IDS_CACHE_KEY)
+const externalIdsInFlight = new Map()
 const episodesInFlight = new Map()
 
 function loadJsonMap(key) {
@@ -46,6 +49,33 @@ export const simklCatalog = {
     } catch {
       return null
     }
+  },
+
+  async getExternalIds(simklId, type) {
+    if (!simklId) return null
+    const key = `${type === "movie" ? "movie" : "tv"}:${simklId}`
+    if (externalIdsCache[key] !== undefined) return externalIdsCache[key]
+    if (externalIdsInFlight.has(key)) return externalIdsInFlight.get(key)
+    const p = (async () => {
+      try {
+        const path = type === "movie" ? "/movies" : "/tv"
+        const r = await apiFetch(`${path}/${encodeURIComponent(simklId)}?extended=full`)
+        const result = r?.ids ? {
+          imdb: r.ids.imdb || "",
+          tmdb: r.ids.tmdb || "",
+          slug: r.ids.slug || "",
+        } : null
+        externalIdsCache[key] = result
+        persistJsonMap(EXTERNAL_IDS_CACHE_KEY, externalIdsCache)
+        return result
+      } catch {
+        return null
+      } finally {
+        externalIdsInFlight.delete(key)
+      }
+    })()
+    externalIdsInFlight.set(key, p)
+    return p
   },
 
   async lookupByImdb(imdbId) {
