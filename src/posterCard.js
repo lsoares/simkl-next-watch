@@ -42,20 +42,22 @@ class PosterCard extends HTMLElement {
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : ""
 
-    const showYear = isNext ? unstarted && year : !watched && year
+    const isCurrentlyWatching = !isNext && watching
+    const showYear = isNext ? unstarted && year : !isCurrentlyWatching && year
     const totalEps = item.total_episodes_count || 0
     const watchedEps = item.watched_episodes_count || 0
     const showProgress = isNext && type === "tv" && totalEps > 0 && watchedEps > 0
     const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
     const showMarkWatched = isNext
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist
-    const showRating = !watched && rating != null && (!isNext || unstarted)
+    const showRating = !isCurrentlyWatching && rating != null && (!isNext || unstarted)
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
-    const showWatchedBadge = !isNext && watched
+    const showWatchedBadge = !isNext && watched && !isCurrentlyWatching
     const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
-    const watchedRating = !isNext && userRating != null ? userRating : null
-    const showWatchlistBadge = !isNext && inWatchlist && !watched
+    const watchedRating = !isNext && !isCurrentlyWatching && userRating != null ? userRating : null
+    const showWatchingBadge = isCurrentlyWatching
+    const showWatchlistBadge = !isNext && inWatchlist && !watched && !isCurrentlyWatching
     const isUnstartedItem = isNext ? unstarted : (!watched && !watching)
     const showRuntime = isUnstartedItem && Number.isFinite(item.runtime) && item.runtime > 0
     const runtimeLabel = showRuntime ? formatRuntime(item.runtime) : ""
@@ -68,7 +70,7 @@ class PosterCard extends HTMLElement {
     const posterTooltip = isNext && !unstarted && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${!watched && inWatchlist && !isNext ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
+      <article class="item-card${watched && !isCurrentlyWatching ? " trending-watched" : ""}${(isCurrentlyWatching || (!watched && inWatchlist && !isNext)) ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
         ${posterHref ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true"><span class="poster-placeholder-title">${escapeHtml(title)}</span>${year ? `<span class="poster-placeholder-year">${escapeHtml(String(year))}</span>` : ""}</div>`}</a>` : ""}
         <div class="poster-top">
           <div class="poster-top-text">
@@ -86,8 +88,9 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
+          ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}<span>Watching</span></span>` : ""}
           ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
-          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="${watching ? "Watching" : "On watchlist"}" aria-label="${watching ? "Watching" : "On watchlist"}">${watching ? ICON_EYE : ICON_BOOKMARK}<span>${watching ? "Watching" : "Watchlist"}</span></span>` : ""}
+          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
