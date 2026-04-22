@@ -1,5 +1,5 @@
 const imageBase = "https://image.tmdb.org/t/p/w342"
-const cacheStorageKey = "next-watch-tmdb-poster-v0"
+const cacheStorageKey = "next-watch-tmdb-poster-v1"
 const cache = loadJsonMap(cacheStorageKey)
 const inFlight = new Map()
 
