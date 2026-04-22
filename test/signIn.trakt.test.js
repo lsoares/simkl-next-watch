@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorizeStub } from "./clients/trakt.js"
+import { setupAuthorizeStub, setupAuthorizeDeny } from "./clients/trakt.js"
 
 test("shows the intro with Sign in with Trakt button", async ({ page }) => {
   await page.goto("/")
@@ -15,4 +15,13 @@ test("Sign in with Trakt redirects to Trakt OAuth", async ({ page }) => {
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   await expect.poll(authorizeHits).toBe(1)
+})
+
+test("Denying Trakt OAuth shows a friendly cancellation toast", async ({ page }) => {
+  await setupAuthorizeDeny(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: /sign in with trakt/i }).click()
+
+  await expect(page.getByRole("status")).toContainText(/trakt sign-in was cancelled/i)
 })

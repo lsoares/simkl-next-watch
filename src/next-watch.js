@@ -168,14 +168,15 @@ function initDockEffect(row) {
     rowEl.appendChild(frag)
   }
   const el = {
-    topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
+    topBar: $("topBar"), topBarDivider: $("topBarDivider"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
+    homepageView: $("homepageView"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
     logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
-    trendingView: $("trendingView"), trendingPeriodTabs: $("trendingPeriodTabs"),
+    trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiToolbar: $("aiToolbar"),
+    aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"), aiToolbar: $("aiToolbar"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
@@ -496,6 +497,13 @@ function initDockEffect(row) {
     })
   }
 
+  function hydrateTrendingView() {
+    const loggedIn = isLoggedIn()
+    el.trendingSetup.hidden = loggedIn
+    el.trendingContent.hidden = !loggedIn
+    if (loggedIn) loadTrending()
+  }
+
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     writeStorage(STORAGE.trendingPeriod, period)
@@ -525,6 +533,10 @@ function initDockEffect(row) {
   // ── AI ──
 
   function hydrateAiView() {
+    const loggedIn = isLoggedIn()
+    el.aiSetup.hidden = loggedIn
+    el.aiContent.hidden = !loggedIn
+    if (!loggedIn) return
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
     el.aiKeyBtn.hidden = !getAiKey(el.aiProviderSelect.value)
@@ -678,15 +690,17 @@ function initDockEffect(row) {
   function showView(name) {
     currentView = name
     const views = {
+      homepage: { view: el.homepageView, nav: null, hydrate: () => {} },
       next: { view: el.nextView, nav: el.navNext, hydrate: hydrateNextView },
-      trending: { view: el.trendingView, nav: el.navTrending, hydrate: loadTrending },
+      trending: { view: el.trendingView, nav: el.navTrending, hydrate: hydrateTrendingView },
       mood: { view: el.aiView, nav: el.navAi, hydrate: hydrateAiView },
     }
     for (const [key, { view, nav }] of Object.entries(views)) {
       view.hidden = key !== name
-      nav.classList.toggle("active-nav", key === name)
+      if (nav) nav.classList.toggle("active-nav", key === name)
     }
     views[name].hydrate()
+    const hash = name === "homepage" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
 
@@ -700,12 +714,13 @@ function initDockEffect(row) {
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`)
     el.spinner.hidden = false
     try {
-      if (error) throw new Error(error)
+      const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
+      const userData = provider === "trakt" ? traktUserData : simklUserData
+      if (error === "access_denied") throw new Error(`${userData.name} sign-in was cancelled.`)
+      if (error) throw new Error(`${userData.name} sign-in failed: ${error}`)
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw new Error("State mismatch.")
-      const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
-      const userData = provider === "trakt" ? traktUserData : simklUserData
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
@@ -727,7 +742,7 @@ function initDockEffect(row) {
 
   function logout() {
     clearAllStorage()
-    location.reload()
+    location.href = location.pathname
   }
 
   // ── UI hydration ──
@@ -744,9 +759,8 @@ function initDockEffect(row) {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.hideTrendingWatched.closest("label").hidden = !loggedIn
-    el.navNext.hidden = !loggedIn
-    el.navTrending.hidden = !loggedIn
-    el.navAi.hidden = !loggedIn
+    el.navHome.hidden = loggedIn
+    el.topBarDivider.hidden = !loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
@@ -778,6 +792,7 @@ function initDockEffect(row) {
       if (btn?.dataset.provider === "trakt") traktUserData.startOAuth()
     })
   }
+  el.navHome.addEventListener("click", (e) => { e.preventDefault(); showView("homepage"); })
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
@@ -800,7 +815,7 @@ function initDockEffect(row) {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault()
     deferredInstallPrompt = e
-    if (!window.matchMedia("(display-mode: standalone)").matches) el.installBtn.classList.remove("hidden")
+    if (isLoggedIn() && !window.matchMedia("(display-mode: standalone)").matches) el.installBtn.classList.remove("hidden")
   })
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null
@@ -827,7 +842,7 @@ function initDockEffect(row) {
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  showView(isLoggedIn() && (hash === "trending" || hash === "mood") ? hash : "next")
+  showView(["next", "trending", "mood"].includes(hash) ? hash : isLoggedIn() ? "next" : "homepage")
   if (isLoggedIn()) loadSuggestions()
   else resolveLibraryReady()
 })()

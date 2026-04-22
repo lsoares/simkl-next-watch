@@ -607,6 +607,39 @@
         border-radius: 4px;
         font-size: 0.78rem;
       }
+      .view-teaser {
+        position: relative;
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+      }
+      .view-teaser > *:not(.teaser-bg) { position: relative; z-index: 1; }
+      .teaser-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.35;
+        mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
+        -webkit-mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .view-teaser-cta {
+        text-align: center;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      .view-teaser-cta p {
+        color: var(--text);
+        font-size: 1.25rem;
+        font-weight: 500;
+        line-height: 1.4;
+        margin: 0 0 24px;
+      }
       .app-intro {
         text-align: center;
         padding: 48px 0 40px;
