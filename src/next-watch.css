@@ -621,8 +621,8 @@
         object-fit: cover;
         opacity: 0.35;
         filter: blur(1px);
-        mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
-        -webkit-mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
+        mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
+        -webkit-mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
         pointer-events: none;
         z-index: 0;
       }
@@ -677,6 +677,7 @@
         gap: 18px;
         margin-top: 40px;
       }
+      .app-intro .app-intro-actions { margin-top: 56px; }
       .app-intro-cta {
         font-size: 1rem;
         padding: 14px 32px;
