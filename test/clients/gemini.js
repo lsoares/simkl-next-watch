@@ -25,3 +25,23 @@ export function setupGeminiChat(page, responseText, expectedKey, expectedRatings
     })
   })
 }
+
+export function setupGeminiSimilar(page, responseText, expectedKey, expectedSeed) {
+  return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
+    expect(route.request().method()).toBe("POST")
+    const url = new URL(route.request().url())
+    expect(url.searchParams.get("key")).toBe(expectedKey)
+    const body = route.request().postDataJSON()
+    const text = body.contents?.[0]?.parts?.[0]?.text
+    expect(text).toMatch(/similar to the seed title/)
+    expect(text).toMatch(/Output JSON only/)
+    expect(text).toMatch(/none appearing in Library/)
+    expect(text).toContain(`Seed: ${expectedSeed}`)
+    expect(text).toMatch(/Library: /)
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: responseText }] } }] }),
+    })
+  })
+}

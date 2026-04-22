@@ -1,7 +1,7 @@
 import { simklCatalog } from "./simklCatalog.js"
 import { simklUserData } from "./simklUserData.js"
 import { traktUserData } from "./traktUserData.js"
-import { fetchAiSuggestions } from "./aiProvider.js"
+import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
 
 function currentUserData() {
@@ -369,7 +369,7 @@ function initDockEffect(row) {
       card.inWatchlist = true
       card._rendered = false
       card._render()
-      showToast(`Added "${item.title}" to watchlist.`)
+      showToast(toastFrag("Added ", item, card.type, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
       btn.disabled = false
@@ -587,27 +587,41 @@ function initDockEffect(row) {
     return "both"
   }
 
-  async function getRecommendations(mood) {
-    const mediaType = getAiMediaType()
+  async function gatherLibrary() {
     const u = currentUserData()
     const [ws, wls, wlm, cs, cm] = await Promise.all([
       u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
       u.getCompletedShows(), u.getCompletedMovies(),
     ])
+    return {
+      shows: [...ws.items, ...wls.items, ...cs.items],
+      movies: [...wlm.items, ...cm.items],
+    }
+  }
+
+  async function getRecommendations(mood) {
+    const mediaType = getAiMediaType()
+    const library = await gatherLibrary()
     const provider = readStorage(STORAGE.aiProvider) || "groq"
-    const suggestions = await fetchAiSuggestions({
-      provider,
-      key: getAiKey(provider),
-      mediaType,
-      library: {
-        shows: [...ws.items, ...wls.items, ...cs.items],
-        movies: [...wlm.items, ...cm.items],
-      },
-      mood,
-    })
+    const suggestions = await fetchAiSuggestions({ provider, key: getAiKey(provider), mediaType, library, mood })
+    return sortResolved(await resolveSuggestions(suggestions, mediaType))
+  }
+
+  async function getSimilar(seed) {
+    const mediaType = getAiMediaType()
+    const library = await gatherLibrary()
+    const provider = readStorage(STORAGE.aiProvider) || "groq"
+    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), mediaType, library, seed })
+    const filtered = suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
+    return sortResolved(await resolveSuggestions(filtered, mediaType))
+  }
+
+  async function resolveSuggestions(suggestions, mediaType) {
     if (!suggestions.length) return []
-    const resolved = await resolveSimkl(suggestions, mediaType)
-    const getType = (item) => item.type === "movie" ? "movie" : "tv"
+    return await resolveSimkl(suggestions, mediaType)
+  }
+
+  function sortResolved(resolved) {
     return resolved
       .filter((i) => i.release_status !== "unreleased")
       .sort((a, b) => {
@@ -623,7 +637,10 @@ function initDockEffect(row) {
 
   // ── AI Result Rendering ──
 
+  let activeSimilarSeedId = null
+
   function renderAiResults(items) {
+    clearSimilar()
     if (!items.length) {
       setEmpty(el.aiResults, "No suggestions. Try another mood.")
       return
@@ -631,21 +648,78 @@ function initDockEffect(row) {
     const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }))
     el.aiResults.replaceChildren()
     typed.forEach(({ item, type }) => {
-      const { frag, card } = makeRowItem()
-      card.variant = "discovery"
-      card.type = type
-      card.item = item
-      const entry = libraryLookup(libraryIndex, item)
-      card.watched = !!entry?.watched
-      card.watchedAt = entry?.watchedAt || null
-      card.userRating = entry?.userRating ?? null
-      card.inWatchlist = !!entry && !entry.watched
-      card.watching = !!entry?.watching
-      card.loggedIn = true
-      card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
-      el.aiResults.appendChild(frag)
+      const card = renderDiscoveryCard(el.aiResults, item, type)
+      card.addEventListener("poster:more-like-this", () => toggleSimilar(card, item))
     })
     annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryLookup(libraryIndex, item))
+  }
+
+  function renderDiscoveryCard(row, item, type) {
+    const { frag, card } = makeRowItem()
+    card.variant = "discovery"
+    card.type = type
+    card.item = item
+    const entry = libraryLookup(libraryIndex, item)
+    card.watched = !!entry?.watched
+    card.watchedAt = entry?.watchedAt || null
+    card.userRating = entry?.userRating ?? null
+    card.inWatchlist = !!entry && !entry.watched
+    card.watching = !!entry?.watching
+    card.loggedIn = true
+    card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
+    row.appendChild(frag)
+    return card
+  }
+
+  async function toggleSimilar(seedCard, seed) {
+    const seedKey = `${seed.ids?.simkl || seed.id || ""}-${seed.title}`
+    if (activeSimilarSeedId === seedKey) {
+      clearSimilar()
+      return
+    }
+    clearSimilar()
+    activeSimilarSeedId = seedKey
+    seedCard.cardEl?.classList.add("more-like-active")
+    const section = document.createElement("section")
+    section.id = "aiSimilarSection"
+    section.className = "ai-similar-section"
+    section.innerHTML = `
+      <header class="ai-similar-header">
+        <h3 class="ai-similar-title">More like <em></em></h3>
+        <button class="ai-similar-close" type="button" aria-label="Close">×</button>
+      </header>
+    `
+    section.querySelector("em").textContent = `${seed.title}${seed.year ? ` (${seed.year})` : ""}`
+    const row = document.createElement("posters-row")
+    row.id = "aiSimilarResults"
+    section.appendChild(row)
+    row.replaceChildren(tpl("tpl-spinner"))
+    el.aiResults.insertAdjacentElement("afterend", section)
+    section.querySelector(".ai-similar-close").addEventListener("click", () => clearSimilar())
+    try {
+      const items = await getSimilar(seed)
+      if (activeSimilarSeedId !== seedKey) return
+      if (!items.length) {
+        setEmpty(row, "No similar picks. Try another.")
+        return
+      }
+      row.replaceChildren()
+      items.forEach((item) => {
+        const type = item.type === "movie" ? "movie" : "tv"
+        renderDiscoveryCard(row, item, type)
+      })
+      annotateTrendingBadges(row, items, (item) => !libraryLookup(libraryIndex, item))
+      section.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    } catch (err) {
+      if (activeSimilarSeedId === seedKey) clearSimilar()
+      handleError(err)
+    }
+  }
+
+  function clearSimilar() {
+    activeSimilarSeedId = null
+    el.aiResults.querySelectorAll(".more-like-active").forEach((c) => c.classList.remove("more-like-active"))
+    document.getElementById("aiSimilarSection")?.remove()
   }
 
   el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => { if (b.dataset.gloss) b.title = b.dataset.gloss })
@@ -681,6 +755,7 @@ function initDockEffect(row) {
       btn.classList.toggle("active")
       writeStorage(STORAGE.aiMediaType, getAiMediaType())
       el.aiResults.replaceChildren()
+      clearSimilar()
       el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"))
     })
   })

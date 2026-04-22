@@ -101,7 +101,7 @@
   background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 30%, transparent 65%);
 }
 .poster-bottom > * { pointer-events: auto; }
-.item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)) .poster-bottom {
+.item-card:not(:has(.mark-watched-btn)):not(:has(.add-watchlist-btn)):not(:has(.more-like-btn)) .poster-bottom {
   padding-right: 10px;
   padding-bottom: 10px;
 }
@@ -220,7 +220,8 @@
 }
 
 .mark-watched-btn,
-.add-watchlist-btn {
+.add-watchlist-btn,
+.more-like-btn {
   position: absolute;
   bottom: 8px;
   right: 8px;
@@ -243,8 +244,13 @@
 .mark-watched-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(80deg) saturate(3); }
 .add-watchlist-btn { color: rgba(255,255,255,0.7); font-size: 1.8rem; line-height: 1; }
 .add-watchlist-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; color: #fff; }
+.more-like-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; }
+.more-like-btn:hover svg { fill: #fff; }
+.item-card.more-like-active .more-like-btn { background: rgba(139,92,246,0.55); border-color: #8b5cf6; }
+.item-card.more-like-active .more-like-btn svg { fill: #fff; }
 .item-card .mark-watched-btn,
-.item-card .add-watchlist-btn { opacity: calc(0.7 + (var(--dock-scale, 1) - 1) * 0.6); transition: opacity 0.2s ease; }
+.item-card .add-watchlist-btn,
+.item-card .more-like-btn { opacity: calc(0.7 + (var(--dock-scale, 1) - 1) * 0.6); transition: opacity 0.2s ease; }
 
 .trending-watched .poster,
 .trending-watched .poster-top { opacity: 0.35; transition: opacity 0.2s; }

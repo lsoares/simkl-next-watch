@@ -763,3 +763,41 @@
   border-color: var(--accent);
   background: rgba(34, 197, 94, 0.15);
 }
+
+.ai-similar-section {
+  margin-top: 20px;
+}
+
+.ai-similar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ai-similar-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ai-similar-title em {
+  font-style: normal;
+  color: var(--text);
+}
+
+.ai-similar-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.ai-similar-close:hover {
+  color: var(--text);
+}

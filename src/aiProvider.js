@@ -3,7 +3,21 @@ export async function fetchAiSuggestions({ provider, key, mediaType, library, mo
   if (!context) return []
   const moodLine = mood.gloss ? `${mood.label} — ${mood.gloss}` : mood.label
   const userMessage = `${context}\nMood: ${moodLine}`
-  const raw = await aiComplete(provider, key, userMessage, systemPrompt(mediaType))
+  const raw = await aiComplete(provider, key, userMessage, moodSystemPrompt(mediaType))
+  return parseSuggestions(raw)
+}
+
+export async function fetchSimilarSuggestions({ provider, key, mediaType, library, seed }) {
+  const context = buildLibraryContext(mediaType, library.shows, library.movies)
+  const seedYear = seed.year ? ` (${seed.year})` : ""
+  const userMessage = `Seed: ${seed.title}${seedYear}${context ? `\n${context}` : ""}`
+  const raw = await aiComplete(provider, key, userMessage, similarSystemPrompt(mediaType))
+  return parseSuggestions(raw)
+}
+
+// ── Internals ──
+
+function parseSuggestions(raw) {
   try {
     const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim())
     return Array.isArray(parsed) ? parsed : []
@@ -12,11 +26,8 @@ export async function fetchAiSuggestions({ provider, key, mediaType, library, mo
   }
 }
 
-// ── Internals ──
-
-function systemPrompt(mediaType) {
-  const types = { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" }
-  return `Recommend 10 ${types[mediaType] || types.both} (IMDb ≥6.5), none appearing in Library.
+function moodSystemPrompt(mediaType) {
+  return `Recommend 10 ${typesLabel(mediaType)} (IMDb ≥6.5), none appearing in Library.
 Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
 
 Mood is the primary filter. Weight rated 8-10 as strong likes, 1-5 as dislikes; unrated entries are a weaker signal. Infer across tone, era, pacing, and country — not just genre.
@@ -24,6 +35,23 @@ Mood is the primary filter. Weight rated 8-10 as strong likes, 1-5 as dislikes; 
 Diversity: ≤2 sharing a franchise or creator; spread across ≥3 decades and ≥3 countries/languages when plausible.
 
 Output JSON only: [{"title":"...","year":1234}]`
+}
+
+function similarSystemPrompt(mediaType) {
+  return `Recommend 10 ${typesLabel(mediaType)} similar to the seed title below (IMDb ≥6.5), none appearing in Library.
+Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
+
+The seed is the anchor: recommend titles that scratch the same itch. Weight tone and mood first, then themes and subject matter, then era and pacing. Genre alone is a weak signal. Shared creator, cast, or franchise is allowed but not required — prefer lateral picks over obvious sequels or spin-offs unless they are clearly the closest match.
+
+Use Library ratings as secondary signals: 8-10 are likes (lean toward those sensibilities when picking lateral matches), 1-5 are dislikes (avoid recommendations that resemble them).
+
+Spread: at most 3 sharing a franchise or creator with the seed; the rest should be lateral picks from other creators.
+
+Output JSON only: [{"title":"...","year":1234}]`
+}
+
+function typesLabel(mediaType) {
+  return { both: "movies and TV shows", tv: "TV shows only", movie: "movies only" }[mediaType] || "movies and TV shows"
 }
 
 function buildLibraryContext(mediaType, shows, movies) {
