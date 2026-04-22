@@ -290,14 +290,15 @@ function enrichSearch(item, type) {
   const simklRating = item?.ratings?.simkl?.rating
   const releaseDate = type === "movie" ? item?.released : item?.first_aired
   return {
-    ...item,
     ids,
-    title: decodeSimklText(item.title),
     id: ids.simkl ? String(ids.simkl) : "",
-    type,
+    title: decodeSimklText(item.title),
+    year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
+    runtime: parseRuntime(item.runtime),
     rating: typeof simklRating === "number" ? simklRating : null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
+    type,
   }
 }
 
@@ -306,16 +307,15 @@ function enrichTrending(item, type) {
   const simklRating = item?.ratings?.simkl?.rating
   const releaseDate = item?.release_date
   return {
-    ...item,
     ids,
-    title: decodeSimklText(item.title),
     id: ids.simkl ? String(ids.simkl) : "",
-    type,
+    title: decodeSimklText(item.title),
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildTrendingUrl(item, ids.simkl, type),
-    rating: typeof simklRating === "number" ? simklRating : null,
     runtime: parseRuntime(item.runtime),
+    rating: typeof simklRating === "number" ? simklRating : null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
+    type,
   }
 }
 

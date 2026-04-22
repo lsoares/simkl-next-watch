@@ -20,17 +20,17 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
   test(`shows poster recommendations with ${name}`, async ({ page }) => {
     await signInToSimkl(page, {
       shows: [{
-        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
         watched_episodes_count: 46, total_episodes_count: 62,
       }],
       movies: [
         {
-          movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+          movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
           status: "completed", user_rating: 8, last_watched_at: "2024-01-01T00:00:00Z",
         },
         {
-          movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, poster: "test" },
+          movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 33333 } },
           status: "completed",
         },
       ],
@@ -42,10 +42,10 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
     )
     await setupSearchTv(page)
     await setupSearchMovie(page, {
-      Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
-      Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.4 } } },
-      Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.1 } } },
-      Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
+      Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } },
+      Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } },
+      Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } },
+      Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
     })
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
@@ -69,12 +69,12 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
 test("AI results show the user rating on rated items even when not watched", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "watching", user_rating: 9, next_to_watch: "S05E01",
       watched_episodes_count: 46, total_episodes_count: 62,
     }],
     movies: [{
-      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
       status: "plantowatch", user_rating: 7,
     }],
   })
@@ -85,7 +85,7 @@ test("AI results show the user rating on rated items even when not watched", asy
   )
   await setupSearchTv(page)
   await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
+    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
   })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
@@ -102,12 +102,12 @@ test("AI results show the user rating on rated items even when not watched", asy
 test("clicking AI mood without a key opens the key dialog", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "watching", user_rating: 9, next_to_watch: "S05E01",
       watched_episodes_count: 46, total_episodes_count: 62,
     }],
     movies: [{
-      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
       status: "completed", user_rating: 8,
     }],
   })
@@ -121,12 +121,12 @@ test("clicking AI mood without a key opens the key dialog", async ({ page }) => 
 test("adds an unwatched similar pick to the watchlist from the 'More like this' dialog", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "test" },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "watching", user_rating: 9, next_to_watch: "S05E01",
       watched_episodes_count: 46, total_episodes_count: 62,
     }],
     movies: [{
-      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "test" },
+      movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
       status: "completed", user_rating: 8,
     }],
   })
@@ -137,8 +137,8 @@ test("adds an unwatched similar pick to the watchlist from the 'More like this' 
   )
   await setupSearchTv(page)
   await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
-    Prestige: { title: "The Prestige", year: 2006, ids: { simkl_id: 44444 }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.5 } } },
+    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
+    Prestige: { title: "The Prestige", year: 2006, ids: { simkl_id: 44444 }, type: "movie", ratings: { imdb: { rating: 8.5 } } },
   })
   await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
   await page.getByRole("link", { name: /mood/i }).click()
