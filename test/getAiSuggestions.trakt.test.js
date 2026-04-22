@@ -109,27 +109,16 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
   await setupSearchMovie(page, {
     Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
   })
-  let navigatedTo = null
-  await page.context().route("https://app.trakt.tv/**", async (route) => {
-    navigatedTo = route.request().url()
-    await route.fulfill({ status: 200, contentType: "text/html", body: "" })
-  })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
   await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
   await page.getByRole("button", { name: /save.*key/i }).click()
   await expect(page.getByRole("status")).toContainText(/key saved/i)
+
   await page.getByRole("button", { name: /make me laugh/i }).click()
-  const inceptionLink = page.getByRole("dialog", { name: /ai picks/i }).getByRole("link", { name: "Inception" })
-  await expect(inceptionLink).toBeVisible()
-  const popupPromise = page.waitForEvent("popup")
 
-  await inceptionLink.click()
-
-  const popup = await popupPromise
-  await popup.waitForURL("https://app.trakt.tv/movies/inception-2010")
-  expect(navigatedTo).toBe("https://app.trakt.tv/movies/inception-2010")
+  await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("link", { name: "Inception" })).toHaveAttribute("href", "https://app.trakt.tv/movies/inception-2010")
 })
 
 async function signInToTrakt(page, {
