@@ -69,7 +69,7 @@ class PosterCard extends HTMLElement {
     const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
     const showMarkWatched = isNext
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist && !watching
-    const showMoreLike = variant === "discovery" && (watched || isCurrentlyWatching)
+    const showMoreLike = variant === "discovery"
     const showRating = !isCurrentlyWatching && rating != null && (!isNext || unstarted)
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
@@ -141,9 +141,10 @@ class PosterCard extends HTMLElement {
   async _hydratePoster() {
     const { item, type } = this
     if (!item || item.posterUrl) return
-    const url = (item.ids?.tmdb || item.ids?.imdb)
+    const tmdbUrl = (item.ids?.tmdb || item.ids?.imdb)
       ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type })
       : await tmdbRepository.getPosterByTitle(item.title, item.year, type)
+    const url = tmdbUrl || item.posterFallbackUrl || ""
     if (!url || this.item !== item) return
     item.posterUrl = url
     this.refresh()

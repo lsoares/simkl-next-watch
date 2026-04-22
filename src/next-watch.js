@@ -621,6 +621,7 @@ function initDockEffect(row) {
     card.applyLibraryEntry(libraryLookup(libraryIndex, item))
     card.loggedIn = true
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
+    card.addEventListener("poster:more-like-this", () => openSimilar({ ...card.item, type: card.type }))
     row.appendChild(frag)
     return card
   }
@@ -695,6 +696,15 @@ function initDockEffect(row) {
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
       closeDialog()
+      if (err?.message === "AI quota exceeded.") {
+        const link = Object.assign(document.createElement("a"), { href: "#", textContent: "set another API key" })
+        link.style.color = "inherit"; link.style.textDecoration = "underline"
+        link.addEventListener("click", (e) => { e.preventDefault(); openAiSettings() })
+        const frag = document.createDocumentFragment()
+        frag.append("AI quota exceeded. Please try again later or ", link, ".")
+        showToast(frag, true)
+        return
+      }
       handleError(err)
     }
   }
@@ -741,7 +751,9 @@ function initDockEffect(row) {
       showToast("Sign in to get personalized picks.")
       return
     }
-    openMood({ label: btn.textContent, gloss: btn.dataset.gloss || "" })
+    const icon = btn.querySelector(".ai-prompt-icon")?.textContent ?? ""
+    const label = btn.querySelector(".ai-prompt-label")?.textContent ?? ""
+    openMood({ label: `${icon} ${label}`.trim(), gloss: btn.dataset.gloss || "" })
   })
 
   ;[el.aiToggleTv, el.aiToggleMovie].forEach((btn) => {
