@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupSearchById } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress } from "./clients/trakt.js"
 
 test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
@@ -13,7 +13,6 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
   }])
   await setupDroppedShows(page, [])
   await setupProgress(page, "breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
-  await setupSearchById(page, "tt0903747", { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 })
   await setupAuthorize(page)
   await page.goto("/")
 
@@ -52,10 +51,9 @@ test("filters out completed and dropped shows from the watching list", async ({ 
     { hidden_at: "2025-01-01T00:00:00Z", type: "show", show: { title: "Lost", year: 2004, ids: { trakt: 3000, slug: "lost", imdb: "tt0411008" } } },
   ])
   await setupProgress(page, "breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
-  await setupSearchById(page, "tt0903747", { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 })
   await setupAuthorize(page)
   await page.goto("/")
-  
+
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
   await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()

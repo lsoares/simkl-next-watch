@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchById, setupSearchShow, setupSearchMovie } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchShow, setupSearchMovie } from "./clients/trakt.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 
 test("sends Trakt user ratings to the AI alongside library titles", async ({ page }) => {
@@ -26,7 +26,6 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
       movie: { title: "Inception", year: 2010, ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
-    simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
   })
   await setupGeminiChat(page,
     '[{"title":"Parasite","year":2019}]',
@@ -72,7 +71,6 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
       show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
-    simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "97/978343d5161a724", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
   })
   await setupGeminiChat(page,
     '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
@@ -105,7 +103,6 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
       seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
-    simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
   })
   await setupGeminiChat(page,
     '[{"title":"Inception","year":2010}]',
@@ -148,7 +145,6 @@ async function signInToTrakt(page, {
   ratingsShows = [],
   ratingsMovies = [],
   progressByShow = {},
-  simklSearch = {},
 } = {}) {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
@@ -160,7 +156,6 @@ async function signInToTrakt(page, {
   await setupRatingsShows(page, ratingsShows)
   await setupRatingsMovies(page, ratingsMovies)
   for (const [slug, data] of Object.entries(progressByShow)) await setupProgress(page, slug, data)
-  for (const [imdb, result] of Object.entries(simklSearch)) await setupSearchById(page, imdb, result)
   await setupAuthorize(page)
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with trakt/i }).click()

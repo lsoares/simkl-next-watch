@@ -209,14 +209,6 @@ export function setupAddToWatchlist(page, expectedPayload) {
   })
 }
 
-export function setupSearchById(page, imdbId, result) {
-  return page.route(`**/search/id?imdb=${imdbId}**`, async (route) => {
-    expect(route.request().method()).toBe("GET")
-    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(result ? [result] : []) })
-  })
-}
-
 export function setupSearchShow(page, results) {
   return page.route("https://api.trakt.tv/search/show?**", async (route) => {
     expect(route.request().method()).toBe("GET")

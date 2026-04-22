@@ -25,7 +25,7 @@ export function setupAuthorizeStub(page) {
 }
 
 export function setupOauthToken(page, accessToken) {
-  return page.route("**/oauth/token", async (route) => {
+  return page.route("https://api.simkl.com/oauth/token", async (route) => {
     expect(route.request().method()).toBe("POST")
     const body = route.request().postDataJSON()
     expect(body.client_id).toBe("test-client-id")
@@ -37,7 +37,7 @@ export function setupOauthToken(page, accessToken) {
 }
 
 export function setupSyncActivities(page, allTimestamp = "2025-01-01T00:00:00Z") {
-  return page.route("**/sync/activities", async (route) => {
+  return page.route("https://api.simkl.com/sync/activities", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -46,7 +46,7 @@ export function setupSyncActivities(page, allTimestamp = "2025-01-01T00:00:00Z")
 }
 
 export function setupSyncShows(page, shows) {
-  return page.route("**/sync/all-items/shows/*", async (route) => {
+  return page.route("https://api.simkl.com/sync/all-items/shows/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -58,7 +58,7 @@ export function setupSyncShows(page, shows) {
 }
 
 export function setupSyncMovies(page, movies) {
-  return page.route("**/sync/all-items/movies/*", async (route) => {
+  return page.route("https://api.simkl.com/sync/all-items/movies/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -70,7 +70,7 @@ export function setupSyncMovies(page, movies) {
 }
 
 export function setupSyncAnime(page, anime) {
-  return page.route("**/sync/all-items/anime/*", async (route) => {
+  return page.route("https://api.simkl.com/sync/all-items/anime/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -82,7 +82,7 @@ export function setupSyncAnime(page, anime) {
 }
 
 export function setupTvEpisodes(page, expectedId, episodes = []) {
-  return page.route("**/tv/episodes/*", async (route) => {
+  return page.route("https://api.simkl.com/tv/episodes/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const url = new URL(route.request().url())
@@ -92,7 +92,7 @@ export function setupTvEpisodes(page, expectedId, episodes = []) {
 }
 
 export function setupSearchTv(page) {
-  return page.route("**/search/tv?**", async (route) => {
+  return page.route("https://api.simkl.com/search/tv?**", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const params = new URL(route.request().url()).searchParams
@@ -104,7 +104,7 @@ export function setupSearchTv(page) {
 }
 
 export function setupSearchMovie(page, results) {
-  return page.route("**/search/movie?**", async (route) => {
+  return page.route("https://api.simkl.com/search/movie?**", async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const params = new URL(route.request().url()).searchParams
@@ -120,7 +120,7 @@ export function setupSearchMovie(page, results) {
 }
 
 export function setupMarkWatchedMovie(page, expectedMovies) {
-  return page.route("**/sync/history", async (route) => {
+  return page.route("https://api.simkl.com/sync/history", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -135,7 +135,7 @@ export function setupMarkWatchedMovie(page, expectedMovies) {
 }
 
 export function setupMarkWatchedShow(page, expectedShows) {
-  return page.route("**/sync/history", async (route) => {
+  return page.route("https://api.simkl.com/sync/history", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -163,7 +163,7 @@ export function setupShowDetail(page, simklId, response) {
 }
 
 export function setupAddToWatchlist(page, expectedPayload) {
-  return page.route("**/sync/add-to-list", async (route) => {
+  return page.route("https://api.simkl.com/sync/add-to-list", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
@@ -178,7 +178,7 @@ function periodFromTrendingUrl(url) {
 }
 
 export function setupTrendingTv(page, byPeriod) {
-  return page.route("**/discover/trending/tv/*", async (route) => {
+  return page.route("https://data.simkl.in/discover/trending/tv/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     const period = periodFromTrendingUrl(route.request().url())
     const items = byPeriod[period] || []
@@ -187,7 +187,7 @@ export function setupTrendingTv(page, byPeriod) {
 }
 
 export function setupTrendingMovies(page, byPeriod) {
-  return page.route("**/discover/trending/movies/*", async (route) => {
+  return page.route("https://data.simkl.in/discover/trending/movies/*", async (route) => {
     expect(route.request().method()).toBe("GET")
     const period = periodFromTrendingUrl(route.request().url())
     const items = byPeriod[period] || []
