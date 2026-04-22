@@ -98,6 +98,37 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
   await expect(page.locator("#aiResults").getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
 })
 
+test("AI hits link to Trakt pages for Trakt users", async ({ page }) => {
+  await signInToTrakt(page, {
+    watchedShows: [{
+      last_watched_at: new Date().toISOString(),
+      show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+      seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
+    }],
+    progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
+    simklSearch: { "tt0903747": { ids: { simkl: 11121 }, poster: "", title: "Breaking Bad", year: 2008, total_episodes: 62 } },
+  })
+  await setupGeminiChat(page,
+    '[{"title":"Inception","year":2010}]',
+    "apiAiKey",
+    [],
+  )
+  await setupSearchTv(page)
+  await setupSearchMovie(page, {
+    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222, imdb: "tt1375666" }, poster: "p", type: "movie", ratings: { imdb: { rating: 8.8 } } },
+  })
+  await page.getByRole("link", { name: /mood/i }).click()
+  await page.getByRole("button", { name: /make me laugh/i }).click()
+  await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
+  await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
+  await page.getByRole("button", { name: /save.*key/i }).click()
+  await expect(page.getByRole("status")).toContainText(/key saved/i)
+
+  await page.getByRole("button", { name: /make me laugh/i }).click()
+
+  await expect(page.locator("#aiResults").getByRole("link", { name: "Inception" })).toHaveAttribute("href", "https://trakt.tv/movies/tt1375666")
+})
+
 async function signInToTrakt(page, {
   watchedShows = [],
   watchedMovies = [],

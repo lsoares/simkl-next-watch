@@ -618,7 +618,9 @@ function initDockEffect(row) {
 
   async function resolveSuggestions(suggestions, mediaType) {
     if (!suggestions.length) return []
-    return await resolveSimkl(suggestions, mediaType)
+    const resolved = await resolveSimkl(suggestions, mediaType)
+    const catalogUrl = currentUserData().catalogUrl
+    return resolved.map((i) => ({ ...i, url: catalogUrl(i, i.type) }))
   }
 
   function sortResolved(resolved) {

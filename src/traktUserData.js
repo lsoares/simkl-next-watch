@@ -126,6 +126,12 @@ export const traktUserData = (() => {
       return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
     },
 
+    catalogUrl(item, type) {
+      const imdb = item.ids?.imdb
+      if (imdb) return `https://trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(imdb)}`
+      return item.url || ""
+    },
+
     async getWatchingShows() {
       const ratings = await fetchUserRatings()
       const { items, fresh } = await loadWatchedShowsCached()
