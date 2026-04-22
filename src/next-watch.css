@@ -9,7 +9,7 @@
         --app-height: 100dvh;
         --top-bar-height: 68px;
         --main-top-gap: 80px;
-        --main-bottom-gap: max(12px, env(safe-area-inset-bottom));
+        --main-bottom-gap: calc(max(12px, env(safe-area-inset-bottom)) + 16px);
         --mobile-content-height: calc(var(--app-height) - var(--main-top-gap) - var(--main-bottom-gap));
       }
 
