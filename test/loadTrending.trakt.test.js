@@ -1,5 +1,4 @@
 import { test, expect } from "./test.js"
-import { setupTrendingTv, setupTrendingMovies } from "./clients/simkl.js"
 import {
   setupAuthorize,
   setupOauthToken,
@@ -23,8 +22,6 @@ test("trending rows list shows and movies from the watched-period feed", async (
   await setupDroppedShows(page, [])
   await setupRatingsShows(page, [])
   await setupRatingsMovies(page, [])
-  await setupTrendingTv(page, {})
-  await setupTrendingMovies(page, {})
   await setupWatchedShowsByPeriod(page, {
     daily: [
       { watcher_count: 5000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } } },
@@ -66,8 +63,6 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
   await setupDroppedShows(page, [])
   await setupRatingsShows(page, [])
   await setupRatingsMovies(page, [])
-  await setupTrendingTv(page, {})
-  await setupTrendingMovies(page, {})
   await setupWatchedShowsByPeriod(page, {
     daily: [
       { watcher_count: 5000, show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } } },

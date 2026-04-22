@@ -1,16 +1,10 @@
-import { simklCatalog } from "./simklCatalog.js"
-import { traktCatalog } from "./traktCatalog.js"
-import { simklUserData } from "./simklUserData.js"
-import { traktUserData } from "./traktUserData.js"
+import { simklRepository } from "./simklRepository.js"
+import { traktRepository } from "./traktRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
 
-function currentUserData() {
-  return localStorage.getItem("next-watch-provider") === "trakt" ? traktUserData : simklUserData
-}
-
-function currentCatalog() {
-  return localStorage.getItem("next-watch-provider") === "trakt" ? traktCatalog : simklCatalog
+function mediaRepository() {
+  return localStorage.getItem("next-watch-provider") === "trakt" ? traktRepository : simklRepository
 }
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
@@ -256,11 +250,11 @@ function initDockEffect(row) {
       card.type = type
       card.item = item
       card.watching = item.status === "watching"
-      card.episodeUrlFn = currentUserData().episodeUrl
+      card.episodeUrlFn = mediaRepository().episodeUrl
       card.addEventListener("poster:mark-watched", () => markWatched(item, type, card.cardEl))
       rowEl.appendChild(frag)
     })
-    appendAddMoreTile(rowEl, { href: currentUserData().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
+    appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeLazyHydration(rowEl)
@@ -281,7 +275,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await currentUserData().markWatched(item)
+      await mediaRepository().markWatched(item)
       showToast(toastFrag("Marked ", snapshot, type, " watched — rate it?"))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -294,7 +288,7 @@ function initDockEffect(row) {
   function toastFrag(prefix, item, type, suffix) {
     const ep = type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (currentUserData().episodeUrl?.(item, ep) || base) : base
+    const url = ep ? (mediaRepository().episodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -309,7 +303,7 @@ function initDockEffect(row) {
     const results = await Promise.allSettled(tvItems.map((item) => {
       const ep = item.nextEpisode
       if (!ep || !item.id || item.status === "plantowatch") return null
-      return simklCatalog.getEpisodeTitle(item.id, ep.season, ep.episode)
+      return mediaRepository().getEpisodeTitle?.(item.id, ep.season, ep.episode)
     }))
     let changed = false
     results.forEach((r, i) => {
@@ -327,7 +321,7 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
-      const u = currentUserData()
+      const u = mediaRepository()
       const [ws, wls, wlm, cs, cm] = await Promise.all([
         u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
         u.getCompletedShows(), u.getCompletedMovies(),
@@ -373,7 +367,7 @@ function initDockEffect(row) {
       card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
       containerEl.appendChild(frag)
     })
-    const u = currentUserData()
+    const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
     observeLazyHydration(containerEl)
   }
@@ -385,7 +379,7 @@ function initDockEffect(row) {
     if (!keys.length || !btn) return
     btn.disabled = true
     try {
-      await currentUserData().addToWatchlist(item)
+      await mediaRepository().addToWatchlist(item)
       const entry = { watched: false, watchedAt: null }
       for (const key of keys) libraryIndex.set(key, entry)
       card.inWatchlist = true
@@ -439,7 +433,7 @@ function initDockEffect(row) {
   function needsLazyHydration(item) {
     if (!item) return false
     if (item.ids?.imdb && !item.posterUrl) return true
-    if (currentUserData().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) return true
+    if (mediaRepository().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) return true
     return false
   }
 
@@ -447,7 +441,7 @@ function initDockEffect(row) {
     const item = card.item
     if (!item) return
     if (item.ids?.imdb && !item.posterUrl) await hydratePoster(card)
-    const getProgress = currentUserData().getProgress
+    const getProgress = mediaRepository().getProgress
     if (getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) {
       const key = item.ids.slug || item.ids.trakt
       const progress = await getProgress(key)
@@ -467,7 +461,7 @@ function initDockEffect(row) {
   async function hydratePoster(card) {
     const item = card.item
     if (!item?.ids?.imdb) return
-    const hit = await simklCatalog.lookupByImdb(item.ids.imdb)
+    const hit = await mediaRepository().lookupByImdb(item.ids.imdb)
     if (!hit?.poster) return
     item.ids = { ...item.ids, simkl: hit.simklId }
     if (!item.id) item.id = String(hit.simklId || "")
@@ -480,7 +474,7 @@ function initDockEffect(row) {
   function loadTrendingBadgeSets() {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
     const periods = ["today", "week", "month"]
-    trendingBadgeSetsPromise = Promise.all(periods.map((p) => simklCatalog.getTrending(p)))
+    trendingBadgeSetsPromise = Promise.all(periods.map((p) => mediaRepository().getTrending(p)))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() }
         results.forEach(({ tv, movies }, i) => {
@@ -532,7 +526,7 @@ function initDockEffect(row) {
     el.trendingTvContent.replaceChildren(tpl("tpl-spinner"))
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"))
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([currentUserData().getTrending(period), libraryReady])
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([mediaRepository().getTrending(period), libraryReady])
       const hideWatched = el.hideTrendingWatched.checked
       const filterFn = (item) => item.release_status !== "unreleased"
         && (!hideWatched || !libraryLookup(libraryIndex, item))
@@ -624,7 +618,7 @@ function initDockEffect(row) {
   }
 
   async function gatherLibrary() {
-    const u = currentUserData()
+    const u = mediaRepository()
     const [ws, wls, wlm, cs, cm] = await Promise.all([
       u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
       u.getCompletedShows(), u.getCompletedMovies(),
@@ -655,7 +649,7 @@ function initDockEffect(row) {
       if (!anchor || !row.contains(anchor)) return
       const card = anchor.closest("poster-card")
       if (!card?.item) return
-      const resolve = currentUserData().catalogUrl
+      const resolve = mediaRepository().catalogUrl
       if (!resolve) return
       e.preventDefault()
       const win = window.open("", "_blank")
@@ -777,7 +771,7 @@ function initDockEffect(row) {
 
   async function hydrateAiCard(card, mediaType) {
     const { title, year } = card.item
-    const resolved = await currentCatalog().searchByTitle(title, year, mediaType)
+    const resolved = await mediaRepository().searchByTitle(title, year, mediaType)
     if (!resolved) return
     if (resolved.release_status === "unreleased") {
       card.closest(".row-item")?.remove()
@@ -856,7 +850,7 @@ function initDockEffect(row) {
     el.spinner.hidden = false
     try {
       const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
-      const userData = provider === "trakt" ? traktUserData : simklUserData
+      const userData = provider === "trakt" ? traktRepository : simklRepository
       if (error) {
         if (error !== "access_denied") console.error(`${userData.name} OAuth error: ${error}`)
         const message = error === "access_denied"
@@ -911,7 +905,7 @@ function initDockEffect(row) {
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     el.aiKeyBtn.hidden = !loggedIn
-    if (loggedIn) el.logoutBtn.title = `Logout from ${currentUserData().name}`
+    if (loggedIn) el.logoutBtn.title = `Logout from ${mediaRepository().name}`
     hydrateNextView()
     syncViewportMetrics()
   }
@@ -935,8 +929,8 @@ function initDockEffect(row) {
     container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-provider]")
-      if (btn?.dataset.provider === "simkl") simklUserData.startOAuth()
-      if (btn?.dataset.provider === "trakt") traktUserData.startOAuth()
+      if (btn?.dataset.provider === "simkl") simklRepository.startOAuth()
+      if (btn?.dataset.provider === "trakt") traktRepository.startOAuth()
     })
   }
   el.navHome.addEventListener("click", (e) => { e.preventDefault(); showView("homepage"); })
