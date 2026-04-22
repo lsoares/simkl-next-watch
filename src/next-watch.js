@@ -496,6 +496,11 @@ function initDockEffect(row) {
     })
   }
 
+  function hydrateTrendingView() {
+    el.trendingSetup.hidden = isLoggedIn()
+    loadTrending()
+  }
+
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     writeStorage(STORAGE.trendingPeriod, period)
@@ -684,16 +689,16 @@ function initDockEffect(row) {
 
   function showView(name) {
     currentView = name
-    el.nextView.hidden = name !== "next"
-    el.trendingView.hidden = name !== "trending"
-    el.aiView.hidden = name !== "ai"
-    ;[el.navNext, el.navTrending, el.navAi].forEach((btn) => btn.classList.remove("active-nav"))
-    if (name === "next") el.navNext.classList.add("active-nav")
-    if (name === "trending") el.navTrending.classList.add("active-nav")
-    if (name === "ai") el.navAi.classList.add("active-nav")
-    if (name === "trending") { el.trendingSetup.hidden = isLoggedIn(); loadTrending() }
-    if (name === "ai") hydrateAiView()
-    if (name === "next") hydrateNextView()
+    const views = {
+      next: { view: el.nextView, nav: el.navNext, hydrate: hydrateNextView },
+      trending: { view: el.trendingView, nav: el.navTrending, hydrate: hydrateTrendingView },
+      mood: { view: el.aiView, nav: el.navAi, hydrate: hydrateAiView },
+    }
+    for (const [key, { view, nav }] of Object.entries(views)) {
+      view.hidden = key !== name
+      nav.classList.toggle("active-nav", key === name)
+    }
+    views[name].hydrate()
     const hash = name === "next" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
@@ -785,7 +790,7 @@ function initDockEffect(row) {
   }
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
-  el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("ai"); })
+  el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
   el.trendingPeriodTabs.addEventListener("click", (e) => {
@@ -829,7 +834,7 @@ function initDockEffect(row) {
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  showView(hash === "trending" ? "trending" : hash === "ai" ? "ai" : "next")
+  showView(hash === "trending" || hash === "mood" ? hash : "next")
   if (isLoggedIn()) loadSuggestions()
   else resolveLibraryReady()
 })()
