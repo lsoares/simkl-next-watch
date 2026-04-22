@@ -32,10 +32,6 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
     "apiAiKey",
     ["Breaking Bad (2008):9", "Inception (2010):8"],
   )
-  await setupSearchShow(page, {})
-  await setupSearchMovie(page, {
-    Parasite: { type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 100, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } },
-  })
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
