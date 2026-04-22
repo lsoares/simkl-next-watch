@@ -48,7 +48,7 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
 
   await page.getByRole("button", { name: /make me laugh/i }).click()
 
-  await expect(page.locator("#aiResults").getByRole("article", { name: "Parasite" })).toBeVisible()
+  await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toBeVisible()
 })
 
 test("AI results reflect Trakt watchlist and watched status", async ({ page }) => {
@@ -95,8 +95,8 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
 
   await page.getByRole("button", { name: /make me laugh/i }).click()
 
-  await expect(page.locator("#aiResults").getByRole("article", { name: "Inception" })).toHaveClass(/trending-watchlisted/)
-  await expect(page.locator("#aiResults").getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
+  await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" })).toHaveClass(/trending-watchlisted/)
+  await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
 })
 
 test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
@@ -131,7 +131,7 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
   await page.getByRole("button", { name: /save.*key/i }).click()
   await expect(page.getByRole("status")).toContainText(/key saved/i)
   await page.getByRole("button", { name: /make me laugh/i }).click()
-  const inceptionLink = page.locator("#aiResults").getByRole("link", { name: "Inception" })
+  const inceptionLink = page.getByRole("dialog", { name: /ai picks/i }).getByRole("link", { name: "Inception" })
   await expect(inceptionLink).toBeVisible()
   const popupPromise = page.waitForEvent("popup")
 

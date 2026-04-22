@@ -172,18 +172,17 @@
           <button class="ai-prompt-btn" type="button" data-gloss="morally complex, bleak tone, heavy themes; post-apocalyptic and dystopian welcome">Dark &amp; gritty</button>
           <button class="ai-prompt-btn" type="button" data-gloss="strange, surreal, genre-defying, arthouse">Weird &amp; wild</button>
         </div>
-        <posters-row id="aiResults"></posters-row>
         </div>
       </div>
     </main>
 
-    <dialog id="moreLikeDialog" class="more-like-dialog" aria-label="More like this">
+    <dialog id="aiDialog" class="more-like-dialog" aria-label="AI picks">
       <header class="more-like-header">
-        <button class="more-like-back" id="moreLikeBack" type="button" aria-label="Back" hidden>←</button>
-        <h3 class="more-like-title" id="moreLikeTitle"></h3>
-        <button class="dialog-close" id="moreLikeClose" type="button" aria-label="Close">×</button>
+        <button class="more-like-back" id="aiDialogBack" type="button" aria-label="Back" hidden>←</button>
+        <h3 class="more-like-title" id="aiDialogTitle"></h3>
+        <button class="dialog-close" id="aiDialogClose" type="button" aria-label="Close">×</button>
       </header>
-      <posters-row id="moreLikeResults"></posters-row>
+      <posters-row id="aiDialogResults"></posters-row>
     </dialog>
 
     <div class="spinner" id="loadingSpinner" role="progressbar" aria-label="Loading" hidden></div>

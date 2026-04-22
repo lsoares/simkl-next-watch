@@ -184,9 +184,9 @@ function initDockEffect(row) {
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
-    aiPrompts: $("aiPrompts"), aiResults: $("aiResults"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
-    moreLikeDialog: $("moreLikeDialog"), moreLikeTitle: $("moreLikeTitle"), moreLikeBack: $("moreLikeBack"),
-    moreLikeClose: $("moreLikeClose"), moreLikeResults: $("moreLikeResults"),
+    aiPrompts: $("aiPrompts"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
+    aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
+    aiDialogClose: $("aiDialogClose"), aiDialogResults: $("aiDialogResults"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -664,20 +664,6 @@ function initDockEffect(row) {
 
   // ── AI Result Rendering ──
 
-  function renderAiResults(items) {
-    if (!items.length) {
-      setEmpty(el.aiResults, "No suggestions. Try another mood.")
-      return
-    }
-    const typed = items.map((item) => ({ item, type: item.type === "movie" ? "movie" : "tv" }))
-    el.aiResults.replaceChildren()
-    typed.forEach(({ item, type }) => {
-      const card = renderDiscoveryCard(el.aiResults, item, type)
-      card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
-    })
-    annotateTrendingBadges(el.aiResults, typed.map(({ item }) => item), (item) => !libraryLookup(libraryIndex, item))
-    attachCatalogLinkResolver(el.aiResults)
-  }
 
   function renderDiscoveryCard(row, item, type) {
     const { frag, card } = makeRowItem()
@@ -696,85 +682,97 @@ function initDockEffect(row) {
     return card
   }
 
-  const similarStack = []
+  const dialogStack = []
+
+  function openMood(mood) {
+    pushDialog({
+      title: mood.label,
+      emptyMsg: "No suggestions. Try another mood.",
+      fetch: () => getRecommendations(mood),
+    })
+  }
 
   function openSimilar(seed) {
+    pushDialog({
+      title: buildSimilarTitle(seed),
+      emptyMsg: "No similar picks. Try another.",
+      fetch: () => getSimilar(seed),
+    })
+  }
+
+  function buildSimilarTitle(seed) {
+    const frag = document.createDocumentFragment()
+    const em = document.createElement("em")
+    em.textContent = `${seed.title}${seed.year ? ` (${seed.year})` : ""}`
+    frag.append("More like ", em)
+    return frag
+  }
+
+  function pushDialog(entry) {
     if (!getAiKey(readStorage(STORAGE.aiProvider) || "groq")) {
       openAiSettings()
       return
     }
-    similarStack.push(seed)
-    if (!el.moreLikeDialog.open) el.moreLikeDialog.showModal()
-    renderSimilarTop()
+    dialogStack.push(entry)
+    if (!el.aiDialog.open) el.aiDialog.showModal()
+    renderDialogTop()
   }
 
-  function backSimilar() {
-    similarStack.pop()
-    if (!similarStack.length) return closeSimilar()
-    renderSimilarTop()
+  function backDialog() {
+    dialogStack.pop()
+    if (!dialogStack.length) return closeDialog()
+    renderDialogTop()
   }
 
-  function closeSimilar() {
-    similarStack.length = 0
-    if (el.moreLikeDialog.open) el.moreLikeDialog.close()
+  function closeDialog() {
+    dialogStack.length = 0
+    if (el.aiDialog.open) el.aiDialog.close()
   }
 
-  async function renderSimilarTop() {
-    const seed = similarStack.at(-1)
-    el.moreLikeTitle.replaceChildren("More like ")
-    const em = document.createElement("em")
-    em.textContent = `${seed.title}${seed.year ? ` (${seed.year})` : ""}`
-    el.moreLikeTitle.appendChild(em)
-    el.moreLikeBack.hidden = similarStack.length <= 1
-    fillPosterSkeletons(el.moreLikeResults)
+  async function renderDialogTop() {
+    const entry = dialogStack.at(-1)
+    el.aiDialogTitle.replaceChildren(typeof entry.title === "string" ? entry.title : entry.title.cloneNode(true))
+    el.aiDialogBack.hidden = dialogStack.length <= 1
+    fillPosterSkeletons(el.aiDialogResults)
     try {
-      const items = await getSimilar(seed)
-      if (similarStack.at(-1) !== seed) return
+      const items = await entry.fetch()
+      if (dialogStack.at(-1) !== entry) return
       if (!items.length) {
-        setEmpty(el.moreLikeResults, "No similar picks. Try another.")
+        setEmpty(el.aiDialogResults, entry.emptyMsg)
         return
       }
-      el.moreLikeResults.replaceChildren()
+      el.aiDialogResults.replaceChildren()
       items.forEach((item) => {
         const type = item.type === "movie" ? "movie" : "tv"
-        const card = renderDiscoveryCard(el.moreLikeResults, item, type)
+        const card = renderDiscoveryCard(el.aiDialogResults, item, type)
         card.addEventListener("poster:more-like-this", () => openSimilar({ ...item, type }))
       })
-      annotateTrendingBadges(el.moreLikeResults, items, (item) => !libraryLookup(libraryIndex, item))
-      attachCatalogLinkResolver(el.moreLikeResults)
+      annotateTrendingBadges(el.aiDialogResults, items, (item) => !libraryLookup(libraryIndex, item))
+      attachCatalogLinkResolver(el.aiDialogResults)
     } catch (err) {
-      closeSimilar()
+      closeDialog()
       handleError(err)
     }
   }
 
-  el.moreLikeClose.addEventListener("click", () => closeSimilar())
-  el.moreLikeBack.addEventListener("click", () => backSimilar())
-  el.moreLikeDialog.addEventListener("close", () => { similarStack.length = 0 })
+  el.aiDialogClose.addEventListener("click", () => closeDialog())
+  el.aiDialogBack.addEventListener("click", () => backDialog())
+  el.aiDialog.addEventListener("close", () => { dialogStack.length = 0 })
+
+  ;[el.aiDialog, el.aiSettings].forEach((d) => {
+    d.addEventListener("click", (e) => { if (e.target === d) d.close() })
+  })
 
   el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => { if (b.dataset.gloss) b.title = b.dataset.gloss })
 
-  el.aiPrompts.addEventListener("click", async (e) => {
+  el.aiPrompts.addEventListener("click", (e) => {
     const btn = e.target.closest(".ai-prompt-btn")
     if (!btn) return
     if (!isLoggedIn()) {
       showToast("Sign in to get personalized picks.")
       return
     }
-    if (!getAiKey(readStorage(STORAGE.aiProvider) || "groq")) {
-      openAiSettings()
-      return
-    }
-    el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"))
-    btn.classList.add("active")
-    el.aiResults.replaceChildren(tpl("tpl-spinner"))
-    try {
-      const items = await getRecommendations({ label: btn.textContent, gloss: btn.dataset.gloss || "" })
-      renderAiResults(items)
-    } catch (err) {
-      el.aiResults.replaceChildren()
-      handleError(err)
-    }
+    openMood({ label: btn.textContent, gloss: btn.dataset.gloss || "" })
   })
 
   ;[el.aiToggleTv, el.aiToggleMovie].forEach((btn) => {
@@ -784,8 +782,6 @@ function initDockEffect(row) {
       if (btn.classList.contains("active") && !other.classList.contains("active")) return
       btn.classList.toggle("active")
       writeStorage(STORAGE.aiMediaType, getAiMediaType())
-      el.aiResults.replaceChildren()
-      el.aiPrompts.querySelectorAll(".ai-prompt-btn").forEach((b) => b.classList.remove("active"))
     })
   })
 

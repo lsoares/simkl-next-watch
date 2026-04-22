@@ -56,7 +56,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
 
     await page.getByRole("button", { name: /make me laugh/i }).click()
 
-    const aiResults = page.locator("#aiResults")
+    const aiResults = page.getByRole("dialog", { name: /ai picks/i })
     await expect(aiResults.getByRole("article", { name: "Parasite" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "Oldboy" })).toBeVisible()
     await expect(aiResults.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
@@ -96,7 +96,7 @@ test("AI results show the user rating on rated items even when not watched", asy
 
   await page.getByRole("button", { name: /make me laugh/i }).click()
 
-  await expect(page.locator("#aiResults").getByRole("article", { name: "Inception" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
+  await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
 })
 
 test("clicking AI mood without a key opens the key dialog", async ({ page }) => {
@@ -148,11 +148,11 @@ test("adds an unwatched similar pick to the watchlist from the 'More like this' 
   await page.getByRole("button", { name: /save.*key/i }).click()
   await expect(page.getByRole("status")).toContainText(/key saved/i)
   await page.getByRole("button", { name: /make me laugh/i }).click()
-  const inceptionCard = page.locator("#aiResults").getByRole("article", { name: "Inception" })
+  const inceptionCard = page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" })
   await expect(inceptionCard).toBeVisible()
   await setupGeminiSimilar(page, '[{"title":"The Prestige","year":2006}]', "apiAiKey", "Inception (2010)")
   await inceptionCard.getByRole("button", { name: /more like this/i }).click()
-  const dialog = page.getByRole("dialog", { name: /more like this/i })
+  const dialog = page.getByRole("dialog", { name: /ai picks/i })
   const prestigeCard = dialog.getByRole("article", { name: "The Prestige" })
   await expect(prestigeCard).toBeVisible()
 
