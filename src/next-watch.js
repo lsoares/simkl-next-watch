@@ -856,14 +856,6 @@ function initDockEffect(row) {
   el.navSimilar.addEventListener("click", (e) => { e.preventDefault(); showView("similar"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
   el.similarReload.addEventListener("click", () => renderSimilar())
-  el.similarGrid.addEventListener("click", (e) => {
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-    const anchor = e.target.closest("a[href]")
-    const card = anchor?.closest("poster-card")
-    if (!card?.item) return
-    e.preventDefault()
-    openSimilar(card.item)
-  })
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
   el.trendingPeriodTabs.addEventListener("click", (e) => {

@@ -16,7 +16,7 @@ test("next view shows a sign-in CTA when logged out", async ({ page }) => {
 
   await page.getByRole("link", { name: "next" }).click()
 
-  const nextView = page.locator("#nextView")
+  const nextView = page.getByRole("region", { name: "Next" })
   await expect(nextView.getByText(/sign in to see your next/i)).toBeVisible()
   await expect(nextView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
   await expect(nextView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
@@ -27,7 +27,7 @@ test("trending view shows a sign-in CTA when logged out", async ({ page }) => {
 
   await page.getByRole("link", { name: "trending" }).click()
 
-  const trendingView = page.locator("#trendingView")
+  const trendingView = page.getByRole("region", { name: "Trending" })
   await expect(trendingView.getByText(/sign in to save trending/i)).toBeVisible()
   await expect(trendingView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
   await expect(trendingView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
@@ -38,7 +38,7 @@ test("mood view shows a sign-in CTA when logged out", async ({ page }) => {
 
   await page.getByRole("link", { name: "mood" }).click()
 
-  const aiView = page.locator("#aiView")
+  const aiView = page.getByRole("region", { name: "Mood" })
   await expect(aiView.getByText(/sign in to get picks/i)).toBeVisible()
   await expect(aiView.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
   await expect(aiView.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()

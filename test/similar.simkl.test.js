@@ -22,7 +22,7 @@ test("similar view shows top-rated library posters in its grid", async ({ page }
 
   await page.getByRole("link", { name: /similar/i }).click()
 
-  const grid = page.locator("#similarGrid")
+  const grid = page.getByRole("region", { name: /similar picks/i })
   await expect(grid.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   await expect(grid.getByRole("article", { name: "Inception" })).toBeVisible()
   await expect(grid.getByRole("article", { name: "Filler" })).toHaveCount(0)
@@ -39,7 +39,7 @@ test("similar view shows a notice and random library picks when nothing is rated
   await page.getByRole("link", { name: /similar/i }).click()
 
   await expect(page.getByText(/rate some titles to seed this/i)).toBeVisible()
-  await expect(page.locator("#similarGrid").getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+  await expect(page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 })
 
 test("adds an unwatched similar pick to the watchlist from the similar dialog", async ({ page }) => {
@@ -60,7 +60,7 @@ test("adds an unwatched similar pick to the watchlist from the similar dialog", 
   })
   await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
   await page.getByRole("link", { name: /similar/i }).click()
-  await page.locator("#similarGrid").getByRole("article", { name: "Inception" }).click()
+  await page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Inception" }).getByRole("button", { name: /more like this/i }).click()
   const dialog = page.getByRole("dialog", { name: /ai picks/i })
   const prestigeCard = dialog.getByRole("article", { name: "The Prestige" })
   await expect(prestigeCard).toBeVisible()

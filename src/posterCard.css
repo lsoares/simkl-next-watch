@@ -257,6 +257,9 @@
 .similar-grid .trending-watchlisted .poster,
 .similar-grid .trending-watchlisted .poster-top-text { opacity: 1; }
 
+.similar-grid .more-like-btn { width: 64px; height: 64px; }
+.similar-grid .more-like-btn svg { width: 26px; height: 26px; }
+
 @keyframes watchedOut {
   0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
   40%  { filter: brightness(2.5) saturate(0); }

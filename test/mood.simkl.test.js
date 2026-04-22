@@ -99,6 +99,37 @@ test("AI results show the user rating on rated items even when not watched", asy
   await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
 })
 
+test("AI dialog posters link to the matched Simkl page", async ({ page }) => {
+  await signInToSimkl(page, {
+    shows: [{
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      status: "watching", user_rating: 9, next_to_watch: "S05E01",
+      watched_episodes_count: 46, total_episodes_count: 62,
+    }],
+  })
+  await setupGeminiChat(page,
+    '[{"title":"Parasite","year":2019}]',
+    "apiAiKey",
+    ["Breaking Bad (2008):9"],
+  )
+  await setupSearchTv(page)
+  await setupSearchMovie(page, {
+    Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" },
+  })
+  await page.getByRole("link", { name: /mood/i }).click()
+  await page.getByRole("button", { name: /make me laugh/i }).click()
+  await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
+  await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
+  await page.getByRole("button", { name: /save.*key/i }).click()
+  await expect(page.getByRole("status")).toContainText(/key saved/i)
+
+  await page.getByRole("button", { name: /make me laugh/i }).click()
+
+  const dialog = page.getByRole("dialog", { name: /ai picks/i })
+  await expect(dialog.getByRole("article", { name: "Parasite" })).toBeVisible()
+  await expect(dialog.getByRole("link", { name: "Parasite" })).toHaveAttribute("href", /simkl\.com\/movies\/33001/)
+})
+
 test("clicking a mood prompt without a key opens the key dialog", async ({ page }) => {
   await signInToSimkl(page, {
     shows: [{

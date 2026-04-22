@@ -66,7 +66,7 @@
       </div>
 
       <!-- Next view -->
-      <div id="nextView" hidden>
+      <div id="nextView" role="region" aria-label="Next" hidden>
         <div id="nextSetup" class="view-teaser" hidden>
           <img class="teaser-bg" src="./assets/teaser-next.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
@@ -85,7 +85,7 @@
       </div>
 
       <!-- Trending view -->
-      <div id="trendingView" hidden>
+      <div id="trendingView" role="region" aria-label="Trending" hidden>
         <div id="trendingSetup" class="view-teaser" hidden>
           <img class="teaser-bg" src="./assets/teaser-trending.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
@@ -116,7 +116,7 @@
       </div>
 
       <!-- Similar view -->
-      <div id="similarView" hidden>
+      <div id="similarView" role="region" aria-label="Similar" hidden>
         <div id="similarSetup" class="view-teaser" hidden>
           <img class="teaser-bg" src="./assets/teaser-similar.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
@@ -130,12 +130,12 @@
             <button class="tiny-link" id="similarReload" type="button">Refresh</button>
           </div>
           <div class="inline-banner" id="similarEmptyNotice" hidden>Rate some titles to seed this. Showing random picks from your library for now.</div>
-          <div class="similar-grid" id="similarGrid"></div>
+          <section class="similar-grid" id="similarGrid" aria-label="Similar picks"></section>
         </div>
       </div>
 
       <!-- AI view -->
-      <div id="aiView" hidden>
+      <div id="aiView" role="region" aria-label="Mood" hidden>
         <div id="aiSetup" class="view-teaser" hidden>
           <img class="teaser-bg" src="./assets/teaser-mood.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">

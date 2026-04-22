@@ -19,7 +19,7 @@ test("similar view shows rated Trakt library posters in its grid", async ({ page
 
   await page.getByRole("link", { name: /similar/i }).click()
 
-  await expect(page.locator("#similarGrid").getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+  await expect(page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 })
 
 async function signInToTrakt(page, {
