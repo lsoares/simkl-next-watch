@@ -72,7 +72,7 @@ class PosterCard extends HTMLElement {
 
     this.innerHTML = `
       <article class="item-card${watched && !isCurrentlyWatching ? " trending-watched" : ""}${(isCurrentlyWatching || (!watched && inWatchlist && !isNext)) ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
-        ${posterHref ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true"></div>`}</a>` : ""}
+        ${posterHref ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`}</a>` : ""}
         <div class="poster-top">
           <div class="poster-top-text">
             <div class="poster-title">
@@ -127,6 +127,18 @@ export function availableEpisodesLeft(show) {
 
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+}
+
+function placeholderGradient(title) {
+  let h = 0
+  for (const c of String(title)) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  const hue1 = h % 360
+  const hue2 = (h * 7 + 137) % 360
+  const x1 = 15 + (h % 45)
+  const y1 = 10 + ((h >>> 3) % 45)
+  const x2 = 50 + ((h >>> 5) % 45)
+  const y2 = 50 + ((h >>> 7) % 45)
+  return `radial-gradient(circle at ${x1}% ${y1}%, hsla(${hue1},60%,55%,0.25), transparent 55%),radial-gradient(circle at ${x2}% ${y2}%, hsla(${hue2},55%,50%,0.18), transparent 55%),linear-gradient(145deg,#1a2340 0%,#0b1220 100%)`
 }
 
 function formatRuntime(mins) {
