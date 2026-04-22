@@ -413,24 +413,23 @@
         #aiFavoritesRow .row-item .item-card { width: 100%; height: auto; aspect-ratio: 2/3; }
 
         /* Trending: reuse suggestions-grid layout */
-        #trendingView {
+        #trendingContent {
           display: flex;
           flex-direction: column;
           height: var(--mobile-content-height);
+          min-height: 0;
         }
-        #trendingContent { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; height: auto; }
         #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
 
         /* Mood: bound to viewport and scroll the inner content */
-        #aiView {
-          display: flex;
-          flex-direction: column;
+        #aiContent {
           height: var(--mobile-content-height);
+          min-height: 0;
+          overflow-y: auto;
         }
-        #aiContent { flex: 1; min-height: 0; overflow-y: auto; }
       }
 
       @media (hover: hover) and (pointer: fine) {
