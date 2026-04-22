@@ -480,7 +480,7 @@
         animation: spin 0.7s linear infinite;
         pointer-events: none;
       }
-      .spinner[hidden] { display: none; }
+      .spinner[hidden] { display: block !important; visibility: hidden; }
       .spinner-inline {
         display: block;
         margin: 24px auto;
