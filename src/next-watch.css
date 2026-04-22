@@ -313,7 +313,7 @@
       posters-row { scroll-timeline: --media-scroll inline; }
       .row-item {
         flex-shrink: 0;
-        width: calc((min(100vw, 680px) - 68px) / 3.2);
+        width: calc((min(100vw, 680px) - 68px) / 2.6);
         scroll-snap-align: start;
         scroll-snap-stop: always;
       }
@@ -407,10 +407,8 @@
         posters-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
-        #tvRow .row-item { flex-shrink: 0; width: max(130px, calc((100vw - 44px) / 2.4)); }
-        #tvRow .row-item .item-card { width: 100%; height: 100%; }
-        #movieRow .row-item { flex-shrink: 0; width: max(120px, calc((100vw - 44px) / 3)); }
-        #movieRow .row-item .item-card { width: 100%; height: 100%; }
+        #tvRow .row-item, #movieRow .row-item { flex-shrink: 0; width: max(130px, calc((100vw - 44px) / 2.4)); }
+        #tvRow .row-item .item-card, #movieRow .row-item .item-card { width: 100%; height: 100%; }
 
         /* Trending: reuse suggestions-grid layout */
         #trendingView {
@@ -418,8 +416,9 @@
           flex-direction: column;
           height: var(--mobile-content-height);
         }
+        #trendingContent { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
-        #trendingGrid { flex: 1; min-height: 0; }
+        #trendingGrid { flex: 1; min-height: 0; height: auto; }
         #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
       }
@@ -504,9 +503,6 @@
         margin: 0 0 16px;
       }
       #trendingPeriodTabs { margin: 0; }
-      #trendingGrid .row-item {
-        width: calc((min(100vw, 680px) - 68px) / 2.6);
-      }
       #trendingGrid .item-card {
         text-decoration: none;
       }
