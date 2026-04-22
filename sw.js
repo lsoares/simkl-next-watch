@@ -1,4 +1,4 @@
-const CACHE = "next-watch-__APP_VERSION__"
+const CACHE = "next-watch-v7"
 const SHELL = [
   "./index.html",
   "./assets/icon.png",
