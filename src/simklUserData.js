@@ -115,7 +115,7 @@ export const simklUserData = (() => {
     async getWatchlistShows() {
       const { shows, fresh } = await loadRawLibrary()
       return {
-        items: shows.filter((s) => s.status === "plantowatch" && s.release_status !== "unreleased"),
+        items: shows.filter((s) => s.status === "plantowatch"),
         fresh,
       }
     },
@@ -123,7 +123,7 @@ export const simklUserData = (() => {
     async getWatchlistMovies() {
       const { movies, fresh } = await loadRawLibrary()
       return {
-        items: movies.filter((m) => m.status === "plantowatch" && m.release_status !== "unreleased"),
+        items: movies.filter((m) => m.status === "plantowatch"),
         fresh,
       }
     },
@@ -208,7 +208,7 @@ function normalizeItem(raw) {
     runtime: media.runtime || 0,
     rating: typeof simklRating === "number" ? simklRating : null,
     status: normalizeStatus(raw.status),
-    release_status: isUnreleased(media, releaseDate) ? "unreleased" : undefined,
+    release_status: media.year && media.year > new Date().getFullYear() ? "unreleased" : undefined,
     nextEpisode: parseNextEpisode(raw.next_to_watch),
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
     last_watched_at: raw.last_watched_at || null,
@@ -225,13 +225,6 @@ function decodeSimklText(s) {
 
 function normalizeStatus(s) {
   return String(s || "").toLowerCase().replace(/\s+/g, "")
-}
-
-function isUnreleased(media, releaseDate) {
-  if (releaseDate && new Date(releaseDate).getTime() > Date.now()) return true
-  if (media.year && media.year > new Date().getFullYear()) return true
-  const status = String(media.status || "").toLowerCase()
-  return /^(upcoming|rumored|announced|planned|in production|post[- ]?production)$/.test(status)
 }
 
 function parseNextEpisode(value) {

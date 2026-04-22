@@ -55,8 +55,10 @@
         display: flex;
         justify-content: center;
         gap: 20px;
-        padding: max(12px, env(safe-area-inset-top)) 0 12px;
-        background: linear-gradient(to top, transparent, rgba(17,24,39,0.95) 40%);
+        padding: max(12px, env(safe-area-inset-top)) 0 20px;
+        background: linear-gradient(to top, transparent, rgba(17,24,39,0.6) 30%, rgba(17,24,39,0.92) 70%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         z-index: 10;
         pointer-events: none;
       }
