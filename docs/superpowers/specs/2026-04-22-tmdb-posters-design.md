@@ -95,7 +95,7 @@ regression from today's "no poster available" state.
 ## Tests
 
 All existing tests that stub Simkl/Trakt poster endpoints must be updated to
-stub TMDB endpoints instead. User has opted to handle test updates.
+stub TMDB endpoints instead.
 
 ## Rollout / cleanup order
 
