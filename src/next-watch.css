@@ -623,6 +623,7 @@
         height: 100%;
         object-fit: cover;
         opacity: 0.35;
+        filter: blur(1px);
         mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
         -webkit-mask-image: radial-gradient(ellipse at center, black 45%, transparent 95%);
         pointer-events: none;
@@ -662,21 +663,14 @@
         letter-spacing: -0.01em;
         margin-bottom: 16px;
       }
-      .app-intro-desc {
-        font-size: 1rem;
-        color: var(--muted);
-        line-height: 1.6;
-        margin-bottom: 0;
-      }
-      .app-intro-desc a {
-        text-decoration: underline;
+      .app-intro-tagline a {
+        text-decoration: none;
         text-underline-offset: 3px;
-        text-decoration-color: rgba(255,255,255,0.25);
         transition: color 0.15s ease, text-decoration-color 0.15s ease;
       }
-      .app-intro-desc a[href*="simkl"] { color: #5fa8d3; }
-      .app-intro-desc a[href*="trakt"] { color: #c27cdb; }
-      .app-intro-desc a:hover { text-decoration-color: currentColor; filter: brightness(1.15); }
+      .app-intro-tagline a[href*="simkl"] { color: #a6cce4; }
+      .app-intro-tagline a[href*="trakt"] { color: #dbb5e6; }
+      .app-intro-tagline a:hover { text-decoration: underline; text-decoration-color: currentColor; }
       .app-intro-actions {
         display: flex;
         flex-wrap: wrap;
