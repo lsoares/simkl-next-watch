@@ -414,7 +414,8 @@ function initDockEffect(row) {
   function loadTrendingBadgeSets() {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
     const periods = ["today", "week", "month"]
-    trendingBadgeSetsPromise = Promise.all(periods.map((p) => mediaRepository().getTrending(p)))
+    trendingBadgeSetsPromise = new Promise((resolve) => requestIdleCallback(resolve, { timeout: 2000 }))
+      .then(() => Promise.all(periods.map((p) => mediaRepository().getTrending(p))))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() }
         results.forEach(({ tv, movies }, i) => {
@@ -432,13 +433,12 @@ function initDockEffect(row) {
   }
 
   async function annotateTrendingBadges(rowEl, items, isEligible) {
-    if (isEligible && !items.some(isEligible)) return
     const sets = await loadTrendingBadgeSets()
     const cards = rowEl.querySelectorAll("poster-card")
     items.forEach((item, i) => {
       const card = cards[i]
       if (!card) return
-      if (!isEligible(item)) return
+      if (isEligible?.(item) === false) return
       const period = trendingPeriodFor(trendingIdsOf(item), sets)
       if (!period) return
       const info = trendingBadgeInfo(period)
