@@ -162,6 +162,20 @@ test("mood view shows a generic-suggestions notice when the library has no rated
   await expect(page.getByText(/rate some titles for sharper.*watched history/i)).toBeVisible()
 })
 
+test("mood view hides the rate-more banner once the library has ratings", async ({ page }) => {
+  await signInToSimkl(page, {
+    shows: [{
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      status: "watching", user_rating: 9, next_to_watch: "S05E01",
+      watched_episodes_count: 46, total_episodes_count: 62,
+    }],
+  })
+
+  await page.getByRole("link", { name: /mood/i }).click()
+
+  await expect(page.getByText(/rate some titles for sharper.*watched history/i)).toBeHidden()
+})
+
 async function signInToSimkl(page, { shows = [], movies = [], anime = [] } = {}) {
   await setupOauthToken(page, "test-token")
   await setupSyncActivities(page)
