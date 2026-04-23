@@ -493,7 +493,7 @@ function initDockEffect(row) {
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
     libraryReady.then(() => {
-      const hasRated = [...libraryIndex.values()].some((e) => e.userRating != null)
+      const hasRated = [...libraryIndex.values()].some((i) => i.user_rating != null)
       el.aiNoRatingsNotice.hidden = hasRated
     })
   }
