@@ -797,38 +797,28 @@
 }
 
 .similar-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  padding-right: 32px;
+  scroll-snap-type: x mandatory;
 }
+.similar-grid::-webkit-scrollbar { display: none; }
 
 .similar-grid .row-item {
-  width: 100%;
-  height: auto;
+  flex-shrink: 0;
+  width: calc((min(100vw, 680px) - 68px) / 2.6);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .similar-grid .row-item .item-card {
   width: 100%;
-  height: auto;
   aspect-ratio: 2 / 3;
-}
-
-@media (max-width: 900px) {
-  .similar-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-}
-
-@media (max-width: 600px) {
-  .similar-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-}
-
-.similar-grid .item-card .more-like-btn {
-  width: 44px;
-  height: 44px;
-}
-
-.similar-grid .item-card .more-like-btn svg {
-  width: 26px;
-  height: 26px;
+  height: auto;
 }
 
 .poster-skeleton {
@@ -878,20 +868,6 @@
     border-radius: 0;
     margin: 0;
     padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
-  }
-  .more-like-dialog #aiDialogResults {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scroll-snap-type: none;
-  }
-  .more-like-dialog #aiDialogResults .row-item {
-    width: 100%;
-    scroll-snap-align: none;
   }
 }
 

@@ -69,7 +69,7 @@ class PosterCard extends HTMLElement {
     const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
     const showMarkWatched = isNext
     const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist && !watching
-    const showMoreLike = variant === "discovery"
+    const showMoreLike = variant === "recommendation" || (variant === "trending" && (watched || isCurrentlyWatching))
     const showRating = !isCurrentlyWatching && rating != null && (!isNext || unstarted)
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
@@ -215,5 +215,5 @@ function formatWatchedAgo(iso) {
 
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
 const ICON_BOOKMARK = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
-const ICON_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
-const ICON_SPARKLE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.75)" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M18 14l.9 2.7L21.6 18l-2.7.9L18 21l-.9-2.1L14.4 18l2.7-.9L18 14z"/></svg>`
+const ICON_CHECK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+const ICON_SPARKLE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M18 14l.9 2.7L21.6 18l-2.7.9L18 21l-.9-2.1L14.4 18l2.7-.9L18 14z"/></svg>`

@@ -343,7 +343,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(containerEl, item, "discovery"))
+    items.forEach((item) => renderPosterCard(containerEl, item, "trending"))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -518,7 +518,7 @@ function initDockEffect(row) {
       .map(([, p]) => p)
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
-    picks.forEach((item) => renderPosterCard(el.similarGrid, item, "discovery"))
+    picks.forEach((item) => renderPosterCard(el.similarGrid, item, "recommendation"))
   }
 
   function openAiSettings() {
@@ -661,7 +661,7 @@ function initDockEffect(row) {
       const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType }, "discovery")
+        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType }, "recommendation")
       })
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
