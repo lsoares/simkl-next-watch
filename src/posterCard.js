@@ -3,6 +3,7 @@ import { tmdbRepository } from "./tmdbRepository.js"
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
+  context = ""
 
   connectedCallback() {
     if (this._rendered) return
@@ -60,9 +61,10 @@ class PosterCard extends HTMLElement {
     // - not started → add to watchlist
     // - started or in watchlist → mark watched
     // - finished → more like this
+    const seriesOutsideNext = type === "tv" && this.context !== "next"
     const showAddWatchlist = loggedIn && id && notStarted
-    const showMarkWatched = inWatchlist
-    const showMoreLike = watched
+    const showMarkWatched = inWatchlist && !seriesOutsideNext
+    const showMoreLike = watched || (seriesOutsideNext && inWatchlist)
 
     const showYear = !watching && year
     const showRating = rating != null && !watching

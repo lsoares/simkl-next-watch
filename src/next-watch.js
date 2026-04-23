@@ -245,7 +245,7 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(rowEl, item))
+    items.forEach((item) => renderPosterCard(rowEl, item, "next"))
     appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
@@ -602,10 +602,11 @@ function initDockEffect(row) {
   // ── AI Result Rendering ──
 
 
-  function renderPosterCard(row, item) {
+  function renderPosterCard(row, item, context = "") {
     const { frag, card } = makeRowItem()
     card.item = mergeWithLibrary(item, libraryIndex)
     card.loggedIn = isLoggedIn()
+    card.context = context
     card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
