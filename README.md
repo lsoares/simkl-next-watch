@@ -1,6 +1,30 @@
-# simkl-next-watch
+# Next Watch
 
-Static app. No build step.
+A no-clutter companion for your [Trakt](https://app.trakt.tv) or [Simkl](https://simkl.com) library. Static app, no build step.
+
+**Live:** <https://lsoares.github.io/simkl-next-watch/>
+
+## Features
+
+### Next
+The exact episode you're on across every show you're watching — one tap to mark it watched.
+
+![Next view](assets/teaser-next.jpg)
+
+### Trending
+What's hot today, this week, this month. One tap to add to your watchlist.
+
+![Trending view](assets/teaser-trending.jpg)
+
+### Similar
+Pick a title you love; find more like it.
+
+![Similar view](assets/teaser-similar.jpg)
+
+### Mood
+AI-picked suggestions tuned to your ratings. Bring your own key (Gemini, OpenAI, Claude, Grok, Groq, DeepSeek, or OpenRouter).
+
+![Mood view](assets/teaser-mood.jpg)
 
 ## Setup
 
