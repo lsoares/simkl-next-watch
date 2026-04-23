@@ -75,6 +75,7 @@ const STORAGE = {
   provider: "next-watch-provider",
   trendingPeriod: "next-watch-trending-period",
   hideWatched: "next-watch-hide-watched",
+  similarMinRating: "next-watch-similar-min-rating",
   aiProvider: "next-watch-ai-provider",
   aiKeyGemini: "next-watch-ai-key-gemini",
   aiKeyOpenai: "next-watch-ai-key-openai",
@@ -187,7 +188,7 @@ function initDockEffect(row) {
     navSimilar: $("navSimilar"),
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
-    similarStats: $("similarStats"),
+    similarStats: $("similarStats"), similarHint: $("similarHint"), similarRatingTabs: $("similarRatingTabs"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
     attribution: $("attribution"), attributionProviderLink: $("attributionProviderLink"),
   }
@@ -516,7 +517,11 @@ function initDockEffect(row) {
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
-    const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= 7)
+    const minRating = getSimilarMinRating()
+    el.similarHint.textContent = minRating === 10
+      ? "Your titles rated 10, shuffled. Pick one to find more like it."
+      : `Your titles rated ${minRating}+, shuffled. Pick one to find more like it.`
+    const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= minRating)
     const usingFallback = rated.length === 0
     const pool = usingFallback ? [...shows, ...movies] : rated
     similarPool = pool
@@ -578,6 +583,12 @@ function initDockEffect(row) {
     li.append(`🎬 ${watchedMovies.length.toLocaleString()} · 📺 ${watchedShows.length.toLocaleString()} · ${rated.toLocaleString()} rated · ${formatHours(movieMinutes + showMinutes)}`)
     el.similarStats.replaceChildren(li)
     el.similarStats.hidden = false
+  }
+
+  function getSimilarMinRating() {
+    const active = el.similarRatingTabs.querySelector(".range-tab.active")?.dataset.minRating
+    const parsed = Number.parseInt(active, 10)
+    return Number.isFinite(parsed) ? parsed : 7
   }
 
   function formatHours(minutes) {
@@ -905,6 +916,14 @@ function initDockEffect(row) {
   el.navSimilar.addEventListener("click", (e) => { e.preventDefault(); showView("similar"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
   el.similarReload.addEventListener("click", () => renderSimilar())
+  el.similarRatingTabs.addEventListener("click", (e) => {
+    const tab = e.target.closest(".range-tab")
+    if (!tab) return
+    el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.remove("active"))
+    tab.classList.add("active")
+    writeStorage(STORAGE.similarMinRating, tab.dataset.minRating)
+    renderSimilar()
+  })
   el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
   el.trendingPeriodTabs.addEventListener("click", (e) => {
@@ -943,6 +962,10 @@ function initDockEffect(row) {
   const savedPeriod = readStorage(STORAGE.trendingPeriod)
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))
+  }
+  const savedMinRating = readStorage(STORAGE.similarMinRating)
+  if (savedMinRating) {
+    el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
   handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
