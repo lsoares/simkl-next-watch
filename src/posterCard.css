@@ -252,20 +252,6 @@
 .trending-watchlisted:hover .poster,
 .trending-watchlisted:hover .poster-top-text { opacity: 0.85; }
 
-.similar-grid .trending-watched .poster,
-.similar-grid .trending-watched .poster-top-text,
-.similar-grid .trending-watchlisted .poster,
-.similar-grid .trending-watchlisted .poster-top-text { opacity: 1; }
-
-.similar-grid .more-like-btn {
-  width: 72px;
-  height: 72px;
-  background: color-mix(in srgb, var(--accent) 85%, black 15%);
-  border-color: #fff;
-}
-.similar-grid .more-like-btn svg { width: 32px; height: 32px; fill: #fff; }
-.similar-grid .more-like-btn:hover { background: var(--accent); }
-
 @keyframes watchedOut {
   0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
   40%  { filter: brightness(2.5) saturate(0); }

@@ -255,13 +255,6 @@
         margin-bottom: 0;
       }
 
-      .ai-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
-
 
       .toast {
         position: fixed;
