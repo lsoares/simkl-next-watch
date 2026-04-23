@@ -3,6 +3,7 @@ import { tmdbRepository } from "./tmdbRepository.js"
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
+  noFade = false
 
   connectedCallback() {
     if (this._rendered) return
@@ -60,9 +61,10 @@ class PosterCard extends HTMLElement {
     // - not started → add to watchlist
     // - started or in watchlist → mark watched
     // - finished → more like this
+    const hasEpisodeInfo = type === "tv" && !!item.nextEpisode
     const showAddWatchlist = loggedIn && id && notStarted
-    const showMarkWatched = inWatchlist
-    const showMoreLike = watched
+    const showMarkWatched = inWatchlist && (type !== "tv" || hasEpisodeInfo)
+    const showMoreLike = watched || (type === "tv" && inWatchlist && !hasEpisodeInfo)
 
     const showYear = !watching && year
     const showRating = rating != null && !watching
@@ -79,7 +81,7 @@ class PosterCard extends HTMLElement {
     const posterTooltip = watching && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.noFade ? " no-fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
         ${(() => {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           return posterHref

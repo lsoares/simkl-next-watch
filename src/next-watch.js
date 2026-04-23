@@ -245,7 +245,7 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(rowEl, item))
+    items.forEach((item) => renderPosterCard(rowEl, mergeWithLibrary(item, libraryIndex)))
     appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
@@ -342,7 +342,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(containerEl, item))
+    items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -519,7 +519,7 @@ function initDockEffect(row) {
       .map(([, p]) => p)
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
-    picks.forEach((item) => renderPosterCard(el.similarGrid, item))
+    picks.forEach((item) => renderPosterCard(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { noFade: true }))
   }
 
   function renderSimilarStats(shows, movies) {
@@ -602,10 +602,15 @@ function initDockEffect(row) {
   // ── AI Result Rendering ──
 
 
-  function renderPosterCard(row, item) {
+  function asSeriesPoster(item) {
+    return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
+  }
+
+  function renderPosterCard(row, item, { noFade = false } = {}) {
     const { frag, card } = makeRowItem()
-    card.item = mergeWithLibrary(item, libraryIndex)
+    card.item = item
     card.loggedIn = isLoggedIn()
+    card.noFade = noFade
     card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
@@ -674,7 +679,7 @@ function initDockEffect(row) {
       }
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: "movie" })
+        renderPosterCard(el.aiDialogResults, asSeriesPoster(mergeWithLibrary({ title: s.title, year: s.year, ids: {}, type: "movie" }, libraryIndex)))
       })
       observeAiLazyHydration(el.aiDialogResults)
     } catch (err) {
@@ -711,7 +716,7 @@ function initDockEffect(row) {
       card.closest(".row-item")?.remove()
       return
     }
-    card.item = mergeWithLibrary(resolved, libraryIndex)
+    card.item = asSeriesPoster(mergeWithLibrary(resolved, libraryIndex))
     card.refresh()
   }
 
