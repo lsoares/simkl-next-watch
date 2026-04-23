@@ -187,6 +187,7 @@ function initDockEffect(row) {
     navSimilar: $("navSimilar"),
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
+    similarStats: $("similarStats"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -507,6 +508,7 @@ function initDockEffect(row) {
 
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
+    renderSimilarStats(shows, movies)
     const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= 7)
     const usingFallback = rated.length === 0
     const pool = usingFallback ? [...shows, ...movies] : rated
@@ -518,6 +520,33 @@ function initDockEffect(row) {
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
     picks.forEach((item) => renderPosterCard(el.similarGrid, item))
+  }
+
+  function renderSimilarStats(shows, movies) {
+    const watchedMovies = movies.filter((m) => m.status === "completed")
+    const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
+    const movieRatings = movies.filter((m) => m.user_rating != null).length
+    const showRatings = shows.filter((s) => s.user_rating != null).length
+    const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
+    const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
+    const lines = [
+      { icon: "🎬", n: watchedMovies.length, label: "movies", ratings: movieRatings, minutes: movieMinutes },
+      { icon: "📺", n: watchedShows.length, label: "series", ratings: showRatings, minutes: showMinutes },
+    ]
+    el.similarStats.replaceChildren()
+    for (const { icon, n, label, ratings, minutes } of lines) {
+      const li = document.createElement("li")
+      li.append(`${icon} ${n.toLocaleString()} ${label} · ${ratings.toLocaleString()} rated · ${formatHours(minutes)}`)
+      el.similarStats.appendChild(li)
+    }
+    el.similarStats.hidden = false
+  }
+
+  function formatHours(minutes) {
+    if (minutes <= 0) return "~0h"
+    const hours = minutes / 60
+    if (hours < 10) return `~${(Math.round(hours * 2) / 2).toLocaleString()}h`
+    return `~${Math.round(hours).toLocaleString()}h`
   }
 
   function openAiSettings() {
