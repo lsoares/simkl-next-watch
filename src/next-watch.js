@@ -239,6 +239,7 @@ function initDockEffect(row) {
     const h = window.visualViewport?.height || window.innerHeight
     document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`)
     if (el.topBar) document.documentElement.style.setProperty("--top-bar-height", `${Math.ceil(el.topBar.getBoundingClientRect().height)}px`)
+    syncSimilarRows?.()
   }
 
   // ── Render rows ──
@@ -527,8 +528,23 @@ function initDockEffect(row) {
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
     el.similarGrid.scrollLeft = 0
+    syncSimilarRows()
     appendSimilarBatch()
     observeSimilarTail()
+  }
+
+  function syncSimilarRows() {
+    if (el.similarView.hidden) return
+    const grid = el.similarGrid
+    const cs = getComputedStyle(grid)
+    const colWidth = parseFloat(cs.gridAutoColumns)
+    if (!Number.isFinite(colWidth) || colWidth <= 0) return
+    const gap = parseFloat(cs.rowGap) || 10
+    const appHeight = window.visualViewport?.height || window.innerHeight
+    const availHeight = appHeight - grid.getBoundingClientRect().top - 16
+    const rowHeight = colWidth * 1.5 + gap
+    const rows = Math.max(2, Math.floor((availHeight + gap) / rowHeight))
+    grid.style.setProperty("--rows", rows)
   }
 
   function appendSimilarBatch() {
@@ -554,20 +570,12 @@ function initDockEffect(row) {
   function renderSimilarStats(shows, movies) {
     const watchedMovies = movies.filter((m) => m.status === "completed")
     const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
-    const movieRatings = movies.filter((m) => m.user_rating != null).length
-    const showRatings = shows.filter((s) => s.user_rating != null).length
+    const rated = movies.filter((m) => m.user_rating != null).length + shows.filter((s) => s.user_rating != null).length
     const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
     const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
-    const lines = [
-      { icon: "🎬", n: watchedMovies.length, label: "movies", ratings: movieRatings, minutes: movieMinutes },
-      { icon: "📺", n: watchedShows.length, label: "series", ratings: showRatings, minutes: showMinutes },
-    ]
-    el.similarStats.replaceChildren()
-    for (const { icon, n, label, ratings, minutes } of lines) {
-      const li = document.createElement("li")
-      li.append(`${icon} ${n.toLocaleString()} ${label} · ${ratings.toLocaleString()} rated · ${formatHours(minutes)}`)
-      el.similarStats.appendChild(li)
-    }
+    const li = document.createElement("li")
+    li.append(`🎬 ${watchedMovies.length.toLocaleString()} · 📺 ${watchedShows.length.toLocaleString()} · ${rated.toLocaleString()} rated · ${formatHours(movieMinutes + showMinutes)}`)
+    el.similarStats.replaceChildren(li)
     el.similarStats.hidden = false
   }
 

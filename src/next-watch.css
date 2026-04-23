@@ -805,7 +805,7 @@
 .poster-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(2, auto);
+  grid-template-rows: repeat(var(--rows, 2), auto);
   grid-auto-columns: calc((min(100vw, 680px) - 68px) / 2.6);
   gap: 10px;
   overflow-x: auto;
