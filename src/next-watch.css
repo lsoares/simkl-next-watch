@@ -281,18 +281,13 @@
 
       .media-section {
         position: relative;
+        timeline-scope: --media-scroll;
       }
-      .media-section::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 32px;
-        height: 100%;
-        background: linear-gradient(to right, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg));
-        pointer-events: none;
+      posters-row,
+      .poster-grid {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
       }
-      .media-section { timeline-scope: --media-scroll; }
       posters-row {
         display: flex;
         gap: 10px;
@@ -828,6 +823,10 @@
   width: 100%;
   aspect-ratio: 2 / 3;
   height: auto;
+}
+
+@media (max-width: 520px) {
+  .poster-grid { --rows: 2; }
 }
 
 .poster-skeleton {
