@@ -51,7 +51,7 @@ async function exchangeOAuthCode(code) {
     }),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok || !data.access_token) throw new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`)
+  if (!res.ok || !data.access_token) throw Object.assign(new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`), { user: true })
   return data
 }
 
@@ -239,7 +239,7 @@ async function authFetch(path, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem("next-watch-access-token")
     startOAuth()
-    throw new Error("Trakt session expired — redirecting to sign in.")
+    throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)

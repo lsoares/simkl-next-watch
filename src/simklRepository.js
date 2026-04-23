@@ -47,7 +47,7 @@ async function exchangeOAuthCode(code) {
     }),
   })
   const data = await res.json().catch(() => ({}))
-  if (!data.access_token) throw new Error(data.error || "Token exchange failed.")
+  if (!data.access_token) throw Object.assign(new Error(data.error || "Token exchange failed."), { user: true })
   return data
 }
 
@@ -182,7 +182,7 @@ async function authFetch(path, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem("next-watch-access-token")
     startOAuth()
-    throw new Error("Simkl session expired — redirecting to sign in.")
+    throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)

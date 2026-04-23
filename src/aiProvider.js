@@ -70,7 +70,10 @@ async function aiComplete(provider, key, userMessage, sysPrompt) {
     body: JSON.stringify(config.body(sysPrompt, userMessage)),
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(res.status === 429 ? "AI quota exceeded." : (data.error?.message || (typeof data.error === "string" ? data.error : null) || `${provider} error ${res.status}`))
+  if (!res.ok) {
+    const msg = res.status === 429 ? "AI quota exceeded." : (data.error?.message || (typeof data.error === "string" ? data.error : null) || `${provider} error ${res.status}`)
+    throw res.status < 500 ? Object.assign(new Error(msg), { user: true }) : new Error(msg)
+  }
   return config.extract(data) || ""
 }
 

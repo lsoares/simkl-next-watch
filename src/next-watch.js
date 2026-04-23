@@ -220,7 +220,7 @@ function initDockEffect(row) {
 
   function handleError(err) {
     console.error(err)
-    window.posthog?.captureException?.(err)
+    if (!err?.user) window.posthog?.captureException?.(err)
     showToast(err?.message || String(err), true)
   }
 
@@ -822,7 +822,7 @@ function initDockEffect(row) {
       }
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
-      if (expected && state && expected !== state) throw new Error("State mismatch.")
+      if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
