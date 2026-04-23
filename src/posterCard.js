@@ -1,8 +1,6 @@
 import { tmdbRepository } from "./tmdbRepository.js"
 
 class PosterCard extends HTMLElement {
-  variant = "next"
-  type = "tv"
   item = null
   watched = false
   watchedAt = null
@@ -38,61 +36,58 @@ class PosterCard extends HTMLElement {
   }
 
   _emit(name) {
-    this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item, type: this.type } }))
+    this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item } }))
   }
 
   _render() {
-    const { item, variant, type, watched, watchedAt, userRating, inWatchlist, watching, loggedIn } = this
+    const { item, watched, watchedAt, userRating, inWatchlist, watching, loggedIn } = this
     if (!item) return
 
-    const isNext = variant === "next"
     const id = item.id || ""
     const title = item.title || ""
     const year = item.year || ""
+    const type = item.type
     const rating = item.rating
     const img = item.posterUrl || ""
     const url = item.url || ""
 
-    const ep = isNext && type === "tv" ? item.nextEpisode : null
-    const unstarted = isNext ? isUnstarted(item, type) : false
-    const epUrl = !unstarted && ep ? (this.episodeUrlFn?.(item, ep) || "") : ""
-    const epCode = !unstarted && ep ? `${ep.season}x${ep.episode}` : ""
-    const showEpCount = type === "tv" && !epCode && !watching && (isNext || !watched)
+    const ep = watching && type === "tv" ? item.nextEpisode : null
+    const epUrl = ep ? (this.episodeUrlFn?.(item, ep) || "") : ""
+    const epCode = ep ? `${ep.season}x${ep.episode}` : ""
+    const totalEps = item.total_episodes_count || 0
+    const watchedEps = item.watched_episodes_count || 0
+    const showProgress = watching && type === "tv" && totalEps > 0 && watchedEps > 0
+    const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
+    const showEpCount = type === "tv" && !epCode && !watching && !watched
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : ""
 
-    const isCurrentlyWatching = !isNext && watching
-    const showYear = isNext ? unstarted && year : !isCurrentlyWatching && year
-    const totalEps = item.total_episodes_count || 0
-    const watchedEps = item.watched_episodes_count || 0
-    const showProgress = isNext && type === "tv" && totalEps > 0 && watchedEps > 0
-    const progressPct = showProgress ? Math.min(100, Math.round((watchedEps / totalEps) * 100)) : 0
-    const showMarkWatched = isNext
-    const showAddWatchlist = !isNext && loggedIn && id && !watched && !inWatchlist && !watching
-    const showMoreLike = variant === "recommendation" || (variant === "trending" && (watched || isCurrentlyWatching))
-    const showRating = !isCurrentlyWatching && rating != null && (!isNext || unstarted)
+    // Action rules:
+    // - not started → add to watchlist
+    // - started or in watchlist → mark watched
+    // - finished → more like this
+    const showAddWatchlist = loggedIn && id && !watched && !watching && !inWatchlist
+    const showMarkWatched = inWatchlist
+    const showMoreLike = watched
+
+    const showYear = !watching && year
+    const showRating = rating != null && !watching
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
-    const showWatchedBadge = !isNext && watched && !isCurrentlyWatching
-    const watchedAgo = showWatchedBadge && watchedAt ? formatWatchedAgo(watchedAt) : ""
-    const watchedRating = !isNext && !isCurrentlyWatching && userRating != null ? userRating : null
-    const showWatchingBadge = isCurrentlyWatching
-    const showWatchlistBadge = !isNext && inWatchlist && !watched && !isCurrentlyWatching
-    const isUnstartedItem = isNext ? unstarted : (!watched && !watching)
-    const showRuntime = isUnstartedItem && Number.isFinite(item.runtime) && item.runtime > 0
+    const watchedAgo = watched && watchedAt ? formatWatchedAgo(watchedAt) : ""
+    const watchedRating = userRating != null && !watching ? userRating : null
+    const showWatchingBadge = watching && !ep
+    const showWatchlistBadge = inWatchlist && !watching
+    const showRuntime = !watched && !watching && Number.isFinite(item.runtime) && item.runtime > 0
     const runtimeLabel = showRuntime ? formatRuntime(item.runtime) : ""
 
-    const dataAttrs = isNext
-      ? `data-simkl-id="${id}" data-type="${type}"`
-      : `data-simkl-id="${id}" data-title="${escapeHtml(title)}"`
-    const imgLazy = isNext ? "" : ` loading="lazy"`
-    const posterHref = isNext ? (epUrl || url) : url
-    const posterTooltip = isNext && !unstarted && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
+    const posterHref = epUrl || url
+    const posterTooltip = watching && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
 
     this.innerHTML = `
-      <article class="item-card${watched && !isCurrentlyWatching ? " trending-watched" : ""}${(isCurrentlyWatching || (!watched && inWatchlist && !isNext)) ? " trending-watchlisted" : ""}" ${dataAttrs} aria-label="${escapeHtml(title)}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
         ${(() => {
-          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt=""${imgLazy} draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
+          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           return posterHref
             ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${inner}</a>`
             : `<div class="poster-anchor">${inner}</div>`
@@ -114,7 +109,7 @@ class PosterCard extends HTMLElement {
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
           ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}<span>Watching</span></span>` : ""}
-          ${showWatchedBadge && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
+          ${watched && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
         </div>
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
@@ -132,15 +127,16 @@ class PosterCard extends HTMLElement {
   }
 
   _maybeObservePoster() {
-    const { item, type } = this
+    const item = this.item
     if (!item || item.posterUrl) return posterObserver?.unobserve(this)
-    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && type)) return
+    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
     getPosterObserver().observe(this)
   }
 
   async _hydratePoster() {
-    const { item, type } = this
+    const item = this.item
     if (!item || item.posterUrl) return
+    const type = item.type
     const tmdbUrl = (item.ids?.tmdb || item.ids?.imdb)
       ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type })
       : await tmdbRepository.getPosterByTitle(item.title, item.year, type)

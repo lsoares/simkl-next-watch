@@ -246,7 +246,7 @@ function initDockEffect(row) {
 
   function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(rowEl, item, "next"))
+    items.forEach((item) => renderPosterCard(rowEl, item))
     appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
@@ -343,7 +343,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(containerEl, item, "trending"))
+    items.forEach((item) => renderPosterCard(containerEl, item))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -518,7 +518,7 @@ function initDockEffect(row) {
       .map(([, p]) => p)
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
-    picks.forEach((item) => renderPosterCard(el.similarGrid, item, "recommendation"))
+    picks.forEach((item) => renderPosterCard(el.similarGrid, item))
   }
 
   function openAiSettings() {
@@ -583,10 +583,8 @@ function initDockEffect(row) {
   // ── AI Result Rendering ──
 
 
-  function renderPosterCard(row, item, variant) {
+  function renderPosterCard(row, item) {
     const { frag, card } = makeRowItem()
-    card.variant = variant
-    card.type = item.type
     card.item = item
     card.applyLibraryEntry(libraryLookup(libraryIndex, item))
     card.loggedIn = isLoggedIn()
@@ -661,7 +659,7 @@ function initDockEffect(row) {
       const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType }, "recommendation")
+        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType })
       })
       observeAiLazyHydration(el.aiDialogResults, mediaType)
     } catch (err) {
@@ -699,7 +697,6 @@ function initDockEffect(row) {
       return
     }
     card.item = resolved
-    card.type = resolved.type
     card.applyLibraryEntry(libraryLookup(libraryIndex, resolved))
     card.refresh()
   }
