@@ -182,7 +182,7 @@ function initDockEffect(row) {
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
-    aiPrompts: $("aiPrompts"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
+    aiPrompts: $("aiPrompts"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
     aiDialogClose: $("aiDialogClose"), aiDialogResults: $("aiDialogResults"),
     navSimilar: $("navSimilar"),
@@ -496,10 +496,6 @@ function initDockEffect(row) {
     if (!loggedIn) return
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     syncAiKeyLink()
-    libraryReady.then(() => {
-      const hasRated = [...libraryIndex.values()].some((i) => i.user_rating != null)
-      el.aiNoRatingsNotice.hidden = hasRated
-    })
   }
 
   function hydrateSimilarView() {
