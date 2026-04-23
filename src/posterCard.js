@@ -98,15 +98,21 @@ class PosterCard extends HTMLElement {
               ${showRuntime ? `<span class="poster-runtime">${escapeHtml(runtimeLabel)}</span>` : ""}
             </div>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showRating ? `<span class="poster-status poster-status--${ratingLabel.toLowerCase()}" title="${ratingLabel} rating: ${ratingText}/10" aria-label="${ratingLabel} rating ${ratingText} out of 10">★ ${ratingText}</span>` : ""}
+            ${showRating ? `<span class="poster-status poster-status--${ratingLabel.toLowerCase()}" title="${ratingLabel} rating: ${ratingText}/10" aria-label="${ratingLabel} rating ${ratingText} out of 10">${ratingText} ☆</span>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}<span>Watching</span></span>` : ""}
-          ${watched && watchedAgo ? `<span class="poster-status poster-status--watchlist" title="Watched ${escapeHtml(watchedAgo)}" aria-label="Watched ${escapeHtml(watchedAgo)}">${ICON_EYE}<span>${escapeHtml(watchedAgo)}</span></span>` : ""}
-          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}<span>Watchlist</span></span>` : ""}
-          ${watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">★ ${watchedRating}</span>` : ""}
+          ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}</span>` : ""}
+          ${watched ? (() => {
+            const watchedText = watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+            const ratedSuffix = watchedRating != null ? ` · Rated ${watchedRating}/10` : ""
+            const starText = watchedRating != null ? ` ${watchedRating} ☆` : ""
+            const variant = watchedRating != null ? "rating" : "watchlist"
+            return `<span class="poster-status poster-status--${variant}" title="${watchedText}${ratedSuffix}" aria-label="${watchedText}${ratedSuffix}">${ICON_EYE}${starText}</span>`
+          })() : ""}
+          ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}</span>` : ""}
+          ${!watched && watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">${watchedRating} ☆</span>` : ""}
         </div>
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
