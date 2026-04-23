@@ -146,7 +146,15 @@ class PosterCard extends HTMLElement {
     const url = tmdbUrl || item.posterFallbackUrl || ""
     if (!url || this.item !== item) return
     item.posterUrl = url
-    this.refresh()
+    const oldPoster = this.querySelector(".poster")
+    if (!oldPoster) return this.refresh()
+    const img = document.createElement("img")
+    img.className = "poster poster--hydrating"
+    img.alt = ""
+    img.loading = "lazy"
+    img.draggable = false
+    img.src = url
+    oldPoster.replaceWith(img)
   }
 }
 

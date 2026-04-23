@@ -482,8 +482,15 @@
         border-radius: 50%;
         animation: spin 0.7s linear infinite;
         pointer-events: none;
+        opacity: 1;
+        transition: opacity 250ms ease;
       }
-      .spinner[hidden] { display: block !important; visibility: hidden; }
+      .spinner[hidden] {
+        display: block !important;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 250ms ease, visibility 0s linear 250ms;
+      }
       .spinner-inline {
         display: block;
         margin: 24px auto;
