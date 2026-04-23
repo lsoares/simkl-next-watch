@@ -252,6 +252,11 @@
 .trending-watchlisted:hover .poster,
 .trending-watchlisted:hover .poster-top-text { opacity: 0.85; }
 
+.item-card.no-fade .poster,
+.item-card.no-fade .poster-top-text,
+.item-card.no-fade:hover .poster,
+.item-card.no-fade:hover .poster-top-text { opacity: 1; }
+
 @keyframes watchedOut {
   0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
   40%  { filter: brightness(2.5) saturate(0); }
