@@ -790,8 +790,8 @@
   margin-bottom: 12px;
 }
 
-.similar-hint {
-  margin: 0;
+.view-hint {
+  margin: 0 0 12px;
   font-size: 0.9rem;
   color: var(--muted);
 }
