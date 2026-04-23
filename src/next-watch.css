@@ -41,6 +41,7 @@
         max-width: 680px;
         padding: 80px 24px 40px;
         box-sizing: border-box;
+        flex: 1;
       }
 
       h1,
@@ -597,10 +598,14 @@
         max-width: 680px;
         padding: 0 24px calc(max(16px, env(safe-area-inset-bottom)) + 16px);
         text-align: center;
-        font-size: 0.72rem;
-        color: var(--muted);
+        font-size: 0.65rem;
+        color: #64748b;
+        opacity: 0.7;
       }
       .attribution a {
+        color: inherit;
+      }
+      .attribution a:hover {
         text-decoration: underline;
         text-underline-offset: 2px;
       }
