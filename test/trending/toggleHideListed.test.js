@@ -1,0 +1,105 @@
+import { test, expect } from "../test.js"
+import {
+  setupAuthorize as setupSimklAuthorize,
+  setupOauthToken as setupSimklOauthToken,
+  setupSyncActivities,
+  setupSyncShows,
+  setupSyncMovies,
+  setupSyncAnime,
+  setupTrendingTv,
+  setupTrendingMovies,
+} from "../_clients/simkl.js"
+import {
+  setupAuthorize as setupTraktAuthorize,
+  setupOauthToken as setupTraktOauthToken,
+  setupLastActivities,
+  setupWatchedShows,
+  setupWatchedMovies,
+  setupWatchlistShows,
+  setupWatchlistMovies,
+  setupDroppedShows,
+  setupRatingsShows,
+  setupRatingsMovies,
+  setupWatchedShowsByPeriod,
+  setupWatchedMoviesByPeriod,
+} from "../_clients/trakt.js"
+import { setupTmdb } from "../_clients/tmdb.js"
+
+test.describe("Simkl", () => {
+  test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
+    await setupSimklOauthToken(page, "test-token")
+    await setupSyncActivities(page)
+    await setupSyncShows(page, [
+      { show: { title: "Breaking Bad", ids: { simkl_id: 11121 } }, status: "plantowatch" },
+      {
+        show: { title: "Severance", ids: { simkl_id: 22222 } },
+        status: "watching",
+        watched_episodes_count: 3, total_episodes_count: 9,
+      },
+    ])
+    await setupSyncMovies(page, [])
+    await setupSyncAnime(page, [])
+    await setupTrendingTv(page, { today: [
+      { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      { title: "Severance", ids: { simkl_id: 22222 } },
+      { title: "The Rookie", ids: { simkl_id: 99001 } },
+    ] })
+    await setupTrendingMovies(page, {})
+    await setupSimklAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await page.getByRole("link", { name: /trending/i }).click()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "Severance" }).getByLabel(/^watching$/i)).toBeVisible()
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+
+    await page.getByRole("checkbox", { name: /hide listed/i }).check()
+
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+  })
+})
+
+test.describe("Trakt", () => {
+  test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
+    await setupTraktOauthToken(page, "test-token")
+    await setupLastActivities(page)
+    await setupWatchedShows(page, [{
+      last_watched_at: "2024-10-01T00:00:00Z",
+      show: { title: "Severance", year: 2022, aired_episodes: 9, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
+      seasons: [{ number: 1, episodes: Array.from({ length: 9 }, (_, i) => ({ number: i + 1, plays: 1 })) }],
+    }])
+    await setupWatchedMovies(page, [])
+    await setupTmdb(page, 3)
+    await setupWatchlistShows(page, [{
+      listed_at: "2025-01-01T00:00:00Z",
+      show: { title: "Breaking Bad", year: 2008, first_aired: "2008-01-20", aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+    }])
+    await setupWatchlistMovies(page, [])
+    await setupDroppedShows(page, [])
+    await setupRatingsShows(page, [])
+    await setupRatingsMovies(page, [])
+    await setupWatchedShowsByPeriod(page, {
+      daily: [
+        { watcher_count: 5000, show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } } },
+        { watcher_count: 4000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } } },
+        { watcher_count: 3000, show: { title: "The Rookie", year: 2018, ids: { trakt: 99001, slug: "the-rookie", imdb: "tt7587890" } } },
+      ],
+    })
+    await setupWatchedMoviesByPeriod(page, {})
+    await setupTraktAuthorize(page)
+    await page.goto("/")
+    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await page.getByRole("link", { name: /trending/i }).click()
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+
+    await page.getByRole("checkbox", { name: /hide listed/i }).check()
+
+    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+  })
+})
