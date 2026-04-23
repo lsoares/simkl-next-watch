@@ -9,9 +9,7 @@
   "scripts": {
     "test": "npx playwright test",
     "build": "node build.js",
-    "_get_ngrok_url": "curl -sf http://127.0.0.1:4040/api/tunnels | node -pe 'JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")).tunnels[0]?.public_url || (console.error(\"No ngrok tunnel running. Start one with: npm run expose\"), process.exit(1))'",
-    "expose": "trap 'kill 0' EXIT; npx serve -l 8080 -s . & ngrok http 8080 > /dev/null & until curl -sf http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -q public_url; do sleep 0.2; done; URL=$(npm run -s _get_ngrok_url); printf %s \"$URL\" | pbcopy; echo \"Copied: $URL\"; open \"$URL\" https://simkl.com/settings/developer/edit/61491 https://trakt.tv/oauth/applications/195099/edit; wait",
-    "open": "URL=$(npm run -s _get_ngrok_url) && open \"$URL\""
+    "expose": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s ."
   },
   "repository": {
     "type": "git",

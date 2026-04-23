@@ -30,14 +30,13 @@ AI-picked suggestions tuned to your ratings. Bring your own key (Gemini, OpenAI,
 
 ```sh
 npm install
-brew install ngrok   # only needed for `npm run expose`
 ```
 
 ## Commands
 
 - `npm test` — run Playwright tests.
 - `npm run build` — minify `index.html` and copy assets into `dist/`.
-- `npm run expose` — serve on `:8080`, tunnel via ngrok, and open the developer pages so you can paste the ngrok URL as the redirect URI.
+- `npm run expose` — serve locally at `http://localhost:62946/`.
 
 ## Deploy
 

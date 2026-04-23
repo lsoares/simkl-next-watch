@@ -252,6 +252,9 @@
 .item-card.fade.trending-watchlisted:hover .poster,
 .item-card.fade.trending-watchlisted:hover .poster-top-text { opacity: 0.85; }
 
+.similar-grid .more-like-btn { width: 56px; height: 56px; }
+.similar-grid .more-like-btn svg { width: 24px; height: 24px; }
+
 @keyframes watchedOut {
   0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
   40%  { filter: brightness(2.5) saturate(0); }
@@ -259,6 +262,4 @@
 }
 .item-card.marking-watched { animation: watchedOut 0.55s ease-out forwards; pointer-events: none; }
 
-@media (max-width: 520px) {
-  .poster-status--watchlist > span { display: none; }
-}
+.poster-status--watchlist > span { display: none; }
