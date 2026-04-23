@@ -106,10 +106,11 @@ class PosterCard extends HTMLElement {
           ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}</span>` : ""}
           ${watched ? (() => {
             const watchedText = watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
-            const ratedSuffix = watchedRating != null ? ` · Rated ${watchedRating}/10` : ""
+            const ratedTitleSuffix = watchedRating != null ? ` · Rated ${watchedRating}/10` : ""
+            const ratedLabelSuffix = watchedRating != null ? ` · Rated ${watchedRating} out of 10` : ""
             const starText = watchedRating != null ? ` ${watchedRating} ☆` : ""
             const variant = watchedRating != null ? "rating" : "watchlist"
-            return `<span class="poster-status poster-status--${variant}" title="${watchedText}${ratedSuffix}" aria-label="${watchedText}${ratedSuffix}">${ICON_EYE}${starText}</span>`
+            return `<span class="poster-status poster-status--${variant}" title="${watchedText}${ratedTitleSuffix}" aria-label="${watchedText}${ratedLabelSuffix}">${ICON_EYE}${starText}</span>`
           })() : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}</span>` : ""}
           ${!watched && watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">${watchedRating} ☆</span>` : ""}
