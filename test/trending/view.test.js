@@ -27,7 +27,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("trending row lists shows and movies", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSyncActivities(page)
     await setupSyncShows(page, [{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -56,7 +56,7 @@ test.describe("Simkl", () => {
   })
 
   test("watchlist items show a trending badge in the next view", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSyncActivities(page)
     await setupSyncShows(page, [{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -79,7 +79,7 @@ test.describe("Simkl", () => {
     { period: "month", title: "House of the Dragon" },
   ]) {
     test(`the ${period} tab shows that period's items`, async ({ page }) => {
-      await setupSimklOauthToken(page, "test-token")
+      await setupSimklOauthToken(page)
       await setupSyncActivities(page)
       await setupSyncShows(page, [])
       await setupSyncMovies(page, [])
@@ -104,7 +104,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("trending rows list shows and movies from the watched-period feed", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedShows(page, [])
     await setupWatchedMovies(page, [])

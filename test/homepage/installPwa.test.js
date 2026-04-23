@@ -28,7 +28,7 @@ test("install button hides once the app has been installed", async ({ page }) =>
 })
 
 async function signInToSimkl(page) {
-  await setupOauthToken(page, "test-token")
+  await setupOauthToken(page)
   await setupSimklTrendingTv(page, [])
   await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)

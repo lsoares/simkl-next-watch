@@ -32,7 +32,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("marks the next episode of a watching TV show", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupSyncActivities(page)
@@ -70,7 +70,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("marks the next episode of a watching TV show", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])
@@ -112,7 +112,7 @@ test.describe("Trakt", () => {
   })
 
   test("marks the first episode of a plantowatch show (starting it)", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])

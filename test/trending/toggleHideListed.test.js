@@ -27,7 +27,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSyncActivities(page)
     await setupSyncShows(page, [
       { show: { title: "Breaking Bad", ids: { simkl_id: 11121 } }, status: "plantowatch" },
@@ -63,7 +63,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("hide-listed toggle removes library items from the trending row", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedShows(page, [{
       last_watched_at: "2024-10-01T00:00:00Z",

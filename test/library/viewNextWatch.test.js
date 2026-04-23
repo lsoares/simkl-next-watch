@@ -29,7 +29,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupSyncActivities(page)
@@ -56,7 +56,7 @@ test.describe("Simkl", () => {
   })
 
   test("filters out completed shows from the watching list", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupSyncActivities(page)
@@ -84,7 +84,7 @@ test.describe("Simkl", () => {
   })
 
   test("watchlist hides unreleased shows and movies", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupTmdb(page, 2)
@@ -110,7 +110,7 @@ test.describe("Simkl", () => {
   })
 
   test("watchlist items link to their Simkl pages", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupTmdb(page, 2)
@@ -137,7 +137,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])
     await setupRatingsMovies(page, [])
@@ -167,7 +167,7 @@ test.describe("Trakt", () => {
   })
 
   test("filters out completed and dropped shows from the watching list", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])
     await setupRatingsMovies(page, [])
@@ -209,7 +209,7 @@ test.describe("Trakt", () => {
   })
 
   test("watchlist shows hide unreleased entries", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])
     await setupRatingsMovies(page, [])
@@ -240,7 +240,7 @@ test.describe("Trakt", () => {
   })
 
   test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupWatchedMovies(page, [])
     await setupRatingsShows(page, [])
     await setupRatingsMovies(page, [])
@@ -279,7 +279,7 @@ test.describe("Trakt", () => {
     { label: "rounded to a whole hour", runtime: 125, expected: "~2h" },
   ]) {
     test(`watchlist movie shows runtime chip (${label})`, async ({ page }) => {
-      await setupTraktOauthToken(page, "test-token")
+      await setupTraktOauthToken(page)
       await setupWatchedMovies(page, [])
       await setupRatingsShows(page, [])
       await setupRatingsMovies(page, [])

@@ -27,7 +27,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("logout clears session and shows intro", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupSyncActivities(page)
@@ -53,7 +53,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("logout clears session and shows intro", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedShows(page, [])
     await setupWatchedMovies(page, [])

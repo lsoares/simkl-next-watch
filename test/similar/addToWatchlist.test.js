@@ -21,7 +21,7 @@ test.describe("Simkl", () => {
       localStorage.setItem("next-watch-ai-provider", "gemini")
       localStorage.setItem("next-watch-ai-key-gemini", "apiAiKey")
     })
-    await setupOauthToken(page, "test-token")
+    await setupOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupTmdb(page, 2)

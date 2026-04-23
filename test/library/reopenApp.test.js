@@ -100,7 +100,7 @@ test.describe("Trakt", () => {
 })
 
 async function signInWithSimklLibrary(page, library) {
-  await setupSimklOauthToken(page, "test-token")
+  await setupSimklOauthToken(page)
   await setupSimklTrendingTv(page, [])
   await setupSimklTrendingMovies(page, [])
   await publishSimklLibrary(page, library, "2025-01-01T00:00:00Z")
@@ -117,7 +117,7 @@ async function publishSimklLibrary(page, { shows, movies }, activityAt) {
 }
 
 async function signInWithTraktLibrary(page, library) {
-  await setupTraktOauthToken(page, "test-token")
+  await setupTraktOauthToken(page)
   await setupWatchedMovies(page, [])
   await setupRatingsShows(page, [])
   await setupRatingsMovies(page, [])

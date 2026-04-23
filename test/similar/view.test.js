@@ -28,7 +28,7 @@ import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
   test("similar view shows top-rated library posters in its grid", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupTmdb(page, 2)
@@ -62,7 +62,7 @@ test.describe("Simkl", () => {
   })
 
   test("similar view shows a notice and random library picks when nothing is rated", async ({ page }) => {
-    await setupSimklOauthToken(page, "test-token")
+    await setupSimklOauthToken(page)
     await setupSimklTrendingTv(page, [])
     await setupSimklTrendingMovies(page, [])
     await setupTmdb(page, 1)
@@ -87,7 +87,7 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("similar view shows rated Trakt library posters in its grid", async ({ page }) => {
-    await setupTraktOauthToken(page, "test-token")
+    await setupTraktOauthToken(page)
     await setupLastActivities(page)
     await setupWatchedShows(page, [{
       last_watched_at: new Date().toISOString(),

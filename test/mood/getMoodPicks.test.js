@@ -49,7 +49,7 @@ test.describe("Simkl", () => {
     { name: "openrouter", setupAiChat: setupOpenrouterChat },
   ]) {
     test(`shows poster recommendations with ${name}`, async ({ page }) => {
-      await setupTmdb(page, 5)
+      await setupTmdb(page, 6)
       await setupTvEpisodes(page, "11121")
       await signInToSimkl(page, {
         shows: [{
@@ -64,20 +64,21 @@ test.describe("Simkl", () => {
           },
           {
             movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 33333 } },
-            status: "completed",
+            status: "plantowatch", user_rating: 7,
           },
         ],
       })
       await setupAiChat(page,
-        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010}]',
+        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010},{"title":"The Matrix","year":1999}]',
         "apiAiKey",
-        ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999)"],
+        ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999):7"],
       )
       await setupSearchTv(page, "", [])
       await setupSimklSearchMovie(page, "Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
       await setupSimklSearchMovie(page, "Oldboy", [{ title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } }])
       await setupSimklSearchMovie(page, "Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
       await setupSimklSearchMovie(page, "Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
+      await setupSimklSearchMovie(page, "Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
       await page.getByRole("link", { name: /mood/i }).click()
       await page.getByRole("button", { name: /make me laugh/i }).click()
       await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
@@ -94,41 +95,10 @@ test.describe("Simkl", () => {
       await expect(aiResults.getByRole("article", { name: "Inception" })).toHaveClass(/trending-watched/)
       await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/rated 8 out of 10/i)).toBeVisible()
       await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/^watched /i)).toBeVisible()
+      await expect(aiResults.getByRole("article", { name: "The Matrix" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
+      await expect(aiResults.getByRole("article", { name: "The Matrix" }).getByLabel(/^watched /i)).toHaveCount(0)
     })
   }
-
-  test("AI results show the user rating on rated items even when not watched", async ({ page }) => {
-    await setupTmdb(page, 2)
-    await setupTvEpisodes(page, "11121")
-    await signInToSimkl(page, {
-      shows: [{
-        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
-        status: "watching", user_rating: 9, next_to_watch: "S05E01",
-        watched_episodes_count: 46, total_episodes_count: 62,
-      }],
-      movies: [{
-        movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
-        status: "plantowatch", user_rating: 7,
-      }],
-    })
-    await setupGeminiChat(page,
-      '[{"title":"Inception","year":2010}]',
-      "apiAiKey",
-      ["Breaking Bad (2008):9", "Inception (2010):7"],
-    )
-    await setupSearchTv(page, "", [])
-    await setupSimklSearchMovie(page, "Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
-    await page.getByRole("link", { name: /mood/i }).click()
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-    await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-    await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-    await page.getByRole("button", { name: /save.*key/i }).click()
-    await expect(page.getByRole("status")).toContainText(/key saved/i)
-
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-
-    await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
-  })
 
   test("AI dialog posters link to the matched Simkl page", async ({ page }) => {
     await setupTmdb(page, 2)
@@ -159,6 +129,41 @@ test.describe("Simkl", () => {
     const dialog = page.getByRole("dialog", { name: /ai picks/i })
     await expect(dialog.getByRole("article", { name: "Parasite" })).toBeVisible()
     await expect(dialog.getByRole("link", { name: "Parasite" })).toHaveAttribute("href", /simkl\.com\/movies\/33001/)
+  })
+
+  test("mood view shows the mood prompts on load", async ({ page }) => {
+    await setupTmdb(page)
+    await setupTvEpisodes(page, "11121")
+    await signInToSimkl(page, {
+      shows: [{
+        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+        status: "watching", user_rating: 9, next_to_watch: "S05E01",
+        watched_episodes_count: 46, total_episodes_count: 62,
+      }],
+    })
+
+    await page.getByRole("link", { name: /mood/i }).click()
+
+    await expect(page.getByRole("button", { name: "Cozy night in" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Make me laugh" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Tear-jerker" })).toBeVisible()
+  })
+
+  test("clicking a mood prompt without a key opens the key dialog", async ({ page }) => {
+    await setupTmdb(page)
+    await setupTvEpisodes(page, "11121")
+    await signInToSimkl(page, {
+      shows: [{
+        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+        status: "watching", user_rating: 9, next_to_watch: "S05E01",
+        watched_episodes_count: 46, total_episodes_count: 62,
+      }],
+    })
+    await page.getByRole("link", { name: /mood/i }).click()
+
+    await page.getByRole("button", { name: /cozy night in/i }).click()
+
+    await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
   })
 })
 
@@ -288,7 +293,7 @@ test.describe("Trakt", () => {
 })
 
 async function signInToSimkl(page, { shows = [], movies = [], anime = [] } = {}) {
-  await setupSimklOauthToken(page, "test-token")
+  await setupSimklOauthToken(page)
   await setupSimklTrendingTv(page, [])
   await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
@@ -313,7 +318,7 @@ async function signInToTrakt(page, {
   progressData,
   tmdbTimes,
 } = {}) {
-  await setupTraktOauthToken(page, "test-token")
+  await setupTraktOauthToken(page)
   await setupLastActivities(page)
   await setupWatchedShows(page, watchedShows)
   await setupWatchedMovies(page, watchedMovies)
