@@ -1,43 +1,18 @@
 import { test, expect } from "../test.js"
-import {
-  setupAuthorize as setupSimklAuthorize,
-  setupOauthToken as setupSimklOauthToken,
-  setupSyncActivities,
-  setupSyncShows,
-  setupSyncMovies,
-  setupSyncAnime,
-  setupSimklTrendingTv,
-  setupSimklTrendingMovies,
-} from "../_clients/simkl.js"
-import {
-  setupAuthorize as setupTraktAuthorize,
-  setupLastActivities,
-  setupOauthToken as setupTraktOauthToken,
-  setupWatchlistShows,
-  setupWatchlistMovies,
-  setupWatchedShows,
-  setupWatchedMovies,
-  setupDroppedShows,
-  setupRatingsShows,
-  setupRatingsMovies,
-  setupWatchedShowsByPeriod,
-  setupWatchedMoviesByPeriod,
-} from "../_clients/trakt.js"
-import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
-  test("logout clears session and shows intro", async ({ page }) => {
-    await setupSimklOauthToken(page)
-    await setupSimklTrendingTv(page, [])
-    await setupSimklTrendingMovies(page, [])
-    await setupSyncActivities(page)
-    await setupSyncShows(page, [{
+  test("logout clears session and shows intro", async ({ page, simkl }) => {
+    await simkl.oauthToken()
+    await simkl.trendingTv({})
+    await simkl.trendingMovies({})
+    await simkl.syncActivities()
+    await simkl.syncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await setupSyncMovies(page, [])
-    await setupSyncAnime(page, [])
-    await setupSimklAuthorize(page)
+    await simkl.syncMovies([])
+    await simkl.syncAnime([])
+    await simkl.authorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
@@ -52,23 +27,23 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("logout clears session and shows intro", async ({ page }) => {
-    await setupTraktOauthToken(page)
-    await setupLastActivities(page)
-    await setupWatchedShows(page, [])
-    await setupWatchedMovies(page, [])
-    await setupRatingsShows(page, [])
-    await setupRatingsMovies(page, [])
-    await setupWatchedShowsByPeriod(page, {})
-    await setupWatchedMoviesByPeriod(page, {})
-    await setupTmdb(page)
-    await setupDroppedShows(page, [])
-    await setupWatchlistMovies(page, [])
-    await setupWatchlistShows(page, [{
+  test("logout clears session and shows intro", async ({ page, trakt, tmdb }) => {
+    await trakt.oauthToken()
+    await trakt.lastActivities()
+    await trakt.watchedShows([])
+    await trakt.watchedMovies([])
+    await trakt.ratingsShows([])
+    await trakt.ratingsMovies([])
+    await trakt.watchedShowsByPeriod({})
+    await trakt.watchedMoviesByPeriod({})
+    await tmdb.posters()
+    await trakt.droppedShows([])
+    await trakt.watchlistMovies([])
+    await trakt.watchlistShows([{
       listed_at: "2025-01-01T00:00:00Z",
       show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
     }])
-    await setupTraktAuthorize(page)
+    await trakt.authorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
     await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()

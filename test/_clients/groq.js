@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupGroqChat(page, responseText, expectedKey, expectedRatings) {
+export function setupChat(page, responseText, expectedKey, expectedRatings) {
   return page.route("https://api.groq.com/**", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)

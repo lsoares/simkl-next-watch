@@ -1,47 +1,22 @@
 import { test, expect } from "../test.js"
-import {
-  setupAuthorize as setupSimklAuthorize,
-  setupOauthToken as setupSimklOauthToken,
-  setupSyncActivities,
-  setupSyncShows,
-  setupSyncMovies,
-  setupSyncAnime,
-  setupTrendingTv,
-  setupTrendingMovies,
-} from "../_clients/simkl.js"
-import {
-  setupAuthorize as setupTraktAuthorize,
-  setupOauthToken as setupTraktOauthToken,
-  setupLastActivities,
-  setupWatchedShows,
-  setupWatchedMovies,
-  setupWatchlistShows,
-  setupWatchlistMovies,
-  setupDroppedShows,
-  setupRatingsShows,
-  setupRatingsMovies,
-  setupWatchedShowsByPeriod,
-  setupWatchedMoviesByPeriod,
-} from "../_clients/trakt.js"
-import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
-  test("trending row lists shows and movies", async ({ page }) => {
-    await setupSimklOauthToken(page)
-    await setupSyncActivities(page)
-    await setupSyncShows(page, [{
+  test("trending row lists shows and movies", async ({ page, simkl }) => {
+    await simkl.oauthToken()
+    await simkl.syncActivities()
+    await simkl.syncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await setupSyncMovies(page, [])
-    await setupSyncAnime(page, [])
-    await setupTrendingTv(page, { today: [
+    await simkl.syncMovies([])
+    await simkl.syncAnime([])
+    await simkl.trendingTv({ today: [
       { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       { title: "The Rookie", ids: { simkl_id: 99001 }, ratings: { simkl: { rating: 8.5 } } },
       { title: "The Boys", ids: { simkl_id: 99002 } },
     ] })
-    await setupTrendingMovies(page, {})
-    await setupSimklAuthorize(page)
+    await simkl.trendingMovies({})
+    await simkl.authorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
 
@@ -55,18 +30,18 @@ test.describe("Simkl", () => {
     await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://simkl.com/tv/best-shows/most-watched/?wltime=today")
   })
 
-  test("watchlist items show a trending badge in the next view", async ({ page }) => {
-    await setupSimklOauthToken(page)
-    await setupSyncActivities(page)
-    await setupSyncShows(page, [{
+  test("watchlist items show a trending badge in the next view", async ({ page, simkl }) => {
+    await simkl.oauthToken()
+    await simkl.syncActivities()
+    await simkl.syncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await setupSyncMovies(page, [])
-    await setupSyncAnime(page, [])
-    await setupTrendingTv(page, { today: [{ title: "Breaking Bad", ids: { simkl_id: 11121 } }] })
-    await setupTrendingMovies(page, {})
-    await setupSimklAuthorize(page)
+    await simkl.syncMovies([])
+    await simkl.syncAnime([])
+    await simkl.trendingTv({ today: [{ title: "Breaking Bad", ids: { simkl_id: 11121 } }] })
+    await simkl.trendingMovies({})
+    await simkl.authorize()
     await page.goto("/")
 
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
@@ -78,19 +53,19 @@ test.describe("Simkl", () => {
     { period: "week", title: "Severance" },
     { period: "month", title: "House of the Dragon" },
   ]) {
-    test(`the ${period} tab shows that period's items`, async ({ page }) => {
-      await setupSimklOauthToken(page)
-      await setupSyncActivities(page)
-      await setupSyncShows(page, [])
-      await setupSyncMovies(page, [])
-      await setupSyncAnime(page, [])
-      await setupTrendingTv(page, {
+    test(`the ${period} tab shows that period's items`, async ({ page, simkl }) => {
+      await simkl.oauthToken()
+      await simkl.syncActivities()
+      await simkl.syncShows([])
+      await simkl.syncMovies([])
+      await simkl.syncAnime([])
+      await simkl.trendingTv({
         today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }],
         week: [{ title: "Severance", ids: { simkl_id: 99010 } }],
         month: [{ title: "House of the Dragon", ids: { simkl_id: 99020 } }],
       })
-      await setupTrendingMovies(page, {})
-      await setupSimklAuthorize(page)
+      await simkl.trendingMovies({})
+      await simkl.authorize()
       await page.goto("/")
       await page.getByRole("button", { name: /sign in with simkl/i }).click()
       await page.getByRole("link", { name: /trending/i }).click()
@@ -103,29 +78,29 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("trending rows list shows and movies from the watched-period feed", async ({ page }) => {
-    await setupTraktOauthToken(page)
-    await setupLastActivities(page)
-    await setupWatchedShows(page, [])
-    await setupWatchedMovies(page, [])
-    await setupTmdb(page, 3)
-    await setupWatchlistShows(page, [])
-    await setupWatchlistMovies(page, [])
-    await setupDroppedShows(page, [])
-    await setupRatingsShows(page, [])
-    await setupRatingsMovies(page, [])
-    await setupWatchedShowsByPeriod(page, {
+  test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb }) => {
+    await trakt.oauthToken()
+    await trakt.lastActivities()
+    await trakt.watchedShows([])
+    await trakt.watchedMovies([])
+    await tmdb.posters(3)
+    await trakt.watchlistShows([])
+    await trakt.watchlistMovies([])
+    await trakt.droppedShows([])
+    await trakt.ratingsShows([])
+    await trakt.ratingsMovies([])
+    await trakt.watchedShowsByPeriod({
       daily: [
         { watcher_count: 5000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } } },
         { watcher_count: 3200, show: { title: "The Rookie", year: 2018, ids: { trakt: 99001, slug: "the-rookie", imdb: "tt7587890" } } },
       ],
     })
-    await setupWatchedMoviesByPeriod(page, {
+    await trakt.watchedMoviesByPeriod({
       daily: [
         { watcher_count: 8000, movie: { title: "Dune", year: 2021, ids: { trakt: 9999, slug: "dune-2021", imdb: "tt1160419" } } },
       ],
     })
-    await setupTraktAuthorize(page)
+    await trakt.authorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
 

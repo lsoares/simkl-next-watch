@@ -1,42 +1,27 @@
 import { test, expect } from "../test.js"
-import {
-  setupAuthorize,
-  setupOauthToken,
-  setupSyncActivities,
-  setupSyncShows,
-  setupSyncMovies,
-  setupSyncAnime,
-  setupSearchTv,
-  setupSearchMovie,
-  setupAddToWatchlist,
-  setupSimklTrendingTv,
-  setupSimklTrendingMovies,
-} from "../_clients/simkl.js"
-import { setupTmdb } from "../_clients/tmdb.js"
-import { setupGeminiSimilar } from "../_clients/gemini.js"
 
 test.describe("Simkl", () => {
-  test("adds an unwatched similar pick to the watchlist from the similar dialog", async ({ page }) => {
+  test("adds an unwatched similar pick to the watchlist from the similar dialog", async ({ page, simkl, tmdb, ai }) => {
     await page.addInitScript(() => {
       localStorage.setItem("next-watch-ai-provider", "gemini")
       localStorage.setItem("next-watch-ai-key-gemini", "apiAiKey")
     })
-    await setupOauthToken(page)
-    await setupSimklTrendingTv(page, [])
-    await setupSimklTrendingMovies(page, [])
-    await setupTmdb(page, 2)
-    await setupSyncActivities(page)
-    await setupSyncShows(page, [])
-    await setupSyncMovies(page, [{
+    await simkl.oauthToken()
+    await simkl.trendingTv({})
+    await simkl.trendingMovies({})
+    await tmdb.posters(2)
+    await simkl.syncActivities()
+    await simkl.syncShows([])
+    await simkl.syncMovies([{
       movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
       status: "completed", user_rating: 8,
     }])
-    await setupSyncAnime(page, [])
-    await setupAuthorize(page)
-    await setupGeminiSimilar(page, '[{"title":"The Prestige","year":2006}]', "apiAiKey", "Inception (2010)")
-    await setupSearchTv(page, "", [])
-    await setupSearchMovie(page, "Prestige", [{ title: "The Prestige", year: 2006, ids: { simkl_id: 44444 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
-    await setupAddToWatchlist(page, { movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
+    await simkl.syncAnime([])
+    await simkl.authorize()
+    await ai.gemini.similar('[{"title":"The Prestige","year":2006}]', "apiAiKey", "Inception (2010)")
+    await simkl.searchTv("", [])
+    await simkl.searchMovie("Prestige", [{ title: "The Prestige", year: 2006, ids: { simkl_id: 44444 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
+    await simkl.addToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()

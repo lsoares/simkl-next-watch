@@ -1,15 +1,10 @@
 import { expect } from "@playwright/test"
 
-export function setupSimklTrendingTv(page, items) {
+export function setupTrendingTv(page, byPeriod) {
   return page.route("https://data.simkl.in/discover/trending/tv/*", async (route) => {
     expect(route.request().method()).toBe("GET")
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-  })
-}
-
-export function setupSimklTrendingMovies(page, items) {
-  return page.route("https://data.simkl.in/discover/trending/movies/*", async (route) => {
-    expect(route.request().method()).toBe("GET")
+    const period = periodFromTrendingUrl(route.request().url())
+    const items = byPeriod[period] || []
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
   })
 }
@@ -173,14 +168,6 @@ function periodFromTrendingUrl(url) {
   return match?.[1] || null
 }
 
-export function setupTrendingTv(page, byPeriod) {
-  return page.route("https://data.simkl.in/discover/trending/tv/*", async (route) => {
-    expect(route.request().method()).toBe("GET")
-    const period = periodFromTrendingUrl(route.request().url())
-    const items = byPeriod[period] || []
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-  })
-}
 
 export function setupTrendingMovies(page, byPeriod) {
   return page.route("https://data.simkl.in/discover/trending/movies/*", async (route) => {

@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupOpenaiChat(page, responseText, expectedKey, expectedRatings) {
+export function setupChat(page, responseText, expectedKey, expectedRatings) {
   return page.route("**/v1/chat/completions", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)

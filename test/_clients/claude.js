@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupClaudeChat(page, responseText, expectedKey, expectedRatings) {
+export function setupChat(page, responseText, expectedKey, expectedRatings) {
   return page.route("**/v1/messages", async (route) => {
     expect(route.request().method()).toBe("POST")
     expect(route.request().headers()["x-api-key"]).toBe(expectedKey)

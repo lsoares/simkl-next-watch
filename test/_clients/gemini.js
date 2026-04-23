@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 
-export function setupGeminiChat(page, responseText, expectedKey, expectedRatings) {
+export function setupChat(page, responseText, expectedKey, expectedRatings) {
   return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
     expect(route.request().method()).toBe("POST")
     const url = new URL(route.request().url())
@@ -26,7 +26,7 @@ export function setupGeminiChat(page, responseText, expectedKey, expectedRatings
   })
 }
 
-export function setupGeminiSimilar(page, responseText, expectedKey, expectedSeed) {
+export function setupSimilar(page, responseText, expectedKey, expectedSeed) {
   return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
     expect(route.request().method()).toBe("POST")
     const url = new URL(route.request().url())

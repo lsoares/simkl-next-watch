@@ -1,33 +1,8 @@
 import { test, expect } from "../test.js"
-import {
-  setupAuthorize as setupSimklAuthorize,
-  setupOauthToken as setupSimklOauthToken,
-  setupSyncActivities,
-  setupSyncShows,
-  setupSyncMovies,
-  setupSyncAnime,
-  setupSimklTrendingTv,
-  setupSimklTrendingMovies,
-} from "../_clients/simkl.js"
-import {
-  setupAuthorize as setupTraktAuthorize,
-  setupLastActivities,
-  setupOauthToken as setupTraktOauthToken,
-  setupWatchlistShows,
-  setupWatchlistMovies,
-  setupWatchedShows,
-  setupWatchedMovies,
-  setupDroppedShows,
-  setupRatingsShows,
-  setupRatingsMovies,
-  setupWatchedShowsByPeriod,
-  setupWatchedMoviesByPeriod,
-} from "../_clients/trakt.js"
-import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
-  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page }) => {
-    await signInWithSimklLibrary(page, {
+  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl }) => {
+    await signInWithSimklLibrary(page, simkl, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "plantowatch" },
         { title: "Lost", id: 33000, status: "plantowatch" },
@@ -41,7 +16,7 @@ test.describe("Simkl", () => {
     await expect(page.getByRole("article", { name: "Lost" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Inception" })).toBeVisible()
-    await publishSimklLibrary(page, {
+    await publishSimklLibrary(simkl, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "completed" },
         { title: "Chernobyl", id: 22000, status: "plantowatch" },
@@ -64,14 +39,14 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page }) => {
-    await signInWithTraktLibrary(page, {
+  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb }) => {
+    await signInWithTraktLibrary(page, trakt, tmdb, {
       watchlistShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
       watchlistMovies: [{ title: "The Matrix", trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" }],
     })
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-    await publishTraktLibrary(page, {
+    await publishTraktLibrary(trakt, {
       watchedShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
       watchlistShows: [{ title: "Chernobyl", trakt: 2000, imdb: "tt7366338", slug: "chernobyl" }],
       watchlistMovies: [{ title: "Dune", trakt: 9999, imdb: "tt1160419", slug: "dune-2021" }],
@@ -86,49 +61,49 @@ test.describe("Trakt", () => {
   })
 })
 
-async function signInWithSimklLibrary(page, library) {
-  await setupSimklOauthToken(page)
-  await setupSimklTrendingTv(page, [])
-  await setupSimklTrendingMovies(page, [])
-  await publishSimklLibrary(page, library, "2025-01-01T00:00:00Z")
-  await setupSyncAnime(page, [])
-  await setupSimklAuthorize(page)
+async function signInWithSimklLibrary(page, simkl, library) {
+  await simkl.oauthToken()
+  await simkl.trendingTv({})
+  await simkl.trendingMovies({})
+  await publishSimklLibrary(simkl, library, "2025-01-01T00:00:00Z")
+  await simkl.syncAnime([])
+  await simkl.authorize()
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with simkl/i }).click()
 }
 
-async function publishSimklLibrary(page, { shows, movies }, activityAt) {
-  await setupSyncActivities(page, activityAt)
-  await setupSyncShows(page, shows.map(({ title, id, status }) => ({ show: { title, ids: { simkl_id: id } }, status })))
-  await setupSyncMovies(page, movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id }, runtime: 120 }, status })))
+async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
+  await simkl.syncActivities(activityAt)
+  await simkl.syncShows(shows.map(({ title, id, status }) => ({ show: { title, ids: { simkl_id: id } }, status })))
+  await simkl.syncMovies(movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id }, runtime: 120 }, status })))
 }
 
-async function signInWithTraktLibrary(page, library) {
-  await setupTraktOauthToken(page)
-  await setupWatchedMovies(page, [])
-  await setupRatingsShows(page, [])
-  await setupRatingsMovies(page, [])
-  await setupWatchedShowsByPeriod(page, {})
-  await setupWatchedMoviesByPeriod(page, {})
-  await setupTmdb(page, 4)
-  await setupDroppedShows(page, [])
-  await publishTraktLibrary(page, library, "2025-01-01T00:00:00Z")
-  await setupTraktAuthorize(page)
+async function signInWithTraktLibrary(page, trakt, tmdb, library) {
+  await trakt.oauthToken()
+  await trakt.watchedMovies([])
+  await trakt.ratingsShows([])
+  await trakt.ratingsMovies([])
+  await trakt.watchedShowsByPeriod({})
+  await trakt.watchedMoviesByPeriod({})
+  await tmdb.posters(4)
+  await trakt.droppedShows([])
+  await publishTraktLibrary(trakt, library, "2025-01-01T00:00:00Z")
+  await trakt.authorize()
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
 }
 
-async function publishTraktLibrary(page, { watchlistShows = [], watchlistMovies = [], watchedShows = [] }, activityAt) {
-  await setupLastActivities(page, { showsWatchlistedAt: activityAt, moviesWatchlistedAt: activityAt, episodesWatchedAt: activityAt })
-  await setupWatchlistShows(page, watchlistShows.map(({ title, trakt, imdb, slug }) => ({
+async function publishTraktLibrary(trakt, { watchlistShows = [], watchlistMovies = [], watchedShows = [] }, activityAt) {
+  await trakt.lastActivities({ showsWatchlistedAt: activityAt, moviesWatchlistedAt: activityAt, episodesWatchedAt: activityAt })
+  await trakt.watchlistShows(watchlistShows.map(({ title, trakt, imdb, slug }) => ({
     listed_at: "2025-01-01T00:00:00Z",
     show: { title, year: 2020, first_aired: "2020-01-01", aired_episodes: 1, ids: { trakt, slug, imdb } },
   })))
-  await setupWatchlistMovies(page, watchlistMovies.map(({ title, trakt, imdb, slug }) => ({
+  await trakt.watchlistMovies(watchlistMovies.map(({ title, trakt, imdb, slug }) => ({
     listed_at: "2025-01-01T00:00:00Z",
     movie: { title, year: 2020, released: "2020-01-01", ids: { trakt, slug, imdb } },
   })))
-  await setupWatchedShows(page, watchedShows.map(({ title, trakt, imdb, slug }) => ({
+  await trakt.watchedShows(watchedShows.map(({ title, trakt, imdb, slug }) => ({
     last_watched_at: "2025-01-01T00:00:00Z",
     show: { title, year: 2020, aired_episodes: 1, ids: { trakt, slug, imdb } },
     seasons: [{ number: 1, episodes: [{ number: 1 }] }],
