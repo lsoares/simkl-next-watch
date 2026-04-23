@@ -26,13 +26,21 @@ import {
 import { setupTmdb } from "../_clients/tmdb.js"
 
 test.describe("Simkl", () => {
-  test("reopening the app pulls changes made on Simkl's site since last visit", async ({ page }) => {
+  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page }) => {
     await signInWithSimklLibrary(page, {
-      shows: [{ title: "Breaking Bad", id: 11121, status: "plantowatch" }],
-      movies: [{ title: "The Matrix", id: 53992, status: "plantowatch" }],
+      shows: [
+        { title: "Breaking Bad", id: 11121, status: "plantowatch" },
+        { title: "Lost", id: 33000, status: "plantowatch" },
+      ],
+      movies: [
+        { title: "The Matrix", id: 53992, status: "plantowatch" },
+        { title: "Inception", id: 22222, status: "plantowatch" },
+      ],
     })
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "Lost" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
+    await expect(page.getByRole("article", { name: "Inception" })).toBeVisible()
     await publishSimklLibrary(page, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "completed" },
@@ -48,31 +56,10 @@ test.describe("Simkl", () => {
 
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
     await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
+    await expect(page.getByRole("article", { name: "Inception" })).toHaveCount(0)
     await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
-  })
-
-  test("removing items on Simkl clears them from the watchlist on return", async ({ page }) => {
-    await signInWithSimklLibrary(page, {
-      shows: [
-        { title: "Breaking Bad", id: 11121, status: "plantowatch" },
-        { title: "Chernobyl", id: 22000, status: "plantowatch" },
-      ],
-      movies: [{ title: "The Matrix", id: 53992, status: "plantowatch" }],
-    })
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-    await publishSimklLibrary(page, {
-      shows: [{ title: "Chernobyl", id: 22000, status: "plantowatch" }],
-      movies: [],
-    }, "2025-02-01T00:00:00Z")
-
-    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")))
-
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
   })
 })
 

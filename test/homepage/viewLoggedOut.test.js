@@ -13,7 +13,6 @@ for (const { name, regionName, ctaText } of [
     await expect(page.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
     await expect(page.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
 
-
     await page.getByRole("link", { name }).click()
 
     const view = page.getByRole("region", { name: regionName })

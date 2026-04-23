@@ -47,7 +47,8 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     const movieCard = page.getByRole("article", { name: "The Matrix" })
-    await expect(movieCard).toBeVisible()
+    await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
+    await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://simkl.com/search/?type=movies")
     await setupSyncActivities(page, "2025-02-01T00:00:00Z")
     await setupSyncMovies(page, [{
       movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
@@ -86,7 +87,8 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
     const movieCard = page.getByRole("article", { name: "The Matrix" })
-    await expect(movieCard).toBeVisible()
+    await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
+    await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=movie")
     await setupWatchlistMovies(page, [])
 
     await movieCard.getByRole("button", { name: /mark as watched/i }).click()

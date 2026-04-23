@@ -51,7 +51,9 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
-    await expect(showCard).toBeVisible()
+    await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad")
+    await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
+    await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://simkl.com/search/?type=tv")
     await setupSyncActivities(page, "2025-02-01T00:00:00Z")
     await setupSyncShows(page, [{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -92,7 +94,9 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
-    await expect(showCard.getByRole("link", { name: /^5x1:/ })).toBeVisible()
+    await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad")
+    await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
+    await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=show")
     await setupWatchedShows(page, [{
       last_watched_at: new Date().toISOString(),
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
