@@ -342,7 +342,7 @@ function initDockEffect(row) {
 
   function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
+    items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
     const u = mediaRepository()
     appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
@@ -506,20 +506,49 @@ function initDockEffect(row) {
     libraryReady.then(() => renderSimilar())
   }
 
+  const SIMILAR_BATCH = 20
+  let similarPool = []
+  let similarCursor = 0
+  let similarObserver = null
+
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
     const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= 7)
     const usingFallback = rated.length === 0
     const pool = usingFallback ? [...shows, ...movies] : rated
-    const picks = pool
+    similarPool = pool
       .map((p) => [Math.random(), p])
       .sort((a, b) => a[0] - b[0])
-      .slice(0, 10)
       .map(([, p]) => p)
+    similarCursor = 0
+    similarObserver?.disconnect()
+    similarObserver = null
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
-    picks.forEach((item) => renderPosterCard(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { noFade: true }))
+    el.similarGrid.scrollLeft = 0
+    appendSimilarBatch()
+    observeSimilarTail()
+  }
+
+  function appendSimilarBatch() {
+    const slice = similarPool.slice(similarCursor, similarCursor + SIMILAR_BATCH)
+    similarCursor += slice.length
+    slice.forEach((item) => renderPosterCard(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
+  }
+
+  function observeSimilarTail() {
+    if (similarCursor >= similarPool.length) return
+    similarObserver ??= new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        similarObserver.unobserve(entry.target)
+        appendSimilarBatch()
+        observeSimilarTail()
+      }
+    }, { root: el.similarGrid, rootMargin: "0px 800px 0px 0px" })
+    const items = el.similarGrid.querySelectorAll(".row-item")
+    if (items.length) similarObserver.observe(items[items.length - 1])
   }
 
   function renderSimilarStats(shows, movies) {
@@ -606,11 +635,11 @@ function initDockEffect(row) {
     return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
   }
 
-  function renderPosterCard(row, item, { noFade = false } = {}) {
+  function renderPosterCard(row, item, { fade = false } = {}) {
     const { frag, card } = makeRowItem()
     card.item = item
     card.loggedIn = isLoggedIn()
-    card.noFade = noFade
+    card.fade = fade
     card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
@@ -679,7 +708,7 @@ function initDockEffect(row) {
       }
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, asSeriesPoster(mergeWithLibrary({ title: s.title, year: s.year, ids: {}, type: "movie" }, libraryIndex)))
+        renderPosterCard(el.aiDialogResults, asSeriesPoster(mergeWithLibrary({ title: s.title, year: s.year, ids: {}, type: "movie" }, libraryIndex)), { fade: true })
       })
       observeAiLazyHydration(el.aiDialogResults)
     } catch (err) {
