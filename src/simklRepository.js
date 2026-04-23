@@ -276,7 +276,7 @@ function normalizeItem(raw) {
     runtime: media.runtime || 0,
     rating: typeof simklRating === "number" ? simklRating : null,
     status: normalizeStatus(raw.status),
-    release_status: media.year && media.year > new Date().getFullYear() ? "unreleased" : undefined,
+    release_status: (media.year && media.year > new Date().getFullYear()) || (type === "movie" && !media.runtime) ? "unreleased" : undefined,
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/` : "",
     added_at: raw.added_to_watchlist_at || raw.added_at || null,

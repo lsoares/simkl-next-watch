@@ -60,7 +60,7 @@ test("watchlist hides unreleased shows and movies", async ({ page }) => {
     { show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999 } }, status: "plantowatch" },
   ])
   await setupSyncMovies(page, [
-    { movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } }, status: "plantowatch" },
+    { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } }, status: "plantowatch" },
     { movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000 } }, status: "plantowatch" },
   ])
   await setupSyncAnime(page, [])
@@ -82,7 +82,7 @@ test("watchlist items link to their Simkl pages", async ({ page }) => {
     { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } }, status: "plantowatch" },
   ])
   await setupSyncMovies(page, [
-    { movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } }, status: "plantowatch" },
+    { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } }, status: "plantowatch" },
   ])
   await setupSyncAnime(page, [])
   await setupAuthorize(page)
@@ -166,5 +166,5 @@ async function returnToApp(page) {
 async function publishLibrary(page, { shows, movies }, activityAt) {
   await setupSyncActivities(page, activityAt)
   await setupSyncShows(page, shows.map(({ title, id, status }) => ({ show: { title, ids: { simkl_id: id } }, status })))
-  await setupSyncMovies(page, movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id } }, status })))
+  await setupSyncMovies(page, movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id }, runtime: 120 }, status })))
 }

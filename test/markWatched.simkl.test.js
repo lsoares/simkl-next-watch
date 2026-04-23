@@ -40,7 +40,7 @@ test("marks a watchlist movie as watched", async ({ page }) => {
   await setupSyncActivities(page)
   await setupSyncShows(page, [])
   await setupSyncMovies(page, [{
-    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
+    movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
     status: "plantowatch",
     added_to_watchlist_at: "2025-01-01T00:00:00Z",
   }])
@@ -53,7 +53,7 @@ test("marks a watchlist movie as watched", async ({ page }) => {
   await expect(movieCard).toBeVisible()
   await setupSyncActivities(page, "2025-02-01T00:00:00Z")
   await setupSyncMovies(page, [{
-    movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992 } },
+    movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
     status: "completed",
   }])
 
