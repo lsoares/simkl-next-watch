@@ -39,7 +39,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await showCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
-  await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched.*rate it/i)
+  await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
   await expect(toast.getByRole("link", { name: "Breaking Bad 5x1" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
   await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/2")
 })
@@ -78,7 +78,7 @@ test("marks the first episode of a plantowatch show (starting it)", async ({ pag
   await showCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
-  await expect(toast).toContainText(/marked.*severance.*1x1.*watched.*rate it/i)
+  await expect(toast).toContainText(/marked.*severance.*1x1.*watched/i)
   await expect(toast.getByRole("link", { name: "Severance 1x1" })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance/seasons/1/episodes/1")
   await expect(showCard.getByRole("link", { name: /1x2/ })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance/seasons/1/episodes/2")
 })
@@ -111,7 +111,7 @@ test("marks a watchlist movie as watched", async ({ page }) => {
   await movieCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
-  await expect(toast).toContainText(/marked.*matrix.*watched.*rate it/i)
+  await expect(toast).toContainText(/marked.*matrix.*watched/i)
   await expect(toast.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
   await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
 })

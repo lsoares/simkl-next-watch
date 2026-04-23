@@ -271,7 +271,7 @@ function initDockEffect(row) {
     const snapshot = { ...item }
     try {
       await mediaRepository().markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, " watched — rate it?"))
+      showToast(toastFrag("Marked ", snapshot, " watched."))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
@@ -432,12 +432,13 @@ function initDockEffect(row) {
   }
 
   async function annotateTrendingBadges(rowEl, items, isEligible) {
+    if (isEligible && !items.some(isEligible)) return
     const sets = await loadTrendingBadgeSets()
     const cards = rowEl.querySelectorAll("poster-card")
     items.forEach((item, i) => {
       const card = cards[i]
       if (!card) return
-      if (isEligible && !isEligible(item)) return
+      if (!isEligible(item)) return
       const period = trendingPeriodFor(trendingIdsOf(item), sets)
       if (!period) return
       const info = trendingBadgeInfo(period)

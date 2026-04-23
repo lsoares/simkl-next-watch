@@ -33,7 +33,7 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
   await showCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
-  await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched.*rate it/i)
+  await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
   await expect(toast.getByRole("link", { name: "Breaking Bad 5x1" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
   await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-2/")
 })
@@ -66,7 +66,7 @@ test("marks a watchlist movie as watched", async ({ page }) => {
   await movieCard.getByRole("button", { name: /mark as watched/i }).click()
 
   const toast = page.getByRole("status")
-  await expect(toast).toContainText(/marked.*matrix.*watched.*rate it/i)
+  await expect(toast).toContainText(/marked.*matrix.*watched/i)
   await expect(toast.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
   await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
 })
