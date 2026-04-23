@@ -11,11 +11,13 @@ export const test = base.extend({
       window.__REDIRECT_URI__ = uri
     }, `${baseURL}/`)
     await context.route("**/*", (route) => {
-      if (route.request().url().startsWith(baseURL)) return route.continue()
-      route.abort("internetdisconnected")
+      const url = route.request().url()
+      expect(url.startsWith(baseURL), `unexpected external request: ${url}`).toBe(true)
+      return route.continue()
     })
     await use(context)
   },
+  
   page: async ({ page }, use) => {
     const registrations = []
     const originalRoute = page.route.bind(page)
@@ -29,7 +31,7 @@ export const test = base.extend({
     }
     await use(page)
     const unused = registrations.filter((r) => r.hits === 0).map((r) => r.pattern)
-    if (unused.length) throw new Error(`Unused route handlers:\n  ${unused.join("\n  ")}`)
+    expect(unused, "unused route handlers").toEqual([])
   },
 })
 

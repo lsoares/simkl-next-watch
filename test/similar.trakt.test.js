@@ -1,5 +1,6 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("similar view shows rated Trakt library posters in its grid", async ({ page }) => {
   await signInToTrakt(page, {
@@ -24,6 +25,7 @@ test("similar view shows rated Trakt library posters in its grid", async ({ page
 
 async function signInToTrakt(page, {
   watchedShows = [],
+  watchedMovies = [],
   watchlistShows = [],
   watchlistMovies = [],
   droppedShows = [],
@@ -34,6 +36,10 @@ async function signInToTrakt(page, {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchedShows(page, watchedShows)
+  await setupWatchedMovies(page, watchedMovies)
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupWatchlistShows(page, watchlistShows)
   await setupWatchlistMovies(page, watchlistMovies)
   await setupDroppedShows(page, droppedShows)

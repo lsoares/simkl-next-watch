@@ -1,5 +1,6 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupSearchShow, setupSearchMovie } from "./clients/trakt.js"
+import { setupAuthorize, setupOauthToken, setupLastActivities, setupWatchedShows, setupWatchedMovies, setupWatchlistShows, setupWatchlistMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupProgress, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod, setupSearchShow, setupSearchMovie } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 
 test("sends Trakt user ratings to the AI alongside library titles", async ({ page }) => {
@@ -26,12 +27,15 @@ test("sends Trakt user ratings to the AI alongside library titles", async ({ pag
       movie: { title: "Inception", year: 2010, ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
+    tmdbTimes: 5,
   })
   await setupGeminiChat(page,
     '[{"title":"Parasite","year":2019}]',
     "apiAiKey",
     ["Breaking Bad (2008):9", "Inception (2010):8"],
   )
+  await setupSearchShow(page, "", [])
+  await setupSearchMovie(page, "Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -67,17 +71,16 @@ test("AI results reflect Trakt watchlist and watched status", async ({ page }) =
       show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
+    tmdbTimes: 7,
   })
   await setupGeminiChat(page,
     '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
     "apiAiKey",
     ["Breaking Bad (2008):9"],
   )
-  await setupSearchShow(page, {})
-  await setupSearchMovie(page, {
-    Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
-    Parasite: { type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } },
-  })
+  await setupSearchShow(page, "", [])
+  await setupSearchMovie(page, "Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
+  await setupSearchMovie(page, "Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -99,16 +102,15 @@ test("AI hits open Trakt pages on click for Trakt users", async ({ page }) => {
       seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
     }],
     progressByShow: { "breaking-bad": { next_episode: { season: 5, number: 1, title: "Live Free or Die" } } },
+    tmdbTimes: 4,
   })
   await setupGeminiChat(page,
     '[{"title":"Inception","year":2010}]',
     "apiAiKey",
     [],
   )
-  await setupSearchShow(page, {})
-  await setupSearchMovie(page, {
-    Inception: { type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } },
-  })
+  await setupSearchShow(page, "", [])
+  await setupSearchMovie(page, "Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -130,11 +132,15 @@ async function signInToTrakt(page, {
   ratingsShows = [],
   ratingsMovies = [],
   progressByShow = {},
+  tmdbTimes,
 } = {}) {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchedShows(page, watchedShows)
-  if (watchedMovies.length) await setupWatchedMovies(page, watchedMovies)
+  await setupWatchedMovies(page, watchedMovies)
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page, tmdbTimes)
   await setupWatchlistShows(page, watchlistShows)
   await setupWatchlistMovies(page, watchlistMovies)
   await setupDroppedShows(page, droppedShows)

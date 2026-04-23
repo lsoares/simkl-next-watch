@@ -1,5 +1,6 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSearchTv, setupSearchMovie, setupSimklTrendingTv, setupSimklTrendingMovies } from "./clients/simkl.js"
+import { setupTmdb } from "./clients/tmdb.js"
 import { setupGeminiChat } from "./clients/gemini.js"
 import { setupOpenaiChat } from "./clients/openai.js"
 import { setupClaudeChat } from "./clients/claude.js"
@@ -18,6 +19,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
   { name: "openrouter", setupAiChat: setupOpenrouterChat },
 ].forEach(({ name, setupAiChat }) => {
   test(`shows poster recommendations with ${name}`, async ({ page }) => {
+    await setupTmdb(page, 5)
     await signInToSimkl(page, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -40,13 +42,11 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
       "apiAiKey",
       ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999)"],
     )
-    await setupSearchTv(page)
-    await setupSearchMovie(page, {
-      Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } },
-      Oldboy: { title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } },
-      Handmaiden: { title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } },
-      Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
-    })
+    await setupSearchTv(page, "", [])
+    await setupSearchMovie(page, "Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
+    await setupSearchMovie(page, "Oldboy", [{ title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } }])
+    await setupSearchMovie(page, "Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
+    await setupSearchMovie(page, "Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
@@ -67,6 +67,7 @@ import { setupOpenrouterChat } from "./clients/openrouter.js"
 })
 
 test("AI results show the user rating on rated items even when not watched", async ({ page }) => {
+  await setupTmdb(page, 2)
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -83,10 +84,8 @@ test("AI results show the user rating on rated items even when not watched", asy
     "apiAiKey",
     ["Breaking Bad (2008):9", "Inception (2010):7"],
   )
-  await setupSearchTv(page)
-  await setupSearchMovie(page, {
-    Inception: { title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } },
-  })
+  await setupSearchTv(page, "", [])
+  await setupSearchMovie(page, "Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -100,6 +99,7 @@ test("AI results show the user rating on rated items even when not watched", asy
 })
 
 test("AI dialog posters link to the matched Simkl page", async ({ page }) => {
+  await setupTmdb(page, 2)
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -112,10 +112,8 @@ test("AI dialog posters link to the matched Simkl page", async ({ page }) => {
     "apiAiKey",
     ["Breaking Bad (2008):9"],
   )
-  await setupSearchTv(page)
-  await setupSearchMovie(page, {
-    Parasite: { title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" },
-  })
+  await setupSearchTv(page, "", [])
+  await setupSearchMovie(page, "Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
   await page.getByRole("link", { name: /mood/i }).click()
   await page.getByRole("button", { name: /make me laugh/i }).click()
   await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -131,6 +129,7 @@ test("AI dialog posters link to the matched Simkl page", async ({ page }) => {
 })
 
 test("clicking a mood prompt without a key opens the key dialog", async ({ page }) => {
+  await setupTmdb(page)
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -163,6 +162,7 @@ test("mood view shows a generic-suggestions notice when the library has no rated
 })
 
 test("mood view hides the rate-more banner once the library has ratings", async ({ page }) => {
+  await setupTmdb(page)
   await signInToSimkl(page, {
     shows: [{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -178,6 +178,8 @@ test("mood view hides the rate-more banner once the library has ratings", async 
 
 async function signInToSimkl(page, { shows = [], movies = [], anime = [] } = {}) {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, shows)
   await setupSyncMovies(page, movies)

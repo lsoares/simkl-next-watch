@@ -1,9 +1,16 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress, setupMarkWatchedMovie, setupMarkWatchedShow, setupRemoveFromWatchlistShow, setupRemoveFromWatchlistMovie } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupWatchedMovies, setupDroppedShows, setupProgress, setupMarkWatchedMovie, setupMarkWatchedShow, setupRemoveFromWatchlistShow, setupRemoveFromWatchlistMovie, setupRatingsShows, setupRatingsMovies, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupDroppedShows(page, [])
@@ -40,6 +47,12 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
 test("marks the first episode of a plantowatch show (starting it)", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])
   await setupWatchlistMovies(page, [])
@@ -73,6 +86,12 @@ test("marks the first episode of a plantowatch show (starting it)", async ({ pag
 test("marks a watchlist movie as watched", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupWatchlistShows(page, [])
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])

@@ -1,8 +1,10 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSimklTrendingTv, setupSimklTrendingMovies } from "./clients/simkl.js"
 
 test("logout clears session and shows intro", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },

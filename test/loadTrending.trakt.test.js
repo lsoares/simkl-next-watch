@@ -4,6 +4,7 @@ import {
   setupOauthToken,
   setupLastActivities,
   setupWatchedShows,
+  setupWatchedMovies,
   setupWatchlistShows,
   setupWatchlistMovies,
   setupDroppedShows,
@@ -12,11 +13,14 @@ import {
   setupWatchedShowsByPeriod,
   setupWatchedMoviesByPeriod,
 } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("trending rows list shows and movies from the watched-period feed", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchedShows(page, [])
+  await setupWatchedMovies(page, [])
+  await setupTmdb(page, 3)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupDroppedShows(page, [])
@@ -55,6 +59,8 @@ test("hide-listed toggle removes library items from the trending row", async ({ 
     show: { title: "Severance", year: 2022, aired_episodes: 9, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
     seasons: [{ number: 1, episodes: Array.from({ length: 9 }, (_, i) => ({ number: i + 1, plays: 1 })) }],
   }])
+  await setupWatchedMovies(page, [])
+  await setupTmdb(page, 3)
   await setupWatchlistShows(page, [{
     listed_at: "2025-01-01T00:00:00Z",
     show: { title: "Breaking Bad", year: 2008, first_aired: "2008-01-20", aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },

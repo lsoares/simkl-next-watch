@@ -1,8 +1,15 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupProgress } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupWatchedMovies, setupDroppedShows, setupProgress, setupRatingsShows, setupRatingsMovies, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
@@ -27,6 +34,12 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
 
 test("filters out completed and dropped shows from the watching list", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
@@ -63,6 +76,12 @@ test("filters out completed and dropped shows from the watching list", async ({ 
 
 test("watchlist shows hide unreleased entries", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupLastActivities(page)
   await setupWatchedShows(page, [])
   await setupDroppedShows(page, [])
@@ -88,6 +107,12 @@ test("watchlist shows hide unreleased entries", async ({ page }) => {
 
 test("watchlist movies link to the movie page and unreleased ones are hidden", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupLastActivities(page)
   await setupWatchlistShows(page, [])
   await setupWatchedShows(page, [])
@@ -142,6 +167,12 @@ for (const { label, runtime, expected } of [
 ]) {
   test(`watchlist movie shows runtime chip (${label})`, async ({ page }) => {
     await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
     await setupLastActivities(page)
     await setupWatchlistShows(page, [])
     await setupWatchedShows(page, [])
@@ -161,6 +192,12 @@ for (const { label, runtime, expected } of [
 
 async function signInWithLibrary(page, library) {
   await setupOauthToken(page, "test-token")
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page, 4)
   await setupDroppedShows(page, [])
   await publishLibrary(page, library, "2025-01-01T00:00:00Z")
   await setupAuthorize(page)

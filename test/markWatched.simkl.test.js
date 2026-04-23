@@ -1,8 +1,11 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupMarkWatchedMovie, setupMarkWatchedShow } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupMarkWatchedMovie, setupMarkWatchedShow, setupSimklTrendingTv, setupSimklTrendingMovies } from "./clients/simkl.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("marks the next episode of a watching TV show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -37,6 +40,9 @@ test("marks the next episode of a watching TV show", async ({ page }) => {
 
 test("marks a watchlist movie as watched", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
+  await setupTmdb(page)
   await setupSyncActivities(page)
   await setupSyncShows(page, [])
   await setupSyncMovies(page, [{

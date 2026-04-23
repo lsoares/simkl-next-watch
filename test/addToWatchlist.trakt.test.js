@@ -1,5 +1,6 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows, setupAddToWatchlist, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupWatchedMovies, setupDroppedShows, setupAddToWatchlist, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod, setupRatingsShows, setupRatingsMovies } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupOauthToken(page, "test-token")
@@ -7,7 +8,11 @@ test("adds a trending movie to the watchlist", async ({ page }) => {
   await setupWatchlistShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupWatchedShows(page, [])
+  await setupWatchedMovies(page, [])
   await setupDroppedShows(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupTmdb(page, 2)
   await setupWatchedShowsByPeriod(page, {})
   await setupWatchedMoviesByPeriod(page, {
     daily: [{ watcher_count: 100, movie: { title: "Dune", year: 2021, ids: { imdb: "tt1160419", tmdb: 438631 } } }],

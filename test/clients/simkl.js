@@ -1,5 +1,19 @@
 import { expect } from "@playwright/test"
 
+export function setupSimklTrendingTv(page, items) {
+  return page.route("https://data.simkl.in/discover/trending/tv/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
+}
+
+export function setupSimklTrendingMovies(page, items) {
+  return page.route("https://data.simkl.in/discover/trending/movies/*", async (route) => {
+    expect(route.request().method()).toBe("GET")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
+  })
+}
+
 export function setupAuthorize(page) {
   return page.route("https://simkl.com/oauth/authorize**", async (route) => {
     const url = new URL(route.request().url())
@@ -91,31 +105,25 @@ export function setupTvEpisodes(page, expectedId, episodes = []) {
   })
 }
 
-export function setupSearchTv(page) {
-  return page.route("https://api.simkl.com/search/tv?**", async (route) => {
+export function setupSearchTv(page, query, items) {
+  return page.route(`https://api.simkl.com/search/tv?*q=*${query}*`, async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const params = new URL(route.request().url()).searchParams
-    expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
     expect(params.get("extended")).toBe("full")
-    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
   })
 }
 
-export function setupSearchMovie(page, results) {
-  return page.route("https://api.simkl.com/search/movie?**", async (route) => {
+export function setupSearchMovie(page, query, items) {
+  return page.route(`https://api.simkl.com/search/movie?*q=*${query}*`, async (route) => {
     expect(route.request().method()).toBe("GET")
     expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
     const params = new URL(route.request().url()).searchParams
-    expect(params.get("q")).toBeTruthy()
     expect(params.get("limit")).toBe("1")
     expect(params.get("extended")).toBe("full")
-    const q = params.get("q")
-    for (const [keyword, item] of Object.entries(results)) {
-      if (q.includes(keyword)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([item]) })
-    }
-    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
   })
 }
 

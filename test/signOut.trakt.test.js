@@ -1,10 +1,17 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupDroppedShows } from "./clients/trakt.js"
+import { setupAuthorize, setupLastActivities, setupOauthToken, setupWatchlistShows, setupWatchlistMovies, setupWatchedShows, setupWatchedMovies, setupDroppedShows, setupRatingsShows, setupRatingsMovies, setupWatchedShowsByPeriod, setupWatchedMoviesByPeriod } from "./clients/trakt.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("logout clears session and shows intro", async ({ page }) => {
   await setupOauthToken(page, "test-token")
   await setupLastActivities(page)
   await setupWatchedShows(page, [])
+  await setupWatchedMovies(page, [])
+  await setupRatingsShows(page, [])
+  await setupRatingsMovies(page, [])
+  await setupWatchedShowsByPeriod(page, {})
+  await setupWatchedMoviesByPeriod(page, {})
+  await setupTmdb(page)
   await setupDroppedShows(page, [])
   await setupWatchlistMovies(page, [])
   await setupWatchlistShows(page, [{

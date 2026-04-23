@@ -1,8 +1,11 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupTvEpisodes, setupSimklTrendingTv, setupSimklTrendingMovies } from "./clients/simkl.js"
+import { setupTmdb } from "./clients/tmdb.js"
 
 test("ongoing TV shows link to the next episode, title to the show", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, [{
     show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -28,6 +31,8 @@ test("ongoing TV shows link to the next episode, title to the show", async ({ pa
 
 test("filters out completed shows from the watching list", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, [
     {
@@ -54,6 +59,9 @@ test("filters out completed shows from the watching list", async ({ page }) => {
 
 test("watchlist hides unreleased shows and movies", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
+  await setupTmdb(page, 2)
   await setupSyncActivities(page)
   await setupSyncShows(page, [
     { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } }, status: "plantowatch" },
@@ -77,6 +85,9 @@ test("watchlist hides unreleased shows and movies", async ({ page }) => {
 
 test("watchlist items link to their Simkl pages", async ({ page }) => {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
+  await setupTmdb(page, 2)
   await setupSyncActivities(page)
   await setupSyncShows(page, [
     { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } }, status: "plantowatch" },
@@ -148,6 +159,8 @@ test("removing items on Simkl clears them from the watchlist on return", async (
 
 async function signInWithLibrary(page, library) {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await publishLibrary(page, library, "2025-01-01T00:00:00Z")
   await setupSyncAnime(page, [])
   await setupAuthorize(page)

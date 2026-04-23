@@ -1,5 +1,5 @@
 import { test, expect } from "./test.js"
-import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime } from "./clients/simkl.js"
+import { setupAuthorize, setupOauthToken, setupSyncActivities, setupSyncShows, setupSyncMovies, setupSyncAnime, setupSimklTrendingTv, setupSimklTrendingMovies } from "./clients/simkl.js"
 
 test("top-bar shows nav links and hides account controls when logged out", async ({ page }) => {
   await page.goto("/")
@@ -72,6 +72,8 @@ test("install button hides once the app has been installed", async ({ page }) =>
 
 async function signInToSimkl(page) {
   await setupOauthToken(page, "test-token")
+  await setupSimklTrendingTv(page, [])
+  await setupSimklTrendingMovies(page, [])
   await setupSyncActivities(page)
   await setupSyncShows(page, [])
   await setupSyncMovies(page, [])
