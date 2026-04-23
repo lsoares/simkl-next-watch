@@ -21,13 +21,7 @@ function byWatchingPriority(a, b) {
 function collectLibraryIndex(data) {
   const index = new Map()
   for (const item of [...(data.shows || []), ...(data.movies || [])]) {
-    const entry = {
-      watched: item.status === "completed",
-      watchedAt: item.status === "completed" ? (item.last_watched_at || null) : null,
-      watching: item.status === "watching",
-      userRating: item.user_rating ?? null,
-    }
-    for (const key of itemLookupKeys(item)) index.set(key, entry)
+    for (const key of itemLookupKeys(item)) index.set(key, item)
   }
   return index
 }
@@ -41,10 +35,15 @@ function itemLookupKeys(item) {
 
 function libraryLookup(libraryIndex, item) {
   for (const key of itemLookupKeys(item)) {
-    const entry = libraryIndex.get(key)
-    if (entry) return entry
+    const match = libraryIndex.get(key)
+    if (match) return match
   }
   return null
+}
+
+function mergeWithLibrary(item, libraryIndex) {
+  const match = libraryLookup(libraryIndex, item)
+  return match ? { ...item, ...match, ids: { ...item.ids, ...match.ids } } : item
 }
 
 function trendingBadgeInfo(period) {
@@ -356,9 +355,9 @@ function initDockEffect(row) {
     btn.disabled = true
     try {
       await mediaRepository().addToWatchlist(item)
-      const entry = { watched: false, watchedAt: null }
-      for (const key of keys) libraryIndex.set(key, entry)
-      card.inWatchlist = true
+      const plantowatchItem = { ...item, status: "plantowatch" }
+      for (const key of keys) libraryIndex.set(key, plantowatchItem)
+      card.item = plantowatchItem
       card.refresh()
       showToast(toastFrag("Added ", item, " to watchlist."))
       await loadSuggestions()
@@ -402,6 +401,7 @@ function initDockEffect(row) {
     }
     if (progress?.nextEpisode) {
       item.nextEpisode = progress.nextEpisode
+      item.episodeUrl = item.url ? `${item.url}/seasons/${progress.nextEpisode.season}/episodes/${progress.nextEpisode.episode}` : ""
       if (progress.title) item.episodeTitle = progress.title
       card.refresh()
     }
@@ -585,10 +585,8 @@ function initDockEffect(row) {
 
   function renderPosterCard(row, item) {
     const { frag, card } = makeRowItem()
-    card.item = item
-    card.applyLibraryEntry(libraryLookup(libraryIndex, item))
+    card.item = mergeWithLibrary(item, libraryIndex)
     card.loggedIn = isLoggedIn()
-    card.episodeUrlFn = mediaRepository().episodeUrl
     card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
@@ -696,8 +694,7 @@ function initDockEffect(row) {
       card.closest(".row-item")?.remove()
       return
     }
-    card.item = resolved
-    card.applyLibraryEntry(libraryLookup(libraryIndex, resolved))
+    card.item = mergeWithLibrary(resolved, libraryIndex)
     card.refresh()
   }
 

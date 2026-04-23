@@ -265,17 +265,20 @@ function normalizeItem(raw) {
     : null
   const releaseDate = type === "movie" ? media.released : media.first_aired
   const year = media.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : "")
+  const url = buildShowUrl({ id: simkl, title, type })
+  const nextEpisode = parseNextEpisode(raw.next_to_watch)
   return {
     ids: imdb ? { simkl, imdb } : { simkl },
     id: String(simkl || ""),
     title,
     year,
-    url: buildShowUrl({ id: simkl, title, type }),
+    url,
     runtime: media.runtime || 0,
     rating: typeof simklRating === "number" ? simklRating : null,
     status: normalizeStatus(raw.status),
     release_status: media.year && media.year > new Date().getFullYear() ? "unreleased" : undefined,
-    nextEpisode: parseNextEpisode(raw.next_to_watch),
+    nextEpisode,
+    episodeUrl: nextEpisode && url ? `${url}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/` : "",
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
     last_watched_at: raw.last_watched_at || null,
     watched_episodes_count: raw.watched_episodes_count ?? 0,

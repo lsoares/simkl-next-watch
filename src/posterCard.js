@@ -2,13 +2,7 @@ import { tmdbRepository } from "./tmdbRepository.js"
 
 class PosterCard extends HTMLElement {
   item = null
-  watched = false
-  watchedAt = null
-  userRating = null
-  inWatchlist = false
-  watching = false
   loggedIn = false
-  episodeUrlFn = null
 
   connectedCallback() {
     if (this._rendered) return
@@ -27,21 +21,21 @@ class PosterCard extends HTMLElement {
     this._render()
   }
 
-  applyLibraryEntry(entry) {
-    this.watched = !!entry?.watched
-    this.watchedAt = entry?.watchedAt || null
-    this.userRating = entry?.userRating ?? null
-    this.inWatchlist = !!entry && !entry.watched
-    this.watching = !!entry?.watching
-  }
-
   _emit(name) {
     this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item } }))
   }
 
   _render() {
-    const { item, watched, watchedAt, userRating, inWatchlist, watching, loggedIn } = this
+    const { item, loggedIn } = this
     if (!item) return
+
+    const status = item.status
+    const watched = status === "completed"
+    const watching = status === "watching"
+    const inWatchlist = !!status && !watched
+    const notStarted = !status
+    const watchedAt = item.last_watched_at
+    const userRating = item.user_rating
 
     const id = item.id || ""
     const title = item.title || ""
@@ -52,7 +46,7 @@ class PosterCard extends HTMLElement {
     const url = item.url || ""
 
     const ep = watching && type === "tv" ? item.nextEpisode : null
-    const epUrl = ep ? (this.episodeUrlFn?.(item, ep) || "") : ""
+    const epUrl = ep ? (item.episodeUrl || "") : ""
     const epCode = ep ? `${ep.season}x${ep.episode}` : ""
     const totalEps = item.total_episodes_count || 0
     const watchedEps = item.watched_episodes_count || 0
@@ -66,7 +60,7 @@ class PosterCard extends HTMLElement {
     // - not started → add to watchlist
     // - started or in watchlist → mark watched
     // - finished → more like this
-    const showAddWatchlist = loggedIn && id && !watched && !watching && !inWatchlist
+    const showAddWatchlist = loggedIn && id && notStarted
     const showMarkWatched = inWatchlist
     const showMoreLike = watched
 

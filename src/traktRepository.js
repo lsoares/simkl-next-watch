@@ -114,7 +114,7 @@ async function getWatchlistMovies() {
   const now = Date.now()
   const items = data
     .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
-    .map(normalizeTraktMovie)
+    .map((entry) => normalizeTraktMovie(entry, { status: "plantowatch" }))
   await watchlistMoviesCache.write({ ts, items })
   return { items: applyRatings(items), fresh: true }
 }
@@ -313,16 +313,19 @@ function normalizeTraktShow(entry, { status, addedAt }) {
   const watched = status === "watching"
     ? (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
     : 0
+  const url = ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : ""
+  const nextEpisode = status === "plantowatch" ? { season: 1, episode: 1 } : null
   return {
     ids: { trakt: ids.trakt || "", imdb: ids.imdb || "", tmdb: ids.tmdb || null, slug: ids.slug || "" },
     id: String(ids.imdb || ids.trakt || ""),
     title: show.title || "Unknown",
     year: show.year || "",
-    url: ids.slug ? `https://app.trakt.tv/shows/${encodeURIComponent(ids.slug)}` : "",
+    url,
     runtime: show.runtime || 0,
     rating: typeof show.rating === "number" ? Math.round(show.rating * 10) / 10 : null,
     status,
-    nextEpisode: status === "plantowatch" ? { season: 1, episode: 1 } : null,
+    nextEpisode,
+    episodeUrl: nextEpisode && url ? `${url}/seasons/${nextEpisode.season}/episodes/${nextEpisode.episode}` : "",
     added_at: addedAt,
     last_watched_at: entry.last_watched_at || null,
     watched_episodes_count: watched,
@@ -331,7 +334,7 @@ function normalizeTraktShow(entry, { status, addedAt }) {
   }
 }
 
-function normalizeTraktMovie(entry, { status = "plantowatch" } = {}) {
+function normalizeTraktMovie(entry, { status } = {}) {
   const movie = entry.movie || entry
   const ids = movie.ids || {}
   const imdb = ids.imdb || ""
