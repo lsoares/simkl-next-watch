@@ -83,7 +83,6 @@ const STORAGE = {
   aiKeyGroq: "next-watch-ai-key-groq",
   aiKeyDeepseek: "next-watch-ai-key-deepseek",
   aiKeyOpenrouter: "next-watch-ai-key-openrouter",
-  aiMediaType: "next-watch-ai-media-type",
 }
 
 function readStorage(key) { return localStorage.getItem(key) || ""; }
@@ -178,9 +177,9 @@ function initDockEffect(row) {
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
-    aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"), aiToolbar: $("aiToolbar"),
+    aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
-    aiKeyBtn: $("aiKeyBtn"), aiToggleTv: $("aiToggleTv"), aiToggleMovie: $("aiToggleMovie"),
+    aiKeyBtn: $("aiKeyBtn"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"), aiNoRatingsNotice: $("aiNoRatingsNotice"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
@@ -188,6 +187,7 @@ function initDockEffect(row) {
     navSimilar: $("navSimilar"),
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
+    similarStats: $("similarStats"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
   }
 
@@ -508,17 +508,45 @@ function initDockEffect(row) {
 
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
+    renderSimilarStats(shows, movies)
     const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= 7)
     const usingFallback = rated.length === 0
     const pool = usingFallback ? [...shows, ...movies] : rated
     const picks = pool
       .map((p) => [Math.random(), p])
       .sort((a, b) => a[0] - b[0])
-      .slice(0, 9)
+      .slice(0, 10)
       .map(([, p]) => p)
     el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
     picks.forEach((item) => renderPosterCard(el.similarGrid, item))
+  }
+
+  function renderSimilarStats(shows, movies) {
+    const watchedMovies = movies.filter((m) => m.status === "completed")
+    const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
+    const movieRatings = movies.filter((m) => m.user_rating != null).length
+    const showRatings = shows.filter((s) => s.user_rating != null).length
+    const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
+    const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
+    const lines = [
+      { icon: "🎬", n: watchedMovies.length, label: "movies", ratings: movieRatings, minutes: movieMinutes },
+      { icon: "📺", n: watchedShows.length, label: "series", ratings: showRatings, minutes: showMinutes },
+    ]
+    el.similarStats.replaceChildren()
+    for (const { icon, n, label, ratings, minutes } of lines) {
+      const li = document.createElement("li")
+      li.append(`${icon} ${n.toLocaleString()} ${label} · ${ratings.toLocaleString()} rated · ${formatHours(minutes)}`)
+      el.similarStats.appendChild(li)
+    }
+    el.similarStats.hidden = false
+  }
+
+  function formatHours(minutes) {
+    if (minutes <= 0) return "~0h"
+    const hours = minutes / 60
+    if (hours < 10) return `~${(Math.round(hours * 2) / 2).toLocaleString()}h`
+    return `~${Math.round(hours).toLocaleString()}h`
   }
 
   function openAiSettings() {
@@ -546,15 +574,6 @@ function initDockEffect(row) {
 
   // ── Recommendation Flow ──
 
-  function getAiMediaType() {
-    const tv = el.aiToggleTv.classList.contains("active")
-    const movie = el.aiToggleMovie.classList.contains("active")
-    if (tv && movie) return "both"
-    if (tv) return "tv"
-    if (movie) return "movie"
-    return "both"
-  }
-
   async function gatherLibrary() {
     const u = mediaRepository()
     const [ws, wls, wlm, cs, cm] = await Promise.all([
@@ -570,13 +589,13 @@ function initDockEffect(row) {
   async function getRecommendations(mood) {
     const library = await gatherLibrary()
     const provider = readStorage(STORAGE.aiProvider) || "groq"
-    return await fetchAiSuggestions({ provider, key: getAiKey(provider), mediaType: getAiMediaType(), library, mood })
+    return await fetchAiSuggestions({ provider, key: getAiKey(provider), library, mood })
   }
 
   async function getSimilar(seed) {
     const library = await gatherLibrary()
     const provider = readStorage(STORAGE.aiProvider) || "groq"
-    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), mediaType: getAiMediaType(), library, seed })
+    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), library, seed })
     return suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
   }
 
@@ -653,13 +672,11 @@ function initDockEffect(row) {
         setEmpty(el.aiDialogResults, entry.emptyMsg)
         return
       }
-      const mediaType = getAiMediaType()
-      const placeholderType = mediaType === "tv" ? "tv" : "movie"
       el.aiDialogResults.replaceChildren()
       suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: placeholderType })
+        renderPosterCard(el.aiDialogResults, { title: s.title, year: s.year, ids: {}, type: "movie" })
       })
-      observeAiLazyHydration(el.aiDialogResults, mediaType)
+      observeAiLazyHydration(el.aiDialogResults)
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {
@@ -675,20 +692,20 @@ function initDockEffect(row) {
     }
   }
 
-  function observeAiLazyHydration(row, mediaType) {
+  function observeAiLazyHydration(row) {
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue
         observer.unobserve(entry.target)
-        hydrateAiCard(entry.target, mediaType)
+        hydrateAiCard(entry.target)
       }
     }, { root: row, rootMargin: "400px" })
     row.querySelectorAll("poster-card").forEach((c) => observer.observe(c))
   }
 
-  async function hydrateAiCard(card, mediaType) {
+  async function hydrateAiCard(card) {
     const { title, year } = card.item
-    const resolved = await mediaRepository().searchByTitle(title, year, mediaType)
+    const resolved = await mediaRepository().searchByTitle(title, year)
     if (!resolved) return
     if (resolved.release_status === "unreleased") {
       card.closest(".row-item")?.remove()
@@ -718,16 +735,6 @@ function initDockEffect(row) {
     const icon = btn.querySelector(".ai-prompt-icon")?.textContent ?? ""
     const label = btn.querySelector(".ai-prompt-label")?.textContent ?? ""
     openMood({ label: `${icon} ${label}`.trim(), gloss: btn.dataset.gloss || "" })
-  })
-
-  ;[el.aiToggleTv, el.aiToggleMovie].forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation()
-      const other = btn === el.aiToggleTv ? el.aiToggleMovie : el.aiToggleTv
-      if (btn.classList.contains("active") && !other.classList.contains("active")) return
-      btn.classList.toggle("active")
-      writeStorage(STORAGE.aiMediaType, getAiMediaType())
-    })
   })
 
   // ── Navigation ──
@@ -885,11 +892,6 @@ function initDockEffect(row) {
   }
   hydrateUI()
   el.hideTrendingWatched.checked = readStorage(STORAGE.hideWatched) === "true"
-  const savedMediaType = readStorage(STORAGE.aiMediaType)
-  if (savedMediaType) {
-    el.aiToggleTv.classList.toggle("active", savedMediaType === "both" || savedMediaType === "tv")
-    el.aiToggleMovie.classList.toggle("active", savedMediaType === "both" || savedMediaType === "movie")
-  }
   const savedPeriod = readStorage(STORAGE.trendingPeriod)
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))
