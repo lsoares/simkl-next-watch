@@ -592,6 +592,19 @@
         .poster-title { font-size: 1.08rem; }
       }
 
+      .attribution {
+        width: 100%;
+        max-width: 680px;
+        padding: 0 24px calc(max(16px, env(safe-area-inset-bottom)) + 16px);
+        text-align: center;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .attribution a {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
       .setup-hints {
         margin: 6px 0;
         padding-left: 18px;

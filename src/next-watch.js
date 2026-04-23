@@ -189,6 +189,7 @@ function initDockEffect(row) {
     similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
     similarStats: $("similarStats"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
+    attribution: $("attribution"), attributionProviderLink: $("attributionProviderLink"),
   }
 
   let currentView = null
@@ -865,7 +866,12 @@ function initDockEffect(row) {
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     el.aiKeyBtn.hidden = !loggedIn
-    if (loggedIn) el.logoutBtn.title = `Logout from ${mediaRepository().name}`
+    el.attribution.hidden = !loggedIn
+    if (loggedIn) {
+      const repo = mediaRepository()
+      el.attributionProviderLink.textContent = repo.name
+      el.attributionProviderLink.href = repo.siteUrl
+    }
     hydrateNextView()
     syncViewportMetrics()
   }

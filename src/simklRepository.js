@@ -10,6 +10,7 @@ let libraryInFlight = null
 
 export const simklRepository = {
   name: "Simkl",
+  siteUrl: "https://simkl.com",
   startOAuth,
   exchangeOAuthCode,
   browseUrl,

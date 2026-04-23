@@ -14,6 +14,7 @@ let watchedShowsInFlight = null
 
 export const traktRepository = {
   name: "Trakt",
+  siteUrl: "https://trakt.tv",
   startOAuth,
   exchangeOAuthCode,
   browseUrl,
