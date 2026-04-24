@@ -80,9 +80,10 @@ class PosterCard extends HTMLElement {
 
     const posterHref = epUrl || url
     const posterTooltip = watching && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
+    const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.fade ? " fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.fade ? " fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
         ${(() => {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
@@ -93,7 +94,7 @@ class PosterCard extends HTMLElement {
         <div class="poster-top">
           <div class="poster-top-text">
             <div class="poster-title">
-              ${url ? `<a class="poster-title-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link">${escapeHtml(title)}</span>`}
+              ${url ? `<a class="poster-title-link" id="${titleId}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>` : `<span class="poster-title-link" id="${titleId}">${escapeHtml(title)}</span>`}
             </div>
             ${(showYear || showRuntime) ? `<div class="poster-meta-row">
               ${showYear ? `<span class="poster-title-meta">${escapeHtml(String(year))}</span>` : ""}
@@ -165,6 +166,7 @@ class PosterCard extends HTMLElement {
 }
 
 let posterObserver = null
+let posterIdSeq = 0
 function getPosterObserver() {
   if (posterObserver) return posterObserver
   posterObserver = new IntersectionObserver((entries) => {
