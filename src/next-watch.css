@@ -363,6 +363,7 @@
           touch-action: pan-x;
         }
         .top-bar-scroll #coffeeLink { margin-left: auto; }
+        .top-bar.logged-out .top-bar-scroll { justify-content: center; }
         .top-bar-scroll::-webkit-scrollbar {
           display: none;
         }
@@ -716,6 +717,7 @@
       .app-intro-cta {
         font-size: 1rem;
         padding: 14px 32px;
+        min-width: 240px;
         font-weight: 600;
         color: #ffffff;
         transition: filter 0.15s ease, box-shadow 0.2s ease;
@@ -762,6 +764,7 @@
       @media (max-width: 600px) {
         .app-intro { padding: 32px 4px 28px; }
         .app-intro-tagline { font-size: 1.5rem; }
+        .view-teaser-cta p { max-width: 280px; margin-left: auto; margin-right: auto; }
       }
 
 
