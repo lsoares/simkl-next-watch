@@ -74,13 +74,15 @@
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
-        <div id="nextContent" class="suggestions-grid" hidden>
-          <p class="view-hint">What's next — your watching shows and watchlist, intelligently sorted.</p>
-          <div class="media-section">
-            <posters-row id="tvRow"></posters-row>
-          </div>
-          <div class="media-section">
-            <posters-row id="movieRow"></posters-row>
+        <div id="nextContent" hidden>
+          <p class="view-hint">What's next: your watching shows and watchlist, intelligently sorted.</p>
+          <div class="suggestions-grid">
+            <div class="media-section">
+              <posters-row id="tvRow"></posters-row>
+            </div>
+            <div class="media-section">
+              <posters-row id="movieRow"></posters-row>
+            </div>
           </div>
         </div>
       </div>
@@ -95,7 +97,7 @@
           </div>
         </div>
         <div id="trendingContent">
-          <p class="view-hint">What's trending right now — hiding titles already in your library.</p>
+          <p class="view-hint">What's trending right now; hiding titles already in your library.</p>
           <div class="trending-toolbar">
             <div class="range-tabs" id="trendingPeriodTabs">
               <button class="range-tab active" data-period="today" type="button">🔥 Today</button>
@@ -124,7 +126,7 @@
           </div>
         </div>
         <div id="similarContent" hidden>
-          <p class="view-hint">Your titles, shuffled. Pick one to find more like it.</p>
+          <p class="view-hint">Your favorite titles, shuffled. Pick one to find more like it.</p>
           <div class="similar-toolbar">
             <div class="range-tabs" id="similarRatingTabs" role="group" aria-label="Minimum rating">
               <button class="range-tab active" data-min-rating="0" type="button">All</button>
@@ -150,7 +152,7 @@
           </div>
         </div>
         <div id="aiContent">
-        <p class="view-hint">Pick a mood and we'll suggest titles tuned to your taste.</p>
+        <p class="view-hint">Pick a mood and we'll suggest titles based on your favorite titles.</p>
         <div class="ai-prompts" id="aiPrompts">
           <button class="ai-prompt-btn" type="button" data-gloss="warm, low-stakes, comforting; nothing bleak or violent"><span class="ai-prompt-icon" aria-hidden="true">🛋️</span><span class="ai-prompt-label">Cozy night in</span></button>
           <button class="ai-prompt-btn" type="button" data-gloss="tense thrillers or action; sustained suspense"><span class="ai-prompt-icon" aria-hidden="true">😬</span><span class="ai-prompt-label">Edge of my seat</span></button>

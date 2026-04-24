@@ -531,12 +531,11 @@ function initDockEffect(row) {
     const grid = el.similarGrid
     const cs = getComputedStyle(grid)
     const colWidth = parseFloat(cs.gridAutoColumns)
-    if (!Number.isFinite(colWidth) || colWidth <= 0) return
+    const availHeight = grid.clientHeight
+    if (!Number.isFinite(colWidth) || colWidth <= 0 || availHeight <= 0) return
     const gap = parseFloat(cs.rowGap) || 10
-    const appHeight = window.visualViewport?.height || window.innerHeight
-    const availHeight = appHeight - grid.getBoundingClientRect().top - 16
     const rowHeight = colWidth * 1.5 + gap
-    const rows = Math.max(2, Math.floor((availHeight + gap) / rowHeight))
+    const rows = Math.max(1, Math.floor((availHeight + gap) / rowHeight))
     grid.style.setProperty("--rows", rows)
   }
 

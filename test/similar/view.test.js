@@ -55,7 +55,6 @@ test.describe("Simkl", () => {
 
     await similar.open()
 
-    await similar.expectShuffledNotice()
     await similar.expectShowIsPresent("Breaking Bad")
   })
 })

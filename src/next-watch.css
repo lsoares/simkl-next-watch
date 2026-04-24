@@ -10,7 +10,6 @@
         --top-bar-height: 68px;
         --main-top-gap: 80px;
         --main-bottom-gap: calc(max(12px, env(safe-area-inset-bottom)) + 16px);
-        --mobile-content-height: calc(var(--app-height) - var(--main-top-gap) - var(--main-bottom-gap));
       }
 
       * {
@@ -389,9 +388,39 @@
           color: var(--text);
           text-decoration-color: rgba(249,250,251,0.7);
         }
-        main { padding-top: var(--main-top-gap); padding-bottom: var(--main-bottom-gap); }
+        body {
+          height: var(--app-height);
+          min-height: 0;
+          overflow: hidden;
+        }
+        main {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          padding-top: var(--main-top-gap);
+          padding-bottom: 8px;
+        }
+        main > [role="region"] {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        #nextContent,
+        #trendingContent,
+        #similarContent,
+        #aiContent {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .view-teaser { flex: 1; min-height: 0; }
         .suggestions-grid {
-          height: var(--mobile-content-height);
+          flex: 1;
+          min-height: 0;
+          height: auto;
           gap: 10px;
         }
         .media-section { flex: 1; min-height: 0; overflow: clip; }
@@ -401,24 +430,21 @@
         #tvRow .row-item, #movieRow .row-item { flex-shrink: 0; width: max(130px, calc((100vw - 44px) / 2.4)); }
         #tvRow .row-item .item-card, #movieRow .row-item .item-card { width: 100%; height: 100%; }
 
-        /* Trending: reuse suggestions-grid layout */
-        #trendingContent {
-          display: flex;
-          flex-direction: column;
-          height: var(--mobile-content-height);
-          min-height: 0;
-        }
+        /* Trending */
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; height: auto; }
         #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
         #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
 
-        /* Mood: bound to viewport and scroll the inner content */
-        #aiContent {
-          height: var(--mobile-content-height);
-          min-height: 0;
-          overflow-y: auto;
-        }
+        /* Mood: scroll only when content overflows on tiny phones */
+        #aiContent { overflow-y: auto; }
+
+        /* Similar: bound the grid so its own overflow-y clips cleanly */
+        .similar-toolbar { flex-shrink: 0; }
+        #similarGrid { flex: 1; min-height: 0; }
+        #similarStats { flex-shrink: 0; }
+
+        .attribution { padding: 8px 24px max(8px, env(safe-area-inset-bottom)); }
 
         /* AI dialog: size cards to fill the dialog height across 2 rows */
         #aiDialogResults {
@@ -578,7 +604,7 @@
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          padding: var(--main-top-gap) 12px var(--main-bottom-gap);
+          padding: var(--main-top-gap) 12px 8px;
         }
         .top-bar-scroll { padding: 0 12px; }
         .poster-title { font-size: 1.08rem; }
@@ -587,7 +613,7 @@
       .attribution {
         width: 100%;
         max-width: 680px;
-        padding: 0 24px calc(max(16px, env(safe-area-inset-bottom)) + 16px);
+        padding: 16px 24px 24px;
         text-align: center;
         font-size: 0.75rem;
         color: #64748b;
@@ -812,7 +838,7 @@
 .similar-stats li { line-height: 1.3; }
 
 .view-hint {
-  margin: 0 0 12px;
+  margin: 0 0 24px;
   font-size: 0.9rem;
   color: var(--muted);
 }

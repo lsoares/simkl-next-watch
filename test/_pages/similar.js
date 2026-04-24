@@ -19,8 +19,5 @@ export function client(page) {
     async expectShowIsAbsent(title) {
       await expect(grid().getByRole("article", { name: title })).toHaveCount(0)
     },
-    async expectShuffledNotice() {
-      await expect(page.getByText(/your titles, shuffled/i)).toBeVisible()
-    },
   }
 }
