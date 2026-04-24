@@ -843,6 +843,14 @@
   color: var(--muted);
 }
 
+.view-hint-term {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
+#nextView .poster-status--watchlist { display: none; }
+
 .poster-grid {
   display: grid;
   grid-auto-flow: column;
