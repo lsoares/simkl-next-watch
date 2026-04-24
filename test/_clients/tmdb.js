@@ -14,7 +14,7 @@ const posterPayload = JSON.stringify({
 export function client(page) {
   return {
     usePosters(times = 1) {
-      page.route("https://image.tmdb.org/**", async (route) => {
+      page.context().route("https://image.tmdb.org/**", async (route) => {
         await route.fulfill({ status: 200, contentType: "image/png", body: tinyPng })
       })
       return page.route("https://api.themoviedb.org/**", async (route) => {
