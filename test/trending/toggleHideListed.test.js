@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("hide-listed toggle removes library items from the trending row", async ({ page, simkl }) => {
+  test("hide-listed toggle removes library items from the trending row", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([
@@ -22,13 +22,13 @@ test.describe("Simkl", () => {
     await simkl.useTrendingMovies({})
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     await page.getByRole("link", { name: /trending/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Severance" }).getByLabel(/^watching$/i)).toBeVisible()
     await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
 
-    await page.getByRole("checkbox", { name: /hide listed/i }).check()
+    await trending.toggleHideListed()
 
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
     await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
@@ -37,7 +37,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("hide-listed toggle removes library items from the trending row", async ({ page, trakt, tmdb }) => {
+  test("hide-listed toggle removes library items from the trending row", async ({ page, trakt, tmdb, intro, trending }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([{
@@ -65,13 +65,13 @@ test.describe("Trakt", () => {
     await trakt.useWatchedMoviesByPeriod({})
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     await page.getByRole("link", { name: /trending/i }).click()
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
 
-    await page.getByRole("checkbox", { name: /hide listed/i }).check()
+    await trending.toggleHideListed()
 
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
     await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)

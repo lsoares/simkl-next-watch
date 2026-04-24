@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("filters out completed shows from the watching list", async ({ page, simkl }) => {
+  test("filters out completed shows from the watching list", async ({ page, simkl, intro }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -23,13 +23,13 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
 
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
   })
 
-  test("watchlist hides unreleased shows and movies", async ({ page, simkl, tmdb }) => {
+  test("watchlist hides unreleased shows and movies", async ({ page, simkl, tmdb, intro }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -47,7 +47,7 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
 
     await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
@@ -57,7 +57,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("filters out completed and dropped shows from the watching list", async ({ page, trakt, tmdb }) => {
+  test("filters out completed and dropped shows from the watching list", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -92,14 +92,14 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
 
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
     await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
   })
 
-  test("watchlist hides unreleased shows and movies", async ({ page, trakt, tmdb }) => {
+  test("watchlist hides unreleased shows and movies", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -133,7 +133,7 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
 
     await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
     await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
@@ -141,7 +141,7 @@ test.describe("Trakt", () => {
     await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
   })
 
-  test("watchlist movies show formatted runtime chips", async ({ page, trakt, tmdb }) => {
+  test("watchlist movies show formatted runtime chips", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -161,7 +161,7 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
 
     await expect(page.getByRole("article", { name: "Short Movie" }).getByText("45m", { exact: true })).toBeVisible()
     await expect(page.getByRole("article", { name: "Mid Movie" }).getByText("~1.5h", { exact: true })).toBeVisible()

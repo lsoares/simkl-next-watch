@@ -9,6 +9,12 @@ import { client as grokClient } from "./_clients/grok.js"
 import { client as groqClient } from "./_clients/groq.js"
 import { client as deepseekClient } from "./_clients/deepseek.js"
 import { client as openrouterClient } from "./_clients/openrouter.js"
+import { client as introPage } from "./_pages/intro.js"
+import { client as nextPage } from "./_pages/next.js"
+import { client as trendingPage } from "./_pages/trending.js"
+import { client as similarPage } from "./_pages/similar.js"
+import { client as moodPage } from "./_pages/mood.js"
+import { client as aiPicksPage } from "./_pages/aiPicks.js"
 
 export const test = base.extend({
   context: async ({ context, baseURL }, use) => {
@@ -56,6 +62,12 @@ export const test = base.extend({
     deepseek: deepseekClient(page),
     openrouter: openrouterClient(page),
   }),
+  intro: async ({ page }, use) => use(introPage(page)),
+  next: async ({ page }, use) => use(nextPage(page)),
+  trending: async ({ page }, use) => use(trendingPage(page)),
+  similar: async ({ page }, use) => use(similarPage(page)),
+  mood: async ({ page }, use) => use(moodPage(page)),
+  aiPicks: async ({ page }, use) => use(aiPicksPage(page)),
 })
 
 export { expect }

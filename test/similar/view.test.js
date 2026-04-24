@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb }) => {
+  test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb, intro }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -24,7 +24,7 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime([])
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
     await page.getByRole("link", { name: /similar/i }).click()
     const grid = page.getByRole("region", { name: /similar picks/i })
@@ -37,7 +37,7 @@ test.describe("Simkl", () => {
     await expect(grid.getByRole("article", { name: "Filler" })).toHaveCount(0)
   })
 
-  test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb }) => {
+  test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb, intro }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -51,7 +51,7 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime([])
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
 
     await page.getByRole("link", { name: /similar/i }).click()
@@ -62,7 +62,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("similar view shows rated Trakt library posters in its grid", async ({ page, trakt, tmdb }) => {
+  test("similar view shows rated Trakt library posters in its grid", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([{
@@ -87,7 +87,7 @@ test.describe("Trakt", () => {
     await trakt.useProgress("breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
 
     await page.getByRole("link", { name: /similar/i }).click()

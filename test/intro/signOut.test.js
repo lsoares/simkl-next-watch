@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("logout clears session and shows intro", async ({ page, simkl }) => {
+  test("logout clears session and shows intro", async ({ page, simkl, intro }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -14,7 +14,7 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime([])
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
 
     await page.getByRole("button", { name: /logout/i }).click()
@@ -27,7 +27,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("logout clears session and shows intro", async ({ page, trakt, tmdb }) => {
+  test("logout clears session and shows intro", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([])
@@ -45,7 +45,7 @@ test.describe("Trakt", () => {
     }])
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
 
     await page.getByRole("button", { name: /logout/i }).click()

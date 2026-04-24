@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("trending row lists shows and movies", async ({ page, simkl }) => {
+  test("trending row lists shows and movies", async ({ page, simkl, intro }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -18,7 +18,7 @@ test.describe("Simkl", () => {
     await simkl.useTrendingMovies({})
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
 
     await page.getByRole("link", { name: /trending/i }).click()
 
@@ -30,7 +30,7 @@ test.describe("Simkl", () => {
     await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://simkl.com/tv/best-shows/most-watched/?wltime=today")
   })
 
-  test("watchlist items show a trending badge in the next view", async ({ page, simkl }) => {
+  test("watchlist items show a trending badge in the next view", async ({ page, simkl, intro }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -44,7 +44,7 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
 
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
 
     await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText(/🔥/)).toBeVisible()
   })
@@ -53,7 +53,7 @@ test.describe("Simkl", () => {
     { period: "week", title: "Severance" },
     { period: "month", title: "House of the Dragon" },
   ]) {
-    test(`the ${period} tab shows that period's items`, async ({ page, simkl }) => {
+    test(`the ${period} tab shows that period's items`, async ({ page, simkl, intro, trending }) => {
       await simkl.useOauthToken()
       await simkl.useSyncActivities()
       await simkl.useSyncShows([])
@@ -67,10 +67,10 @@ test.describe("Simkl", () => {
       await simkl.useTrendingMovies({})
       await simkl.useAuthorize()
       await page.goto("/")
-      await page.getByRole("button", { name: /sign in with simkl/i }).click()
+      await intro.signIn("simkl")
       await page.getByRole("link", { name: /trending/i }).click()
 
-      await page.getByRole("button", { name: new RegExp(period, "i") }).click()
+      await trending.pickPeriod(period)
 
       await expect(page.getByRole("article", { name: title })).toBeVisible()
     })
@@ -78,7 +78,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb }) => {
+  test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb, intro }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([])
@@ -102,7 +102,7 @@ test.describe("Trakt", () => {
     })
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
 
     await page.getByRole("link", { name: /trending/i }).click()
 

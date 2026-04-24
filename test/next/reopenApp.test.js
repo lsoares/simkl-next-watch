@@ -1,8 +1,8 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl }) => {
-    await signInWithSimklLibrary(page, simkl, {
+  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, intro }) => {
+    await signInWithSimklLibrary(page, simkl, intro, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "plantowatch" },
         { title: "Lost", id: 33000, status: "plantowatch" },
@@ -39,8 +39,8 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb }) => {
-    await signInWithTraktLibrary(page, trakt, tmdb, {
+  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb, intro }) => {
+    await signInWithTraktLibrary(page, trakt, tmdb, intro, {
       watchlistShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
       watchlistMovies: [{ title: "The Matrix", trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" }],
     })
@@ -61,7 +61,7 @@ test.describe("Trakt", () => {
   })
 })
 
-async function signInWithSimklLibrary(page, simkl, library) {
+async function signInWithSimklLibrary(page, simkl, intro, library) {
   await simkl.useOauthToken()
   await simkl.useTrendingTv({})
   await simkl.useTrendingMovies({})
@@ -69,7 +69,7 @@ async function signInWithSimklLibrary(page, simkl, library) {
   await simkl.useSyncAnime([])
   await simkl.useAuthorize()
   await page.goto("/")
-  await page.getByRole("button", { name: /sign in with simkl/i }).click()
+  await intro.signIn("simkl")
 }
 
 async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
@@ -78,7 +78,7 @@ async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
   await simkl.useSyncMovies(movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id }, runtime: 120 }, status })))
 }
 
-async function signInWithTraktLibrary(page, trakt, tmdb, library) {
+async function signInWithTraktLibrary(page, trakt, tmdb, intro, library) {
   await trakt.useOauthToken()
   await trakt.useWatchedMovies([])
   await trakt.useRatingsShows([])
@@ -90,7 +90,7 @@ async function signInWithTraktLibrary(page, trakt, tmdb, library) {
   await publishTraktLibrary(trakt, library, "2025-01-01T00:00:00Z")
   await trakt.useAuthorize()
   await page.goto("/")
-  await page.getByRole("button", { name: /sign in with trakt/i }).click()
+  await intro.signIn("trakt")
 }
 
 async function publishTraktLibrary(trakt, { watchlistShows = [], watchlistMovies = [], watchedShows = [] }, activityAt) {

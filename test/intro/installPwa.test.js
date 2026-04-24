@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
-test("install button appears when the browser signals the PWA is installable", async ({ page, simkl }) => {
-  await signInToSimkl(page, simkl)
+test("install button appears when the browser signals the PWA is installable", async ({ page, simkl, intro }) => {
+  await signInToSimkl(page, simkl, intro)
 
   await page.evaluate(() => {
     const e = new Event("beforeinstallprompt")
@@ -12,8 +12,8 @@ test("install button appears when the browser signals the PWA is installable", a
   await expect(page.getByRole("button", { name: /install/i })).toBeVisible()
 })
 
-test("install button hides once the app has been installed", async ({ page, simkl }) => {
-  await signInToSimkl(page, simkl)
+test("install button hides once the app has been installed", async ({ page, simkl, intro }) => {
+  await signInToSimkl(page, simkl, intro)
   await page.evaluate(() => {
     const e = new Event("beforeinstallprompt")
     e.prompt = () => Promise.resolve()
@@ -26,7 +26,7 @@ test("install button hides once the app has been installed", async ({ page, simk
   await expect(page.getByRole("button", { name: /install/i })).toBeHidden()
 })
 
-async function signInToSimkl(page, simkl) {
+async function signInToSimkl(page, simkl, intro) {
   await simkl.useOauthToken()
   await simkl.useTrendingTv({})
   await simkl.useTrendingMovies({})
@@ -36,6 +36,6 @@ async function signInToSimkl(page, simkl) {
   await simkl.useSyncAnime([])
   await simkl.useAuthorize()
   await page.goto("/")
-  await page.getByRole("button", { name: /sign in with simkl/i }).click()
+  await intro.signIn("simkl")
   await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
 }

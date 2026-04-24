@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("marks a watchlist movie as watched", async ({ page, simkl, tmdb }) => {
+  test("marks a watchlist movie as watched", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -17,7 +17,7 @@ test.describe("Simkl", () => {
     await simkl.useMarkWatchedMovie([{ ids: { simkl: 53992 } }])
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     const movieCard = page.getByRole("article", { name: "The Matrix" })
     await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
     await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://simkl.com/search/?type=movies")
@@ -27,7 +27,7 @@ test.describe("Simkl", () => {
       status: "completed",
     }])
 
-    await movieCard.getByRole("button", { name: /mark as watched/i }).click()
+    await next.markWatched("The Matrix")
 
     const toast = page.getByRole("status")
     await expect(toast).toContainText(/marked.*matrix.*watched/i)
@@ -37,7 +37,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("marks a watchlist movie as watched", async ({ page, trakt, tmdb }) => {
+  test("marks a watchlist movie as watched", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedMovies([])
@@ -57,13 +57,13 @@ test.describe("Trakt", () => {
     await trakt.useRemoveFromWatchlistMovie([{ ids: { trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" } }])
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     const movieCard = page.getByRole("article", { name: "The Matrix" })
     await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
     await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=movie")
     await trakt.useWatchlistMovies([])
 
-    await movieCard.getByRole("button", { name: /mark as watched/i }).click()
+    await next.markWatched("The Matrix")
 
     const toast = page.getByRole("status")
     await expect(toast).toContainText(/marked.*matrix.*watched/i)

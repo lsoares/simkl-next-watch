@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("adds a trending movie to the watchlist", async ({ page, simkl }) => {
+  test("adds a trending movie to the watchlist", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([])
@@ -14,12 +14,12 @@ test.describe("Simkl", () => {
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     await page.getByRole("link", { name: /trending/i }).click()
     const card = page.getByRole("article", { name: "Dune" })
     await expect(card).toBeVisible()
 
-    await card.getByRole("button", { name: /add to watchlist/i }).click()
+    await trending.addToWatchlist("Dune")
 
     await expect(page.getByRole("status")).toContainText(/added.*dune.*watchlist/i)
     await expect(card.getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)
@@ -27,7 +27,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("adds a trending movie to the watchlist", async ({ page, trakt, tmdb }) => {
+  test("adds a trending movie to the watchlist", async ({ page, trakt, tmdb, intro, trending }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchlistShows([])
@@ -45,12 +45,12 @@ test.describe("Trakt", () => {
     await trakt.useAddToWatchlist({ movies: [{ ids: { imdb: "tt1160419", tmdb: 438631 } }] })
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     await page.getByRole("link", { name: /trending/i }).click()
     const card = page.getByRole("article", { name: "Dune" })
     await expect(card).toBeVisible()
 
-    await card.getByRole("button", { name: /add to watchlist/i }).click()
+    await trending.addToWatchlist("Dune")
 
     await expect(page.getByRole("status")).toContainText(/added.*dune.*watchlist/i)
     await expect(card.getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)

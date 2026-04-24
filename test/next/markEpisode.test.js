@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("marks the next episode of a watching TV show", async ({ page, simkl }) => {
+  test("marks the next episode of a watching TV show", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -19,7 +19,7 @@ test.describe("Simkl", () => {
     await simkl.useMarkWatchedShow([{ ids: { simkl: 11121 }, seasons: [{ number: 5, episodes: [{ number: 1 }] }] }])
     await simkl.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with simkl/i }).click()
+    await intro.signIn("simkl")
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
     await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad")
     await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
@@ -31,7 +31,7 @@ test.describe("Simkl", () => {
       watched_episodes_count: 47, total_episodes_count: 62,
     }])
 
-    await showCard.getByRole("button", { name: /mark as watched/i }).click()
+    await next.markWatched("Breaking Bad")
 
     const toast = page.getByRole("status")
     await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
@@ -41,7 +41,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("marks the next episode of a watching TV show", async ({ page, trakt, tmdb }) => {
+  test("marks the next episode of a watching TV show", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedMovies([])
@@ -62,7 +62,7 @@ test.describe("Trakt", () => {
     await trakt.useMarkWatchedShow([{ ids: { trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }, seasons: [{ number: 5, episodes: [{ number: 1 }] }] }])
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     const showCard = page.getByRole("article", { name: "Breaking Bad" })
     await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad")
     await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
@@ -77,7 +77,7 @@ test.describe("Trakt", () => {
     }])
     await trakt.useProgress("breaking-bad", { next_episode: { season: 5, number: 2 } })
 
-    await showCard.getByRole("button", { name: /mark as watched/i }).click()
+    await next.markWatched("Breaking Bad")
 
     const toast = page.getByRole("status")
     await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
@@ -85,7 +85,7 @@ test.describe("Trakt", () => {
     await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/2")
   })
 
-  test("marks the first episode of a plantowatch show (starting it)", async ({ page, trakt, tmdb }) => {
+  test("marks the first episode of a plantowatch show (starting it)", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedMovies([])
@@ -105,7 +105,7 @@ test.describe("Trakt", () => {
     await trakt.useRemoveFromWatchlistShow([{ ids: { trakt: 153027, imdb: "tt11280740", slug: "severance" } }])
     await trakt.useAuthorize()
     await page.goto("/")
-    await page.getByRole("button", { name: /sign in with trakt/i }).click()
+    await intro.signIn("trakt")
     const showCard = page.getByRole("article", { name: "Severance" })
     await expect(showCard).toBeVisible()
     await trakt.useWatchlistShows([])
@@ -116,7 +116,7 @@ test.describe("Trakt", () => {
     }])
     await trakt.useProgress("severance", { next_episode: { season: 1, number: 2 } })
 
-    await showCard.getByRole("button", { name: /mark as watched/i }).click()
+    await next.markWatched("Severance")
 
     const toast = page.getByRole("status")
     await expect(toast).toContainText(/marked.*severance.*1x1.*watched/i)

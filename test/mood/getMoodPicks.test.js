@@ -2,10 +2,10 @@ import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
   for (const name of ["gemini", "openai", "claude", "grok", "groq", "deepseek", "openrouter"]) {
-    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai }) => {
+    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood }) => {
       await tmdb.usePosters(6)
       await simkl.useTvEpisodes("11121")
-      await signInToSimkl(page, simkl, {
+      await signInToSimkl(page, simkl, intro, {
         shows: [{
           show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
           status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -33,13 +33,11 @@ test.describe("Simkl", () => {
       await simkl.useSearchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
       await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
       await page.getByRole("link", { name: /mood/i }).click()
-      await page.getByRole("button", { name: /make me laugh/i }).click()
-      await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
-      await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-      await page.getByRole("button", { name: /save.*key/i }).click()
+      await mood.pickMood("Make me laugh")
+      await mood.setApiKey(name, "apiAiKey")
       await expect(page.getByRole("status")).toContainText(/key saved/i)
 
-      await page.getByRole("button", { name: /make me laugh/i }).click()
+      await mood.pickMood("Make me laugh")
 
       const aiResults = page.getByRole("dialog", { name: /ai picks/i })
       await expect(aiResults.getByRole("article", { name: "Parasite" })).toBeVisible()
@@ -53,10 +51,10 @@ test.describe("Simkl", () => {
     })
   }
 
-  test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai }) => {
+  test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai, intro, mood }) => {
     await tmdb.usePosters(2)
     await simkl.useTvEpisodes("11121")
-    await signInToSimkl(page, simkl, {
+    await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -70,23 +68,21 @@ test.describe("Simkl", () => {
     await simkl.useSearchTv("", [])
     await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
     await page.getByRole("link", { name: /mood/i }).click()
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-    await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-    await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-    await page.getByRole("button", { name: /save.*key/i }).click()
+    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
     await expect(page.getByRole("status")).toContainText(/key saved/i)
 
-    await page.getByRole("button", { name: /make me laugh/i }).click()
+    await mood.pickMood("Make me laugh")
 
     const dialog = page.getByRole("dialog", { name: /ai picks/i })
     await expect(dialog.getByRole("article", { name: "Parasite" })).toBeVisible()
     await expect(dialog.getByRole("link", { name: "Parasite" })).toHaveAttribute("href", /simkl\.com\/movies\/33001/)
   })
 
-  test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb }) => {
+  test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.usePosters()
     await simkl.useTvEpisodes("11121")
-    await signInToSimkl(page, simkl, {
+    await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -101,10 +97,10 @@ test.describe("Simkl", () => {
     await expect(page.getByRole("button", { name: "Tear-jerker" })).toBeVisible()
   })
 
-  test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb }) => {
+  test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.usePosters()
     await simkl.useTvEpisodes("11121")
-    await signInToSimkl(page, simkl, {
+    await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
         status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -113,15 +109,15 @@ test.describe("Simkl", () => {
     })
     await page.getByRole("link", { name: /mood/i }).click()
 
-    await page.getByRole("button", { name: /cozy night in/i }).click()
+    await mood.pickMood("Cozy night in")
 
     await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
   })
 })
 
 test.describe("Trakt", () => {
-  test("sends Trakt user ratings to the AI alongside library titles", async ({ page, trakt, tmdb, ai }) => {
-    await signInToTrakt(page, trakt, tmdb, {
+  test("sends Trakt user ratings to the AI alongside library titles", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+    await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
         show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -154,19 +150,17 @@ test.describe("Trakt", () => {
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
     await page.getByRole("link", { name: /mood/i }).click()
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-    await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-    await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-    await page.getByRole("button", { name: /save.*key/i }).click()
+    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
     await expect(page.getByRole("status")).toContainText(/key saved/i)
 
-    await page.getByRole("button", { name: /make me laugh/i }).click()
+    await mood.pickMood("Make me laugh")
 
     await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toBeVisible()
   })
 
-  test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai }) => {
-    await signInToTrakt(page, trakt, tmdb, {
+  test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+    await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
         show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -199,20 +193,18 @@ test.describe("Trakt", () => {
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
     await page.getByRole("link", { name: /mood/i }).click()
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-    await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-    await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-    await page.getByRole("button", { name: /save.*key/i }).click()
+    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
     await expect(page.getByRole("status")).toContainText(/key saved/i)
 
-    await page.getByRole("button", { name: /make me laugh/i }).click()
+    await mood.pickMood("Make me laugh")
 
     await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" })).toHaveClass(/trending-watchlisted/)
     await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
   })
 
-  test("AI hits open Trakt pages on click for Trakt users", async ({ page, trakt, tmdb, ai }) => {
-    await signInToTrakt(page, trakt, tmdb, {
+  test("AI hits open Trakt pages on click for Trakt users", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+    await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
         show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -229,19 +221,17 @@ test.describe("Trakt", () => {
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
     await page.getByRole("link", { name: /mood/i }).click()
-    await page.getByRole("button", { name: /make me laugh/i }).click()
-    await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
-    await page.getByRole("textbox", { name: /api key/i }).fill("apiAiKey")
-    await page.getByRole("button", { name: /save.*key/i }).click()
+    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
     await expect(page.getByRole("status")).toContainText(/key saved/i)
 
-    await page.getByRole("button", { name: /make me laugh/i }).click()
+    await mood.pickMood("Make me laugh")
 
     await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("link", { name: "Inception" })).toHaveAttribute("href", "https://app.trakt.tv/movies/inception-2010")
   })
 })
 
-async function signInToSimkl(page, simkl, { shows = [], movies = [], anime = [] } = {}) {
+async function signInToSimkl(page, simkl, intro, { shows = [], movies = [], anime = [] } = {}) {
   await simkl.useOauthToken()
   await simkl.useTrendingTv({})
   await simkl.useTrendingMovies({})
@@ -251,11 +241,11 @@ async function signInToSimkl(page, simkl, { shows = [], movies = [], anime = [] 
   await simkl.useSyncAnime(anime)
   await simkl.useAuthorize()
   await page.goto("/")
-  await page.getByRole("button", { name: /sign in with simkl/i }).click()
+  await intro.signIn("simkl")
   await expect(page.getByRole("article", { name: shows[0].show.title })).toBeVisible()
 }
 
-async function signInToTrakt(page, trakt, tmdb, {
+async function signInToTrakt(page, trakt, tmdb, intro, {
   watchedShows = [],
   watchedMovies = [],
   watchlistShows = [],
@@ -282,6 +272,6 @@ async function signInToTrakt(page, trakt, tmdb, {
   await trakt.useProgress(progressSlug, progressData)
   await trakt.useAuthorize()
   await page.goto("/")
-  await page.getByRole("button", { name: /sign in with trakt/i }).click()
+  await intro.signIn("trakt")
   await expect(page.getByRole("article", { name: watchedShows[0].show.title })).toBeVisible()
 }
