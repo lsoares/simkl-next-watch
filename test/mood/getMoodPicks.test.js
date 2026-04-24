@@ -49,8 +49,8 @@ test.describe("Simkl", () => {
     })
   }
 
-  test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
-    await tmdb.usePosters(2)
+  test("AI dialog posters link to the matched Simkl page, or to Simkl search when unmatched", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
+    await tmdb.usePosters(3)
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
@@ -60,11 +60,12 @@ test.describe("Simkl", () => {
       }],
     })
     await ai.gemini.useChat(
-      '[{"title":"Parasite","year":2019}]',
+      '[{"title":"Parasite","year":2019},{"title":"UnknownFilm","year":2020}]',
       ["Breaking Bad (2008):9"],
     )
     await simkl.useSearchTv("", [])
     await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
+    await simkl.useSearchMovie("UnknownFilm", [])
     await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
@@ -72,8 +73,8 @@ test.describe("Simkl", () => {
 
     await mood.pickMood("Make me laugh")
 
-    await aiPicks.expectPosterIsVisible("Parasite")
     await aiPicks.expectPosterLinksTo("Parasite", /simkl\.com\/movies\/33001/)
+    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm")
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
@@ -196,21 +197,22 @@ test.describe("Trakt", () => {
     await aiPicks.expectPosterIsWatched("Parasite")
   })
 
-  test("AI hits open Trakt pages on click for Trakt users", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
+  test("AI hits open Trakt pages on click, or Trakt search when unmatched", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
         show: { title: "Breaking Bad", year: 2008, aired_episodes: 1, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
         seasons: [{ number: 1, episodes: [{ number: 1, plays: 1 }] }],
       }],
-      tmdbTimes: 4,
+      tmdbTimes: 5,
     })
     await ai.gemini.useChat(
-      '[{"title":"Inception","year":2010}]',
+      '[{"title":"Inception","year":2010},{"title":"UnknownFilm","year":2020}]',
       [],
     )
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
+    await trakt.useSearchMovie("UnknownFilm", [])
     await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
@@ -219,6 +221,7 @@ test.describe("Trakt", () => {
     await mood.pickMood("Make me laugh")
 
     await aiPicks.expectPosterLinksTo("Inception", "https://app.trakt.tv/movies/inception-2010")
+    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://trakt.tv/search?query=UnknownFilm")
   })
 })
 

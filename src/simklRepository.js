@@ -13,8 +13,9 @@ export const simklRepository = {
   siteUrl: "https://simkl.com",
   startOAuth,
   exchangeOAuthCode,
-  browseUrl,
-  episodeUrl,
+  getBrowseUrl,
+  getEpisodeUrl,
+  getSearchUrl,
   getWatchingShows,
   getWatchlistShows,
   getWatchlistMovies,
@@ -23,7 +24,7 @@ export const simklRepository = {
   markWatched,
   addToWatchlist,
   getTrending,
-  trendingBrowseUrl,
+  getTrendingBrowseUrl,
   searchByTitle,
   getEpisodeTitle,
 }
@@ -52,12 +53,16 @@ async function exchangeOAuthCode(code) {
   return data
 }
 
-function browseUrl(type) {
+function getBrowseUrl(type) {
   return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
 }
 
-function episodeUrl(item, ep) {
+function getEpisodeUrl(item, ep) {
   return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
+}
+
+function getSearchUrl(title) {
+  return `https://simkl.com/search/?q=${encodeURIComponent(title)}`
 }
 
 async function getWatchingShows() {
@@ -115,7 +120,7 @@ async function getTrending(period) {
   }
 }
 
-function trendingBrowseUrl(type, { period = "today", ignoreWatched = false } = {}) {
+function getTrendingBrowseUrl(type, { period = "today", ignoreWatched = false } = {}) {
   const base = type === "movie"
     ? "https://simkl.com/movies/best-movies/most-watched/"
     : "https://simkl.com/tv/best-shows/most-watched/"

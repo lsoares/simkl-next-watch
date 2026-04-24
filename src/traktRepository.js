@@ -17,8 +17,9 @@ export const traktRepository = {
   siteUrl: "https://trakt.tv",
   startOAuth,
   exchangeOAuthCode,
-  browseUrl,
-  episodeUrl,
+  getBrowseUrl,
+  getEpisodeUrl,
+  getSearchUrl,
   getWatchingShows,
   getProgress,
   getWatchlistShows,
@@ -28,7 +29,7 @@ export const traktRepository = {
   markWatched,
   addToWatchlist,
   getTrending,
-  trendingBrowseUrl,
+  getTrendingBrowseUrl,
   searchByTitle,
 }
 
@@ -56,12 +57,16 @@ async function exchangeOAuthCode(code) {
   return data
 }
 
-function browseUrl(type) {
+function getBrowseUrl(type) {
   return `https://app.trakt.tv/search?m=${type === "movie" ? "movie" : "show"}`
 }
 
-function episodeUrl(item, ep) {
+function getEpisodeUrl(item, ep) {
   return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+}
+
+function getSearchUrl(title) {
+  return `https://trakt.tv/search?query=${encodeURIComponent(title)}`
 }
 
 async function getWatchingShows() {
@@ -183,7 +188,7 @@ async function getTrending(period) {
   }
 }
 
-function trendingBrowseUrl(type, { ignoreWatched = false } = {}) {
+function getTrendingBrowseUrl(type, { ignoreWatched = false } = {}) {
   const mode = type === "movie" ? "movie" : "show"
   return `https://app.trakt.tv/discover/trending?mode=${mode}&ignore_watched=${ignoreWatched}`
 }

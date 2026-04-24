@@ -249,7 +249,7 @@ function initDockEffect(row) {
   function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
     items.forEach((item) => renderPosterCard(rowEl, mergeWithLibrary(item, libraryIndex)))
-    appendAddMoreTile(rowEl, { href: mediaRepository().browseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
+    appendAddMoreTile(rowEl, { href: mediaRepository().getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeProgressHydration(rowEl)
@@ -283,7 +283,7 @@ function initDockEffect(row) {
   function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (mediaRepository().episodeUrl?.(item, ep) || base) : base
+    const url = ep ? (mediaRepository().getEpisodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -347,7 +347,7 @@ function initDockEffect(row) {
     containerEl.replaceChildren()
     items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
     const u = mediaRepository()
-    appendAddMoreTile(containerEl, { href: u.trendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
+    appendAddMoreTile(containerEl, { href: u.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
 
   async function addToWatchlist(card) {
@@ -776,7 +776,11 @@ function initDockEffect(row) {
   async function hydrateAiCard(card) {
     const { title, year } = card.item
     const resolved = await mediaRepository().searchByTitle(title, year)
-    if (!resolved) return
+    if (!resolved) {
+      card.item = { ...card.item, url: mediaRepository().getSearchUrl(title) }
+      card.refresh()
+      return
+    }
     if (resolved.release_status === "unreleased") {
       card.closest(".row-item")?.remove()
       return
