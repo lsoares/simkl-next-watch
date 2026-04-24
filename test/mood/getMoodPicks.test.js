@@ -114,48 +114,7 @@ test.describe("Simkl", () => {
 })
 
 test.describe("Trakt", () => {
-  test("sends Trakt user ratings to the AI alongside library titles", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
-    await signInToTrakt(page, trakt, tmdb, intro, {
-      watchedShows: [{
-        last_watched_at: new Date().toISOString(),
-        show: { title: "Breaking Bad", year: 2008, aired_episodes: 1, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
-        seasons: [{ number: 1, episodes: [{ number: 1, plays: 1 }] }],
-      }],
-      watchlistMovies: [{
-        listed_at: "2025-01-01T00:00:00Z",
-        movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
-      }],
-      ratingsShows: [{
-        rated_at: "2024-09-12T10:57:24.000Z",
-        rating: 9,
-        type: "show",
-        show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
-      }],
-      ratingsMovies: [{
-        rated_at: "2024-09-12T10:57:24.000Z",
-        rating: 8,
-        type: "movie",
-        movie: { title: "Inception", year: 2010, ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
-      }],
-      tmdbTimes: 5,
-    })
-    await ai.gemini.useChat(
-      '[{"title":"Parasite","year":2019}]',
-      ["Breaking Bad (2008):9", "Inception (2010):8"],
-    )
-    await trakt.useSearchShow("", [])
-    await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
-    await mood.open()
-    await mood.pickMood("Make me laugh")
-    await mood.setApiKey("gemini", "apiAiKey")
-    await mood.expectKeySaved()
-
-    await mood.pickMood("Make me laugh")
-
-    await aiPicks.expectPosterLinksTo("Parasite", /parasite-2019/)
-  })
-
-  test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
+  test("AI Picks sends Trakt ratings in the prompt and reflects library status on posters", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -177,11 +136,17 @@ test.describe("Trakt", () => {
         type: "show",
         show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
       }],
+      ratingsMovies: [{
+        rated_at: "2024-09-12T10:57:24.000Z",
+        rating: 8,
+        type: "movie",
+        movie: { title: "Inception", year: 2010, ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
+      }],
       tmdbTimes: 7,
     })
     await ai.gemini.useChat(
       '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
-      ["Breaking Bad (2008):9"],
+      ["Breaking Bad (2008):9", "Inception (2010):8"],
     )
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
