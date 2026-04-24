@@ -363,6 +363,7 @@
           touch-action: pan-x;
         }
         .top-bar-scroll #coffeeLink { margin-left: auto; }
+        .top-bar.logged-out .top-bar-scroll { justify-content: center; }
         .top-bar-scroll::-webkit-scrollbar {
           display: none;
         }

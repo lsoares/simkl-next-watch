@@ -883,6 +883,7 @@ function initDockEffect(row) {
   function hydrateUI() {
     const loggedIn = isLoggedIn()
     el.topBar.hidden = false
+    el.topBar.classList.toggle("logged-out", !loggedIn)
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
     el.navHome.hidden = loggedIn
