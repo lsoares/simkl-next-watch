@@ -764,6 +764,7 @@
       @media (max-width: 600px) {
         .app-intro { padding: 32px 4px 28px; }
         .app-intro-tagline { font-size: 1.5rem; }
+        .view-teaser-cta p { max-width: 280px; margin-left: auto; margin-right: auto; }
       }
 
 
