@@ -16,6 +16,30 @@ import { client as similarPage } from "./_pages/similar.js"
 import { client as moodPage } from "./_pages/mood.js"
 import { client as aiPicksPage } from "./_pages/aiPicks.js"
 
+/**
+ * @typedef {{
+ *   simkl: ReturnType<typeof simklClient>,
+ *   trakt: ReturnType<typeof traktClient>,
+ *   tmdb: ReturnType<typeof tmdbClient>,
+ *   ai: {
+ *     gemini: ReturnType<typeof geminiClient>,
+ *     openai: ReturnType<typeof openaiClient>,
+ *     claude: ReturnType<typeof claudeClient>,
+ *     grok: ReturnType<typeof grokClient>,
+ *     groq: ReturnType<typeof groqClient>,
+ *     deepseek: ReturnType<typeof deepseekClient>,
+ *     openrouter: ReturnType<typeof openrouterClient>,
+ *   },
+ *   intro: ReturnType<typeof introPage>,
+ *   next: ReturnType<typeof nextPage>,
+ *   trending: ReturnType<typeof trendingPage>,
+ *   similar: ReturnType<typeof similarPage>,
+ *   mood: ReturnType<typeof moodPage>,
+ *   aiPicks: ReturnType<typeof aiPicksPage>,
+ * }} Fixtures
+ */
+
+/** @type {import("@playwright/test").TestType<import("@playwright/test").PlaywrightTestArgs & import("@playwright/test").PlaywrightTestOptions & Fixtures, import("@playwright/test").PlaywrightWorkerArgs & import("@playwright/test").PlaywrightWorkerOptions>} */
 export const test = base.extend({
   context: async ({ context, baseURL }, use) => {
     await context.addInitScript((uri) => {
