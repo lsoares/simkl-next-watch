@@ -9,7 +9,8 @@
   "scripts": {
     "test": "npx playwright test",
     "build": "node build.js",
-    "expose": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s ."
+    "expose": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s .",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "html-minifier-terser": "^7.2.0",
+    "husky": "^9.1.7",
     "serve": "^14.2.6"
   }
 }

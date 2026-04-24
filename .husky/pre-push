@@ -1,0 +1,1 @@
+CI=true npx playwright test --workers=2
