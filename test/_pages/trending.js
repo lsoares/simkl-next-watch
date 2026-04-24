@@ -1,3 +1,5 @@
+import { expect } from "@playwright/test"
+
 export function client(page) {
   return {
     async addToWatchlist(title) {
@@ -8,6 +10,34 @@ export function client(page) {
     },
     async pickPeriod(period) {
       await page.getByRole("button", { name: new RegExp(period, "i") }).click()
+    },
+
+    async expectShowIsPresent(title) {
+      await expect(page.getByRole("article", { name: title })).toBeVisible()
+    },
+    async expectShowIsAbsent(title) {
+      await expect(page.getByRole("article", { name: title })).toHaveCount(0)
+    },
+    async expectTitleLinksTo(title, href) {
+      await expect(page.getByRole("article", { name: title }).getByRole("link", { name: title })).toHaveAttribute("href", href)
+    },
+    async expectShowShowsRating(title, rating) {
+      await expect(page.getByRole("article", { name: title }).getByLabel(new RegExp(`simkl rating ${rating} out of 10`, "i"))).toBeVisible()
+    },
+    async expectShowIsOnWatchlist(title) {
+      await expect(page.getByRole("article", { name: title }).getByLabel(/on watchlist/i)).toBeVisible()
+    },
+    async expectShowIsWatching(title) {
+      await expect(page.getByRole("article", { name: title }).getByLabel(/^watching$/i)).toBeVisible()
+    },
+    async expectViewAllSeriesLinksTo(href) {
+      await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", href)
+    },
+    async expectAddToWatchlistButtonIsAbsent(title) {
+      await expect(page.getByRole("article", { name: title }).getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)
+    },
+    async expectToastMessage(text) {
+      await expect(page.getByRole("status")).toContainText(text)
     },
   }
 }

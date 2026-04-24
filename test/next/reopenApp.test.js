@@ -1,7 +1,7 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, intro }) => {
+  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, intro, next }) => {
     await signInWithSimklLibrary(page, simkl, intro, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "plantowatch" },
@@ -12,10 +12,10 @@ test.describe("Simkl", () => {
         { title: "Inception", id: 22222, status: "plantowatch" },
       ],
     })
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Lost" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Inception" })).toBeVisible()
+    await next.expectShowIsPresent("Breaking Bad")
+    await next.expectShowIsPresent("Lost")
+    await next.expectShowIsPresent("The Matrix")
+    await next.expectShowIsPresent("Inception")
     await publishSimklLibrary(simkl, {
       shows: [
         { title: "Breaking Bad", id: 11121, status: "completed" },
@@ -29,23 +29,23 @@ test.describe("Simkl", () => {
 
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")))
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Inception" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
+    await next.expectShowIsAbsent("Breaking Bad")
+    await next.expectShowIsAbsent("The Matrix")
+    await next.expectShowIsAbsent("Lost")
+    await next.expectShowIsAbsent("Inception")
+    await next.expectShowIsPresent("Chernobyl")
+    await next.expectShowIsPresent("Dune")
   })
 })
 
 test.describe("Trakt", () => {
-  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb, intro }) => {
+  test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb, intro, next }) => {
     await signInWithTraktLibrary(page, trakt, tmdb, intro, {
       watchlistShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
       watchlistMovies: [{ title: "The Matrix", trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" }],
     })
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
+    await next.expectShowIsPresent("Breaking Bad")
+    await next.expectShowIsPresent("The Matrix")
     await publishTraktLibrary(trakt, {
       watchedShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
       watchlistShows: [{ title: "Chernobyl", trakt: 2000, imdb: "tt7366338", slug: "chernobyl" }],
@@ -54,10 +54,10 @@ test.describe("Trakt", () => {
 
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")))
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
+    await next.expectShowIsAbsent("Breaking Bad")
+    await next.expectShowIsAbsent("The Matrix")
+    await next.expectShowIsPresent("Chernobyl")
+    await next.expectShowIsPresent("Dune")
   })
 })
 

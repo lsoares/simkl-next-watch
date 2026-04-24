@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("adds a trending movie to the watchlist", async ({ page, simkl, intro, trending }) => {
@@ -16,13 +16,12 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await intro.signIn("simkl")
     await page.getByRole("link", { name: /trending/i }).click()
-    const card = page.getByRole("article", { name: "Dune" })
-    await expect(card).toBeVisible()
+    await trending.expectShowIsPresent("Dune")
 
     await trending.addToWatchlist("Dune")
 
-    await expect(page.getByRole("status")).toContainText(/added.*dune.*watchlist/i)
-    await expect(card.getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)
+    await trending.expectToastMessage(/added.*dune.*watchlist/i)
+    await trending.expectAddToWatchlistButtonIsAbsent("Dune")
   })
 })
 
@@ -47,12 +46,11 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await intro.signIn("trakt")
     await page.getByRole("link", { name: /trending/i }).click()
-    const card = page.getByRole("article", { name: "Dune" })
-    await expect(card).toBeVisible()
+    await trending.expectShowIsPresent("Dune")
 
     await trending.addToWatchlist("Dune")
 
-    await expect(page.getByRole("status")).toContainText(/added.*dune.*watchlist/i)
-    await expect(card.getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)
+    await trending.expectToastMessage(/added.*dune.*watchlist/i)
+    await trending.expectAddToWatchlistButtonIsAbsent("Dune")
   })
 })

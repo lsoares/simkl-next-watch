@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test("install button appears when the browser signals the PWA is installable", async ({ page, simkl, intro }) => {
   await signInToSimkl(page, simkl, intro)
@@ -9,7 +9,7 @@ test("install button appears when the browser signals the PWA is installable", a
     window.dispatchEvent(e)
   })
 
-  await expect(page.getByRole("button", { name: /install/i })).toBeVisible()
+  await intro.expectInstallButtonIsVisible()
 })
 
 test("install button hides once the app has been installed", async ({ page, simkl, intro }) => {
@@ -19,11 +19,11 @@ test("install button hides once the app has been installed", async ({ page, simk
     e.prompt = () => Promise.resolve()
     window.dispatchEvent(e)
   })
-  await expect(page.getByRole("button", { name: /install/i })).toBeVisible()
+  await intro.expectInstallButtonIsVisible()
 
   await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")))
 
-  await expect(page.getByRole("button", { name: /install/i })).toBeHidden()
+  await intro.expectInstallButtonIsHidden()
 })
 
 async function signInToSimkl(page, simkl, intro) {
@@ -37,5 +37,5 @@ async function signInToSimkl(page, simkl, intro) {
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
-  await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
+  await intro.expectLogoutIsVisible()
 }

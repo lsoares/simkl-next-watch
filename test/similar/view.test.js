@@ -1,7 +1,7 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb, intro }) => {
+  test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb, intro, similar }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -25,19 +25,18 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
+    await intro.expectLogoutIsVisible()
     await page.getByRole("link", { name: /similar/i }).click()
-    const grid = page.getByRole("region", { name: /similar picks/i })
-    await expect(grid.getByRole("article", { name: "Filler" })).toBeVisible()
+    await similar.expectShowIsPresent("Filler")
 
-    await page.getByRole("button", { name: "7+" }).click()
+    await similar.pickRatingTab("7+")
 
-    await expect(grid.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(grid.getByRole("article", { name: "Inception" })).toBeVisible()
-    await expect(grid.getByRole("article", { name: "Filler" })).toHaveCount(0)
+    await similar.expectShowIsPresent("Breaking Bad")
+    await similar.expectShowIsPresent("Inception")
+    await similar.expectShowIsAbsent("Filler")
   })
 
-  test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb, intro }) => {
+  test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb, intro, similar }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -52,17 +51,17 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
+    await intro.expectLogoutIsVisible()
 
     await page.getByRole("link", { name: /similar/i }).click()
 
-    await expect(page.getByText(/your titles, shuffled/i)).toBeVisible()
-    await expect(page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await similar.expectShuffledNotice()
+    await similar.expectShowIsPresent("Breaking Bad")
   })
 })
 
 test.describe("Trakt", () => {
-  test("similar view shows rated Trakt library posters in its grid", async ({ page, trakt, tmdb, intro }) => {
+  test("similar view shows rated Trakt library posters in its grid", async ({ page, trakt, tmdb, intro, similar }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([{
@@ -88,10 +87,10 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
+    await intro.expectLogoutIsVisible()
 
     await page.getByRole("link", { name: /similar/i }).click()
 
-    await expect(page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await similar.expectShowIsPresent("Breaking Bad")
   })
 })

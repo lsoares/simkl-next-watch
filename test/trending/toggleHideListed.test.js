@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("hide-listed toggle removes library items from the trending row", async ({ page, simkl, intro, trending }) => {
@@ -24,15 +24,15 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await intro.signIn("simkl")
     await page.getByRole("link", { name: /trending/i }).click()
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Severance" }).getByLabel(/^watching$/i)).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await trending.expectShowIsPresent("Breaking Bad")
+    await trending.expectShowIsWatching("Severance")
+    await trending.expectShowIsPresent("The Rookie")
 
     await trending.toggleHideListed()
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await trending.expectShowIsAbsent("Breaking Bad")
+    await trending.expectShowIsAbsent("Severance")
+    await trending.expectShowIsPresent("The Rookie")
   })
 })
 
@@ -67,14 +67,14 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await intro.signIn("trakt")
     await page.getByRole("link", { name: /trending/i }).click()
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await trending.expectShowIsPresent("Breaking Bad")
+    await trending.expectShowIsPresent("Severance")
+    await trending.expectShowIsPresent("The Rookie")
 
     await trending.toggleHideListed()
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Severance" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
+    await trending.expectShowIsAbsent("Breaking Bad")
+    await trending.expectShowIsAbsent("Severance")
+    await trending.expectShowIsPresent("The Rookie")
   })
 })

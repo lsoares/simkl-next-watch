@@ -1,8 +1,8 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   for (const name of ["gemini", "openai", "claude", "grok", "groq", "deepseek", "openrouter"]) {
-    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood }) => {
+    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
       await tmdb.usePosters(6)
       await simkl.useTvEpisodes("11121")
       await signInToSimkl(page, simkl, intro, {
@@ -35,23 +35,21 @@ test.describe("Simkl", () => {
       await page.getByRole("link", { name: /mood/i }).click()
       await mood.pickMood("Make me laugh")
       await mood.setApiKey(name, "apiAiKey")
-      await expect(page.getByRole("status")).toContainText(/key saved/i)
+      await mood.expectKeySaved()
 
       await mood.pickMood("Make me laugh")
 
-      const aiResults = page.getByRole("dialog", { name: /ai picks/i })
-      await expect(aiResults.getByRole("article", { name: "Parasite" })).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "Oldboy" })).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "The Handmaiden" })).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "Inception" })).toHaveClass(/trending-watched/)
-      await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/rated 8 out of 10/i)).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "Inception" }).getByLabel(/^watched /i)).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "The Matrix" }).getByLabel(/rated 7 out of 10/i)).toBeVisible()
-      await expect(aiResults.getByRole("article", { name: "The Matrix" }).getByLabel(/^watched /i)).toHaveCount(0)
+      await aiPicks.expectPosterIsVisible("Parasite")
+      await aiPicks.expectPosterIsVisible("Oldboy")
+      await aiPicks.expectPosterIsVisible("The Handmaiden")
+      await aiPicks.expectPosterIsWatched("Inception")
+      await aiPicks.expectPosterShowsRating("Inception", 8)
+      await aiPicks.expectPosterShowsRating("The Matrix", 7)
+      await aiPicks.expectPosterIsNotWatched("The Matrix")
     })
   }
 
-  test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai, intro, mood }) => {
+  test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
     await tmdb.usePosters(2)
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
@@ -70,13 +68,12 @@ test.describe("Simkl", () => {
     await page.getByRole("link", { name: /mood/i }).click()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
-    await expect(page.getByRole("status")).toContainText(/key saved/i)
+    await mood.expectKeySaved()
 
     await mood.pickMood("Make me laugh")
 
-    const dialog = page.getByRole("dialog", { name: /ai picks/i })
-    await expect(dialog.getByRole("article", { name: "Parasite" })).toBeVisible()
-    await expect(dialog.getByRole("link", { name: "Parasite" })).toHaveAttribute("href", /simkl\.com\/movies\/33001/)
+    await aiPicks.expectPosterIsVisible("Parasite")
+    await aiPicks.expectPosterLinksTo("Parasite", /simkl\.com\/movies\/33001/)
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
@@ -92,9 +89,9 @@ test.describe("Simkl", () => {
 
     await page.getByRole("link", { name: /mood/i }).click()
 
-    await expect(page.getByRole("button", { name: "Cozy night in" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Make me laugh" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Tear-jerker" })).toBeVisible()
+    await mood.expectPromptIsVisible("Cozy night in")
+    await mood.expectPromptIsVisible("Make me laugh")
+    await mood.expectPromptIsVisible("Tear-jerker")
   })
 
   test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
@@ -111,12 +108,12 @@ test.describe("Simkl", () => {
 
     await mood.pickMood("Cozy night in")
 
-    await expect(page.getByRole("dialog", { name: /ai key/i })).toBeVisible()
+    await mood.expectKeyDialogIsOpen()
   })
 })
 
 test.describe("Trakt", () => {
-  test("sends Trakt user ratings to the AI alongside library titles", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+  test("sends Trakt user ratings to the AI alongside library titles", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -152,14 +149,14 @@ test.describe("Trakt", () => {
     await page.getByRole("link", { name: /mood/i }).click()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
-    await expect(page.getByRole("status")).toContainText(/key saved/i)
+    await mood.expectKeySaved()
 
     await mood.pickMood("Make me laugh")
 
-    await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toBeVisible()
+    await aiPicks.expectPosterIsVisible("Parasite")
   })
 
-  test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+  test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -195,15 +192,15 @@ test.describe("Trakt", () => {
     await page.getByRole("link", { name: /mood/i }).click()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
-    await expect(page.getByRole("status")).toContainText(/key saved/i)
+    await mood.expectKeySaved()
 
     await mood.pickMood("Make me laugh")
 
-    await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Inception" })).toHaveClass(/trending-watchlisted/)
-    await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "Parasite" })).toHaveClass(/trending-watched/)
+    await aiPicks.expectPosterIsWatchlisted("Inception")
+    await aiPicks.expectPosterIsWatched("Parasite")
   })
 
-  test("AI hits open Trakt pages on click for Trakt users", async ({ page, trakt, tmdb, ai, intro, mood }) => {
+  test("AI hits open Trakt pages on click for Trakt users", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -223,11 +220,11 @@ test.describe("Trakt", () => {
     await page.getByRole("link", { name: /mood/i }).click()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
-    await expect(page.getByRole("status")).toContainText(/key saved/i)
+    await mood.expectKeySaved()
 
     await mood.pickMood("Make me laugh")
 
-    await expect(page.getByRole("dialog", { name: /ai picks/i }).getByRole("link", { name: "Inception" })).toHaveAttribute("href", "https://app.trakt.tv/movies/inception-2010")
+    await aiPicks.expectPosterLinksTo("Inception", "https://app.trakt.tv/movies/inception-2010")
   })
 })
 
@@ -242,7 +239,6 @@ async function signInToSimkl(page, simkl, intro, { shows = [], movies = [], anim
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
-  await expect(page.getByRole("article", { name: shows[0].show.title })).toBeVisible()
 }
 
 async function signInToTrakt(page, trakt, tmdb, intro, {
@@ -273,5 +269,4 @@ async function signInToTrakt(page, trakt, tmdb, intro, {
   await trakt.useAuthorize()
   await page.goto("/")
   await intro.signIn("trakt")
-  await expect(page.getByRole("article", { name: watchedShows[0].show.title })).toBeVisible()
 }

@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("adds an unwatched similar pick to the watchlist from the similar dialog", async ({ page, simkl, tmdb, ai, intro, similar, aiPicks }) => {
@@ -24,14 +24,13 @@ test.describe("Simkl", () => {
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
     await page.goto("/")
     await intro.signIn("simkl")
-    await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
+    await intro.expectLogoutIsVisible()
     await page.getByRole("link", { name: /similar/i }).click()
     await similar.openMoreLikeThis("Inception")
-    const prestigeCard = page.getByRole("dialog", { name: /ai picks/i }).getByRole("article", { name: "The Prestige" })
-    await expect(prestigeCard).toBeVisible()
+    await aiPicks.expectPosterIsVisible("The Prestige")
 
     await aiPicks.addToWatchlist("The Prestige")
 
-    await expect(page.getByRole("status")).toContainText(/added.*prestige.*watchlist/i)
+    await aiPicks.expectToastMessage(/added.*prestige.*watchlist/i)
   })
 })

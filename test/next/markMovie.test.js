@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("marks a watchlist movie as watched", async ({ page, simkl, tmdb, intro, next }) => {
@@ -18,9 +18,8 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    const movieCard = page.getByRole("article", { name: "The Matrix" })
-    await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
-    await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://simkl.com/search/?type=movies")
+    await next.expectTitleLinksTo("The Matrix", "https://simkl.com/movies/53992/the-matrix")
+    await next.expectAddMovieLinksTo("https://simkl.com/search/?type=movies")
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncMovies([{
       movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
@@ -29,10 +28,9 @@ test.describe("Simkl", () => {
 
     await next.markWatched("The Matrix")
 
-    const toast = page.getByRole("status")
-    await expect(toast).toContainText(/marked.*matrix.*watched/i)
-    await expect(toast.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://simkl.com/movies/53992/the-matrix")
-    await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
+    await next.expectToastMessage(/marked.*matrix.*watched/i)
+    await next.expectToastLinksTo("The Matrix", "https://simkl.com/movies/53992/the-matrix")
+    await next.expectShowIsAbsent("The Matrix")
   })
 })
 
@@ -58,16 +56,14 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    const movieCard = page.getByRole("article", { name: "The Matrix" })
-    await expect(movieCard.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
-    await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=movie")
+    await next.expectTitleLinksTo("The Matrix", "https://app.trakt.tv/movies/the-matrix-1999")
+    await next.expectAddMovieLinksTo("https://app.trakt.tv/search?m=movie")
     await trakt.useWatchlistMovies([])
 
     await next.markWatched("The Matrix")
 
-    const toast = page.getByRole("status")
-    await expect(toast).toContainText(/marked.*matrix.*watched/i)
-    await expect(toast.getByRole("link", { name: "The Matrix" })).toHaveAttribute("href", "https://app.trakt.tv/movies/the-matrix-1999")
-    await expect(page.getByRole("article", { name: "The Matrix" })).toHaveCount(0)
+    await next.expectToastMessage(/marked.*matrix.*watched/i)
+    await next.expectToastLinksTo("The Matrix", "https://app.trakt.tv/movies/the-matrix-1999")
+    await next.expectShowIsAbsent("The Matrix")
   })
 })

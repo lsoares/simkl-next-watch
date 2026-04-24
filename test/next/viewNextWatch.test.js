@@ -1,7 +1,7 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("filters out completed shows from the watching list", async ({ page, simkl, intro }) => {
+  test("filters out completed shows from the watching list", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -25,11 +25,11 @@ test.describe("Simkl", () => {
 
     await intro.signIn("simkl")
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
+    await next.expectShowIsPresent("Breaking Bad")
+    await next.expectShowIsAbsent("Chernobyl")
   })
 
-  test("watchlist hides unreleased shows and movies", async ({ page, simkl, tmdb, intro }) => {
+  test("watchlist hides unreleased shows and movies", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -49,15 +49,15 @@ test.describe("Simkl", () => {
 
     await intro.signIn("simkl")
 
-    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
+    await next.expectShowIsPresent("Severance")
+    await next.expectShowIsPresent("The Matrix")
+    await next.expectShowIsAbsent("Unreleased Show")
+    await next.expectShowIsAbsent("Avatar Fire and Ash")
   })
 })
 
 test.describe("Trakt", () => {
-  test("filters out completed and dropped shows from the watching list", async ({ page, trakt, tmdb, intro }) => {
+  test("filters out completed and dropped shows from the watching list", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -94,12 +94,12 @@ test.describe("Trakt", () => {
 
     await intro.signIn("trakt")
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Chernobyl" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Lost" })).toHaveCount(0)
+    await next.expectShowIsPresent("Breaking Bad")
+    await next.expectShowIsAbsent("Chernobyl")
+    await next.expectShowIsAbsent("Lost")
   })
 
-  test("watchlist hides unreleased shows and movies", async ({ page, trakt, tmdb, intro }) => {
+  test("watchlist hides unreleased shows and movies", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -135,13 +135,13 @@ test.describe("Trakt", () => {
 
     await intro.signIn("trakt")
 
-    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Matrix" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Unreleased Show" })).toHaveCount(0)
-    await expect(page.getByRole("article", { name: "Avatar Fire and Ash" })).toHaveCount(0)
+    await next.expectShowIsPresent("Severance")
+    await next.expectShowIsPresent("The Matrix")
+    await next.expectShowIsAbsent("Unreleased Show")
+    await next.expectShowIsAbsent("Avatar Fire and Ash")
   })
 
-  test("watchlist movies show formatted runtime chips", async ({ page, trakt, tmdb, intro }) => {
+  test("watchlist movies show formatted runtime chips", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useWatchedMovies([])
     await trakt.useRatingsShows([])
@@ -163,8 +163,8 @@ test.describe("Trakt", () => {
 
     await intro.signIn("trakt")
 
-    await expect(page.getByRole("article", { name: "Short Movie" }).getByText("45m", { exact: true })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Mid Movie" }).getByText("~1.5h", { exact: true })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Long Movie" }).getByText("~2h", { exact: true })).toBeVisible()
+    await next.expectMovieShowsRuntime("Short Movie", "45m")
+    await next.expectMovieShowsRuntime("Mid Movie", "~1.5h")
+    await next.expectMovieShowsRuntime("Long Movie", "~2h")
   })
 })

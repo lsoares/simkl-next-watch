@@ -1,7 +1,7 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("logout clears session and shows intro", async ({ page, simkl, intro }) => {
+  test("logout clears session and shows intro", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -15,19 +15,19 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await expect(page.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
+    await next.expectShowIsPresent("Breaking Bad")
 
-    await page.getByRole("button", { name: /logout/i }).click()
+    await intro.logout()
 
-    await expect(page.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /no-clutter companion/i })).toBeVisible()
+    await intro.expectSignInButtonIsVisible("simkl")
+    await intro.expectHeadingIsVisible()
     const leftover = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("next-watch")))
     expect(leftover).toEqual([])
   })
 })
 
 test.describe("Trakt", () => {
-  test("logout clears session and shows intro", async ({ page, trakt, tmdb, intro }) => {
+  test("logout clears session and shows intro", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([])
@@ -46,12 +46,12 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
+    await next.expectShowIsPresent("Severance")
 
-    await page.getByRole("button", { name: /logout/i }).click()
+    await intro.logout()
 
-    await expect(page.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /no-clutter companion/i })).toBeVisible()
+    await intro.expectSignInButtonIsVisible("trakt")
+    await intro.expectHeadingIsVisible()
     const leftover = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("next-watch")))
     expect(leftover).toEqual([])
   })

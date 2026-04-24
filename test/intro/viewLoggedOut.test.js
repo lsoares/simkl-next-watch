@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 for (const { name, regionName, ctaText } of [
   { name: "Home", regionName: "Home", ctaText: /no-clutter companion/i },
@@ -7,17 +7,14 @@ for (const { name, regionName, ctaText } of [
   { name: "similar", regionName: "Similar", ctaText: /sign in to find titles similar/i },
   { name: "mood", regionName: "Mood", ctaText: /sign in to get picks/i },
 ]) {
-  test(`${name} view shows a sign-in CTA when logged out`, async ({ page }) => {
+  test(`${name} view shows a sign-in CTA when logged out`, async ({ page, intro }) => {
     await page.goto("/")
-    await expect(page.getByRole("heading", { name: /no-clutter companion/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
+    await intro.expectHeadingIsVisible()
+    await intro.expectSignInButtonIsVisible("simkl")
+    await intro.expectSignInButtonIsVisible("trakt")
 
     await page.getByRole("link", { name }).click()
 
-    const view = page.getByRole("region", { name: regionName })
-    await expect(view.getByText(ctaText)).toBeVisible()
-    await expect(view.getByRole("button", { name: /sign in with simkl/i })).toBeVisible()
-    await expect(view.getByRole("button", { name: /sign in with trakt/i })).toBeVisible()
+    await intro.expectViewShowsLoggedOutCta(regionName, ctaText)
   })
 }

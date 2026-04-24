@@ -1,4 +1,4 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("marks the next episode of a watching TV show", async ({ page, simkl, intro, next }) => {
@@ -20,10 +20,9 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    const showCard = page.getByRole("article", { name: "Breaking Bad" })
-    await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad")
-    await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
-    await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://simkl.com/search/?type=tv")
+    await next.expectTitleLinksTo("Breaking Bad", "https://simkl.com/tv/11121/breaking-bad")
+    await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
+    await next.expectAddSeriesLinksTo("https://simkl.com/search/?type=tv")
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
@@ -33,10 +32,9 @@ test.describe("Simkl", () => {
 
     await next.markWatched("Breaking Bad")
 
-    const toast = page.getByRole("status")
-    await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
-    await expect(toast.getByRole("link", { name: "Breaking Bad 5x1" })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
-    await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-2/")
+    await next.expectToastMessage(/marked.*breaking bad.*5x1.*watched/i)
+    await next.expectToastLinksTo("Breaking Bad 5x1", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
+    await next.expectNextEpisodeIs("Breaking Bad", /^5x2/, "https://simkl.com/tv/11121/breaking-bad/season-5/episode-2/")
   })
 })
 
@@ -63,10 +61,9 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    const showCard = page.getByRole("article", { name: "Breaking Bad" })
-    await expect(showCard.getByRole("link", { name: "Breaking Bad" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad")
-    await expect(showCard.getByRole("link", { name: "5x1: Live Free or Die" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
-    await expect(page.getByRole("link", { name: "Add series" })).toHaveAttribute("href", "https://app.trakt.tv/search?m=show")
+    await next.expectTitleLinksTo("Breaking Bad", "https://app.trakt.tv/shows/breaking-bad")
+    await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
+    await next.expectAddSeriesLinksTo("https://app.trakt.tv/search?m=show")
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -79,10 +76,9 @@ test.describe("Trakt", () => {
 
     await next.markWatched("Breaking Bad")
 
-    const toast = page.getByRole("status")
-    await expect(toast).toContainText(/marked.*breaking bad.*5x1.*watched/i)
-    await expect(toast.getByRole("link", { name: "Breaking Bad 5x1" })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
-    await expect(showCard.getByRole("link", { name: /5x2/ })).toHaveAttribute("href", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/2")
+    await next.expectToastMessage(/marked.*breaking bad.*5x1.*watched/i)
+    await next.expectToastLinksTo("Breaking Bad 5x1", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
+    await next.expectNextEpisodeIs("Breaking Bad", /^5x2/, "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/2")
   })
 
   test("marks the first episode of a plantowatch show (starting it)", async ({ page, trakt, tmdb, intro, next }) => {
@@ -106,8 +102,7 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    const showCard = page.getByRole("article", { name: "Severance" })
-    await expect(showCard).toBeVisible()
+    await next.expectShowIsPresent("Severance")
     await trakt.useWatchlistShows([])
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
@@ -118,9 +113,8 @@ test.describe("Trakt", () => {
 
     await next.markWatched("Severance")
 
-    const toast = page.getByRole("status")
-    await expect(toast).toContainText(/marked.*severance.*1x1.*watched/i)
-    await expect(toast.getByRole("link", { name: "Severance 1x1" })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance/seasons/1/episodes/1")
-    await expect(showCard.getByRole("link", { name: /1x2/ })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance/seasons/1/episodes/2")
+    await next.expectToastMessage(/marked.*severance.*1x1.*watched/i)
+    await next.expectToastLinksTo("Severance 1x1", "https://app.trakt.tv/shows/severance/seasons/1/episodes/1")
+    await next.expectNextEpisodeIs("Severance", /^1x2/, "https://app.trakt.tv/shows/severance/seasons/1/episodes/2")
   })
 })

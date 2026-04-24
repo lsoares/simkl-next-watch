@@ -1,7 +1,7 @@
-import { test, expect } from "../test.js"
+import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("trending row lists shows and movies", async ({ page, simkl, intro }) => {
+  test("trending row lists shows and movies", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -22,15 +22,14 @@ test.describe("Simkl", () => {
 
     await page.getByRole("link", { name: /trending/i }).click()
 
-    const rookie = page.getByRole("article", { name: "The Rookie" })
-    await expect(rookie).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Boys" })).toBeVisible()
-    await expect(rookie.getByLabel(/simkl rating 8\.5 out of 10/i)).toBeVisible()
-    await expect(page.getByRole("article", { name: "Breaking Bad" }).getByLabel(/on watchlist/i)).toBeVisible()
-    await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://simkl.com/tv/best-shows/most-watched/?wltime=today")
+    await trending.expectShowIsPresent("The Rookie")
+    await trending.expectShowIsPresent("The Boys")
+    await trending.expectShowShowsRating("The Rookie", "8\\.5")
+    await trending.expectShowIsOnWatchlist("Breaking Bad")
+    await trending.expectViewAllSeriesLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today")
   })
 
-  test("watchlist items show a trending badge in the next view", async ({ page, simkl, intro }) => {
+  test("watchlist items show a trending badge in the next view", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -46,7 +45,7 @@ test.describe("Simkl", () => {
 
     await intro.signIn("simkl")
 
-    await expect(page.getByRole("article", { name: "Breaking Bad" }).getByText(/🔥/)).toBeVisible()
+    await next.expectShowHasTrendingBadge("Breaking Bad")
   })
 
   for (const { period, title } of [
@@ -72,13 +71,13 @@ test.describe("Simkl", () => {
 
       await trending.pickPeriod(period)
 
-      await expect(page.getByRole("article", { name: title })).toBeVisible()
+      await trending.expectShowIsPresent(title)
     })
   }
 })
 
 test.describe("Trakt", () => {
-  test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb, intro }) => {
+  test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb, intro, trending }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
     await trakt.useWatchedShows([])
@@ -106,11 +105,11 @@ test.describe("Trakt", () => {
 
     await page.getByRole("link", { name: /trending/i }).click()
 
-    await expect(page.getByRole("article", { name: "Severance" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "The Rookie" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Dune" })).toBeVisible()
-    await expect(page.getByRole("article", { name: "Severance" }).getByRole("link", { name: "Severance" })).toHaveAttribute("href", "https://app.trakt.tv/shows/severance")
-    await expect(page.getByRole("article", { name: "Dune" }).getByRole("link", { name: "Dune" })).toHaveAttribute("href", "https://app.trakt.tv/movies/dune-2021")
-    await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", "https://app.trakt.tv/discover/trending?mode=show&ignore_watched=false")
+    await trending.expectShowIsPresent("Severance")
+    await trending.expectShowIsPresent("The Rookie")
+    await trending.expectShowIsPresent("Dune")
+    await trending.expectTitleLinksTo("Severance", "https://app.trakt.tv/shows/severance")
+    await trending.expectTitleLinksTo("Dune", "https://app.trakt.tv/movies/dune-2021")
+    await trending.expectViewAllSeriesLinksTo("https://app.trakt.tv/discover/trending?mode=show&ignore_watched=false")
   })
 })
