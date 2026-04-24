@@ -1,11 +1,11 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("similar view shows top-rated library posters in its grid", async ({ page, simkl, tmdb }) => {
+  test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
-    await tmdb.usePosters(2)
+    await tmdb.usePosters(3)
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -26,16 +26,18 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
-
     await page.getByRole("link", { name: /similar/i }).click()
-
     const grid = page.getByRole("region", { name: /similar picks/i })
+    await expect(grid.getByRole("article", { name: "Filler" })).toBeVisible()
+
+    await page.getByRole("button", { name: "7+" }).click()
+
     await expect(grid.getByRole("article", { name: "Breaking Bad" })).toBeVisible()
     await expect(grid.getByRole("article", { name: "Inception" })).toBeVisible()
     await expect(grid.getByRole("article", { name: "Filler" })).toHaveCount(0)
   })
 
-  test("similar view shows a notice and random library picks when nothing is rated", async ({ page, simkl, tmdb }) => {
+  test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv({})
     await simkl.useTrendingMovies({})
@@ -54,7 +56,7 @@ test.describe("Simkl", () => {
 
     await page.getByRole("link", { name: /similar/i }).click()
 
-    await expect(page.getByText(/rate some titles to seed this/i)).toBeVisible()
+    await expect(page.getByText(/your titles, shuffled/i)).toBeVisible()
     await expect(page.getByRole("region", { name: /similar picks/i }).getByRole("article", { name: "Breaking Bad" })).toBeVisible()
   })
 })

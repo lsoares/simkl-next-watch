@@ -125,19 +125,19 @@
           </div>
         </div>
         <div id="similarContent" hidden>
-          <p class="view-hint" id="similarHint">Your titles rated 7+, shuffled. Pick one to find more like it.</p>
+          <p class="view-hint">Your titles, shuffled. Pick one to find more like it.</p>
           <div class="similar-toolbar">
             <div class="range-tabs" id="similarRatingTabs" role="group" aria-label="Minimum rating">
-              <button class="range-tab active" data-min-rating="7" type="button">7+</button>
+              <button class="range-tab active" data-min-rating="0" type="button">All</button>
+              <button class="range-tab" data-min-rating="7" type="button">7+</button>
               <button class="range-tab" data-min-rating="8" type="button">8+</button>
               <button class="range-tab" data-min-rating="9" type="button">9+</button>
               <button class="range-tab" data-min-rating="10" type="button">10</button>
             </div>
             <button class="tiny-link" id="similarReload" type="button">Refresh</button>
           </div>
-          <ul class="similar-stats" id="similarStats" hidden></ul>
-          <div class="inline-banner" id="similarEmptyNotice" hidden>Rate some titles to seed this. Showing random picks from your library for now.</div>
           <section class="similar-grid poster-grid" id="similarGrid" aria-label="Similar picks"></section>
+          <ul class="similar-stats" id="similarStats" hidden></ul>
         </div>
       </div>
 

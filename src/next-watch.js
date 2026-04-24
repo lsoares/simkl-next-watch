@@ -187,8 +187,8 @@ function initDockEffect(row) {
     aiDialogClose: $("aiDialogClose"), aiDialogResults: $("aiDialogResults"),
     navSimilar: $("navSimilar"),
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
-    similarEmptyNotice: $("similarEmptyNotice"), similarReload: $("similarReload"), similarGrid: $("similarGrid"),
-    similarStats: $("similarStats"), similarHint: $("similarHint"), similarRatingTabs: $("similarRatingTabs"),
+    similarReload: $("similarReload"), similarGrid: $("similarGrid"),
+    similarStats: $("similarStats"), similarRatingTabs: $("similarRatingTabs"),
     spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
     attribution: $("attribution"), attributionProviderLink: $("attributionProviderLink"),
   }
@@ -514,13 +514,9 @@ function initDockEffect(row) {
   async function renderSimilar() {
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
-    const minRating = getSimilarMinRating()
-    el.similarHint.textContent = minRating === 10
-      ? "Your titles rated 10, shuffled. Pick one to find more like it."
-      : `Your titles rated ${minRating}+, shuffled. Pick one to find more like it.`
-    const rated = [...shows, ...movies].filter((i) => (i.user_rating || 0) >= minRating)
-    const usingFallback = rated.length === 0
-    const pool = usingFallback ? [...shows, ...movies] : rated
+    const all = [...shows, ...movies]
+    const minRating = resolveSimilarMinRating(all)
+    const pool = minRating === 0 ? all : all.filter((i) => (i.user_rating || 0) >= minRating)
     similarPool = pool
       .map((p) => [Math.random(), p])
       .sort((a, b) => a[0] - b[0])
@@ -528,7 +524,6 @@ function initDockEffect(row) {
     similarCursor = 0
     similarObserver?.disconnect()
     similarObserver = null
-    el.similarEmptyNotice.hidden = !usingFallback
     el.similarGrid.replaceChildren()
     el.similarGrid.scrollLeft = 0
     syncSimilarRows()
@@ -573,26 +568,50 @@ function initDockEffect(row) {
   function renderSimilarStats(shows, movies) {
     const watchedMovies = movies.filter((m) => m.status === "completed")
     const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
-    const rated = movies.filter((m) => m.user_rating != null).length + shows.filter((s) => s.user_rating != null).length
+    const watchedEpisodes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0), 0)
     const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
     const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
-    const li = document.createElement("li")
-    li.append(`🎬 ${watchedMovies.length.toLocaleString()} · 📺 ${watchedShows.length.toLocaleString()} · ${rated.toLocaleString()} rated · ${formatHours(movieMinutes + showMinutes)}`)
-    el.similarStats.replaceChildren(li)
+    el.similarStats.replaceChildren(
+      statLi("📺", [
+        [watchedShows.length, "shows watched"],
+        [watchedEpisodes, "episodes watched"],
+        [formatDays(showMinutes), "days spent on shows"],
+      ]),
+      statLi("🎬", [
+        [watchedMovies.length, "movies watched"],
+        [formatDays(movieMinutes), "days spent on movies"],
+      ]),
+    )
     el.similarStats.hidden = false
   }
 
-  function getSimilarMinRating() {
-    const active = el.similarRatingTabs.querySelector(".range-tab.active")?.dataset.minRating
-    const parsed = Number.parseInt(active, 10)
-    return Number.isFinite(parsed) ? parsed : 7
+  function statLi(icon, entries) {
+    const li = document.createElement("li")
+    li.append(`${icon} `)
+    entries.forEach(([value, tooltip], i) => {
+      if (i > 0) li.append(" · ")
+      const span = document.createElement("span")
+      span.title = tooltip
+      span.textContent = typeof value === "number" ? value.toLocaleString() : value
+      li.append(span)
+    })
+    return li
   }
 
-  function formatHours(minutes) {
-    if (minutes <= 0) return "~0h"
-    const hours = minutes / 60
-    if (hours < 10) return `~${(Math.round(hours * 2) / 2).toLocaleString()}h`
-    return `~${Math.round(hours).toLocaleString()}h`
+  function resolveSimilarMinRating(items) {
+    const saved = readStorage(STORAGE.similarMinRating)
+    if (saved) return Number.parseInt(saved, 10) || 0
+    const sevenPlus = items.filter((i) => (i.user_rating || 0) >= 7).length
+    const minRating = sevenPlus < 10 ? 0 : 7
+    el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", Number.parseInt(t.dataset.minRating, 10) === minRating))
+    return minRating
+  }
+
+  function formatDays(minutes) {
+    if (minutes <= 0) return "~0d"
+    const days = minutes / 1440
+    if (days < 10) return `~${(Math.round(days * 2) / 2).toLocaleString()}d`
+    return `~${Math.round(days).toLocaleString()}d`
   }
 
   function openAiSettings() {
