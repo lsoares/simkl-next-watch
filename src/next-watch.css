@@ -441,7 +441,7 @@
 
         /* Similar: bound the grid so its own overflow-y clips cleanly */
         .similar-toolbar { flex-shrink: 0; }
-        #similarGrid { flex: 1; min-height: 0; }
+        #similarGrid { flex: 1; min-height: 0; grid-auto-columns: calc((100vw - 44px) / 2); }
         #similarStats { flex-shrink: 0; }
 
         .attribution { padding: 8px 24px max(8px, env(safe-area-inset-bottom)); }
