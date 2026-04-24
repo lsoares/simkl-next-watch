@@ -675,11 +675,13 @@
         margin: 0 0 24px;
       }
       .app-intro {
+        position: relative;
         text-align: center;
         padding: 48px 0 40px;
         max-width: 560px;
         margin: 0 auto;
       }
+      .app-intro > *:not(.teaser-bg) { position: relative; z-index: 1; }
       .app-intro-eyebrow {
         font-size: 0.7rem;
         font-weight: 700;
@@ -762,8 +764,11 @@
         text-align: center;
       }
       @media (max-width: 600px) {
+        #homepageView { display: flex; flex-direction: column; justify-content: center; }
         .app-intro { padding: 32px 4px 28px; }
         .app-intro-tagline { font-size: 1.5rem; }
+        .app-intro-features { margin: 48px 0 40px; gap: 24px; }
+        .app-intro .app-intro-actions { margin-top: 64px; }
         .view-teaser-cta p { max-width: 280px; margin-left: auto; margin-right: auto; }
       }
 
