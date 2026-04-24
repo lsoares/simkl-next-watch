@@ -794,7 +794,6 @@
 
 .ai-prompt-icon { display: inline-block; width: 24px; height: 24px; opacity: 0.9; margin-bottom: 4px; font-size: 24px; line-height: 1; }
 .ai-prompt-label { font-size: 0.95rem; font-weight: 600; line-height: 1.2; }
-.ai-prompt-btn::after { content: attr(data-gloss); font-size: 0.72rem; color: var(--muted); line-height: 1.25; }
 
 .ai-prompt-btn:hover {
   border-color: var(--accent);
