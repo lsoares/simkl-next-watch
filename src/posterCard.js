@@ -105,9 +105,10 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${watchedRating != null ? (() => {
-            const title = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watching ? "Watching" : "Watched"
+            const statusPrefix = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watched ? "Watched" : watching ? "Watching" : null
+            const title = statusPrefix ?? "Rated"
             const body = `${ICON_STAR} ${watchedRating}`
-            const ariaLabel = `${title} · Rated ${watchedRating} out of 10`
+            const ariaLabel = statusPrefix ? `${statusPrefix} · Rated ${watchedRating} out of 10` : `Rated ${watchedRating} out of 10`
             return url
               ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
               : `<span class="poster-status poster-status--watched" title="${title}" aria-label="${ariaLabel}">${body}</span>`
