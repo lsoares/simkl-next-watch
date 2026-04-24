@@ -2,6 +2,9 @@ import { expect } from "@playwright/test"
 
 export function client(page) {
   return {
+    async open() {
+      await page.getByRole("link", { name: /mood/i }).click()
+    },
     async pickMood(label) {
       await page.getByRole("button", { name: new RegExp(label, "i") }).click()
     },

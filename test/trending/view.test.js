@@ -20,7 +20,7 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await intro.signIn("simkl")
 
-    await page.getByRole("link", { name: /trending/i }).click()
+    await trending.open()
 
     await trending.expectShowIsPresent("The Rookie")
     await trending.expectShowIsPresent("The Boys")
@@ -67,7 +67,7 @@ test.describe("Simkl", () => {
       await simkl.useAuthorize()
       await page.goto("/")
       await intro.signIn("simkl")
-      await page.getByRole("link", { name: /trending/i }).click()
+      await trending.open()
 
       await trending.pickPeriod(period)
 
@@ -103,7 +103,7 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await intro.signIn("trakt")
 
-    await page.getByRole("link", { name: /trending/i }).click()
+    await trending.open()
 
     await trending.expectShowIsPresent("Severance")
     await trending.expectShowIsPresent("The Rookie")

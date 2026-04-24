@@ -2,6 +2,9 @@ import { expect } from "@playwright/test"
 
 export function client(page) {
   return {
+    async open() {
+      await page.getByRole("link", { name: /trending/i }).click()
+    },
     async addToWatchlist(title) {
       await page.getByRole("article", { name: title }).getByRole("button", { name: /add to watchlist/i }).click()
     },

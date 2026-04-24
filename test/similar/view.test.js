@@ -26,7 +26,7 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await intro.signIn("simkl")
     await intro.expectLogoutIsVisible()
-    await page.getByRole("link", { name: /similar/i }).click()
+    await similar.open()
     await similar.expectShowIsPresent("Filler")
 
     await similar.pickRatingTab("7+")
@@ -53,7 +53,7 @@ test.describe("Simkl", () => {
     await intro.signIn("simkl")
     await intro.expectLogoutIsVisible()
 
-    await page.getByRole("link", { name: /similar/i }).click()
+    await similar.open()
 
     await similar.expectShuffledNotice()
     await similar.expectShowIsPresent("Breaking Bad")
@@ -89,7 +89,7 @@ test.describe("Trakt", () => {
     await intro.signIn("trakt")
     await intro.expectLogoutIsVisible()
 
-    await page.getByRole("link", { name: /similar/i }).click()
+    await similar.open()
 
     await similar.expectShowIsPresent("Breaking Bad")
   })

@@ -15,7 +15,7 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await page.getByRole("link", { name: /trending/i }).click()
+    await trending.open()
     await trending.expectShowIsPresent("Dune")
 
     await trending.addToWatchlist("Dune")
@@ -45,7 +45,7 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    await page.getByRole("link", { name: /trending/i }).click()
+    await trending.open()
     await trending.expectShowIsPresent("Dune")
 
     await trending.addToWatchlist("Dune")

@@ -32,7 +32,7 @@ test.describe("Simkl", () => {
       await simkl.useSearchMovie("Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
       await simkl.useSearchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
       await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
-      await page.getByRole("link", { name: /mood/i }).click()
+      await mood.open()
       await mood.pickMood("Make me laugh")
       await mood.setApiKey(name, "apiAiKey")
       await mood.expectKeySaved()
@@ -65,7 +65,7 @@ test.describe("Simkl", () => {
     )
     await simkl.useSearchTv("", [])
     await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
     await mood.expectKeySaved()
@@ -87,7 +87,7 @@ test.describe("Simkl", () => {
       }],
     })
 
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
 
     await mood.expectPromptIsVisible("Cozy night in")
     await mood.expectPromptIsVisible("Make me laugh")
@@ -104,7 +104,7 @@ test.describe("Simkl", () => {
         watched_episodes_count: 46, total_episodes_count: 62,
       }],
     })
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
 
     await mood.pickMood("Cozy night in")
 
@@ -146,7 +146,7 @@ test.describe("Trakt", () => {
     )
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
     await mood.expectKeySaved()
@@ -189,7 +189,7 @@ test.describe("Trakt", () => {
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
     await mood.expectKeySaved()
@@ -217,7 +217,7 @@ test.describe("Trakt", () => {
     )
     await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
-    await page.getByRole("link", { name: /mood/i }).click()
+    await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
     await mood.expectKeySaved()

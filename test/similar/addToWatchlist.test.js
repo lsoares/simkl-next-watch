@@ -25,7 +25,7 @@ test.describe("Simkl", () => {
     await page.goto("/")
     await intro.signIn("simkl")
     await intro.expectLogoutIsVisible()
-    await page.getByRole("link", { name: /similar/i }).click()
+    await similar.open()
     await similar.openMoreLikeThis("Inception")
     await aiPicks.expectPosterIsVisible("The Prestige")
 

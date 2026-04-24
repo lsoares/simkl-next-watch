@@ -3,6 +3,9 @@ import { expect } from "@playwright/test"
 export function client(page) {
   const grid = () => page.getByRole("region", { name: /similar picks/i })
   return {
+    async open() {
+      await page.getByRole("link", { name: /similar/i }).click()
+    },
     async openMoreLikeThis(title) {
       await grid().getByRole("article", { name: title }).getByRole("button", { name: /more like this/i }).click()
     },

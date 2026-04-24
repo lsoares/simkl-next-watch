@@ -2,6 +2,9 @@ import { expect } from "@playwright/test"
 
 export function client(page) {
   return {
+    async open() {
+      await page.getByRole("link", { name: /home/i }).click()
+    },
     async signIn(provider) {
       await page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") }).click()
     },
