@@ -7,16 +7,16 @@ test.describe("Simkl", () => {
       localStorage.setItem("next-watch-ai-key-gemini", "apiAiKey")
     })
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await tmdb.usePosters(2)
     await simkl.useSyncActivities()
-    await simkl.useSyncShows([])
+    await simkl.useSyncShows()
     await simkl.useSyncMovies([{
       movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
       status: "completed", user_rating: 8,
     }])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await ai.gemini.useSimilar('[{"title":"The Prestige","year":2006}]', "Inception (2010)")
     await simkl.useSearchTv("", [])

@@ -56,7 +56,7 @@ export function client(page) {
       })
     },
 
-    useWatchlistShows(shows) {
+    useWatchlistShows(shows = []) {
       return page.route("https://api.trakt.tv/sync/watchlist/shows?**", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -67,7 +67,7 @@ export function client(page) {
       })
     },
 
-    useWatchlistMovies(movies) {
+    useWatchlistMovies(movies = []) {
       return page.route("https://api.trakt.tv/sync/watchlist/movies?**", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -78,7 +78,7 @@ export function client(page) {
       })
     },
 
-    useWatchedShows(shows) {
+    useWatchedShows(shows = []) {
       return page.route("https://api.trakt.tv/sync/watched/shows?**", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -89,7 +89,7 @@ export function client(page) {
       })
     },
 
-    useWatchedMovies(movies) {
+    useWatchedMovies(movies = []) {
       return page.route("https://api.trakt.tv/sync/watched/movies?**", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -100,7 +100,7 @@ export function client(page) {
       })
     },
 
-    useRatingsShows(ratings) {
+    useRatingsShows(ratings = []) {
       return page.route("https://api.trakt.tv/sync/ratings/shows", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -110,7 +110,7 @@ export function client(page) {
       })
     },
 
-    useRatingsMovies(ratings) {
+    useRatingsMovies(ratings = []) {
       return page.route("https://api.trakt.tv/sync/ratings/movies", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -120,7 +120,7 @@ export function client(page) {
       })
     },
 
-    useDroppedShows(dropped) {
+    useDroppedShows(dropped = []) {
       return page.route("https://api.trakt.tv/users/hidden/dropped?**", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -223,7 +223,7 @@ export function client(page) {
       })
     },
 
-    useWatchedShowsByPeriod(byPeriod) {
+    useWatchedShowsByPeriod(byPeriod = {}) {
       return page.route("https://api.trakt.tv/shows/watched/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
@@ -234,7 +234,7 @@ export function client(page) {
       })
     },
 
-    useWatchedMoviesByPeriod(byPeriod) {
+    useWatchedMoviesByPeriod(byPeriod = {}) {
       return page.route("https://api.trakt.tv/movies/watched/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")

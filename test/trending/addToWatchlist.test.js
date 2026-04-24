@@ -4,10 +4,10 @@ test.describe("Simkl", () => {
   test("adds a trending movie to the watchlist", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
-    await simkl.useSyncShows([])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
-    await simkl.useTrendingTv({})
+    await simkl.useSyncShows()
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
+    await simkl.useTrendingTv()
     await simkl.useTrendingMovies({ today: [
       { title: "Dune", ids: { simkl_id: 99003 } },
     ] })
@@ -29,15 +29,15 @@ test.describe("Trakt", () => {
   test("adds a trending movie to the watchlist", async ({ page, trakt, tmdb, intro, trending }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchlistMovies([])
-    await trakt.useWatchedShows([])
-    await trakt.useWatchedMovies([])
-    await trakt.useDroppedShows([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
+    await trakt.useWatchlistShows()
+    await trakt.useWatchlistMovies()
+    await trakt.useWatchedShows()
+    await trakt.useWatchedMovies()
+    await trakt.useDroppedShows()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
     await tmdb.usePosters(2)
-    await trakt.useWatchedShowsByPeriod({})
+    await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod({
       daily: [{ watcher_count: 100, movie: { title: "Dune", year: 2021, ids: { imdb: "tt1160419", tmdb: 438631 } } }],
     })

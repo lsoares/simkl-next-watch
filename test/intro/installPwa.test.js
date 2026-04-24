@@ -28,12 +28,12 @@ test("install button hides once the app has been installed", async ({ page, simk
 
 async function signInToSimkl(page, simkl, intro) {
   await simkl.useOauthToken()
-  await simkl.useTrendingTv({})
-  await simkl.useTrendingMovies({})
+  await simkl.useTrendingTv()
+  await simkl.useTrendingMovies()
   await simkl.useSyncActivities()
-  await simkl.useSyncShows([])
-  await simkl.useSyncMovies([])
-  await simkl.useSyncAnime([])
+  await simkl.useSyncShows()
+  await simkl.useSyncMovies()
+  await simkl.useSyncAnime()
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")

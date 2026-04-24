@@ -35,7 +35,7 @@ export function client(page) {
       })
     },
 
-    useSyncShows(shows) {
+    useSyncShows(shows = []) {
       return page.route("https://api.simkl.com/sync/all-items/shows/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
@@ -47,7 +47,7 @@ export function client(page) {
       })
     },
 
-    useSyncMovies(movies) {
+    useSyncMovies(movies = []) {
       return page.route("https://api.simkl.com/sync/all-items/movies/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
@@ -59,7 +59,7 @@ export function client(page) {
       })
     },
 
-    useSyncAnime(anime) {
+    useSyncAnime(anime = []) {
       return page.route("https://api.simkl.com/sync/all-items/anime/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
@@ -156,7 +156,7 @@ export function client(page) {
       })
     },
 
-    useTrendingTv(byPeriod) {
+    useTrendingTv(byPeriod = {}) {
       return page.route("https://data.simkl.in/discover/trending/tv/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         const period = periodFromTrendingUrl(route.request().url())
@@ -165,7 +165,7 @@ export function client(page) {
       })
     },
 
-    useTrendingMovies(byPeriod) {
+    useTrendingMovies(byPeriod = {}) {
       return page.route("https://data.simkl.in/discover/trending/movies/*", async (route) => {
         expect(route.request().method()).toBe("GET")
         const period = periodFromTrendingUrl(route.request().url())

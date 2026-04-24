@@ -77,7 +77,7 @@ test.describe("Simkl", () => {
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
-    await tmdb.usePosters()
+    await tmdb.usePosters(1)
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
@@ -95,7 +95,7 @@ test.describe("Simkl", () => {
   })
 
   test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
-    await tmdb.usePosters()
+    await tmdb.usePosters(1)
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
@@ -230,8 +230,8 @@ test.describe("Trakt", () => {
 
 async function signInToSimkl(page, simkl, intro, { shows = [], movies = [], anime = [] } = {}) {
   await simkl.useOauthToken()
-  await simkl.useTrendingTv({})
-  await simkl.useTrendingMovies({})
+  await simkl.useTrendingTv()
+  await simkl.useTrendingMovies()
   await simkl.useSyncActivities()
   await simkl.useSyncShows(shows)
   await simkl.useSyncMovies(movies)
@@ -257,8 +257,8 @@ async function signInToTrakt(page, trakt, tmdb, intro, {
   await trakt.useLastActivities()
   await trakt.useWatchedShows(watchedShows)
   await trakt.useWatchedMovies(watchedMovies)
-  await trakt.useWatchedShowsByPeriod({})
-  await trakt.useWatchedMoviesByPeriod({})
+  await trakt.useWatchedShowsByPeriod()
+  await trakt.useWatchedMoviesByPeriod()
   await tmdb.usePosters(tmdbTimes)
   await trakt.useWatchlistShows(watchlistShows)
   await trakt.useWatchlistMovies(watchlistMovies)

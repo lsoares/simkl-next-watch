@@ -8,14 +8,14 @@ test.describe("Simkl", () => {
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useTrendingTv({ today: [
       { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       { title: "The Rookie", ids: { simkl_id: 99001 }, ratings: { simkl: { rating: 8.5 } } },
       { title: "The Boys", ids: { simkl_id: 99002 } },
     ] })
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingMovies()
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -36,10 +36,10 @@ test.describe("Simkl", () => {
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useTrendingTv({ today: [{ title: "Breaking Bad", ids: { simkl_id: 11121 } }] })
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingMovies()
     await simkl.useAuthorize()
     await page.goto("/")
 
@@ -55,15 +55,15 @@ test.describe("Simkl", () => {
     test(`the ${period} tab shows that period's items`, async ({ page, simkl, intro, trending }) => {
       await simkl.useOauthToken()
       await simkl.useSyncActivities()
-      await simkl.useSyncShows([])
-      await simkl.useSyncMovies([])
-      await simkl.useSyncAnime([])
+      await simkl.useSyncShows()
+      await simkl.useSyncMovies()
+      await simkl.useSyncAnime()
       await simkl.useTrendingTv({
         today: [{ title: "The Rookie", ids: { simkl_id: 99001 } }],
         week: [{ title: "Severance", ids: { simkl_id: 99010 } }],
         month: [{ title: "House of the Dragon", ids: { simkl_id: 99020 } }],
       })
-      await simkl.useTrendingMovies({})
+      await simkl.useTrendingMovies()
       await simkl.useAuthorize()
       await page.goto("/")
       await intro.signIn("simkl")
@@ -80,14 +80,14 @@ test.describe("Trakt", () => {
   test("trending rows list shows and movies from the watched-period feed", async ({ page, trakt, tmdb, intro, trending }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchedShows([])
-    await trakt.useWatchedMovies([])
+    await trakt.useWatchedShows()
+    await trakt.useWatchedMovies()
     await tmdb.usePosters(3)
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchlistMovies([])
-    await trakt.useDroppedShows([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
+    await trakt.useWatchlistShows()
+    await trakt.useWatchlistMovies()
+    await trakt.useDroppedShows()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
     await trakt.useWatchedShowsByPeriod({
       daily: [
         { watcher_count: 5000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } } },

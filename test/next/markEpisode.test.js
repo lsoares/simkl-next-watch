@@ -3,16 +3,16 @@ import { test } from "../test.js"
 test.describe("Simkl", () => {
   test("marks the next episode of a watching TV show", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "watching", next_to_watch: "S05E01",
       watched_episodes_count: 46, total_episodes_count: 62,
     }])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useTvEpisodes("11121", [
       { season: 5, episode: 1, type: "episode", title: "Live Free or Die" },
     ])
@@ -42,15 +42,15 @@ test.describe("Trakt", () => {
   test("marks the next episode of a watching TV show", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchlistMovies([])
-    await trakt.useDroppedShows([])
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
+    await trakt.useWatchlistShows()
+    await trakt.useWatchlistMovies()
+    await trakt.useDroppedShows()
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
@@ -84,15 +84,15 @@ test.describe("Trakt", () => {
   test("marks the first episode of a plantowatch show (starting it)", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
-    await trakt.useWatchedShows([])
-    await trakt.useDroppedShows([])
-    await trakt.useWatchlistMovies([])
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
+    await trakt.useWatchedShows()
+    await trakt.useDroppedShows()
+    await trakt.useWatchlistMovies()
     await trakt.useWatchlistShows([{
       listed_at: "2025-01-01T00:00:00Z",
       show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
@@ -103,7 +103,7 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await intro.signIn("trakt")
     await next.expectShowIsPresent("Severance")
-    await trakt.useWatchlistShows([])
+    await trakt.useWatchlistShows()
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
       show: { title: "Severance", year: 2022, aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },

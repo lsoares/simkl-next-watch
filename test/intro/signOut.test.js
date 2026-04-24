@@ -3,15 +3,15 @@ import { test, expect } from "../test.js"
 test.describe("Simkl", () => {
   test("logout clears session and shows intro", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -30,15 +30,15 @@ test.describe("Trakt", () => {
   test("logout clears session and shows intro", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchedShows([])
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
-    await trakt.useDroppedShows([])
-    await trakt.useWatchlistMovies([])
+    await trakt.useWatchedShows()
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
+    await trakt.useDroppedShows()
+    await trakt.useWatchlistMovies()
     await trakt.useWatchlistShows([{
       listed_at: "2025-01-01T00:00:00Z",
       show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },

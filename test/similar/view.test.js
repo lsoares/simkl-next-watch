@@ -3,8 +3,8 @@ import { test } from "../test.js"
 test.describe("Simkl", () => {
   test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb, intro, similar }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await tmdb.usePosters(3)
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -21,7 +21,7 @@ test.describe("Simkl", () => {
         status: "completed", user_rating: 3,
       },
     ])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -38,16 +38,16 @@ test.describe("Simkl", () => {
 
   test("similar view defaults to All and shows unrated library when the user has no ratings", async ({ page, simkl, tmdb, intro, similar }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await tmdb.usePosters(1)
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -69,20 +69,20 @@ test.describe("Trakt", () => {
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
       seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
     }])
-    await trakt.useWatchedMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchlistMovies([])
-    await trakt.useDroppedShows([])
+    await trakt.useWatchedMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
+    await trakt.useWatchlistShows()
+    await trakt.useWatchlistMovies()
+    await trakt.useDroppedShows()
     await trakt.useRatingsShows([{
       rated_at: "2024-09-12T10:57:24.000Z",
       rating: 9,
       type: "show",
       show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
     }])
-    await trakt.useRatingsMovies([])
+    await trakt.useRatingsMovies()
     await trakt.useProgress("breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
     await trakt.useAuthorize()
     await page.goto("/")

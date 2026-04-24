@@ -3,17 +3,17 @@ import { test } from "../test.js"
 test.describe("Simkl", () => {
   test("marks a watchlist movie as watched", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
-    await tmdb.usePosters()
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
+    await tmdb.usePosters(1)
     await simkl.useSyncActivities()
-    await simkl.useSyncShows([])
+    await simkl.useSyncShows()
     await simkl.useSyncMovies([{
       movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
       status: "plantowatch",
       added_to_watchlist_at: "2025-01-01T00:00:00Z",
     }])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncAnime()
     await simkl.useMarkWatchedMovie([{ ids: { simkl: 53992 } }])
     await simkl.useAuthorize()
     await page.goto("/")
@@ -38,15 +38,15 @@ test.describe("Trakt", () => {
   test("marks a watchlist movie as watched", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
     await trakt.useLastActivities()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchedShows([])
-    await trakt.useDroppedShows([])
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
+    await trakt.useWatchlistShows()
+    await trakt.useWatchedShows()
+    await trakt.useDroppedShows()
     await trakt.useWatchlistMovies([{
       listed_at: "2025-01-01T00:00:00Z",
       movie: { title: "The Matrix", year: 1999, released: "1999-03-31", ids: { trakt: 481, slug: "the-matrix-1999", imdb: "tt0133093" } },
@@ -58,7 +58,7 @@ test.describe("Trakt", () => {
     await intro.signIn("trakt")
     await next.expectTitleLinksTo("The Matrix", "https://app.trakt.tv/movies/the-matrix-1999")
     await next.expectAddMovieLinksTo("https://app.trakt.tv/search?m=movie")
-    await trakt.useWatchlistMovies([])
+    await trakt.useWatchlistMovies()
 
     await next.markWatched("The Matrix")
 

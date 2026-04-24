@@ -3,8 +3,8 @@ import { test } from "../test.js"
 test.describe("Simkl", () => {
   test("filters out completed shows from the watching list", async ({ page, simkl, intro, next }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([
       {
@@ -17,8 +17,8 @@ test.describe("Simkl", () => {
         status: "completed",
       },
     ])
-    await simkl.useSyncMovies([])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
     await simkl.useTvEpisodes("11121", [])
     await simkl.useAuthorize()
     await page.goto("/")
@@ -31,8 +31,8 @@ test.describe("Simkl", () => {
 
   test("watchlist hides unreleased shows and movies", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
-    await simkl.useTrendingTv({})
-    await simkl.useTrendingMovies({})
+    await simkl.useTrendingTv()
+    await simkl.useTrendingMovies()
     await tmdb.usePosters(2)
     await simkl.useSyncActivities()
     await simkl.useSyncShows([
@@ -43,7 +43,7 @@ test.describe("Simkl", () => {
       { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } }, status: "plantowatch" },
       { movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000 } }, status: "plantowatch" },
     ])
-    await simkl.useSyncAnime([])
+    await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await page.goto("/")
 
@@ -59,15 +59,15 @@ test.describe("Simkl", () => {
 test.describe("Trakt", () => {
   test("filters out completed and dropped shows from the watching list", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
-    await tmdb.usePosters()
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
+    await tmdb.usePosters(1)
     await trakt.useLastActivities()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchlistMovies([])
+    await trakt.useWatchlistShows()
+    await trakt.useWatchlistMovies()
     await trakt.useWatchedShows([
       {
         last_watched_at: new Date().toISOString(),
@@ -101,15 +101,15 @@ test.describe("Trakt", () => {
 
   test("watchlist hides unreleased shows and movies", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
     await tmdb.usePosters(2)
     await trakt.useLastActivities()
-    await trakt.useWatchedShows([])
-    await trakt.useDroppedShows([])
+    await trakt.useWatchedShows()
+    await trakt.useDroppedShows()
     await trakt.useWatchlistShows([
       {
         listed_at: "2025-01-01T00:00:00Z",
@@ -143,16 +143,16 @@ test.describe("Trakt", () => {
 
   test("watchlist movies show formatted runtime chips", async ({ page, trakt, tmdb, intro, next }) => {
     await trakt.useOauthToken()
-    await trakt.useWatchedMovies([])
-    await trakt.useRatingsShows([])
-    await trakt.useRatingsMovies([])
-    await trakt.useWatchedShowsByPeriod({})
-    await trakt.useWatchedMoviesByPeriod({})
+    await trakt.useWatchedMovies()
+    await trakt.useRatingsShows()
+    await trakt.useRatingsMovies()
+    await trakt.useWatchedShowsByPeriod()
+    await trakt.useWatchedMoviesByPeriod()
     await tmdb.usePosters(3)
     await trakt.useLastActivities()
-    await trakt.useWatchlistShows([])
-    await trakt.useWatchedShows([])
-    await trakt.useDroppedShows([])
+    await trakt.useWatchlistShows()
+    await trakt.useWatchedShows()
+    await trakt.useDroppedShows()
     await trakt.useWatchlistMovies([
       { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Short Movie", year: 2020, released: "2020-01-01", runtime: 45, ids: { trakt: 1, slug: "short-movie", imdb: "tt0000001" } } },
       { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Mid Movie", year: 2020, released: "2020-01-01", runtime: 100, ids: { trakt: 2, slug: "mid-movie", imdb: "tt0000002" } } },
