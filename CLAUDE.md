@@ -18,6 +18,7 @@
 - **No custom timeouts.** Don't pass `{ timeout: ... }` to queries.
 - **Prefer `*ByRole`** over `*ByText` when the element has an accessible role (buttons, images, headings, links).
 - **No `assert.ok(getBy*(...))`.** `getBy*` already throws if not found — just call it.
+- **Testing must stay a11y-friendly.** Always query by role + accessible name. If a role-based query doesn't work, fix the markup (add a meaningful `alt`, `aria-label`, etc.) — don't fall back to CSS selectors or `includeHidden`. Tests are a forcing function for accessible UI.
 
 ## One Behavior Per Test
 - **Behavior = one user action → one reaction.** A page load counts as a user action.

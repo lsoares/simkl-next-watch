@@ -84,7 +84,7 @@ class PosterCard extends HTMLElement {
     this.innerHTML = `
       <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.fade ? " fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
         ${(() => {
-          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
+          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           return posterHref
             ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${inner}</a>`
             : `<div class="poster-anchor">${inner}</div>`
@@ -155,7 +155,7 @@ class PosterCard extends HTMLElement {
     if (!oldPoster) return this.refresh()
     const img = document.createElement("img")
     img.className = "poster poster--hydrating"
-    img.alt = ""
+    img.alt = item.title || ""
     img.loading = "lazy"
     img.draggable = false
     img.src = url

@@ -77,6 +77,33 @@ test.describe("Simkl", () => {
     await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm")
   })
 
+  test("AI picks dialog renders the poster image for each hit", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
+    await tmdb.usePosters(2)
+    await simkl.useTvEpisodes("11121")
+    await signInToSimkl(page, simkl, intro, {
+      shows: [{
+        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+        status: "watching", user_rating: 9, next_to_watch: "S05E01",
+        watched_episodes_count: 46, total_episodes_count: 62,
+      }],
+    })
+    await ai.gemini.useChat(
+      '[{"title":"Parasite","year":2019}]',
+      ["Breaking Bad (2008):9"],
+    )
+    await simkl.useSearchTv("", [])
+    await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, poster: "par123", type: "movie" }])
+    await simkl.usePosterImage()
+    await mood.open()
+    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
+    await mood.expectKeySaved()
+
+    await mood.pickMood("Make me laugh")
+
+    await aiPicks.expectPosterImageIsVisible("Parasite")
+  })
+
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.usePosters(1)
     await simkl.useTvEpisodes("11121")

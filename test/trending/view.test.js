@@ -1,6 +1,27 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
+  test("trending view renders the poster image for each show", async ({ page, simkl, tmdb, intro, trending }) => {
+    await simkl.useOauthToken()
+    await simkl.useSyncActivities()
+    await simkl.useSyncShows()
+    await simkl.useSyncMovies()
+    await simkl.useSyncAnime()
+    await simkl.useTrendingTv({ today: [
+      { title: "The Rookie", year: 2018, ids: { simkl_id: 99001 }, poster: "rook123" },
+    ] })
+    await simkl.useTrendingMovies()
+    await tmdb.usePosters(1)
+    await simkl.usePosterImage()
+    await simkl.useAuthorize()
+    await page.goto("/")
+    await intro.signIn("simkl")
+
+    await trending.open()
+
+    await trending.expectPosterImageIsVisible("The Rookie")
+  })
+
   test("trending row lists shows and movies, hiding library items", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()

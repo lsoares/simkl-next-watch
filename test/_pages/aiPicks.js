@@ -10,6 +10,9 @@ export function client(page) {
     async expectPosterIsVisible(title) {
       await expect(dialog().getByRole("article", { name: title })).toBeVisible()
     },
+    async expectPosterImageIsVisible(title) {
+      await expect(dialog().getByRole("article", { name: title }).getByRole("img")).toBeVisible()
+    },
     async expectPosterIsWatched(title) {
       await expect(dialog().getByRole("article", { name: title })).toHaveClass(/trending-watched/)
       await expect(dialog().getByRole("article", { name: title }).getByLabel(/^watched /i)).toBeVisible()
