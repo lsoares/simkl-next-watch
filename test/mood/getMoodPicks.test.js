@@ -117,8 +117,8 @@ test.describe("Trakt", () => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
-        show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
-        seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
+        show: { title: "Breaking Bad", year: 2008, aired_episodes: 1, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+        seasons: [{ number: 1, episodes: [{ number: 1, plays: 1 }] }],
       }],
       watchlistMovies: [{
         listed_at: "2025-01-01T00:00:00Z",
@@ -136,8 +136,6 @@ test.describe("Trakt", () => {
         type: "movie",
         movie: { title: "Inception", year: 2010, ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666" } },
       }],
-      progressSlug: "breaking-bad",
-      progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 5,
     })
     await ai.gemini.useChat(
@@ -160,8 +158,8 @@ test.describe("Trakt", () => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
-        show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
-        seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
+        show: { title: "Breaking Bad", year: 2008, aired_episodes: 1, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+        seasons: [{ number: 1, episodes: [{ number: 1, plays: 1 }] }],
       }],
       watchedMovies: [{
         plays: 1,
@@ -178,8 +176,6 @@ test.describe("Trakt", () => {
         type: "show",
         show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
       }],
-      progressSlug: "breaking-bad",
-      progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 7,
     })
     await ai.gemini.useChat(
@@ -204,11 +200,9 @@ test.describe("Trakt", () => {
     await signInToTrakt(page, trakt, tmdb, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
-        show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
-        seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
+        show: { title: "Breaking Bad", year: 2008, aired_episodes: 1, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+        seasons: [{ number: 1, episodes: [{ number: 1, plays: 1 }] }],
       }],
-      progressSlug: "breaking-bad",
-      progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 4,
     })
     await ai.gemini.useChat(
@@ -249,8 +243,6 @@ async function signInToTrakt(page, trakt, tmdb, intro, {
   droppedShows = [],
   ratingsShows = [],
   ratingsMovies = [],
-  progressSlug,
-  progressData,
   tmdbTimes,
 } = {}) {
   await trakt.useOauthToken()
@@ -265,7 +257,6 @@ async function signInToTrakt(page, trakt, tmdb, intro, {
   await trakt.useDroppedShows(droppedShows)
   await trakt.useRatingsShows(ratingsShows)
   await trakt.useRatingsMovies(ratingsMovies)
-  await trakt.useProgress(progressSlug, progressData)
   await trakt.useAuthorize()
   await page.goto("/")
   await intro.signIn("trakt")
