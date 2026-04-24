@@ -1,15 +1,16 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, intro, next }) => {
+  test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, tmdb, intro, next }) => {
+    await tmdb.usePosters(6)
     await signInWithSimklLibrary(page, simkl, intro, {
       shows: [
-        { title: "Breaking Bad", id: 11121, status: "plantowatch" },
-        { title: "Lost", id: 33000, status: "plantowatch" },
+        { title: "Breaking Bad", year: 2008, id: 11121, status: "plantowatch" },
+        { title: "Lost", year: 2004, id: 33000, status: "plantowatch" },
       ],
       movies: [
-        { title: "The Matrix", id: 53992, status: "plantowatch" },
-        { title: "Inception", id: 22222, status: "plantowatch" },
+        { title: "The Matrix", year: 1999, id: 53992, status: "plantowatch" },
+        { title: "Inception", year: 2010, id: 22222, status: "plantowatch" },
       ],
     })
     await next.expectShowIsPresent("Breaking Bad")
@@ -18,12 +19,12 @@ test.describe("Simkl", () => {
     await next.expectShowIsPresent("Inception")
     await publishSimklLibrary(simkl, {
       shows: [
-        { title: "Breaking Bad", id: 11121, status: "completed" },
-        { title: "Chernobyl", id: 22000, status: "plantowatch" },
+        { title: "Breaking Bad", year: 2008, id: 11121, status: "completed" },
+        { title: "Chernobyl", year: 2019, id: 22000, status: "plantowatch" },
       ],
       movies: [
-        { title: "The Matrix", id: 53992, status: "completed" },
-        { title: "Dune", id: 99003, status: "plantowatch" },
+        { title: "The Matrix", year: 1999, id: 53992, status: "completed" },
+        { title: "Dune", year: 2021, id: 99003, status: "plantowatch" },
       ],
     }, "2025-02-01T00:00:00Z")
 
@@ -74,8 +75,8 @@ async function signInWithSimklLibrary(page, simkl, intro, library) {
 
 async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
   await simkl.useSyncActivities(activityAt)
-  await simkl.useSyncShows(shows.map(({ title, id, status }) => ({ show: { title, ids: { simkl_id: id } }, status })))
-  await simkl.useSyncMovies(movies.map(({ title, id, status }) => ({ movie: { title, ids: { simkl_id: id }, runtime: 120 }, status })))
+  await simkl.useSyncShows(shows.map(({ title, year, id, status }) => ({ show: { title, year, ids: { simkl_id: id } }, status })))
+  await simkl.useSyncMovies(movies.map(({ title, year, id, status }) => ({ movie: { title, year, ids: { simkl_id: id }, runtime: 120 }, status })))
 }
 
 async function signInWithTraktLibrary(page, trakt, tmdb, intro, library) {

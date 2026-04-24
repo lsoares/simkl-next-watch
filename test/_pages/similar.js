@@ -14,10 +14,9 @@ export function client(page) {
     },
 
     async expectShowIsPresent(title) {
-      await expect(grid().getByRole("article", { name: title })).toBeVisible()
-    },
-    async expectPosterImageIsVisible(title) {
-      await expect(grid().getByRole("article", { name: title }).getByRole("img")).toBeVisible()
+      const card = grid().getByRole("article", { name: title })
+      await expect(card).toBeVisible()
+      await expect(card.getByRole("img")).toBeVisible()
     },
     async expectShowIsAbsent(title) {
       await expect(grid().getByRole("article", { name: title })).toHaveCount(0)

@@ -1,48 +1,26 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("next view renders the poster image for each show", async ({ page, simkl, tmdb, intro, next }) => {
-    await simkl.useOauthToken()
-    await simkl.useTrendingTv()
-    await simkl.useTrendingMovies()
-    await simkl.useSyncActivities()
-    await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "abc123" },
-      status: "watching", next_to_watch: "S05E01",
-      watched_episodes_count: 46, total_episodes_count: 62,
-    }])
-    await simkl.useSyncMovies()
-    await simkl.useSyncAnime()
-    await simkl.useTvEpisodes("11121", [])
-    await tmdb.usePosters(1)
-    await simkl.usePosterImage()
-    await simkl.useAuthorize()
-    await page.goto("/")
-
-    await intro.signIn("simkl")
-
-    await next.expectPosterImageIsVisible("Breaking Bad")
-  })
-
-  test("filters out completed shows from the watching list", async ({ page, simkl, intro, next }) => {
+  test("filters out completed shows from the watching list", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([
       {
-        show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+        show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
         status: "watching", next_to_watch: "S05E01",
         watched_episodes_count: 46, total_episodes_count: 62,
       },
       {
-        show: { title: "Chernobyl", ids: { simkl_id: 22000 } },
+        show: { title: "Chernobyl", year: 2019, ids: { simkl_id: 22000 } },
         status: "completed",
       },
     ])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
     await simkl.useTvEpisodes("11121", [])
+    await tmdb.usePosters(1)
     await simkl.useAuthorize()
     await page.goto("/")
 

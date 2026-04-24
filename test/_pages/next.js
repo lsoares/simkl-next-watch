@@ -13,16 +13,15 @@ export function client(page) {
     },
 
     async expectShowIsPresent(title) {
-      await expect(page.getByRole("article", { name: title })).toBeVisible()
-    },
-    async expectPosterImageIsVisible(title) {
-      await expect(page.getByRole("article", { name: title }).getByRole("img")).toBeVisible()
+      const card = page.getByRole("article", { name: title })
+      await expect(card).toBeVisible()
+      await expect(card.getByRole("img")).toBeVisible()
     },
     async expectShowIsAbsent(title) {
       await expect(page.getByRole("article", { name: title })).toHaveCount(0)
     },
     async expectTitleLinksTo(title, href) {
-      await expect(page.getByRole("article", { name: title }).getByRole("link", { name: title })).toHaveAttribute("href", href)
+      await expect(page.getByRole("article", { name: title }).getByRole("link", { name: title, exact: true })).toHaveAttribute("href", href)
     },
     async expectNextEpisodeIs(title, episode, href) {
       await expect(page.getByRole("article", { name: title }).getByRole("link", { name: episode })).toHaveAttribute("href", href)

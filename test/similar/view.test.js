@@ -1,28 +1,6 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("similar view renders the poster image for each show", async ({ page, simkl, tmdb, intro, similar }) => {
-    await simkl.useOauthToken()
-    await simkl.useTrendingTv()
-    await simkl.useTrendingMovies()
-    await simkl.useSyncActivities()
-    await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 }, poster: "bb123" },
-      status: "completed", user_rating: 9,
-    }])
-    await simkl.useSyncMovies()
-    await simkl.useSyncAnime()
-    await tmdb.usePosters(1)
-    await simkl.usePosterImage()
-    await simkl.useAuthorize()
-    await page.goto("/")
-    await intro.signIn("simkl")
-
-    await similar.open()
-
-    await similar.expectPosterImageIsVisible("Breaking Bad")
-  })
-
   test("picking the 7+ tab restricts the similar grid to titles rated 7 or higher", async ({ page, simkl, tmdb, intro, similar }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()

@@ -1,17 +1,7 @@
 import { expect } from "@playwright/test"
 
-const tinyPng = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-  "base64",
-)
-
 export function client(page) {
   return {
-    usePosterImage() {
-      return page.route("https://simkl.in/posters/**", async (route) => {
-        await route.fulfill({ status: 200, contentType: "image/png", body: tinyPng })
-      })
-    },
     useAuthorize() {
       return page.route("https://simkl.com/oauth/authorize**", async (route) => {
         const url = new URL(route.request().url())
