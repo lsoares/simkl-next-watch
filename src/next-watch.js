@@ -720,6 +720,7 @@ function initDockEffect(row) {
 
   function closeDialog() {
     dialogStack.length = 0
+    el.aiDialogResults.replaceChildren()
     if (el.aiDialog.open) el.aiDialog.close()
   }
 
