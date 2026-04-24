@@ -531,13 +531,19 @@ function initDockEffect(row) {
     const grid = el.similarGrid
     const cs = getComputedStyle(grid)
     const colWidth = parseFloat(cs.gridAutoColumns)
-    const availHeight = grid.clientHeight
-    if (!Number.isFinite(colWidth) || colWidth <= 0 || availHeight <= 0) return
+    if (!Number.isFinite(colWidth) || colWidth <= 0) return
     const gap = parseFloat(cs.rowGap) || 10
+    // On mobile the grid is flex-bounded; measure it directly. On desktop the
+    // grid is content-sized, so fall back to viewport minus its top offset.
+    const isMobile = window.matchMedia("(max-width: 680px)").matches
+    const appHeight = window.visualViewport?.height || window.innerHeight
+    const availHeight = isMobile ? grid.clientHeight : appHeight - grid.getBoundingClientRect().top - 16
+    if (availHeight <= 0) return
     const rowHeight = colWidth * 1.5 + gap
     const rows = Math.max(1, Math.floor((availHeight + gap) / rowHeight))
     grid.style.setProperty("--rows", rows)
   }
+  new ResizeObserver(syncSimilarRows).observe(el.similarGrid)
 
   function appendSimilarBatch() {
     const slice = similarPool.slice(similarCursor, similarCursor + SIMILAR_BATCH)
