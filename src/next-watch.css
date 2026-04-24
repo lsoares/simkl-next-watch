@@ -844,7 +844,7 @@
   scrollbar-width: none;
   touch-action: pan-x;
   scroll-snap-type: x mandatory;
-  padding-right: 32px;
+  padding-right: 64px;
   align-content: start;
 }
 .poster-grid::-webkit-scrollbar { display: none; }

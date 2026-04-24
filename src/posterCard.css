@@ -186,6 +186,7 @@
   line-height: 1.2;
   letter-spacing: 0.02em;
   color: #fff;
+  text-decoration: none;
   text-shadow: none;
   display: inline-flex;
   align-items: center;
@@ -194,9 +195,10 @@
   transition: opacity 0.15s;
 }
 .poster-status-icon { flex-shrink: 0; }
-.poster-status-rating { opacity: 0.75; font-weight: 500; }
-.poster-status--rating { background: rgba(133,77,14,0.8); color: #fef3c7; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-.item-card:not(.fade) .poster-status--rating { background: rgba(202,138,4,0.95); color: #fff; font-weight: 600; opacity: 1; }
+.poster-status--watched { background: rgba(133,77,14,0.8); color: #fef3c7; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
+.item-card:not(.fade) .poster-status--watched { font-size: 0.95rem; padding: 6px 14px; font-weight: 700; opacity: 0.9; pointer-events: auto; }
+.item-card:not(.fade) .poster-status--watched .poster-status-icon { width: 18px; height: 18px; }
+.item-card:not(.fade):hover .poster-status--watched { opacity: 1; }
 .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--simkl { background: rgba(30,111,182,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--trakt { background: rgba(237,28,36,0.8); color: #fee2e2; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }

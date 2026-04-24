@@ -103,17 +103,21 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchingBadge ? `<span class="poster-status poster-status--watchlist" title="Watching" aria-label="Watching">${ICON_EYE}</span>` : ""}
-          ${watched ? (() => {
-            const watchedText = watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
-            const ratedTitleSuffix = watchedRating != null ? ` · Rated ${watchedRating}/10` : ""
-            const ratedLabelSuffix = watchedRating != null ? ` · Rated ${watchedRating} out of 10` : ""
-            const starText = watchedRating != null ? ` ${watchedRating} ☆` : ""
-            const variant = watchedRating != null ? "rating" : "watchlist"
-            return `<span class="poster-status poster-status--${variant}" title="${watchedText}${ratedTitleSuffix}" aria-label="${watchedText}${ratedLabelSuffix}">${ICON_EYE}${starText}</span>`
+          ${showWatchingBadge ? `<span class="poster-status poster-status--watched" title="Watching" aria-label="Watching">${ICON_EYE}</span>` : ""}
+          ${watchedRating != null ? (() => {
+            const title = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+            const body = `${ICON_STAR} ${watchedRating}`
+            const ariaLabel = `${title} · Rated ${watchedRating} out of 10`
+            return url
+              ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
+              : `<span class="poster-status poster-status--watched" title="${title}" aria-label="${ariaLabel}">${body}</span>`
+          })() : watched ? (() => {
+            const text = watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+            return url
+              ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${text}" aria-label="${text}">${ICON_EYE}</a>`
+              : `<span class="poster-status poster-status--watched" title="${text}" aria-label="${text}">${ICON_EYE}</span>`
           })() : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}</span>` : ""}
-          ${!watched && watchedRating != null ? `<span class="poster-status poster-status--rating" title="Rated ${watchedRating}/10" aria-label="Rated ${watchedRating} out of 10">${watchedRating} ☆</span>` : ""}
         </div>
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
         ${showMarkWatched ? `<button class="mark-watched-btn" title="I've watched this" aria-label="Mark as watched">${ICON_CHECK}</button>` : ""}
@@ -222,5 +226,6 @@ function formatWatchedAgo(iso) {
 
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
 const ICON_BOOKMARK = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
+const ICON_STAR = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
 const ICON_CHECK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
 const ICON_SPARKLE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M18 14l.9 2.7L21.6 18l-2.7.9L18 21l-.9-2.1L14.4 18l2.7-.9L18 14z"/></svg>`
