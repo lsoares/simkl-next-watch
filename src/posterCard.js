@@ -66,12 +66,13 @@ class PosterCard extends HTMLElement {
     const showMarkWatched = inWatchlist && (type !== "tv" || hasEpisodeInfo)
     const showMoreLike = watched || (type === "tv" && inWatchlist && !hasEpisodeInfo)
 
-    const showYear = !watching && year
-    const showRating = rating != null && !watching
+    const suppressMeta = watching && !!ep
+    const showYear = !suppressMeta && year
+    const showRating = rating != null && !suppressMeta
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
     const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
     const watchedAgo = watched && watchedAt ? formatWatchedAgo(watchedAt) : ""
-    const watchedRating = userRating != null && !watching ? userRating : null
+    const watchedRating = userRating != null && !suppressMeta ? userRating : null
     const showWatchingBadge = watching && !ep
     const showWatchlistBadge = inWatchlist && !watching
     const showRuntime = !watched && !watching && Number.isFinite(item.runtime) && item.runtime > 0
@@ -103,16 +104,15 @@ class PosterCard extends HTMLElement {
         </div>
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
-          ${showWatchingBadge ? `<span class="poster-status poster-status--watched" title="Watching" aria-label="Watching">${ICON_EYE}</span>` : ""}
           ${watchedRating != null ? (() => {
-            const title = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+            const title = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watching ? "Watching" : "Watched"
             const body = `${ICON_STAR} ${watchedRating}`
             const ariaLabel = `${title} · Rated ${watchedRating} out of 10`
             return url
               ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
               : `<span class="poster-status poster-status--watched" title="${title}" aria-label="${ariaLabel}">${body}</span>`
-          })() : watched ? (() => {
-            const text = watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+          })() : (watched || showWatchingBadge) ? (() => {
+            const text = watching ? "Watching" : watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
             return url
               ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${text}" aria-label="${text}">${ICON_EYE}</a>`
               : `<span class="poster-status poster-status--watched" title="${text}" aria-label="${text}">${ICON_EYE}</span>`
