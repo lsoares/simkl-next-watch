@@ -573,22 +573,6 @@
         box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
       }
 
-      .trending-filter-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--muted);
-        font-size: 0.76rem;
-        white-space: nowrap;
-        cursor: pointer;
-      }
-
-      .trending-filter-toggle input {
-        width: 14px;
-        height: 14px;
-        margin: 0;
-      }
-
       @media (max-width: 768px) {
         main {
           box-sizing: border-box;

@@ -1,7 +1,7 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("trending row lists shows and movies", async ({ page, simkl, intro, trending }) => {
+  test("trending row lists shows and movies, hiding library items", async ({ page, simkl, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
@@ -25,8 +25,8 @@ test.describe("Simkl", () => {
     await trending.expectShowIsPresent("The Rookie")
     await trending.expectShowIsPresent("The Boys")
     await trending.expectShowShowsRating("The Rookie", "8\\.5")
-    await trending.expectShowIsOnWatchlist("Breaking Bad")
-    await trending.expectViewAllSeriesLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today")
+    await trending.expectShowIsAbsent("Breaking Bad")
+    await trending.expectViewAllSeriesLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today&not_in_list=true")
   })
 
   test("watchlist items show a trending badge in the next view", async ({ page, simkl, intro, next }) => {
@@ -110,6 +110,6 @@ test.describe("Trakt", () => {
     await trending.expectShowIsPresent("Dune")
     await trending.expectTitleLinksTo("Severance", "https://app.trakt.tv/shows/severance")
     await trending.expectTitleLinksTo("Dune", "https://app.trakt.tv/movies/dune-2021")
-    await trending.expectViewAllSeriesLinksTo("https://app.trakt.tv/discover/trending?mode=show&ignore_watched=false")
+    await trending.expectViewAllSeriesLinksTo("https://app.trakt.tv/discover/trending?mode=show&ignore_watched=true")
   })
 })

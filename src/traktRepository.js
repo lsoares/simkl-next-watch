@@ -188,9 +188,9 @@ async function getTrending(period) {
   }
 }
 
-function getTrendingBrowseUrl(type, { ignoreWatched = false } = {}) {
+function getTrendingBrowseUrl(type) {
   const mode = type === "movie" ? "movie" : "show"
-  return `https://app.trakt.tv/discover/trending?mode=${mode}&ignore_watched=${ignoreWatched}`
+  return `https://app.trakt.tv/discover/trending?mode=${mode}&ignore_watched=true`
 }
 
 async function searchByTitle(title, year, type) {

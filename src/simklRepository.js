@@ -120,13 +120,11 @@ async function getTrending(period) {
   }
 }
 
-function getTrendingBrowseUrl(type, { period = "today", ignoreWatched = false } = {}) {
+function getTrendingBrowseUrl(type, { period = "today" } = {}) {
   const base = type === "movie"
     ? "https://simkl.com/movies/best-movies/most-watched/"
     : "https://simkl.com/tv/best-shows/most-watched/"
-  const params = [`wltime=${period}`]
-  if (ignoreWatched) params.push("not_in_list=true")
-  return `${base}?${params.join("&")}`
+  return `${base}?wltime=${period}&not_in_list=true`
 }
 
 async function searchByTitle(title, year, type) {

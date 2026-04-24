@@ -74,7 +74,6 @@ const STORAGE = {
   accessToken: "next-watch-access-token",
   provider: "next-watch-provider",
   trendingPeriod: "next-watch-trending-period",
-  hideWatched: "next-watch-hide-watched",
   similarMinRating: "next-watch-similar-min-rating",
   aiProvider: "next-watch-ai-provider",
   aiKeyGemini: "next-watch-ai-key-gemini",
@@ -176,7 +175,6 @@ function initDockEffect(row) {
     logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
-    hideTrendingWatched: $("hideTrendingWatched"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
@@ -468,15 +466,12 @@ function initDockEffect(row) {
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"))
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([mediaRepository().getTrending(period), libraryReady])
-      const hideWatched = el.hideTrendingWatched.checked
-      const filterFn = (item) => item.release_status !== "unreleased"
-        && (!hideWatched || !libraryLookup(libraryIndex, item))
+      const filterFn = (item) => item.release_status !== "unreleased" && !libraryLookup(libraryIndex, item)
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
-      const browseParams = { period, ignoreWatched: hideWatched }
-      if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv", browseParams)
+      if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv", { period })
       else setEmpty(el.trendingTvContent, "No results.")
-      if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", browseParams)
+      if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", { period })
       else setEmpty(el.trendingMoviesContent, "No results.")
       initDockEffect(el.trendingTvContent)
       initDockEffect(el.trendingMoviesContent)
@@ -892,7 +887,6 @@ function initDockEffect(row) {
     el.topBar.hidden = false
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
     el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
-    el.hideTrendingWatched.closest("label").hidden = !loggedIn
     el.navHome.hidden = loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
@@ -944,7 +938,6 @@ function initDockEffect(row) {
     writeStorage(STORAGE.similarMinRating, tab.dataset.minRating)
     renderSimilar()
   })
-  el.hideTrendingWatched.addEventListener("change", () => { writeStorage(STORAGE.hideWatched, el.hideTrendingWatched.checked); loadTrending(); })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
   el.trendingPeriodTabs.addEventListener("click", (e) => {
     const tab = e.target.closest(".range-tab")
@@ -978,7 +971,6 @@ function initDockEffect(row) {
     clearAllStorage()
   }
   hydrateUI()
-  el.hideTrendingWatched.checked = readStorage(STORAGE.hideWatched) === "true"
   const savedPeriod = readStorage(STORAGE.trendingPeriod)
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))

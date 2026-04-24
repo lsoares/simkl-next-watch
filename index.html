@@ -75,6 +75,7 @@
           </div>
         </div>
         <div id="nextContent" class="suggestions-grid" hidden>
+          <p class="view-hint">What's next — your watching shows and watchlist, intelligently sorted.</p>
           <div class="media-section">
             <posters-row id="tvRow"></posters-row>
           </div>
@@ -94,15 +95,13 @@
           </div>
         </div>
         <div id="trendingContent">
+          <p class="view-hint">What's trending right now — hiding titles already in your library.</p>
           <div class="trending-toolbar">
             <div class="range-tabs" id="trendingPeriodTabs">
               <button class="range-tab active" data-period="today" type="button">🔥 Today</button>
               <button class="range-tab" data-period="week" type="button">🔥 Week</button>
               <button class="range-tab" data-period="month" type="button">🔥 Month</button>
             </div>
-            <label class="trending-filter-toggle">
-              <input type="checkbox" id="hideTrendingWatched" /> Hide listed
-            </label>
           </div>
           <div class="suggestions-grid" id="trendingGrid">
             <div class="media-section">
