@@ -716,6 +716,7 @@
       .app-intro-cta {
         font-size: 1rem;
         padding: 14px 32px;
+        min-width: 240px;
         font-weight: 600;
         color: #ffffff;
         transition: filter 0.15s ease, box-shadow 0.2s ease;
