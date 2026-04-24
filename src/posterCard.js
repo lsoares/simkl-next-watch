@@ -75,7 +75,7 @@ class PosterCard extends HTMLElement {
     const watchedRating = userRating != null && !suppressMeta ? userRating : null
     const showWatchingBadge = watching && !ep
     const showWatchlistBadge = inWatchlist && !watching
-    const showRuntime = !watched && !watching && Number.isFinite(item.runtime) && item.runtime > 0
+    const showRuntime = !watched && !watching && item.runtime > 0
     const runtimeLabel = showRuntime ? formatRuntime(item.runtime) : ""
 
     const posterHref = epUrl || url
@@ -136,7 +136,7 @@ class PosterCard extends HTMLElement {
 
   _maybeObservePoster() {
     const item = this.item
-    if (!item || item.posterUrl) return posterObserver?.unobserve(this)
+    if (item.posterUrl) return posterObserver?.unobserve(this)
     if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
     getPosterObserver().observe(this)
   }

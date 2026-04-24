@@ -19,8 +19,7 @@ export async function fetchSimilarSuggestions({ provider, key, library, seed }) 
 
 function parseSuggestions(raw) {
   try {
-    const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim())
-    return Array.isArray(parsed) ? parsed : []
+    return JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim())
   } catch {
     throw new Error("Couldn't parse AI suggestions. Try again.")
   }

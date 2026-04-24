@@ -278,7 +278,7 @@ function normalizeItem(raw) {
     year,
     url,
     runtime: media.runtime || 0,
-    rating: typeof simklRating === "number" ? simklRating : null,
+    rating: simklRating ?? null,
     status: normalizeStatus(raw.status),
     release_status: (media.year && media.year > new Date().getFullYear()) || (type === "movie" && !media.runtime) ? "unreleased" : undefined,
     nextEpisode,
@@ -303,8 +303,8 @@ function enrichSearch(item, type) {
     title: decodeSimklText(item.title),
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
-    runtime: parseRuntime(item.runtime),
-    rating: typeof simklRating === "number" ? simklRating : null,
+    runtime: item.runtime || 0,
+    rating: simklRating ?? null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     posterFallbackUrl: simklPosterUrl(item.poster),
     type,
@@ -321,8 +321,8 @@ function enrichTrending(item, type) {
     title: decodeSimklText(item.title),
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildTrendingUrl(item, ids.simkl, type),
-    runtime: parseRuntime(item.runtime),
-    rating: typeof simklRating === "number" ? simklRating : null,
+    runtime: item.runtime || 0,
+    rating: simklRating ?? null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     posterFallbackUrl: simklPosterUrl(item.poster),
     type,
@@ -352,13 +352,7 @@ function normalizeStatus(s) {
 }
 
 function parseNextEpisode(value) {
-  if (!value) return null
-  if (typeof value === "object") {
-    const s = Number(value.season ?? value.season_number)
-    const e = Number(value.episode ?? value.episode_number ?? value.number)
-    return Number.isFinite(s) && Number.isFinite(e) ? { season: s, episode: e } : null
-  }
-  const m = String(value).match(/S(\d+)E(\d+)/i)
+  const m = value && /S(\d+)E(\d+)/i.exec(value)
   return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
 }
 
@@ -375,10 +369,3 @@ function buildTrendingUrl(item, id, type) {
   return id ? `https://simkl.com/${base}/${id}` : "#"
 }
 
-function parseRuntime(v) {
-  if (typeof v === "number") return v
-  if (!v) return 0
-  const h = Number(/(\d+)\s*h/i.exec(v)?.[1]) || 0
-  const m = Number(/(\d+)\s*m/i.exec(v)?.[1]) || 0
-  return h * 60 + m
-}
