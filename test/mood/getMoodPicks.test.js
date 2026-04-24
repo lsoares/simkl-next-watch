@@ -147,7 +147,6 @@ test.describe("Trakt", () => {
       '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
       ["Breaking Bad (2008):9", "Inception (2010):8"],
     )
-    await trakt.useSearchShow("", [])
     await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
     await mood.open()

@@ -204,12 +204,10 @@ async function searchByTitle(title, year, type) {
       const r = await publicFetch(`/search/movie?query=${q}&limit=1&extended=full`)
       return r[0]?.movie ? enrichSearch(r[0].movie, "movie") : null
     }
-    const [shows, movies] = await Promise.all([
-      publicFetch(`/search/show?query=${q}&limit=1&extended=full`),
-      publicFetch(`/search/movie?query=${q}&limit=1&extended=full`),
-    ])
-    if (shows[0]?.show) return enrichSearch(shows[0].show, "tv")
+    const movies = await publicFetch(`/search/movie?query=${q}&limit=1&extended=full`)
     if (movies[0]?.movie) return enrichSearch(movies[0].movie, "movie")
+    const shows = await publicFetch(`/search/show?query=${q}&limit=1&extended=full`)
+    if (shows[0]?.show) return enrichSearch(shows[0].show, "tv")
     return null
   } catch {
     return null
