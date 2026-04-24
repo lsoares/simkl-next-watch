@@ -198,7 +198,7 @@
       .ai-settings-dialog input {
         font-size: 0.78rem;
       }
-      .ai-settings-dialog > form > div {
+      .ai-settings-dialog > form > div:not(:last-child) {
         margin-bottom: 12px;
       }
       .ai-settings-dialog #aiKeyLink {
@@ -207,10 +207,11 @@
         white-space: nowrap;
       }
       .ai-settings-dialog select {
-        padding: 10px 12px;
+        appearance: none;
+        padding: 10px 36px 10px 12px;
         border: 1px solid var(--panel-border);
         border-radius: 8px;
-        background: var(--bg);
+        background: var(--bg) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.5 6 6.5 11 1.5'/></svg>") no-repeat right 12px center / 12px 8px;
         color: var(--text);
         font-size: 0.85rem;
       }
@@ -252,8 +253,7 @@
         align-items: center;
         justify-content: flex-end;
         gap: 12px;
-        margin-top: 20px;
-        margin-bottom: 0;
+        padding-top: 20px;
       }
 
 
