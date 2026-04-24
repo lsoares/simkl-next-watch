@@ -151,7 +151,7 @@ test.describe("Trakt", () => {
 
     await mood.pickMood("Make me laugh")
 
-    await aiPicks.expectPosterIsVisible("Parasite")
+    await aiPicks.expectPosterLinksTo("Parasite", /parasite-2019/)
   })
 
   test("AI results reflect Trakt watchlist and watched status", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
