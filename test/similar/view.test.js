@@ -2,16 +2,16 @@ import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
   test("similar view shows top-rated library posters in its grid", async ({ page, simkl, tmdb }) => {
-    await simkl.oauthToken()
-    await simkl.trendingTv({})
-    await simkl.trendingMovies({})
-    await tmdb.posters(2)
-    await simkl.syncActivities()
-    await simkl.syncShows([{
+    await simkl.useOauthToken()
+    await simkl.useTrendingTv({})
+    await simkl.useTrendingMovies({})
+    await tmdb.usePosters(2)
+    await simkl.useSyncActivities()
+    await simkl.useSyncShows([{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "completed", user_rating: 9,
     }])
-    await simkl.syncMovies([
+    await simkl.useSyncMovies([
       {
         movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
         status: "completed", user_rating: 8,
@@ -21,8 +21,8 @@ test.describe("Simkl", () => {
         status: "completed", user_rating: 3,
       },
     ])
-    await simkl.syncAnime([])
-    await simkl.authorize()
+    await simkl.useSyncAnime([])
+    await simkl.useAuthorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
@@ -36,18 +36,18 @@ test.describe("Simkl", () => {
   })
 
   test("similar view shows a notice and random library picks when nothing is rated", async ({ page, simkl, tmdb }) => {
-    await simkl.oauthToken()
-    await simkl.trendingTv({})
-    await simkl.trendingMovies({})
-    await tmdb.posters(1)
-    await simkl.syncActivities()
-    await simkl.syncShows([{
+    await simkl.useOauthToken()
+    await simkl.useTrendingTv({})
+    await simkl.useTrendingMovies({})
+    await tmdb.usePosters(1)
+    await simkl.useSyncActivities()
+    await simkl.useSyncShows([{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
-    await simkl.syncMovies([])
-    await simkl.syncAnime([])
-    await simkl.authorize()
+    await simkl.useSyncMovies([])
+    await simkl.useSyncAnime([])
+    await simkl.useAuthorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()
@@ -61,29 +61,29 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("similar view shows rated Trakt library posters in its grid", async ({ page, trakt, tmdb }) => {
-    await trakt.oauthToken()
-    await trakt.lastActivities()
-    await trakt.watchedShows([{
+    await trakt.useOauthToken()
+    await trakt.useLastActivities()
+    await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
       seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
     }])
-    await trakt.watchedMovies([])
-    await trakt.watchedShowsByPeriod({})
-    await trakt.watchedMoviesByPeriod({})
-    await tmdb.posters()
-    await trakt.watchlistShows([])
-    await trakt.watchlistMovies([])
-    await trakt.droppedShows([])
-    await trakt.ratingsShows([{
+    await trakt.useWatchedMovies([])
+    await trakt.useWatchedShowsByPeriod({})
+    await trakt.useWatchedMoviesByPeriod({})
+    await tmdb.usePosters()
+    await trakt.useWatchlistShows([])
+    await trakt.useWatchlistMovies([])
+    await trakt.useDroppedShows([])
+    await trakt.useRatingsShows([{
       rated_at: "2024-09-12T10:57:24.000Z",
       rating: 9,
       type: "show",
       show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
     }])
-    await trakt.ratingsMovies([])
-    await trakt.progress("breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
-    await trakt.authorize()
+    await trakt.useRatingsMovies([])
+    await trakt.useProgress("breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })
+    await trakt.useAuthorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
     await expect(page.getByRole("button", { name: /logout/i })).toBeVisible()

@@ -2,17 +2,17 @@ import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
   test("adds a trending movie to the watchlist", async ({ page, simkl }) => {
-    await simkl.oauthToken()
-    await simkl.syncActivities()
-    await simkl.syncShows([])
-    await simkl.syncMovies([])
-    await simkl.syncAnime([])
-    await simkl.trendingTv({})
-    await simkl.trendingMovies({ today: [
+    await simkl.useOauthToken()
+    await simkl.useSyncActivities()
+    await simkl.useSyncShows([])
+    await simkl.useSyncMovies([])
+    await simkl.useSyncAnime([])
+    await simkl.useTrendingTv({})
+    await simkl.useTrendingMovies({ today: [
       { title: "Dune", ids: { simkl_id: 99003 } },
     ] })
-    await simkl.addToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
-    await simkl.authorize()
+    await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
+    await simkl.useAuthorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with simkl/i }).click()
     await page.getByRole("link", { name: /trending/i }).click()
@@ -28,22 +28,22 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("adds a trending movie to the watchlist", async ({ page, trakt, tmdb }) => {
-    await trakt.oauthToken()
-    await trakt.lastActivities()
-    await trakt.watchlistShows([])
-    await trakt.watchlistMovies([])
-    await trakt.watchedShows([])
-    await trakt.watchedMovies([])
-    await trakt.droppedShows([])
-    await trakt.ratingsShows([])
-    await trakt.ratingsMovies([])
-    await tmdb.posters(2)
-    await trakt.watchedShowsByPeriod({})
-    await trakt.watchedMoviesByPeriod({
+    await trakt.useOauthToken()
+    await trakt.useLastActivities()
+    await trakt.useWatchlistShows([])
+    await trakt.useWatchlistMovies([])
+    await trakt.useWatchedShows([])
+    await trakt.useWatchedMovies([])
+    await trakt.useDroppedShows([])
+    await trakt.useRatingsShows([])
+    await trakt.useRatingsMovies([])
+    await tmdb.usePosters(2)
+    await trakt.useWatchedShowsByPeriod({})
+    await trakt.useWatchedMoviesByPeriod({
       daily: [{ watcher_count: 100, movie: { title: "Dune", year: 2021, ids: { imdb: "tt1160419", tmdb: 438631 } } }],
     })
-    await trakt.addToWatchlist({ movies: [{ ids: { imdb: "tt1160419", tmdb: 438631 } }] })
-    await trakt.authorize()
+    await trakt.useAddToWatchlist({ movies: [{ ids: { imdb: "tt1160419", tmdb: 438631 } }] })
+    await trakt.useAuthorize()
     await page.goto("/")
     await page.getByRole("button", { name: /sign in with trakt/i }).click()
     await page.getByRole("link", { name: /trending/i }).click()

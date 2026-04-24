@@ -3,8 +3,8 @@ import { test, expect } from "../test.js"
 test.describe("Simkl", () => {
   for (const name of ["gemini", "openai", "claude", "grok", "groq", "deepseek", "openrouter"]) {
     test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai }) => {
-      await tmdb.posters(6)
-      await simkl.tvEpisodes("11121")
+      await tmdb.usePosters(6)
+      await simkl.useTvEpisodes("11121")
       await signInToSimkl(page, simkl, {
         shows: [{
           show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -22,17 +22,16 @@ test.describe("Simkl", () => {
           },
         ],
       })
-      await ai[name].chat(
+      await ai[name].useChat(
         '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010},{"title":"The Matrix","year":1999}]',
-        "apiAiKey",
         ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999):7"],
       )
-      await simkl.searchTv("", [])
-      await simkl.searchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
-      await simkl.searchMovie("Oldboy", [{ title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } }])
-      await simkl.searchMovie("Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
-      await simkl.searchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
-      await simkl.searchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
+      await simkl.useSearchTv("", [])
+      await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
+      await simkl.useSearchMovie("Oldboy", [{ title: "Oldboy", year: 2003, ids: { simkl_id: 33002 }, type: "movie", ratings: { imdb: { rating: 8.4 } } }])
+      await simkl.useSearchMovie("Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003 }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
+      await simkl.useSearchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222 }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
+      await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333 }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
       await page.getByRole("link", { name: /mood/i }).click()
       await page.getByRole("button", { name: /make me laugh/i }).click()
       await page.getByRole("combobox", { name: /provider/i }).selectOption(name)
@@ -55,8 +54,8 @@ test.describe("Simkl", () => {
   }
 
   test("AI dialog posters link to the matched Simkl page", async ({ page, simkl, tmdb, ai }) => {
-    await tmdb.posters(2)
-    await simkl.tvEpisodes("11121")
+    await tmdb.usePosters(2)
+    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -64,13 +63,12 @@ test.describe("Simkl", () => {
         watched_episodes_count: 46, total_episodes_count: 62,
       }],
     })
-    await ai.gemini.chat(
+    await ai.gemini.useChat(
       '[{"title":"Parasite","year":2019}]',
-      "apiAiKey",
       ["Breaking Bad (2008):9"],
     )
-    await simkl.searchTv("", [])
-    await simkl.searchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
+    await simkl.useSearchTv("", [])
+    await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001 }, type: "movie" }])
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -86,8 +84,8 @@ test.describe("Simkl", () => {
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb }) => {
-    await tmdb.posters()
-    await simkl.tvEpisodes("11121")
+    await tmdb.usePosters()
+    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -104,8 +102,8 @@ test.describe("Simkl", () => {
   })
 
   test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb }) => {
-    await tmdb.posters()
-    await simkl.tvEpisodes("11121")
+    await tmdb.usePosters()
+    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
@@ -149,13 +147,12 @@ test.describe("Trakt", () => {
       progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 5,
     })
-    await ai.gemini.chat(
+    await ai.gemini.useChat(
       '[{"title":"Parasite","year":2019}]',
-      "apiAiKey",
       ["Breaking Bad (2008):9", "Inception (2010):8"],
     )
-    await trakt.searchShow("", [])
-    await trakt.searchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
+    await trakt.useSearchShow("", [])
+    await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -194,14 +191,13 @@ test.describe("Trakt", () => {
       progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 7,
     })
-    await ai.gemini.chat(
+    await ai.gemini.useChat(
       '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
-      "apiAiKey",
       ["Breaking Bad (2008):9"],
     )
-    await trakt.searchShow("", [])
-    await trakt.searchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
-    await trakt.searchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
+    await trakt.useSearchShow("", [])
+    await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
+    await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: 496243 }, rating: 8.5 } }])
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -226,13 +222,12 @@ test.describe("Trakt", () => {
       progressData: { next_episode: { season: 5, number: 1, title: "Live Free or Die" } },
       tmdbTimes: 4,
     })
-    await ai.gemini.chat(
+    await ai.gemini.useChat(
       '[{"title":"Inception","year":2010}]',
-      "apiAiKey",
       [],
     )
-    await trakt.searchShow("", [])
-    await trakt.searchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
+    await trakt.useSearchShow("", [])
+    await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: 27205 }, rating: 8.8 } }])
     await page.getByRole("link", { name: /mood/i }).click()
     await page.getByRole("button", { name: /make me laugh/i }).click()
     await page.getByRole("combobox", { name: /provider/i }).selectOption("gemini")
@@ -247,14 +242,14 @@ test.describe("Trakt", () => {
 })
 
 async function signInToSimkl(page, simkl, { shows = [], movies = [], anime = [] } = {}) {
-  await simkl.oauthToken()
-  await simkl.trendingTv({})
-  await simkl.trendingMovies({})
-  await simkl.syncActivities()
-  await simkl.syncShows(shows)
-  await simkl.syncMovies(movies)
-  await simkl.syncAnime(anime)
-  await simkl.authorize()
+  await simkl.useOauthToken()
+  await simkl.useTrendingTv({})
+  await simkl.useTrendingMovies({})
+  await simkl.useSyncActivities()
+  await simkl.useSyncShows(shows)
+  await simkl.useSyncMovies(movies)
+  await simkl.useSyncAnime(anime)
+  await simkl.useAuthorize()
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with simkl/i }).click()
   await expect(page.getByRole("article", { name: shows[0].show.title })).toBeVisible()
@@ -272,20 +267,20 @@ async function signInToTrakt(page, trakt, tmdb, {
   progressData,
   tmdbTimes,
 } = {}) {
-  await trakt.oauthToken()
-  await trakt.lastActivities()
-  await trakt.watchedShows(watchedShows)
-  await trakt.watchedMovies(watchedMovies)
-  await trakt.watchedShowsByPeriod({})
-  await trakt.watchedMoviesByPeriod({})
-  await tmdb.posters(tmdbTimes)
-  await trakt.watchlistShows(watchlistShows)
-  await trakt.watchlistMovies(watchlistMovies)
-  await trakt.droppedShows(droppedShows)
-  await trakt.ratingsShows(ratingsShows)
-  await trakt.ratingsMovies(ratingsMovies)
-  await trakt.progress(progressSlug, progressData)
-  await trakt.authorize()
+  await trakt.useOauthToken()
+  await trakt.useLastActivities()
+  await trakt.useWatchedShows(watchedShows)
+  await trakt.useWatchedMovies(watchedMovies)
+  await trakt.useWatchedShowsByPeriod({})
+  await trakt.useWatchedMoviesByPeriod({})
+  await tmdb.usePosters(tmdbTimes)
+  await trakt.useWatchlistShows(watchlistShows)
+  await trakt.useWatchlistMovies(watchlistMovies)
+  await trakt.useDroppedShows(droppedShows)
+  await trakt.useRatingsShows(ratingsShows)
+  await trakt.useRatingsMovies(ratingsMovies)
+  await trakt.useProgress(progressSlug, progressData)
+  await trakt.useAuthorize()
   await page.goto("/")
   await page.getByRole("button", { name: /sign in with trakt/i }).click()
   await expect(page.getByRole("article", { name: watchedShows[0].show.title })).toBeVisible()
