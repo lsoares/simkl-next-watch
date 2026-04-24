@@ -1,17 +1,18 @@
 import { test, expect } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("logout clears session and shows intro", async ({ page, simkl, intro, next }) => {
+  test("logout clears session and shows intro", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
+    await tmdb.usePosters(1)
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")

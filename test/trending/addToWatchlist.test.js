@@ -1,7 +1,7 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("adds a trending movie to the watchlist", async ({ page, simkl, intro, trending }) => {
+  test("adds a trending movie to the watchlist", async ({ page, simkl, tmdb, intro, trending }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows()
@@ -9,8 +9,9 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies({ today: [
-      { title: "Dune", ids: { simkl_id: 99003 } },
+      { title: "Dune", year: 2021, ids: { simkl_id: 99003 } },
     ] })
+    await tmdb.usePosters(1)
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
     await simkl.useAuthorize()
     await page.goto("/")

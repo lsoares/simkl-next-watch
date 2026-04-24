@@ -8,7 +8,9 @@ export function client(page) {
     },
 
     async expectPosterIsVisible(title) {
-      await expect(dialog().getByRole("article", { name: title })).toBeVisible()
+      const card = dialog().getByRole("article", { name: title })
+      await expect(card).toBeVisible()
+      await expect(card.getByRole("img")).toBeVisible()
     },
     async expectPosterIsWatched(title) {
       await expect(dialog().getByRole("article", { name: title })).toHaveClass(/trending-watched/)
@@ -24,7 +26,7 @@ export function client(page) {
       await expect(dialog().getByRole("article", { name: title }).getByLabel(new RegExp(`rated ${rating} out of 10`, "i"))).toBeVisible()
     },
     async expectPosterLinksTo(title, hrefPattern) {
-      await expect(dialog().getByRole("link", { name: title })).toHaveAttribute("href", hrefPattern)
+      await expect(dialog().getByRole("link", { name: title, exact: true })).toHaveAttribute("href", hrefPattern)
     },
     async expectToastMessage(text) {
       await expect(page.getByRole("status")).toContainText(text)
