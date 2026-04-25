@@ -2,12 +2,9 @@ import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
-import * as userLibrary from "./userLibraryRepository.js"
-import { idbClearAll } from "./idbStore.js"
-
-function mediaRepository() {
-  return localStorage.getItem("next-watch-provider") === "trakt" ? traktRepository : simklRepository
-}
+import { catalog } from "./catalog.js"
+import { getAuth, setAuth, setClientIds } from "./auth.js"
+import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
@@ -72,32 +69,14 @@ function trendingIdsOf(item) {
 
 // ── Storage ──
 
-const STORAGE = {
-  accessToken: "next-watch-access-token",
-  provider: "next-watch-provider",
-  trendingPeriod: "next-watch-trending-period",
-  similarMinRating: "next-watch-similar-min-rating",
-  aiProvider: "next-watch-ai-provider",
-  aiKeyGemini: "next-watch-ai-key-gemini",
-  aiKeyOpenai: "next-watch-ai-key-openai",
-  aiKeyClaude: "next-watch-ai-key-claude",
-  aiKeyGrok: "next-watch-ai-key-grok",
-  aiKeyGroq: "next-watch-ai-key-groq",
-  aiKeyDeepseek: "next-watch-ai-key-deepseek",
-  aiKeyOpenrouter: "next-watch-ai-key-openrouter",
-}
-
-function readStorage(key) { return localStorage.getItem(key) || ""; }
-function writeStorage(key, value) { try { localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)); } catch {} }
 function clearAllStorage() {
-  for (const storage of [localStorage, sessionStorage]) {
-    Object.keys(storage).forEach((k) => { if (k.startsWith("next-watch-")) storage.removeItem(k) })
-  }
+  Object.keys(sessionStorage).forEach((k) => { if (k.startsWith("next-watch-")) sessionStorage.removeItem(k) })
   idbClearAll().catch((err) => console.warn("IDB clear failed:", err))
 }
 
-function getAccessToken() { return readStorage(STORAGE.accessToken); }
-function isLoggedIn() { return !!getAccessToken(); }
+let loggedInState = false
+async function refreshLoggedIn() { loggedInState = !!(await getAuth())?.token }
+function isLoggedIn() { return loggedInState }
 
 // ── Dock effect (visual, self-contained) ──
 
@@ -240,13 +219,14 @@ function initDockEffect(row) {
 
   // ── Render rows ──
 
-  function renderRow(rowEl, items, type) {
+  async function renderRow(rowEl, items, type) {
+    const c = await catalog()
     rowEl.replaceChildren()
     items.forEach((item) => renderPosterCard(rowEl, mergeWithLibrary(item, libraryIndex)))
-    appendAddMoreTile(rowEl, { href: mediaRepository().getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
+    appendAddMoreTile(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     initDockEffect(rowEl)
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
-    observeProgressHydration(rowEl)
+    observeProgressHydration(rowEl, c)
   }
 
   // ── Mark watched ──
@@ -264,8 +244,8 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await userLibrary.markWatched(item)
-      showToast(toastFrag("Marked ", snapshot, " watched."))
+      await (await catalog()).markWatched(item)
+      showToast(await toastFrag("Marked ", snapshot, " watched."))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
@@ -274,10 +254,10 @@ function initDockEffect(row) {
     }
   }
 
-  function toastFrag(prefix, item, suffix) {
+  async function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (mediaRepository().getEpisodeUrl?.(item, ep) || base) : base
+    const url = ep ? ((await catalog()).getEpisodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -289,10 +269,11 @@ function initDockEffect(row) {
   // ── Episode title enrichment ──
 
   async function enrichEpisodeTitles() {
+    const c = await catalog()
     const results = await Promise.allSettled(tvItems.map((item) => {
       const ep = item.nextEpisode
       if (!ep || !item.id || item.status === "plantowatch") return null
-      return mediaRepository().getEpisodeTitle?.(item.id, ep.season, ep.episode)
+      return c.getEpisodeTitle?.(item.id, ep.season, ep.episode)
     }))
     let changed = false
     results.forEach((r, i) => {
@@ -310,9 +291,10 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
+      const c = await catalog()
       const [ws, wls, wlm, cs, cm] = await Promise.all([
-        userLibrary.getWatchingShows(), userLibrary.getWatchlistShows(), userLibrary.getWatchlistMovies(),
-        userLibrary.getCompletedShows(), userLibrary.getCompletedMovies(),
+        c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
+        c.getCompletedShows(), c.getCompletedMovies(),
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
@@ -337,11 +319,11 @@ function initDockEffect(row) {
 
   // ── Trending ──
 
-  function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
+  async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
+    const c = await catalog()
     containerEl.replaceChildren()
     items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
-    const u = mediaRepository()
-    appendAddMoreTile(containerEl, { href: u.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
+    appendAddMoreTile(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
 
   async function addToWatchlist(card) {
@@ -351,12 +333,12 @@ function initDockEffect(row) {
     if (!keys.length || !btn) return
     btn.disabled = true
     try {
-      await userLibrary.addToWatchlist(item)
+      await (await catalog()).addToWatchlist(item)
       const plantowatchItem = { ...item, status: "plantowatch" }
       for (const key of keys) libraryIndex.set(key, plantowatchItem)
       card.item = plantowatchItem
       card.refresh()
-      showToast(toastFrag("Added ", item, " to watchlist."))
+      showToast(await toastFrag("Added ", item, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
       btn.disabled = false
@@ -364,23 +346,21 @@ function initDockEffect(row) {
     }
   }
 
-  function observeProgressHydration(rowEl) {
-    rowEl.querySelectorAll("poster-card").forEach((c) => {
-      if (needsProgressHydration(c.item)) hydrateProgress(c)
+  async function observeProgressHydration(rowEl, c) {
+    if (!c.getProgress) return
+    rowEl.querySelectorAll("poster-card").forEach((card) => {
+      const item = card.item
+      if (item && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt)) {
+        hydrateProgress(card, c)
+      }
     })
   }
 
-  function needsProgressHydration(item) {
-    if (!item) return false
-    return !!(userLibrary.hasProgress() && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt))
-  }
-
-  async function hydrateProgress(card) {
+  async function hydrateProgress(card, c) {
     const item = card.item
     if (!item) return
-    if (!userLibrary.hasProgress()) return
     const key = item.ids.slug || item.ids.trakt
-    const progress = await userLibrary.getProgress(key)
+    const progress = await c.getProgress(key)
     if (progress === null) {
       card.closest(".row-item")?.remove()
       return
@@ -398,7 +378,8 @@ function initDockEffect(row) {
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
     const periods = ["today", "week", "month"]
     trendingBadgeSetsPromise = new Promise((resolve) => requestIdleCallback(resolve, { timeout: 2000 }))
-      .then(() => Promise.all(periods.map((p) => mediaRepository().getTrending(p))))
+      .then(() => catalog())
+      .then((c) => Promise.all(periods.map((p) => c.getTrending(p))))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() }
         results.forEach(({ tv, movies }, i) => {
@@ -439,17 +420,17 @@ function initDockEffect(row) {
 
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
-    writeStorage(STORAGE.trendingPeriod, period)
+    await idbSet("trendingPeriod", period)
     el.trendingTvContent.replaceChildren(tpl("tpl-spinner"))
     el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"))
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([mediaRepository().getTrending(period), libraryReady])
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([(await catalog()).getTrending(period), libraryReady])
       const filterFn = (item) => item.release_status !== "unreleased" && !libraryLookup(libraryIndex, item)
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
-      if (tv.length) renderDiscoveryRow(el.trendingTvContent, tv, "tv", { period })
+      if (tv.length) await renderDiscoveryRow(el.trendingTvContent, tv, "tv", { period })
       else setEmpty(el.trendingTvContent, "No results.")
-      if (movies.length) renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", { period })
+      if (movies.length) await renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", { period })
       else setEmpty(el.trendingMoviesContent, "No results.")
       initDockEffect(el.trendingTvContent)
       initDockEffect(el.trendingMoviesContent)
@@ -471,7 +452,7 @@ function initDockEffect(row) {
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
     const all = [...shows, ...movies]
-    const minRating = resolveSimilarMinRating(all)
+    const minRating = await resolveSimilarMinRating(all)
     const pool = minRating === 0 ? all : all.filter((i) => (i.user_rating || 0) >= minRating)
     similarPool = pool
       .map((p) => [Math.random(), p])
@@ -559,8 +540,8 @@ function initDockEffect(row) {
     return li
   }
 
-  function resolveSimilarMinRating(items) {
-    const saved = readStorage(STORAGE.similarMinRating)
+  async function resolveSimilarMinRating(items) {
+    const saved = await idbGet("similarMinRating")
     if (saved) return Number.parseInt(saved, 10) || 0
     const sevenPlus = items.filter((i) => (i.user_rating || 0) >= 7).length
     const minRating = sevenPlus < 10 ? 0 : 7
@@ -575,20 +556,19 @@ function initDockEffect(row) {
     return `~${Math.round(days).toLocaleString()}d`
   }
 
-  function openAiSettings() {
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
-    syncAiKeyLink()
+  async function openAiSettings() {
+    el.aiProviderSelect.value = await getAiProvider()
+    await syncAiKeyLink()
     el.aiSettings.showModal()
   }
 
-  const AI_KEY_STORAGE = { gemini: STORAGE.aiKeyGemini, openai: STORAGE.aiKeyOpenai, claude: STORAGE.aiKeyClaude, grok: STORAGE.aiKeyGrok, groq: STORAGE.aiKeyGroq, deepseek: STORAGE.aiKeyDeepseek, openrouter: STORAGE.aiKeyOpenrouter }
+  async function getAiProvider() { return (await idbGet("aiProvider")) || "groq" }
+  async function getAiKey(provider) { return (await idbGet(`aiKey:${provider}`)) || "" }
 
-  function getAiKey(provider) { return readStorage(AI_KEY_STORAGE[provider] || STORAGE.aiKeyGroq); }
-
-  function syncAiKeyLink() {
+  async function syncAiKeyLink() {
     const opt = el.aiProviderSelect.selectedOptions[0]
     el.aiKeyLink.href = opt.dataset.url
-    el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
+    el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
     el.aiProviderUsername.value = el.aiProviderSelect.value
     syncAiSaveLabel()
   }
@@ -601,9 +581,10 @@ function initDockEffect(row) {
   // ── Recommendation Flow ──
 
   async function gatherLibrary() {
+    const c = await catalog()
     const [ws, wls, wlm, cs, cm] = await Promise.all([
-      userLibrary.getWatchingShows(), userLibrary.getWatchlistShows(), userLibrary.getWatchlistMovies(),
-      userLibrary.getCompletedShows(), userLibrary.getCompletedMovies(),
+      c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
+      c.getCompletedShows(), c.getCompletedMovies(),
     ])
     return {
       shows: [...ws.items, ...wls.items, ...cs.items],
@@ -612,15 +593,13 @@ function initDockEffect(row) {
   }
 
   async function getRecommendations(mood) {
-    const library = await gatherLibrary()
-    const provider = readStorage(STORAGE.aiProvider) || "groq"
-    return await fetchAiSuggestions({ provider, key: getAiKey(provider), library, mood })
+    const [library, provider] = await Promise.all([gatherLibrary(), getAiProvider()])
+    return await fetchAiSuggestions({ provider, key: await getAiKey(provider), library, mood })
   }
 
   async function getSimilar(seed) {
-    const library = await gatherLibrary()
-    const provider = readStorage(STORAGE.aiProvider) || "groq"
-    const suggestions = await fetchSimilarSuggestions({ provider, key: getAiKey(provider), library, seed })
+    const [library, provider] = await Promise.all([gatherLibrary(), getAiProvider()])
+    const suggestions = await fetchSimilarSuggestions({ provider, key: await getAiKey(provider), library, seed })
     return suggestions.filter((s) => !(s.title === seed.title && s.year === seed.year))
   }
 
@@ -640,7 +619,26 @@ function initDockEffect(row) {
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
     row.appendChild(frag)
+    hydratePoster(card)
     return card
+  }
+
+  async function hydratePoster(card) {
+    const item = card.item
+    if (!item || item.posterUrl) return
+    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
+    const url = await (await catalog()).getPoster(item)
+    if (!url || card.item !== item) return
+    item.posterUrl = url
+    const oldPoster = card.querySelector(".poster")
+    if (!oldPoster) return card.refresh()
+    const img = document.createElement("img")
+    img.className = "poster poster--hydrating"
+    img.alt = item.title || ""
+    img.loading = "lazy"
+    img.draggable = false
+    img.src = url
+    oldPoster.replaceWith(img)
   }
 
   const dialogStack = []
@@ -669,8 +667,8 @@ function initDockEffect(row) {
     return frag
   }
 
-  function pushDialog(entry) {
-    if (!getAiKey(readStorage(STORAGE.aiProvider) || "groq")) {
+  async function pushDialog(entry) {
+    if (!(await getAiKey(await getAiProvider()))) {
       openAiSettings()
       return
     }
@@ -736,10 +734,12 @@ function initDockEffect(row) {
 
   async function hydrateAiCard(card) {
     const { title, year } = card.item
-    const resolved = await mediaRepository().searchByTitle(title, year)
+    const c = await catalog()
+    const resolved = await c.searchByTitle(title, year)
     if (!resolved) {
-      card.item = { ...card.item, url: mediaRepository().getSearchUrl(title) }
+      card.item = { ...card.item, url: c.getSearchUrl(title) }
       card.refresh()
+      hydratePoster(card)
       return
     }
     if (resolved.release_status === "unreleased") {
@@ -748,6 +748,7 @@ function initDockEffect(row) {
     }
     card.item = asSeriesPoster(mergeWithLibrary(resolved, libraryIndex))
     card.refresh()
+    hydratePoster(card)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())
@@ -817,12 +818,11 @@ function initDockEffect(row) {
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
       const token = await userData.exchangeOAuthCode(code)
-      writeStorage(STORAGE.accessToken, token.access_token)
-      writeStorage(STORAGE.provider, provider)
-      await userLibrary.setAuth(token.access_token, provider)
+      await setAuth(token.access_token, provider)
+      await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
-      hydrateUI()
+      await hydrateUI()
       showView("next")
       showToast(`Connected to ${userData.name}.`)
       await loadSuggestions()
@@ -851,20 +851,20 @@ function initDockEffect(row) {
 
   // ── UI hydration ──
 
-  function hydrateUI() {
+  async function hydrateUI() {
     const loggedIn = isLoggedIn()
     document.body.classList.toggle("logged-in", loggedIn)
     el.topBar.hidden = false
     el.topBar.classList.toggle("logged-out", !loggedIn)
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
-    el.aiKeyInput.value = getAiKey(el.aiProviderSelect.value)
+    el.aiProviderSelect.value = await getAiProvider()
+    el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
     el.navHome.hidden = loggedIn
     el.logoutBtn.hidden = !loggedIn
     el.coffeeLink.hidden = !loggedIn
     el.aiKeyBtn.hidden = !loggedIn
     el.attribution.hidden = !loggedIn
     if (loggedIn) {
-      const repo = mediaRepository()
+      const repo = await catalog()
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
@@ -898,12 +898,12 @@ function initDockEffect(row) {
 
   // ── Wire events ──
 
-  el.aiSettingsForm.addEventListener("submit", (e) => {
+  el.aiSettingsForm.addEventListener("submit", async (e) => {
     e.preventDefault()
     const provider = el.aiProviderSelect.value
     const aiKey = el.aiKeyInput.value.trim()
-    writeStorage(STORAGE.aiProvider, provider)
-    writeStorage(AI_KEY_STORAGE[provider], aiKey)
+    await idbSet("aiProvider", provider)
+    await idbSet(`aiKey:${provider}`, aiKey)
     syncAiSaveLabel()
     el.aiSettings.close()
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
@@ -926,12 +926,12 @@ function initDockEffect(row) {
   el.navSimilar.addEventListener("click", (e) => { e.preventDefault(); showView("similar"); })
   el.navAi.addEventListener("click", (e) => { e.preventDefault(); showView("mood"); })
   el.similarReload.addEventListener("click", () => renderSimilar())
-  el.similarRatingTabs.addEventListener("click", (e) => {
+  el.similarRatingTabs.addEventListener("click", async (e) => {
     const tab = e.target.closest(".range-tab")
     if (!tab) return
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.remove("active"))
     tab.classList.add("active")
-    writeStorage(STORAGE.similarMinRating, tab.dataset.minRating)
+    await idbSet("similarMinRating", tab.dataset.minRating)
     renderSimilar()
   })
   el.aiProviderSelect.addEventListener("change", () => { syncAiKeyLink(); syncAiSaveLabel(); })
@@ -963,24 +963,19 @@ function initDockEffect(row) {
 
   // ── Boot ──
 
-  if (readStorage(STORAGE.accessToken) && !readStorage(STORAGE.provider)) {
-    clearAllStorage()
-  }
-  const bootToken = readStorage(STORAGE.accessToken)
-  const bootProvider = readStorage(STORAGE.provider)
-  await Promise.all([
-    userLibrary.setClientIds({
-      simkl: window.__SIMKL_CLIENT_ID__ || "",
-      trakt: window.__TRAKT_CLIENT_ID__ || "",
-    }),
-    bootToken && bootProvider ? userLibrary.setAuth(bootToken, bootProvider) : Promise.resolve(),
-  ]).catch(() => {})
-  hydrateUI()
-  const savedPeriod = readStorage(STORAGE.trendingPeriod)
+  await setClientIds({
+    simkl: window.__SIMKL_CLIENT_ID__ || "",
+    trakt: window.__TRAKT_CLIENT_ID__ || "",
+  }).catch(() => {})
+  await refreshLoggedIn()
+  await hydrateUI()
+  const [savedPeriod, savedMinRating] = await Promise.all([
+    idbGet("trendingPeriod"),
+    idbGet("similarMinRating"),
+  ])
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))
   }
-  const savedMinRating = readStorage(STORAGE.similarMinRating)
   if (savedMinRating) {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }

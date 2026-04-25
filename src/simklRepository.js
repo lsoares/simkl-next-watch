@@ -1,6 +1,6 @@
-import { createCacheClient } from "./cacheClient.js"
+import { createCacheClient, createKeyedCache } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
-import { clearAuth } from "./userLibraryRepository.js"
+import { clearAuth } from "./auth.js"
 
 const env = {
   get clientId() { return requireGlobal("__SIMKL_CLIENT_ID__") },
@@ -8,7 +8,7 @@ const env = {
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
-const episodeTitleCache = loadJsonMap("next-watch-simkl-episode-title-v0")
+const episodeTitleCache = createKeyedCache("next-watch-simkl-episode-title-v0")
 const episodesInFlight = new Map()
 let libraryInFlight = null
 
@@ -156,12 +156,12 @@ async function searchByTitle(title, year, type) {
 async function getEpisodeTitle(showId, season, episode) {
   if (!showId || season == null || episode == null) return null
   const key = `${showId}:${season}:${episode}`
-  if (episodeTitleCache[key] !== undefined) return episodeTitleCache[key]
+  const cached = await episodeTitleCache.get(key)
+  if (cached) return cached.value
   const episodes = await fetchEpisodesOnce(showId)
   const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
   const title = match?.title || null
-  episodeTitleCache[key] = title
-  persistJsonMap("next-watch-simkl-episode-title-v0", episodeTitleCache)
+  await episodeTitleCache.set(key, title)
   return title
 }
 
@@ -190,7 +190,6 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    if (typeof localStorage !== "undefined") localStorage.removeItem("next-watch-access-token")
     await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
     if (typeof window !== "undefined") startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
@@ -255,16 +254,6 @@ function requireGlobal(key) {
   const value = globalThis[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function loadJsonMap(key) {
-  if (typeof localStorage === "undefined") return {}
-  try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
-}
-
-function persistJsonMap(key, map) {
-  if (typeof localStorage === "undefined") return
-  try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 
 function normalizeItem(raw) {

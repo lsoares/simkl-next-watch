@@ -1,4 +1,7 @@
-.claude/
+.claude/*
+!.claude/hooks/
+!.claude/hooks/**
+!.claude/settings.json
 .superpowers/
 .DS_Store
 config.local.js

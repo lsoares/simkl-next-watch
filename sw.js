@@ -1,5 +1,5 @@
 import { idbGet, idbSet } from "./src/idbStore.js"
-import * as userLibrary from "./src/userLibraryRepository.js"
+import { catalog } from "./src/catalog.js"
 
 const CACHE = "next-watch-v8"
 const SHELL = [
@@ -71,9 +71,10 @@ self.addEventListener("fetch", (e) => {
 })
 
 async function checkNewEpisodes() {
-  let shows
+  let c, shows
   try {
-    shows = (await userLibrary.getWatchingShows()).items
+    c = await catalog()
+    shows = (await c.getWatchingShows()).items
   } catch {
     return
   }
@@ -90,9 +91,9 @@ async function checkNewEpisodes() {
     if (!grew || remaining > 1) continue
 
     let ep = show.nextEpisode
-    if (!ep) {
+    if (!ep && c.getProgress) {
       const key = show.ids?.slug || show.ids?.trakt || show.ids?.simkl
-      const progress = await userLibrary.getProgress(key).catch(() => null)
+      const progress = await c.getProgress(key).catch(() => null)
       ep = progress?.nextEpisode || null
     }
     const body = ep

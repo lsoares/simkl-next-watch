@@ -2,10 +2,18 @@ import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("adds an unwatched similar pick to the watchlist from the similar dialog", async ({ page, simkl, tmdb, ai, intro, similar, aiPicks }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("next-watch-ai-provider", "gemini")
-      localStorage.setItem("next-watch-ai-key-gemini", "apiAiKey")
-    })
+    await page.addInitScript(() => new Promise((resolve, reject) => {
+      const open = indexedDB.open("next-watch", 1)
+      open.onupgradeneeded = () => open.result.createObjectStore("kv")
+      open.onerror = () => reject(open.error)
+      open.onsuccess = () => {
+        const tx = open.result.transaction("kv", "readwrite")
+        tx.objectStore("kv").put("gemini", "aiProvider")
+        tx.objectStore("kv").put("apiAiKey", "aiKey:gemini")
+        tx.oncomplete = resolve
+        tx.onerror = () => reject(tx.error)
+      }
+    }))
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()

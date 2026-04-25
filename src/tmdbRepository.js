@@ -1,6 +1,7 @@
+import { createKeyedCache } from "./cacheClient.js"
+
 const imageBase = "https://image.tmdb.org/t/p/w342"
-const cacheStorageKey = "next-watch-tmdb-poster-v1"
-const cache = loadJsonMap(cacheStorageKey)
+const cache = createKeyedCache("next-watch-tmdb-poster-v1")
 const inFlight = new Map()
 
 export const tmdbRepository = {
@@ -26,18 +27,17 @@ async function getPosterByTitle(title, year, type) {
 }
 
 async function lookup(key, fetchFn) {
-  if (cache[key] !== undefined) return cache[key]
+  const cached = await cache.get(key)
+  if (cached) return cached.value
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
       const path = await fetchFn()
       const url = path ? `${imageBase}${path}` : ""
-      cache[key] = url
-      persistJsonMap(cacheStorageKey, cache)
+      await cache.set(key, url)
       return url
     } catch {
-      cache[key] = ""
-      persistJsonMap(cacheStorageKey, cache)
+      await cache.set(key, "")
       return ""
     } finally {
       inFlight.delete(key)
@@ -78,14 +78,6 @@ function requireGlobal(key) {
   const value = window[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function loadJsonMap(key) {
-  try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
-}
-
-function persistJsonMap(key, map) {
-  try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 
 function slugify(s) {

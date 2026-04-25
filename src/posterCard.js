@@ -1,5 +1,3 @@
-import { tmdbRepository } from "./tmdbRepository.js"
-
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
@@ -130,36 +128,6 @@ class PosterCard extends HTMLElement {
     this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"))
     this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); })
     this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("more-like-this"); })
-
-    this._hydratePosterIfNeeded()
-  }
-
-  _hydratePosterIfNeeded() {
-    const item = this.item
-    if (item.posterUrl) return
-    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
-    this._hydratePoster()
-  }
-
-  async _hydratePoster() {
-    const item = this.item
-    if (!item || item.posterUrl) return
-    const type = item.type
-    const tmdbUrl = (item.ids?.tmdb || item.ids?.imdb)
-      ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type })
-      : await tmdbRepository.getPosterByTitle(item.title, item.year, type)
-    const url = tmdbUrl || item.posterFallbackUrl || ""
-    if (!url || this.item !== item) return
-    item.posterUrl = url
-    const oldPoster = this.querySelector(".poster")
-    if (!oldPoster) return this.refresh()
-    const img = document.createElement("img")
-    img.className = "poster poster--hydrating"
-    img.alt = item.title || ""
-    img.loading = "lazy"
-    img.draggable = false
-    img.src = url
-    oldPoster.replaceWith(img)
   }
 }
 
