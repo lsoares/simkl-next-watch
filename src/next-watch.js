@@ -875,6 +875,7 @@ function initDockEffect(row) {
   }
 
   async function syncNotifsButtonVisibility() {
+    if (!el.notifsBtn) return
     if (!isLoggedIn()) { el.notifsBtn.hidden = true; return }
     if (!("serviceWorker" in navigator)) { el.notifsBtn.hidden = true; return }
     const reg = await navigator.serviceWorker.ready
@@ -890,7 +891,7 @@ function initDockEffect(row) {
     if (!("periodicSync" in reg)) { showToast("Periodic sync not supported.", true); return }
     try {
       await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 12 * 60 * 60 * 1000 })
-      el.notifsBtn.hidden = true
+      if (el.notifsBtn) el.notifsBtn.hidden = true
       showToast("Notifications enabled. Chrome decides when sync fires.")
     } catch (err) {
       showToast(`Couldn't enable notifications: ${err.message}`, true)
@@ -910,7 +911,7 @@ function initDockEffect(row) {
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
   el.aiKeyBtn.addEventListener("click", openAiSettings)
-  el.notifsBtn.addEventListener("click", enableNotifs)
+  el.notifsBtn?.addEventListener("click", enableNotifs)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
