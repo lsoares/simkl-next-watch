@@ -1,13 +1,14 @@
 import { test } from "../test.js"
 
 test.describe("Simkl", () => {
-  test("marks the next episode of a watching TV show", async ({ page, simkl, intro, next }) => {
+  test("marks the next episode of a watching TV show", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
+    await tmdb.usePosters(1)
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "watching", next_to_watch: "S05E01",
       watched_episodes_count: 46, total_episodes_count: 62,
     }])
@@ -25,7 +26,7 @@ test.describe("Simkl", () => {
     await next.expectAddSeriesLinksTo("https://simkl.com/search/?type=tv")
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "watching", next_to_watch: "S05E02",
       watched_episodes_count: 47, total_episodes_count: 62,
     }])

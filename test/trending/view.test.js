@@ -30,16 +30,17 @@ test.describe("Simkl", () => {
     await trending.expectViewAllSeriesLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today&not_in_list=true")
   })
 
-  test("watchlist items show a trending badge in the next view", async ({ page, simkl, intro, next }) => {
+  test("watchlist items show a trending badge in the next view", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
+    await tmdb.usePosters(1)
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
-    await simkl.useTrendingTv({ today: [{ title: "Breaking Bad", ids: { simkl_id: 11121 } }] })
+    await simkl.useTrendingTv({ today: [{ title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } }] })
     await simkl.useTrendingMovies()
     await simkl.useAuthorize()
     await page.goto("/")

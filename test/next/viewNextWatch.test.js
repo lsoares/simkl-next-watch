@@ -39,6 +39,7 @@ test.describe("Simkl", () => {
     await simkl.useSyncShows([
       { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } }, status: "plantowatch" },
       { show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999 } }, status: "plantowatch" },
+      { show: { title: "Blade Runner 2099", year: null, first_aired: null, ids: { simkl_id: 1993939 } }, status: "plantowatch" },
     ])
     await simkl.useSyncMovies([
       { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } }, status: "plantowatch" },
@@ -53,6 +54,7 @@ test.describe("Simkl", () => {
     await next.expectShowIsPresent("Severance")
     await next.expectShowIsPresent("The Matrix")
     await next.expectShowIsAbsent("Unreleased Show")
+    await next.expectShowIsAbsent("Blade Runner 2099")
     await next.expectShowIsAbsent("Avatar Fire and Ash")
   })
 })

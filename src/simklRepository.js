@@ -282,7 +282,12 @@ function normalizeItem(raw) {
     runtime: media.runtime || 0,
     rating: simklRating ?? null,
     status: normalizeStatus(raw.status),
-    release_status: (media.year && media.year > new Date().getFullYear()) || (type === "movie" && !media.runtime) ? "unreleased" : undefined,
+    release_status:
+      (type === "tv" && !media.year && !releaseDate) ||
+      (releaseDate && new Date(releaseDate).getTime() > Date.now()) ||
+      (type === "movie" && !media.runtime) ||
+      (media.year && media.year > new Date().getFullYear())
+        ? "unreleased" : undefined,
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/` : "",
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
