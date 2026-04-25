@@ -964,9 +964,6 @@ function initDockEffect(row) {
 
   // ── Boot ──
 
-  if (readStorage(STORAGE.accessToken) && !readStorage(STORAGE.provider)) {
-    clearAllStorage()
-  }
   const bootToken = readStorage(STORAGE.accessToken)
   const bootProvider = readStorage(STORAGE.provider)
   await Promise.all([

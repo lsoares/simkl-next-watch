@@ -1,4 +1,4 @@
-import { createCacheClient } from "./cacheClient.js"
+import { createCacheClient, createKeyedCache } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import { clearAuth } from "./auth.js"
 
@@ -8,14 +8,9 @@ const env = {
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
-const episodeTitleCache = createCacheClient("next-watch-simkl-episode-title-v0")
-let episodeTitleMapPromise = null
+const episodeTitleCache = createKeyedCache("next-watch-simkl-episode-title-v0")
 const episodesInFlight = new Map()
 let libraryInFlight = null
-
-function getEpisodeTitleMap() {
-  return (episodeTitleMapPromise ??= episodeTitleCache.read().then((m) => m || {}))
-}
 
 export const simklRepository = {
   name: "Simkl",
@@ -161,13 +156,12 @@ async function searchByTitle(title, year, type) {
 async function getEpisodeTitle(showId, season, episode) {
   if (!showId || season == null || episode == null) return null
   const key = `${showId}:${season}:${episode}`
-  const map = await getEpisodeTitleMap()
-  if (key in map) return map[key]
+  const cached = await episodeTitleCache.get(key)
+  if (cached) return cached.value
   const episodes = await fetchEpisodesOnce(showId)
   const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
   const title = match?.title || null
-  map[key] = title
-  await episodeTitleCache.write(map)
+  await episodeTitleCache.set(key, title)
   return title
 }
 

@@ -1,13 +1,8 @@
-import { createCacheClient } from "./cacheClient.js"
+import { createKeyedCache } from "./cacheClient.js"
 
 const imageBase = "https://image.tmdb.org/t/p/w342"
-const cache = createCacheClient("next-watch-tmdb-poster-v1")
-let mapPromise = null
+const cache = createKeyedCache("next-watch-tmdb-poster-v1")
 const inFlight = new Map()
-
-function getMap() {
-  return (mapPromise ??= cache.read().then((m) => m || {}))
-}
 
 export const tmdbRepository = {
   getPosterByIds,
@@ -32,19 +27,17 @@ async function getPosterByTitle(title, year, type) {
 }
 
 async function lookup(key, fetchFn) {
-  const map = await getMap()
-  if (key in map) return map[key]
+  const cached = await cache.get(key)
+  if (cached) return cached.value
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
       const path = await fetchFn()
       const url = path ? `${imageBase}${path}` : ""
-      map[key] = url
-      await cache.write(map)
+      await cache.set(key, url)
       return url
     } catch {
-      map[key] = ""
-      await cache.write(map)
+      await cache.set(key, "")
       return ""
     } finally {
       inFlight.delete(key)

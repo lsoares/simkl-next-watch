@@ -1,4 +1,4 @@
-import { createCacheClient } from "./cacheClient.js"
+import { createCacheClient, createKeyedCache } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import { clearAuth } from "./auth.js"
 
@@ -11,12 +11,7 @@ const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
 const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v0")
-const progressCache = createCacheClient("next-watch-trakt-progress-v0")
-let progressMapPromise = null
-
-function getProgressMap() {
-  return (progressMapPromise ??= progressCache.read().then((m) => m || {}))
-}
+const progressCache = createKeyedCache("next-watch-trakt-progress-v0")
 let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
@@ -91,14 +86,13 @@ async function getWatchingShows() {
 async function getProgress(traktIdOrSlug) {
   if (!traktIdOrSlug) return null
   const key = String(traktIdOrSlug)
-  const map = await getProgressMap()
-  if (key in map) return map[key]
+  const cached = await progressCache.get(key)
+  if (cached) return cached.value
   try {
     const data = await authFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
     const next = data?.next_episode
     const result = next ? { nextEpisode: { season: next.season, episode: next.number }, title: next.title || "" } : null
-    map[key] = result
-    await progressCache.write(map)
+    await progressCache.set(key, result)
     return result
   } catch {
     return null
@@ -171,9 +165,7 @@ async function markWatched(item) {
       await watchlistShowsCache.write(null)
     }
     await watchedShowsCache.write(null)
-    const map = await getProgressMap()
-    delete map[item.ids?.slug || item.ids?.trakt]
-    await progressCache.write(map)
+    await progressCache.delete(item.ids?.slug || item.ids?.trakt)
     return
   }
   await authPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })

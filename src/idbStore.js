@@ -18,6 +18,15 @@ export async function idbSet(key, value) {
   })
 }
 
+export async function idbDelete(key) {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite").objectStore(STORE).delete(key)
+    tx.onsuccess = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
 export function idbClearAll() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.deleteDatabase("next-watch")
