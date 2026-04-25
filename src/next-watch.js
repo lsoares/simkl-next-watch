@@ -640,7 +640,26 @@ function initDockEffect(row) {
     card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
     card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
     row.appendChild(frag)
+    hydratePoster(card)
     return card
+  }
+
+  async function hydratePoster(card) {
+    const item = card.item
+    if (!item || item.posterUrl) return
+    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
+    const url = await (await catalog()).getPoster(item)
+    if (!url || card.item !== item) return
+    item.posterUrl = url
+    const oldPoster = card.querySelector(".poster")
+    if (!oldPoster) return card.refresh()
+    const img = document.createElement("img")
+    img.className = "poster poster--hydrating"
+    img.alt = item.title || ""
+    img.loading = "lazy"
+    img.draggable = false
+    img.src = url
+    oldPoster.replaceWith(img)
   }
 
   const dialogStack = []
@@ -741,6 +760,7 @@ function initDockEffect(row) {
     if (!resolved) {
       card.item = { ...card.item, url: c.getSearchUrl(title) }
       card.refresh()
+      hydratePoster(card)
       return
     }
     if (resolved.release_status === "unreleased") {
@@ -749,6 +769,7 @@ function initDockEffect(row) {
     }
     card.item = asSeriesPoster(mergeWithLibrary(resolved, libraryIndex))
     card.refresh()
+    hydratePoster(card)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())
