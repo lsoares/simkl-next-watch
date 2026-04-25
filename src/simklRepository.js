@@ -1,4 +1,5 @@
 import { createCacheClient } from "./cacheClient.js"
+import { clearAuth } from "./userLibraryRepository.js"
 
 const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
 const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
@@ -184,6 +185,7 @@ async function authFetch(path, options = {}) {
   })
   if (res.status === 401) {
     localStorage.removeItem("next-watch-access-token")
+    clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
     startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }

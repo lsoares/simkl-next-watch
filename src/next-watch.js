@@ -2,6 +2,8 @@ import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
+import * as userLibrary from "./userLibraryRepository.js"
+import { idbClearAll } from "./idbStore.js"
 
 function mediaRepository() {
   return localStorage.getItem("next-watch-provider") === "trakt" ? traktRepository : simklRepository
@@ -91,6 +93,7 @@ function clearAllStorage() {
   for (const storage of [localStorage, sessionStorage]) {
     Object.keys(storage).forEach((k) => { if (k.startsWith("next-watch-")) storage.removeItem(k) })
   }
+  idbClearAll().catch((err) => console.warn("IDB clear failed:", err))
 }
 
 function getAccessToken() { return readStorage(STORAGE.accessToken); }
@@ -179,6 +182,7 @@ function initDockEffect(row) {
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"),
+    notifsBtn: $("notifsBtn"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
@@ -260,7 +264,7 @@ function initDockEffect(row) {
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await mediaRepository().markWatched(item)
+      await userLibrary.markWatched(item)
       showToast(toastFrag("Marked ", snapshot, " watched."))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -306,10 +310,9 @@ function initDockEffect(row) {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
     el.spinner.hidden = false
     try {
-      const u = mediaRepository()
       const [ws, wls, wlm, cs, cm] = await Promise.all([
-        u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
-        u.getCompletedShows(), u.getCompletedMovies(),
+        userLibrary.getWatchingShows(), userLibrary.getWatchlistShows(), userLibrary.getWatchlistMovies(),
+        userLibrary.getCompletedShows(), userLibrary.getCompletedMovies(),
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
@@ -348,7 +351,7 @@ function initDockEffect(row) {
     if (!keys.length || !btn) return
     btn.disabled = true
     try {
-      await mediaRepository().addToWatchlist(item)
+      await userLibrary.addToWatchlist(item)
       const plantowatchItem = { ...item, status: "plantowatch" }
       for (const key of keys) libraryIndex.set(key, plantowatchItem)
       card.item = plantowatchItem
@@ -379,16 +382,15 @@ function initDockEffect(row) {
 
   function needsProgressHydration(item) {
     if (!item) return false
-    return !!(mediaRepository().getProgress && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt))
+    return !!(userLibrary.hasProgress() && item.type === "tv" && item.status === "watching" && (item.ids?.slug || item.ids?.trakt))
   }
 
   async function hydrateProgress(card) {
     const item = card.item
     if (!item) return
-    const getProgress = mediaRepository().getProgress
-    if (!getProgress) return
+    if (!userLibrary.hasProgress()) return
     const key = item.ids.slug || item.ids.trakt
-    const progress = await getProgress(key)
+    const progress = await userLibrary.getProgress(key)
     if (progress === null) {
       card.closest(".row-item")?.remove()
       return
@@ -609,10 +611,9 @@ function initDockEffect(row) {
   // ── Recommendation Flow ──
 
   async function gatherLibrary() {
-    const u = mediaRepository()
     const [ws, wls, wlm, cs, cm] = await Promise.all([
-      u.getWatchingShows(), u.getWatchlistShows(), u.getWatchlistMovies(),
-      u.getCompletedShows(), u.getCompletedMovies(),
+      userLibrary.getWatchingShows(), userLibrary.getWatchlistShows(), userLibrary.getWatchlistMovies(),
+      userLibrary.getCompletedShows(), userLibrary.getCompletedMovies(),
     ])
     return {
       shows: [...ws.items, ...wls.items, ...cs.items],
@@ -828,6 +829,7 @@ function initDockEffect(row) {
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
+      userLibrary.setAuth(token.access_token, provider).catch((err) => console.warn("IDB auth mirror failed:", err))
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
       hydrateUI()
@@ -868,7 +870,31 @@ function initDockEffect(row) {
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
+    syncNotifsButtonVisibility()
     syncViewportMetrics()
+  }
+
+  async function syncNotifsButtonVisibility() {
+    if (!isLoggedIn()) { el.notifsBtn.hidden = true; return }
+    if (!("serviceWorker" in navigator)) { el.notifsBtn.hidden = true; return }
+    const reg = await navigator.serviceWorker.ready
+    if (!("periodicSync" in reg)) { el.notifsBtn.hidden = true; return }
+    const tags = await reg.periodicSync.getTags()
+    el.notifsBtn.hidden = tags.includes("next-watch-check-episodes")
+  }
+
+  async function enableNotifs() {
+    const permission = await Notification.requestPermission()
+    if (permission !== "granted") { showToast("Notifications denied.", true); return }
+    const reg = await navigator.serviceWorker.ready
+    if (!("periodicSync" in reg)) { showToast("Periodic sync not supported.", true); return }
+    try {
+      await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 12 * 60 * 60 * 1000 })
+      el.notifsBtn.hidden = true
+      showToast("Notifications enabled. Chrome decides when sync fires.")
+    } catch (err) {
+      showToast(`Couldn't enable notifications: ${err.message}`, true)
+    }
   }
 
   // ── Wire events ──
@@ -884,6 +910,7 @@ function initDockEffect(row) {
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
   el.aiKeyBtn.addEventListener("click", openAiSettings)
+  el.notifsBtn.addEventListener("click", enableNotifs)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {

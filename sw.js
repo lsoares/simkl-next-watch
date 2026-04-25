@@ -18,6 +18,25 @@ self.addEventListener("activate", (e) => {
   self.clients.claim()
 })
 
+self.addEventListener("periodicsync", (e) => {
+  if (e.tag === "next-watch-check-episodes") {
+    e.waitUntil(self.registration.showNotification("Next Watch", {
+      body: `Sync fired at ${new Date().toLocaleTimeString()}`,
+      icon: "./assets/icon.png",
+      tag: "next-watch-sync-test",
+    }))
+  }
+})
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close()
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((all) => {
+    const existing = all.find((c) => c.url.includes(self.registration.scope))
+    if (existing) return existing.focus()
+    return self.clients.openWindow("./#next")
+  }))
+})
+
 self.addEventListener("fetch", (e) => {
   const { request } = e
   if (request.method !== "GET") return
