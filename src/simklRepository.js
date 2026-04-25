@@ -283,7 +283,7 @@ function normalizeItem(raw) {
     rating: simklRating ?? null,
     status: normalizeStatus(raw.status),
     release_status:
-      (type === "tv" && !media.year && !releaseDate) ||
+      (type === "tv" && raw.total_episodes_count > 0 && raw.total_episodes_count === raw.not_aired_episodes_count) ||
       (releaseDate && new Date(releaseDate).getTime() > Date.now()) ||
       (type === "movie" && !media.runtime) ||
       (media.year && media.year > new Date().getFullYear())

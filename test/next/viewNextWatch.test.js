@@ -39,11 +39,12 @@ test.describe("Simkl", () => {
     await simkl.useSyncShows([
       { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027 } }, status: "plantowatch" },
       { show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999 } }, status: "plantowatch" },
-      { show: { title: "Blade Runner 2099", year: null, first_aired: null, ids: { simkl_id: 1993939 } }, status: "plantowatch" },
+      { show: { title: "Blade Runner 2099", ids: { simkl_id: 1993939 } }, status: "plantowatch", total_episodes_count: 1, not_aired_episodes_count: 1 },
     ])
     await simkl.useSyncMovies([
       { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } }, status: "plantowatch" },
       { movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000 } }, status: "plantowatch" },
+      { movie: { title: "Disclosure Day", year: 2026, runtime: 120, released: "2099-06-10", ids: { simkl_id: 2437549 } }, status: "plantowatch" },
     ])
     await simkl.useSyncAnime()
     await simkl.useAuthorize()
@@ -56,6 +57,7 @@ test.describe("Simkl", () => {
     await next.expectShowIsAbsent("Unreleased Show")
     await next.expectShowIsAbsent("Blade Runner 2099")
     await next.expectShowIsAbsent("Avatar Fire and Ash")
+    await next.expectShowIsAbsent("Disclosure Day")
   })
 })
 
