@@ -261,6 +261,7 @@ function normalizeItem(raw) {
   const rawIds = media.ids || raw.ids || {}
   const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
   const imdb = rawIds.imdb || null
+  const tmdb = rawIds.tmdb || null
   const simklRating = media.ratings?.simkl?.rating
   const title = decodeSimklText(media.title) || "Unknown"
   const animeType = String(raw.anime_type || "").toLowerCase()
@@ -274,7 +275,7 @@ function normalizeItem(raw) {
   const url = buildShowUrl({ id: simkl, title, type })
   const nextEpisode = parseNextEpisode(raw.next_to_watch)
   return {
-    ids: imdb ? { simkl, imdb } : { simkl },
+    ids: { simkl, ...(imdb && { imdb }), ...(tmdb && { tmdb }) },
     id: String(simkl || ""),
     title,
     year,

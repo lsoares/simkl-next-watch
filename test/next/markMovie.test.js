@@ -5,16 +5,16 @@ test.describe("Simkl", () => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("movie", "603")
     await simkl.useSyncActivities()
     await simkl.useSyncShows()
     await simkl.useSyncMovies([{
-      movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
+      movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992, tmdb: "603" } },
       status: "plantowatch",
       added_to_watchlist_at: "2025-01-01T00:00:00Z",
     }])
     await simkl.useSyncAnime()
-    await simkl.useMarkWatchedMovie([{ ids: { simkl: 53992 } }])
+    await simkl.useMarkWatchedMovie([{ ids: { simkl: 53992, tmdb: "603" } }])
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -22,7 +22,7 @@ test.describe("Simkl", () => {
     await next.expectAddMovieLinksTo("https://simkl.com/search/?type=movies")
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncMovies([{
-      movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992 } },
+      movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992, tmdb: "603" } },
       status: "completed",
     }])
 
@@ -43,16 +43,16 @@ test.describe("Trakt", () => {
     await trakt.useRatingsMovies()
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("movie", "603")
     await trakt.useWatchlistShows()
     await trakt.useWatchedShows()
     await trakt.useDroppedShows()
     await trakt.useWatchlistMovies([{
       listed_at: "2025-01-01T00:00:00Z",
-      movie: { title: "The Matrix", year: 1999, released: "1999-03-31", ids: { trakt: 481, slug: "the-matrix-1999", imdb: "tt0133093" } },
+      movie: { title: "The Matrix", year: 1999, released: "1999-03-31", ids: { trakt: 481, slug: "the-matrix-1999", imdb: "tt0133093", tmdb: "603" } },
     }])
-    await trakt.useMarkWatchedMovie([{ ids: { trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" } }])
-    await trakt.useRemoveFromWatchlistMovie([{ ids: { trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" } }])
+    await trakt.useMarkWatchedMovie([{ ids: { trakt: 481, imdb: "tt0133093", tmdb: "603", slug: "the-matrix-1999" } }])
+    await trakt.useRemoveFromWatchlistMovie([{ ids: { trakt: 481, imdb: "tt0133093", tmdb: "603", slug: "the-matrix-1999" } }])
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")

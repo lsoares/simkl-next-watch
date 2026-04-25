@@ -5,19 +5,21 @@ test.describe("Simkl", () => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
-    await tmdb.usePosters(3)
+    await tmdb.useDetails("tv", "1396")
+    await tmdb.useDetails("movie", "27205")
+    await tmdb.useDetails("movie", "33333")
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
       status: "completed", user_rating: 9,
     }])
     await simkl.useSyncMovies([
       {
-        movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222 } },
+        movie: { title: "Inception", year: 2010, ids: { simkl_id: 22222, tmdb: "27205" } },
         status: "completed", user_rating: 8,
       },
       {
-        movie: { title: "Filler", year: 2012, ids: { simkl_id: 33333 } },
+        movie: { title: "Filler", year: 2012, ids: { simkl_id: 33333, tmdb: "33333" } },
         status: "completed", user_rating: 3,
       },
     ])
@@ -40,10 +42,10 @@ test.describe("Simkl", () => {
     await simkl.useOauthToken()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("tv", "1396")
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
@@ -65,13 +67,13 @@ test.describe("Trakt", () => {
     await trakt.useLastActivities()
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
-      show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+      show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747", tmdb: "1396" } },
       seasons: [{ number: 4, episodes: [{ number: 13, plays: 1 }] }],
     }])
     await trakt.useWatchedMovies()
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("tv", "1396")
     await trakt.useWatchlistShows()
     await trakt.useWatchlistMovies()
     await trakt.useDroppedShows()
@@ -79,7 +81,7 @@ test.describe("Trakt", () => {
       rated_at: "2024-09-12T10:57:24.000Z",
       rating: 9,
       type: "show",
-      show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747" } },
+      show: { title: "Breaking Bad", year: 2008, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747", tmdb: "1396" } },
     }])
     await trakt.useRatingsMovies()
     await trakt.useProgress("breaking-bad", { next_episode: { season: 5, number: 1, title: "Live Free or Die" } })

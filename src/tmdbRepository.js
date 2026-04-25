@@ -1,28 +1,26 @@
 import { createKeyedCache } from "./cacheClient.js"
 
-const cache = createKeyedCache("next-watch-tmdb-poster-v1")
+const cache = createKeyedCache("next-watch-tmdb-poster-v3")
 const inFlight = new Map()
 
 export const tmdbRepository = {
-  getPosterByIds,
-  getPosterByTitle,
+  find,
 }
 
-async function getPosterByIds({ tmdb, imdb, type }) {
-  if (tmdb && type) {
-    const hit = await lookup(`tmdb:${type}:${tmdb}`, () => fetchByTmdbId(type, tmdb))
-    if (hit) return hit
+async function find(item) {
+  const ids = item?.ids || {}
+  if (ids.tmdb && item.type) {
+    const r = await lookup(`tmdb:${item.type}:${ids.tmdb}`, () => fetchDetails(item.type, ids.tmdb))
+    if (r.url || r.released != null) return r
   }
-  if (imdb) {
-    const hit = await lookup(`imdb:${imdb}`, () => fetchByImdbId(imdb))
-    if (hit) return hit
+  if (ids.imdb) {
+    const r = await lookup(`imdb:${ids.imdb}`, () => fetchFindByImdb(ids.imdb))
+    if (r.url) return r
   }
-  return ""
-}
-
-async function getPosterByTitle(title, year, type) {
-  if (!title || !type) return ""
-  return lookup(`title:${slugify(title)}:${year || ""}:${type}`, () => fetchByTitle(title, year, type))
+  if (item?.title && item.type) {
+    return lookup(`title:${slugify(item.title)}:${item.year || ""}:${item.type}`, () => fetchSearch(item.type, item.title, item.year))
+  }
+  return { url: "", released: undefined }
 }
 
 async function lookup(key, fetchFn) {
@@ -31,13 +29,17 @@ async function lookup(key, fetchFn) {
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
-      const path = await fetchFn()
-      const url = path ? `https://image.tmdb.org/t/p/w342${path}` : ""
-      await cache.set(key, url)
-      return url
+      const { posterPath, released } = await fetchFn()
+      const value = {
+        url: posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : "",
+        released,
+      }
+      await cache.set(key, value)
+      return value
     } catch {
-      await cache.set(key, "")
-      return ""
+      const value = { url: "", released: undefined }
+      await cache.set(key, value)
+      return value
     } finally {
       inFlight.delete(key)
     }
@@ -46,23 +48,28 @@ async function lookup(key, fetchFn) {
   return p
 }
 
-async function fetchByTmdbId(type, id) {
+async function fetchDetails(type, id) {
   const r = await tmdbFetch(`/3/${type === "tv" ? "tv" : "movie"}/${encodeURIComponent(id)}`)
-  return r?.poster_path || ""
+  return { posterPath: r?.poster_path || "", released: hasReleased(r?.release_date || r?.first_air_date) }
 }
 
-async function fetchByImdbId(imdb) {
+async function fetchFindByImdb(imdb) {
   const r = await tmdbFetch(`/3/find/${encodeURIComponent(imdb)}?external_source=imdb_id`)
   const hit = r?.movie_results?.[0] || r?.tv_results?.[0]
-  return hit?.poster_path || ""
+  return { posterPath: hit?.poster_path || "", released: hasReleased(hit?.release_date || hit?.first_air_date) }
 }
 
-async function fetchByTitle(title, year, type) {
+async function fetchSearch(type, title, year) {
   const kind = type === "tv" ? "tv" : "movie"
   const params = new URLSearchParams({ query: title })
   if (year) params.set(kind === "tv" ? "first_air_date_year" : "year", String(year))
   const r = await tmdbFetch(`/3/search/${kind}?${params}`)
-  return r?.results?.[0]?.poster_path || ""
+  const hit = r?.results?.[0]
+  return { posterPath: hit?.poster_path || "", released: hasReleased(hit?.release_date || hit?.first_air_date) }
+}
+
+function hasReleased(date) {
+  return date ? new Date(date).getTime() <= Date.now() : undefined
 }
 
 async function tmdbFetch(path) {

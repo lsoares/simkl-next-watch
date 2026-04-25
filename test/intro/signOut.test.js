@@ -7,12 +7,12 @@ test.describe("Simkl", () => {
     await simkl.useTrendingMovies()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("tv", "1396")
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -37,12 +37,12 @@ test.describe("Trakt", () => {
     await trakt.useRatingsMovies()
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("tv", "95396")
     await trakt.useDroppedShows()
     await trakt.useWatchlistMovies()
     await trakt.useWatchlistShows([{
       listed_at: "2025-01-01T00:00:00Z",
-      show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } },
+      show: { title: "Severance", year: 2022, first_aired: "2022-02-18", aired_episodes: 19, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740", tmdb: "95396" } },
     }])
     await trakt.useAuthorize()
     await page.goto("/")

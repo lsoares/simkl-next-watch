@@ -10,10 +10,7 @@ export async function catalog() {
 }
 
 async function getPoster(item) {
-  if (!item) return ""
-  const ids = item.ids || {}
-  const tmdbUrl = (ids.tmdb || ids.imdb)
-    ? await tmdbRepository.getPosterByIds({ tmdb: ids.tmdb, imdb: ids.imdb, type: item.type })
-    : await tmdbRepository.getPosterByTitle(item.title, item.year, item.type)
-  return tmdbUrl || item.posterFallbackUrl || ""
+  if (!item) return { url: "", released: undefined }
+  const tmdb = await tmdbRepository.find(item)
+  return { url: tmdb.url || item.posterFallbackUrl || "", released: tmdb.released }
 }

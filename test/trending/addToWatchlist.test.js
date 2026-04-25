@@ -9,9 +9,9 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime()
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies({ today: [
-      { title: "Dune", year: 2021, ids: { simkl_id: 99003 } },
+      { title: "Dune", year: 2021, ids: { simkl_id: 99003, tmdb: "438631" } },
     ] })
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("movie", "438631")
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
     await simkl.useAuthorize()
     await page.goto("/")
@@ -37,7 +37,7 @@ test.describe("Trakt", () => {
     await trakt.useDroppedShows()
     await trakt.useRatingsShows()
     await trakt.useRatingsMovies()
-    await tmdb.usePosters(2)
+    await tmdb.useDetails("movie", "438631")
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod({
       daily: [{ watcher_count: 100, movie: { title: "Dune", year: 2021, ids: { imdb: "tt1160419", tmdb: 438631 } } }],

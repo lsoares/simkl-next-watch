@@ -2,15 +2,20 @@ import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   test("reopening reflects status changes, removals, and additions made on Simkl", async ({ page, simkl, tmdb, intro, next }) => {
-    await tmdb.usePosters(6)
+    await tmdb.useDetails("tv", "1396")
+    await tmdb.useDetails("tv", "4607")
+    await tmdb.useDetails("movie", "603")
+    await tmdb.useDetails("movie", "27205")
+    await tmdb.useDetails("tv", "87108")
+    await tmdb.useDetails("movie", "438631")
     await signInWithSimklLibrary(page, simkl, intro, {
       shows: [
-        { title: "Breaking Bad", year: 2008, id: 11121, status: "plantowatch" },
-        { title: "Lost", year: 2004, id: 33000, status: "plantowatch" },
+        { title: "Breaking Bad", year: 2008, id: 11121, tmdb: "1396", status: "plantowatch" },
+        { title: "Lost", year: 2004, id: 33000, tmdb: "4607", status: "plantowatch" },
       ],
       movies: [
-        { title: "The Matrix", year: 1999, id: 53992, status: "plantowatch" },
-        { title: "Inception", year: 2010, id: 22222, status: "plantowatch" },
+        { title: "The Matrix", year: 1999, id: 53992, tmdb: "603", status: "plantowatch" },
+        { title: "Inception", year: 2010, id: 22222, tmdb: "27205", status: "plantowatch" },
       ],
     })
     await next.expectShowIsPresent("Breaking Bad")
@@ -19,12 +24,12 @@ test.describe("Simkl", () => {
     await next.expectShowIsPresent("Inception")
     await publishSimklLibrary(simkl, {
       shows: [
-        { title: "Breaking Bad", year: 2008, id: 11121, status: "completed" },
-        { title: "Chernobyl", year: 2019, id: 22000, status: "plantowatch" },
+        { title: "Breaking Bad", year: 2008, id: 11121, tmdb: "1396", status: "completed" },
+        { title: "Chernobyl", year: 2019, id: 22000, tmdb: "87108", status: "plantowatch" },
       ],
       movies: [
-        { title: "The Matrix", year: 1999, id: 53992, status: "completed" },
-        { title: "Dune", year: 2021, id: 99003, status: "plantowatch" },
+        { title: "The Matrix", year: 1999, id: 53992, tmdb: "603", status: "completed" },
+        { title: "Dune", year: 2021, id: 99003, tmdb: "438631", status: "plantowatch" },
       ],
     }, "2025-02-01T00:00:00Z")
 
@@ -41,16 +46,20 @@ test.describe("Simkl", () => {
 
 test.describe("Trakt", () => {
   test("reopening the app pulls changes made on Trakt's site since last visit", async ({ page, trakt, tmdb, intro, next }) => {
-    await signInWithTraktLibrary(page, trakt, tmdb, intro, {
-      watchlistShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
-      watchlistMovies: [{ title: "The Matrix", trakt: 481, imdb: "tt0133093", slug: "the-matrix-1999" }],
+    await tmdb.useDetails("tv", "1396")
+    await tmdb.useDetails("movie", "603")
+    await tmdb.useDetails("tv", "87108")
+    await tmdb.useDetails("movie", "438631")
+    await signInWithTraktLibrary(page, trakt, intro, {
+      watchlistShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", tmdb: "1396", slug: "breaking-bad" }],
+      watchlistMovies: [{ title: "The Matrix", trakt: 481, imdb: "tt0133093", tmdb: "603", slug: "the-matrix-1999" }],
     })
     await next.expectShowIsPresent("Breaking Bad")
     await next.expectShowIsPresent("The Matrix")
     await publishTraktLibrary(trakt, {
-      watchedShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", slug: "breaking-bad" }],
-      watchlistShows: [{ title: "Chernobyl", trakt: 2000, imdb: "tt7366338", slug: "chernobyl" }],
-      watchlistMovies: [{ title: "Dune", trakt: 9999, imdb: "tt1160419", slug: "dune-2021" }],
+      watchedShows: [{ title: "Breaking Bad", trakt: 1388, imdb: "tt0903747", tmdb: "1396", slug: "breaking-bad" }],
+      watchlistShows: [{ title: "Chernobyl", trakt: 2000, imdb: "tt7366338", tmdb: "87108", slug: "chernobyl" }],
+      watchlistMovies: [{ title: "Dune", trakt: 9999, imdb: "tt1160419", tmdb: "438631", slug: "dune-2021" }],
     }, "2025-02-01T00:00:00Z")
 
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")))
@@ -75,18 +84,17 @@ async function signInWithSimklLibrary(page, simkl, intro, library) {
 
 async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
   await simkl.useSyncActivities(activityAt)
-  await simkl.useSyncShows(shows.map(({ title, year, id, status }) => ({ show: { title, year, ids: { simkl_id: id } }, status })))
-  await simkl.useSyncMovies(movies.map(({ title, year, id, status }) => ({ movie: { title, year, ids: { simkl_id: id }, runtime: 120 }, status })))
+  await simkl.useSyncShows(shows.map(({ title, year, id, tmdb, status }) => ({ show: { title, year, ids: { simkl_id: id, tmdb } }, status })))
+  await simkl.useSyncMovies(movies.map(({ title, year, id, tmdb, status }) => ({ movie: { title, year, ids: { simkl_id: id, tmdb }, runtime: 120 }, status })))
 }
 
-async function signInWithTraktLibrary(page, trakt, tmdb, intro, library) {
+async function signInWithTraktLibrary(page, trakt, intro, library) {
   await trakt.useOauthToken()
   await trakt.useWatchedMovies()
   await trakt.useRatingsShows()
   await trakt.useRatingsMovies()
   await trakt.useWatchedShowsByPeriod()
   await trakt.useWatchedMoviesByPeriod()
-  await tmdb.usePosters(4)
   await trakt.useDroppedShows()
   await publishTraktLibrary(trakt, library, "2025-01-01T00:00:00Z")
   await trakt.useAuthorize()
@@ -96,17 +104,17 @@ async function signInWithTraktLibrary(page, trakt, tmdb, intro, library) {
 
 async function publishTraktLibrary(trakt, { watchlistShows = [], watchlistMovies = [], watchedShows = [] }, activityAt) {
   await trakt.useLastActivities({ showsWatchlistedAt: activityAt, moviesWatchlistedAt: activityAt, episodesWatchedAt: activityAt })
-  await trakt.useWatchlistShows(watchlistShows.map(({ title, trakt, imdb, slug }) => ({
+  await trakt.useWatchlistShows(watchlistShows.map(({ title, trakt, imdb, tmdb, slug }) => ({
     listed_at: "2025-01-01T00:00:00Z",
-    show: { title, year: 2020, first_aired: "2020-01-01", aired_episodes: 1, ids: { trakt, slug, imdb } },
+    show: { title, year: 2020, first_aired: "2020-01-01", aired_episodes: 1, ids: { trakt, slug, imdb, tmdb } },
   })))
-  await trakt.useWatchlistMovies(watchlistMovies.map(({ title, trakt, imdb, slug }) => ({
+  await trakt.useWatchlistMovies(watchlistMovies.map(({ title, trakt, imdb, tmdb, slug }) => ({
     listed_at: "2025-01-01T00:00:00Z",
-    movie: { title, year: 2020, released: "2020-01-01", ids: { trakt, slug, imdb } },
+    movie: { title, year: 2020, released: "2020-01-01", ids: { trakt, slug, imdb, tmdb } },
   })))
-  await trakt.useWatchedShows(watchedShows.map(({ title, trakt, imdb, slug }) => ({
+  await trakt.useWatchedShows(watchedShows.map(({ title, trakt, imdb, tmdb, slug }) => ({
     last_watched_at: "2025-01-01T00:00:00Z",
-    show: { title, year: 2020, aired_episodes: 1, ids: { trakt, slug, imdb } },
+    show: { title, year: 2020, aired_episodes: 1, ids: { trakt, slug, imdb, tmdb } },
     seasons: [{ number: 1, episodes: [{ number: 1 }] }],
   })))
 }

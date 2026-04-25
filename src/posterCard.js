@@ -10,9 +10,17 @@ export function renderPoster(row, item, opts = {}) {
   if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
   if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
   row.appendChild(frag)
-  hydratePoster(card)
+  hydrationObserver.observe(card)
   return card
 }
+
+const hydrationObserver = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue
+    hydrationObserver.unobserve(entry.target)
+    hydratePoster(entry.target)
+  }
+}, { rootMargin: "200px" })
 
 export function renderSkeletons(row, count = 10) {
   row.replaceChildren()
@@ -59,7 +67,7 @@ class PosterCard extends HTMLElement {
     this._rendered = true
   }
 
-  disconnectedCallback() {}
+  disconnectedCallback() { hydrationObserver.unobserve(this) }
 
   get cardEl() { return this.querySelector(".item-card"); }
 
@@ -202,8 +210,13 @@ async function hydratePoster(card) {
   const item = card.item
   if (!item || item.posterUrl) return
   if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
-  const url = await (await catalog()).getPoster(item)
-  if (!url || card.item !== item) return
+  const { url, released } = await (await catalog()).getPoster(item)
+  if (card.item !== item) return
+  if (item.type === "movie" && (item.year || 0) >= new Date().getFullYear() && released === false) {
+    card.closest(".row-item")?.remove()
+    return
+  }
+  if (!url) return
   item.posterUrl = url
   const oldPoster = card.querySelector(".poster")
   if (!oldPoster) return card.refresh()

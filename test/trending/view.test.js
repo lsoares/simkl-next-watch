@@ -5,18 +5,20 @@ test.describe("Simkl", () => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
     await simkl.useTrendingTv({ today: [
-      { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
-      { title: "The Rookie", year: 2018, ids: { simkl_id: 99001 }, ratings: { simkl: { rating: 8.5 } } },
-      { title: "The Boys", year: 2019, ids: { simkl_id: 99002 } },
+      { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
+      { title: "The Rookie", year: 2018, ids: { simkl_id: 99001, tmdb: "79744" }, ratings: { simkl: { rating: 8.5 } } },
+      { title: "The Boys", year: 2019, ids: { simkl_id: 99002, tmdb: "76479" } },
     ] })
     await simkl.useTrendingMovies()
-    await tmdb.usePosters(3)
+    await tmdb.useDetails("tv", "1396")
+    await tmdb.useDetails("tv", "79744")
+    await tmdb.useDetails("tv", "76479")
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
@@ -33,14 +35,14 @@ test.describe("Simkl", () => {
   test("watchlist items show a trending badge in the next view", async ({ page, simkl, tmdb, intro, next }) => {
     await simkl.useOauthToken()
     await simkl.useSyncActivities()
-    await tmdb.usePosters(1)
+    await tmdb.useDetails("tv", "1396")
     await simkl.useSyncShows([{
-      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } },
+      show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
       status: "plantowatch",
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
-    await simkl.useTrendingTv({ today: [{ title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121 } }] })
+    await simkl.useTrendingTv({ today: [{ title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } }] })
     await simkl.useTrendingMovies()
     await simkl.useAuthorize()
     await page.goto("/")
@@ -50,9 +52,9 @@ test.describe("Simkl", () => {
     await next.expectShowHasTrendingBadge("Breaking Bad")
   })
 
-  for (const { period, title } of [
-    { period: "week", title: "Severance" },
-    { period: "month", title: "House of the Dragon" },
+  for (const { period, title, titleTmdb } of [
+    { period: "week", title: "Severance", titleTmdb: "95396" },
+    { period: "month", title: "House of the Dragon", titleTmdb: "94997" },
   ]) {
     test(`the ${period} tab shows that period's items`, async ({ page, simkl, tmdb, intro, trending }) => {
       await simkl.useOauthToken()
@@ -61,12 +63,13 @@ test.describe("Simkl", () => {
       await simkl.useSyncMovies()
       await simkl.useSyncAnime()
       await simkl.useTrendingTv({
-        today: [{ title: "The Rookie", year: 2018, ids: { simkl_id: 99001 } }],
-        week: [{ title: "Severance", year: 2022, ids: { simkl_id: 99010 } }],
-        month: [{ title: "House of the Dragon", year: 2022, ids: { simkl_id: 99020 } }],
+        today: [{ title: "The Rookie", year: 2018, ids: { simkl_id: 99001, tmdb: "79744" } }],
+        week: [{ title: "Severance", year: 2022, ids: { simkl_id: 99010, tmdb: "95396" } }],
+        month: [{ title: "House of the Dragon", year: 2022, ids: { simkl_id: 99020, tmdb: "94997" } }],
       })
       await simkl.useTrendingMovies()
-      await tmdb.usePosters(3)
+      await tmdb.useDetails("tv", "79744")
+      await tmdb.useDetails("tv", titleTmdb)
       await simkl.useAuthorize()
       await page.goto("/")
       await intro.signIn("simkl")
@@ -85,7 +88,9 @@ test.describe("Trakt", () => {
     await trakt.useLastActivities()
     await trakt.useWatchedShows()
     await trakt.useWatchedMovies()
-    await tmdb.usePosters(3)
+    await tmdb.useDetails("tv", "95396")
+    await tmdb.useDetails("tv", "79744")
+    await tmdb.useDetails("movie", "438631")
     await trakt.useWatchlistShows()
     await trakt.useWatchlistMovies()
     await trakt.useDroppedShows()
@@ -93,13 +98,13 @@ test.describe("Trakt", () => {
     await trakt.useRatingsMovies()
     await trakt.useWatchedShowsByPeriod({
       daily: [
-        { watcher_count: 5000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740" } } },
-        { watcher_count: 3200, show: { title: "The Rookie", year: 2018, ids: { trakt: 99001, slug: "the-rookie", imdb: "tt7587890" } } },
+        { watcher_count: 5000, show: { title: "Severance", year: 2022, ids: { trakt: 153027, slug: "severance", imdb: "tt11280740", tmdb: "95396" } } },
+        { watcher_count: 3200, show: { title: "The Rookie", year: 2018, ids: { trakt: 99001, slug: "the-rookie", imdb: "tt7587890", tmdb: "79744" } } },
       ],
     })
     await trakt.useWatchedMoviesByPeriod({
       daily: [
-        { watcher_count: 8000, movie: { title: "Dune", year: 2021, ids: { trakt: 9999, slug: "dune-2021", imdb: "tt1160419" } } },
+        { watcher_count: 8000, movie: { title: "Dune", year: 2021, ids: { trakt: 9999, slug: "dune-2021", imdb: "tt1160419", tmdb: "438631" } } },
       ],
     })
     await trakt.useAuthorize()
