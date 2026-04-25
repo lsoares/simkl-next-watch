@@ -1,3 +1,53 @@
+import { catalog } from "./catalog.js"
+
+export function renderPoster(row, item, opts = {}) {
+  const { loggedIn = false, fade = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { frag, card } = makeRowItem()
+  card.item = item
+  card.loggedIn = loggedIn
+  card.fade = fade
+  if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
+  if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
+  if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
+  row.appendChild(frag)
+  hydratePoster(card)
+  return card
+}
+
+export function renderSkeletons(row, count = 10) {
+  row.replaceChildren()
+  for (let i = 0; i < count; i++) row.appendChild(makeRowItem().frag)
+}
+
+export function appendAddMore(row, { href, icon, label }) {
+  const frag = document.getElementById("tpl-add-more").content.cloneNode(true)
+  const anchor = frag.querySelector(".add-more-card")
+  anchor.href = href
+  anchor.setAttribute("aria-label", label)
+  anchor.querySelector(".add-more-plus").textContent = icon
+  anchor.querySelector(".add-more-label").textContent = label
+  row.appendChild(frag)
+}
+
+export function asSeriesPoster(item) {
+  return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
+}
+
+export function isUnstarted(item, type) {
+  if (type === "tv") {
+    return item.status === "plantowatch" || (item.watched_episodes_count === 0 && item.nextEpisode?.episode === 1)
+  }
+  return item.status === "plantowatch"
+}
+
+export function availableEpisodesLeft(show) {
+  const total = show.total_episodes_count || 0
+  const watched = show.watched_episodes_count || 0
+  return total > 0 ? Math.max(0, total - watched) : Infinity
+}
+
+// ── Internal ──
+
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
@@ -134,26 +184,37 @@ class PosterCard extends HTMLElement {
   }
 }
 
-let posterIdSeq = 0
-customElements.define("poster-card", PosterCard)
-
 class PostersRow extends HTMLElement {}
+
+customElements.define("poster-card", PosterCard)
 customElements.define("posters-row", PostersRow)
 
-export function isUnstarted(item, type) {
-  if (type === "tv") {
-    return item.status === "plantowatch" || (item.watched_episodes_count === 0 && item.nextEpisode?.episode === 1)
-  }
-  return item.status === "plantowatch"
+let posterIdSeq = 0
+
+function makeRowItem() {
+  const frag = document.getElementById("tpl-row-item").content.cloneNode(true)
+  const card = document.createElement("poster-card")
+  frag.firstElementChild.appendChild(card)
+  return { frag, card }
 }
 
-export function availableEpisodesLeft(show) {
-  const total = show.total_episodes_count || 0
-  const watched = show.watched_episodes_count || 0
-  return total > 0 ? Math.max(0, total - watched) : Infinity
+async function hydratePoster(card) {
+  const item = card.item
+  if (!item || item.posterUrl) return
+  if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
+  const url = await (await catalog()).getPoster(item)
+  if (!url || card.item !== item) return
+  item.posterUrl = url
+  const oldPoster = card.querySelector(".poster")
+  if (!oldPoster) return card.refresh()
+  const img = document.createElement("img")
+  img.className = "poster"
+  img.alt = item.title || ""
+  img.loading = "lazy"
+  img.draggable = false
+  img.src = url
+  oldPoster.replaceWith(img)
 }
-
-// ── Internal helpers ──
 
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")

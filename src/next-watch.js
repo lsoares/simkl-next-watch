@@ -1,7 +1,7 @@
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
-import { isUnstarted, availableEpisodesLeft } from "./posterCard.js"
+import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asSeriesPoster } from "./posterCard.js"
 import { catalog } from "./catalog.js"
 import { getAuth, setAuth, setClientIds } from "./auth.js"
 import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
@@ -84,48 +84,6 @@ let loggedInState = false
 async function refreshLoggedIn() { loggedInState = !!(await getAuth())?.token }
 function isLoggedIn() { return loggedInState }
 
-// ── Dock effect (visual, self-contained) ──
-
-function initDockEffect(row) {
-  const MAX_EXTRA = 0.5, RADIUS = 2.5
-  let baseW = 0
-
-  function computeBase() {
-    if (window.matchMedia("(max-width: 680px)").matches) {
-      baseW = row.clientHeight * 2 / 3
-      row.style.setProperty("--dock-h", row.clientHeight + "px")
-    } else {
-      baseW = (Math.min(window.innerWidth, 680) - 64) / 3
-    }
-  }
-
-  function apply(cx) {
-    if (!baseW) return
-    const cards = [...row.querySelectorAll(".item-card")]
-    const rects = cards.map((c) => c.getBoundingClientRect())
-    cards.forEach((card, i) => {
-      const dist = Math.abs(cx - (rects[i].left + rects[i].width / 2))
-      const t = Math.max(0, 1 - dist / (baseW * RADIUS))
-      card.style.setProperty("--dock-scale", (1 + MAX_EXTRA * t * t).toFixed(3))
-    })
-  }
-
-  function reset() {
-    for (const c of row.querySelectorAll(".item-card")) c.style.removeProperty("--dock-scale");
-  }
-
-  requestAnimationFrame(() => {
-    computeBase()
-    if (window.matchMedia("(max-width: 680px)").matches) {
-      row.addEventListener("scroll", () => { const r = row.getBoundingClientRect(); apply(r.left + r.width / 2); }, { passive: true })
-    } else {
-      row.addEventListener("mousemove", (e) => apply(e.clientX))
-      row.addEventListener("mouseleave", reset)
-    }
-    window.addEventListener("resize", () => { computeBase(); reset(); }, { passive: true })
-  })
-}
-
 // ── App (DOM + state + wiring) ──
 
 (async function app() {
@@ -137,25 +95,14 @@ function initDockEffect(row) {
     if (isError) p.style.color = "#fca5a5"
     container.replaceChildren(p)
   }
-  const makeRowItem = () => {
-    const frag = tpl("tpl-row-item")
-    const card = document.createElement("poster-card")
-    frag.firstElementChild.appendChild(card)
-    return { frag, card }
-  }
-  const fillPosterSkeletons = (row, count = 10) => {
-    row.replaceChildren()
-    for (let i = 0; i < count; i++) row.appendChild(makeRowItem().frag)
-  }
-  const appendAddMoreTile = (rowEl, { href, icon, label }) => {
-    const frag = tpl("tpl-add-more")
-    const anchor = frag.querySelector(".add-more-card")
-    anchor.href = href
-    anchor.setAttribute("aria-label", label)
-    anchor.querySelector(".add-more-plus").textContent = icon
-    anchor.querySelector(".add-more-label").textContent = label
-    rowEl.appendChild(frag)
-  }
+  const showPoster = (row, item, opts = {}) =>
+    renderPoster(row, item, {
+      loggedIn: isLoggedIn(),
+      onMarkWatched: (item, card) => markWatched(item, card.cardEl),
+      onAddWatchlist: (_, card) => addToWatchlist(card),
+      onMoreLike: (item) => openSimilar(item),
+      ...opts,
+    })
   const el = {
     topBar: $("topBar"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),
@@ -228,9 +175,8 @@ function initDockEffect(row) {
   async function renderRow(rowEl, items, type) {
     const c = await catalog()
     rowEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(rowEl, mergeWithLibrary(item, libraryIndex)))
-    appendAddMoreTile(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
-    initDockEffect(rowEl)
+    items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
+    appendAddMore(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeProgressHydration(rowEl, c)
   }
@@ -295,8 +241,8 @@ function initDockEffect(row) {
 
   async function loadSuggestions() {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
-    if (!el.tvRow.children.length) fillPosterSkeletons(el.tvRow)
-    if (!el.movieRow.children.length) fillPosterSkeletons(el.movieRow)
+    if (!el.tvRow.children.length) renderSkeletons(el.tvRow)
+    if (!el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {
       const c = await catalog()
       const [ws, wls, wlm, cs, cm] = await Promise.all([
@@ -332,8 +278,8 @@ function initDockEffect(row) {
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     const c = await catalog()
     containerEl.replaceChildren()
-    items.forEach((item) => renderPosterCard(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
-    appendAddMoreTile(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
+    items.forEach((item) => showPoster(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
+    appendAddMore(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
   }
 
   async function addToWatchlist(card) {
@@ -431,8 +377,8 @@ function initDockEffect(row) {
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     await idbSet("trendingPeriod", period)
-    fillPosterSkeletons(el.trendingTvContent)
-    fillPosterSkeletons(el.trendingMoviesContent)
+    renderSkeletons(el.trendingTvContent)
+    renderSkeletons(el.trendingMoviesContent)
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([(await catalog()).getTrending(period), libraryReady])
       const filterFn = (item) => item.release_status !== "unreleased" && !libraryLookup(libraryIndex, item)
@@ -442,8 +388,6 @@ function initDockEffect(row) {
       else setEmpty(el.trendingTvContent, "No results.")
       if (movies.length) await renderDiscoveryRow(el.trendingMoviesContent, movies, "movie", { period })
       else setEmpty(el.trendingMoviesContent, "No results.")
-      initDockEffect(el.trendingTvContent)
-      initDockEffect(el.trendingMoviesContent)
     } catch (err) {
       console.error(err)
       setEmpty(el.trendingTvContent, err.message, true)
@@ -459,7 +403,7 @@ function initDockEffect(row) {
   let similarObserver = null
 
   async function renderSimilar() {
-    fillPosterSkeletons(el.similarGrid)
+    renderSkeletons(el.similarGrid)
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
     const all = [...shows, ...movies]
@@ -501,7 +445,7 @@ function initDockEffect(row) {
   function appendSimilarBatch() {
     const slice = similarPool.slice(similarCursor, similarCursor + SIMILAR_BATCH)
     similarCursor += slice.length
-    slice.forEach((item) => renderPosterCard(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
+    slice.forEach((item) => showPoster(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
   }
 
   function observeSimilarTail() {
@@ -616,42 +560,6 @@ function initDockEffect(row) {
 
   // ── AI Result Rendering ──
 
-
-  function asSeriesPoster(item) {
-    return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
-  }
-
-  function renderPosterCard(row, item, { fade = false } = {}) {
-    const { frag, card } = makeRowItem()
-    card.item = item
-    card.loggedIn = isLoggedIn()
-    card.fade = fade
-    card.addEventListener("poster:mark-watched", () => markWatched(card.item, card.cardEl))
-    card.addEventListener("poster:add-watchlist", () => addToWatchlist(card))
-    card.addEventListener("poster:more-like-this", () => openSimilar(card.item))
-    row.appendChild(frag)
-    hydratePoster(card)
-    return card
-  }
-
-  async function hydratePoster(card) {
-    const item = card.item
-    if (!item || item.posterUrl) return
-    if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
-    const url = await (await catalog()).getPoster(item)
-    if (!url || card.item !== item) return
-    item.posterUrl = url
-    const oldPoster = card.querySelector(".poster")
-    if (!oldPoster) return card.refresh()
-    const img = document.createElement("img")
-    img.className = "poster"
-    img.alt = item.title || ""
-    img.loading = "lazy"
-    img.draggable = false
-    img.src = url
-    oldPoster.replaceWith(img)
-  }
-
   const dialogStack = []
 
   function openMood(mood) {
@@ -704,7 +612,7 @@ function initDockEffect(row) {
     const entry = dialogStack.at(-1)
     el.aiDialogTitle.replaceChildren(typeof entry.title === "string" ? entry.title : entry.title.cloneNode(true))
     el.aiDialogBack.hidden = dialogStack.length <= 1
-    fillPosterSkeletons(el.aiDialogResults, 10)
+    renderSkeletons(el.aiDialogResults)
     try {
       const suggestions = await entry.fetch()
       if (dialogStack.at(-1) !== entry) return
@@ -715,7 +623,7 @@ function initDockEffect(row) {
         return
       }
       el.aiDialogResults.replaceChildren()
-      items.forEach((item) => renderPosterCard(el.aiDialogResults, asSeriesPoster(item), { fade: true }))
+      items.forEach((item) => showPoster(el.aiDialogResults, asSeriesPoster(item), { fade: true }))
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {
