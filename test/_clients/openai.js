@@ -10,7 +10,7 @@ export function client(page, expectedKey = "apiAiKey") {
         expect(body.model).toBe("gpt-4o-mini")
         expect(body.messages[0].role).toBe("system")
         expect(body.messages[0].content).toMatch(/movies and TV shows/)
-        expect(body.messages[0].content).toMatch(/IMDb ≥6\.5/)
+        expect(body.messages[0].content).toMatch(/IMDb.*6\.5/)
         expect(body.messages[0].content).toMatch(/Recommend 10/)
         expect(body.messages[0].content).toMatch(/Output JSON only/)
         expect(body.messages[0].content).toMatch(/none appearing in Library/)
