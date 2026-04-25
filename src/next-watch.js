@@ -143,7 +143,7 @@ function initDockEffect(row) {
 
 // ── App (DOM + state + wiring) ──
 
-(function app() {
+(async function app() {
   const $ = (id) => document.getElementById(id)
   const tpl = (id) => $(id).content.cloneNode(true)
   const setEmpty = (container, msg, isError = false) => {
@@ -364,19 +364,9 @@ function initDockEffect(row) {
     }
   }
 
-  let progressObserver = null
   function observeProgressHydration(rowEl) {
-    if (!progressObserver) {
-      progressObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          progressObserver.unobserve(entry.target)
-          hydrateProgress(entry.target)
-        }
-      }, { rootMargin: "200px" })
-    }
     rowEl.querySelectorAll("poster-card").forEach((c) => {
-      if (needsProgressHydration(c.item)) progressObserver.observe(c)
+      if (needsProgressHydration(c.item)) hydrateProgress(c)
     })
   }
 
@@ -829,7 +819,7 @@ function initDockEffect(row) {
       const token = await userData.exchangeOAuthCode(code)
       writeStorage(STORAGE.accessToken, token.access_token)
       writeStorage(STORAGE.provider, provider)
-      userLibrary.setAuth(token.access_token, provider).catch((err) => console.warn("IDB auth mirror failed:", err))
+      await userLibrary.setAuth(token.access_token, provider)
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
       hydrateUI()
@@ -970,16 +960,21 @@ function initDockEffect(row) {
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
-  userLibrary.setClientIds({
-    simkl: window.__SIMKL_CLIENT_ID__ || "",
-    trakt: window.__TRAKT_CLIENT_ID__ || "",
-  }).catch(() => {})
 
   // ── Boot ──
 
   if (readStorage(STORAGE.accessToken) && !readStorage(STORAGE.provider)) {
     clearAllStorage()
   }
+  const bootToken = readStorage(STORAGE.accessToken)
+  const bootProvider = readStorage(STORAGE.provider)
+  await Promise.all([
+    userLibrary.setClientIds({
+      simkl: window.__SIMKL_CLIENT_ID__ || "",
+      trakt: window.__TRAKT_CLIENT_ID__ || "",
+    }),
+    bootToken && bootProvider ? userLibrary.setAuth(bootToken, bootProvider) : Promise.resolve(),
+  ]).catch(() => {})
   hydrateUI()
   const savedPeriod = readStorage(STORAGE.trendingPeriod)
   if (savedPeriod) {
@@ -989,7 +984,7 @@ function initDockEffect(row) {
   if (savedMinRating) {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
-  handleOAuthCallback()
+  await handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
   showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : isLoggedIn() ? "next" : "homepage")
   if (isLoggedIn()) loadSuggestions()
