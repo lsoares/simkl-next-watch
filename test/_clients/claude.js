@@ -11,7 +11,7 @@ export function client(page, expectedKey = "apiAiKey") {
         expect(body.model).toBe("claude-sonnet-4-20250514")
         expect(body.system).toMatch(/movies and TV shows/)
         expect(body.system).toMatch(/IMDb ≥6\.5/)
-        expect(body.system).toMatch(/Recommend 9/)
+        expect(body.system).toMatch(/Recommend 10/)
         expect(body.system).toMatch(/Output JSON only/)
         expect(body.system).toMatch(/none appearing in Library/)
         expect(body.system).toMatch(/Mood is the primary filter/)

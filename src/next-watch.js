@@ -701,7 +701,7 @@ function initDockEffect(row) {
     const entry = dialogStack.at(-1)
     el.aiDialogTitle.replaceChildren(typeof entry.title === "string" ? entry.title : entry.title.cloneNode(true))
     el.aiDialogBack.hidden = dialogStack.length <= 1
-    fillPosterSkeletons(el.aiDialogResults, 9)
+    fillPosterSkeletons(el.aiDialogResults, 10)
     try {
       const suggestions = await entry.fetch()
       if (dialogStack.at(-1) !== entry) return
