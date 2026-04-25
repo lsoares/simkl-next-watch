@@ -96,8 +96,10 @@ async function checkNewEpisodes() {
     const grew = prev != null && show.airedCount > prev
     if (!grew || remaining > 1) continue
 
-    const body = show.nextEpisode
-      ? `New episode S${pad(show.nextEpisode.season)}E${pad(show.nextEpisode.episode)} aired`
+    const ep = show.nextEpisode
+      ?? (auth.provider === "trakt" ? await fetchTraktNextEpisode(show, auth.token, clientId) : null)
+    const body = ep
+      ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
       : "New episode aired"
     await self.registration.showNotification(show.title, {
       body,
@@ -142,7 +144,45 @@ async function fetchSimklWatching(token, clientId) {
 }
 
 async function fetchTraktWatching(token, clientId) {
-  const res = await fetch("https://api.trakt.tv/sync/watched/shows?extended=full", {
+  const [watchedRes, droppedRes] = await Promise.all([
+    traktFetch("/sync/watched/shows?extended=full", token, clientId),
+    traktFetch("/users/hidden/dropped?limit=1000", token, clientId),
+  ])
+  const droppedIds = new Set((droppedRes || []).map((h) => h.show?.ids?.trakt).filter(Boolean))
+  return (watchedRes || [])
+    .map((entry) => {
+      const watched = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
+      const ids = entry.show?.ids || {}
+      const aired = entry.show?.aired_episodes ?? 0
+      const id = ids.slug || ids.trakt || ""
+      return {
+        id,
+        traktId: ids.trakt,
+        slug: ids.slug,
+        title: entry.show?.title || "Unknown",
+        airedCount: aired,
+        watchedCount: watched,
+        nextEpisode: null,
+        poster: null,
+      }
+    })
+    .filter((s) => s.id && s.watchedCount > 0 && !droppedIds.has(s.traktId))
+}
+
+async function fetchTraktNextEpisode(show, token, clientId) {
+  const key = show.slug || show.traktId
+  if (!key) return null
+  try {
+    const data = await traktFetch(`/shows/${encodeURIComponent(key)}/progress/watched`, token, clientId)
+    const next = data?.next_episode
+    return next ? { season: next.season, episode: next.number } : null
+  } catch {
+    return null
+  }
+}
+
+async function traktFetch(path, token, clientId) {
+  const res = await fetch(`https://api.trakt.tv${path}`, {
     headers: {
       "trakt-api-key": clientId,
       "trakt-api-version": "2",
@@ -151,23 +191,7 @@ async function fetchTraktWatching(token, clientId) {
     },
   })
   if (!res.ok) throw new Error(`Trakt ${res.status}`)
-  const data = await res.json()
-  return (data || [])
-    .map((entry) => {
-      const watched = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
-      const ids = entry.show?.ids || {}
-      const aired = entry.show?.aired_episodes ?? 0
-      const id = ids.slug || ids.trakt || ""
-      return {
-        id,
-        title: entry.show?.title || "Unknown",
-        airedCount: aired,
-        watchedCount: watched,
-        nextEpisode: null,
-        poster: null,
-      }
-    })
-    .filter((s) => s.id && s.watchedCount > 0)
+  return res.json()
 }
 
 function normalizeStatus(s) {
