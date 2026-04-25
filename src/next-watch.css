@@ -447,16 +447,6 @@
 
         .attribution { padding: 8px 24px max(8px, env(safe-area-inset-bottom)); }
 
-        /* AI dialog: size cards to fill the dialog height across 2 rows */
-        #aiDialogResults {
-          flex: 1;
-          min-height: 0;
-          grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr));
-          grid-auto-columns: auto;
-        }
-        #aiDialogResults .row-item { width: auto; height: 100%; }
-        #aiDialogResults .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
-        #aiDialogResults .row-item .poster-skeleton { width: auto; height: 100%; }
       }
 
       @media (hover: hover) and (pointer: fine) {
@@ -895,6 +885,21 @@
   width: 100%;
   aspect-ratio: 2 / 3;
   height: auto;
+}
+
+#aiDialogResults {
+  flex: 1;
+  min-height: 0;
+  grid-auto-flow: row;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: none;
+  grid-auto-rows: auto;
+  grid-auto-columns: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: auto;
+  scroll-snap-type: none;
+  padding-right: 0;
 }
 
 .poster-skeleton {

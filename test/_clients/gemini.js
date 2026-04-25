@@ -11,7 +11,7 @@ export function client(page, expectedKey = "apiAiKey") {
         const text = body.contents?.[0]?.parts?.[0]?.text
         expect(text).toMatch(/movies and TV shows/)
         expect(text).toMatch(/IMDb ≥6\.5/)
-        expect(text).toMatch(/Recommend 10/)
+        expect(text).toMatch(/Recommend 9/)
         expect(text).toMatch(/Output JSON only/)
         expect(text).toMatch(/none appearing in Library/)
         expect(text).toMatch(/Mood is the primary filter/)
