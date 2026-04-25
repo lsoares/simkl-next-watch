@@ -428,34 +428,34 @@
         posters-row { height: 100%; }
         .row-item { height: 100%; width: auto; }
         .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
-        #tvRow .row-item, #movieRow .row-item { flex-shrink: 0; width: max(130px, calc((100vw - 44px) / 2.4)); }
-        #tvRow .row-item .item-card, #movieRow .row-item .item-card { width: 100%; height: 100%; }
+        #tvRow .row-item, #movieRow .row-item, #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
+        #tvRow .row-item .item-card, #movieRow .row-item .item-card, #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
 
         /* Trending */
         .trending-toolbar { flex-shrink: 0; margin-bottom: 10px; }
         #trendingGrid { flex: 1; min-height: 0; height: auto; }
-        #trendingGrid .row-item { flex-shrink: 0; width: max(140px, calc((100vw - 44px) / 2.6)); height: 100%; }
-        #trendingGrid .row-item .item-card { width: 100%; height: 100%; }
 
         /* Mood: scroll only when content overflows on tiny phones */
         #aiContent { overflow-y: auto; }
 
-        /* Similar: bound the grid so its own overflow-y clips cleanly */
         .similar-toolbar { flex-shrink: 0; }
-        #similarGrid { flex: 1; min-height: 0; grid-auto-columns: calc((100vw - 44px) / 2); }
         #similarStats { flex-shrink: 0; }
 
         .attribution { padding: 8px 24px max(8px, env(safe-area-inset-bottom)); }
 
-        /* AI dialog: size cards to fill the dialog height across 2 rows */
+        /* Similar grid + AI dialog: size cards to fill the available height across 2 rows */
+        #similarGrid,
         #aiDialogResults {
           flex: 1;
           min-height: 0;
           grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr));
           grid-auto-columns: auto;
         }
+        #similarGrid .row-item,
         #aiDialogResults .row-item { width: auto; height: 100%; }
+        #similarGrid .row-item .item-card,
         #aiDialogResults .row-item .item-card { width: auto; height: 100%; aspect-ratio: 2/3; }
+        #similarGrid .row-item .poster-skeleton,
         #aiDialogResults .row-item .poster-skeleton { width: auto; height: 100%; }
       }
 
