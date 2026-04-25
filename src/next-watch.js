@@ -145,7 +145,7 @@ function initDockEffect(row) {
   }
   const fillPosterSkeletons = (row, count = 10) => {
     row.replaceChildren()
-    for (let i = 0; i < count; i++) row.appendChild(tpl("tpl-poster-skeleton"))
+    for (let i = 0; i < count; i++) row.appendChild(makeRowItem().frag)
   }
   const appendAddMoreTile = (rowEl, { href, icon, label }) => {
     const frag = tpl("tpl-add-more")
@@ -175,7 +175,7 @@ function initDockEffect(row) {
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarReload: $("similarReload"), similarGrid: $("similarGrid"),
     similarStats: $("similarStats"), similarRatingTabs: $("similarRatingTabs"),
-    spinner: $("loadingSpinner"), toast: $("toast"), installBtn: $("installButton"),
+    toast: $("toast"), installBtn: $("installButton"),
     attribution: $("attribution"), attributionProviderLink: $("attributionProviderLink"),
   }
 
@@ -294,7 +294,8 @@ function initDockEffect(row) {
 
   async function loadSuggestions() {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
-    el.spinner.hidden = false
+    if (!el.tvRow.children.length) fillPosterSkeletons(el.tvRow)
+    if (!el.movieRow.children.length) fillPosterSkeletons(el.movieRow)
     try {
       const c = await catalog()
       const [ws, wls, wlm, cs, cm] = await Promise.all([
@@ -319,8 +320,6 @@ function initDockEffect(row) {
     } catch (err) {
       resolveLibraryReady()
       handleError(err)
-    } finally {
-      el.spinner.hidden = true
     }
   }
 
@@ -428,8 +427,8 @@ function initDockEffect(row) {
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     await idbSet("trendingPeriod", period)
-    el.trendingTvContent.replaceChildren(tpl("tpl-spinner"))
-    el.trendingMoviesContent.replaceChildren(tpl("tpl-spinner"))
+    fillPosterSkeletons(el.trendingTvContent)
+    fillPosterSkeletons(el.trendingMoviesContent)
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([(await catalog()).getTrending(period), libraryReady])
       const filterFn = (item) => item.release_status !== "unreleased" && !libraryLookup(libraryIndex, item)
@@ -456,6 +455,7 @@ function initDockEffect(row) {
   let similarObserver = null
 
   async function renderSimilar() {
+    fillPosterSkeletons(el.similarGrid)
     const { shows, movies } = await gatherLibrary()
     renderSimilarStats(shows, movies)
     const all = [...shows, ...movies]
@@ -788,7 +788,6 @@ function initDockEffect(row) {
     const error = params.get("error")
     if (!code && !error) return
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`)
-    el.spinner.hidden = false
     try {
       const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
       const userData = provider === "trakt" ? traktRepository : simklRepository
@@ -818,8 +817,6 @@ function initDockEffect(row) {
       sessionStorage.removeItem("next-watch-oauth-provider")
       handleError(err)
       showView("next")
-    } finally {
-      el.spinner.hidden = true
     }
   }
 

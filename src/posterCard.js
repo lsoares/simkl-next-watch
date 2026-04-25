@@ -24,7 +24,10 @@ class PosterCard extends HTMLElement {
 
   _render() {
     const { item, loggedIn } = this
-    if (!item) return
+    if (!item) {
+      this.innerHTML = `<div class="item-card poster-skeleton"></div>`
+      return
+    }
 
     const status = item.status
     const watched = status === "completed"

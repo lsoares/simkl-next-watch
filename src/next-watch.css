@@ -498,36 +498,6 @@
         box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
       }
 
-      @keyframes spin { to { transform: rotate(360deg); } }
-      .spinner {
-        flex: 0 0 16px;
-        width: 16px;
-        height: 16px;
-        box-sizing: border-box;
-        border: 2px solid rgba(255,255,255,0.18);
-        border-top-color: var(--accent);
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-        pointer-events: none;
-        opacity: 1;
-        transition: opacity 250ms ease;
-      }
-      .spinner[hidden] {
-        display: block !important;
-        visibility: hidden;
-        opacity: 0;
-        transition: opacity 250ms ease, visibility 0s linear 250ms;
-      }
-      .spinner-inline {
-        display: block;
-        margin: 24px auto;
-        width: 32px;
-        height: 32px;
-        border: 3px solid var(--muted, #888);
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-      }
       #installButton.hidden { display: none; }
 
       .empty {
