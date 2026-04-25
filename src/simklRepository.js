@@ -8,9 +8,14 @@ const env = {
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
-const episodeTitleCache = loadJsonMap("next-watch-simkl-episode-title-v0")
+const episodeTitleCache = createCacheClient("next-watch-simkl-episode-title-v0")
+let episodeTitleMapPromise = null
 const episodesInFlight = new Map()
 let libraryInFlight = null
+
+function getEpisodeTitleMap() {
+  return (episodeTitleMapPromise ??= episodeTitleCache.read().then((m) => m || {}))
+}
 
 export const simklRepository = {
   name: "Simkl",
@@ -156,12 +161,13 @@ async function searchByTitle(title, year, type) {
 async function getEpisodeTitle(showId, season, episode) {
   if (!showId || season == null || episode == null) return null
   const key = `${showId}:${season}:${episode}`
-  if (episodeTitleCache[key] !== undefined) return episodeTitleCache[key]
+  const map = await getEpisodeTitleMap()
+  if (key in map) return map[key]
   const episodes = await fetchEpisodesOnce(showId)
   const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
   const title = match?.title || null
-  episodeTitleCache[key] = title
-  persistJsonMap("next-watch-simkl-episode-title-v0", episodeTitleCache)
+  map[key] = title
+  await episodeTitleCache.write(map)
   return title
 }
 
@@ -255,16 +261,6 @@ function requireGlobal(key) {
   const value = globalThis[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function loadJsonMap(key) {
-  if (typeof localStorage === "undefined") return {}
-  try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
-}
-
-function persistJsonMap(key, map) {
-  if (typeof localStorage === "undefined") return
-  try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 
 function normalizeItem(raw) {

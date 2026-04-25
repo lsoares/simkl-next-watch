@@ -11,7 +11,12 @@ const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
 const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v0")
-const progressCache = loadProgressCache()
+const progressCache = createCacheClient("next-watch-trakt-progress-v0")
+let progressMapPromise = null
+
+function getProgressMap() {
+  return (progressMapPromise ??= progressCache.read().then((m) => m || {}))
+}
 let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
@@ -86,13 +91,14 @@ async function getWatchingShows() {
 async function getProgress(traktIdOrSlug) {
   if (!traktIdOrSlug) return null
   const key = String(traktIdOrSlug)
-  if (progressCache[key] !== undefined) return progressCache[key]
+  const map = await getProgressMap()
+  if (key in map) return map[key]
   try {
     const data = await authFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
     const next = data?.next_episode
     const result = next ? { nextEpisode: { season: next.season, episode: next.number }, title: next.title || "" } : null
-    progressCache[key] = result
-    persistProgressCache()
+    map[key] = result
+    await progressCache.write(map)
     return result
   } catch {
     return null
@@ -165,8 +171,9 @@ async function markWatched(item) {
       await watchlistShowsCache.write(null)
     }
     await watchedShowsCache.write(null)
-    delete progressCache[item.ids?.slug || item.ids?.trakt]
-    persistProgressCache()
+    const map = await getProgressMap()
+    delete map[item.ids?.slug || item.ids?.trakt]
+    await progressCache.write(map)
     return
   }
   await authPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
@@ -307,16 +314,6 @@ function loadWatchedShowsCached() {
     }
   })()
   return watchedShowsInFlight
-}
-
-function loadProgressCache() {
-  if (typeof localStorage === "undefined") return {}
-  try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
-}
-
-function persistProgressCache() {
-  if (typeof localStorage === "undefined") return
-  try { localStorage.setItem("next-watch-trakt-progress-v0", JSON.stringify(progressCache)) } catch {}
 }
 
 function requireGlobal(key) {

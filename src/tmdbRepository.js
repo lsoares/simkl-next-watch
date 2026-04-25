@@ -1,7 +1,13 @@
+import { createCacheClient } from "./cacheClient.js"
+
 const imageBase = "https://image.tmdb.org/t/p/w342"
-const cacheStorageKey = "next-watch-tmdb-poster-v1"
-const cache = loadJsonMap(cacheStorageKey)
+const cache = createCacheClient("next-watch-tmdb-poster-v1")
+let mapPromise = null
 const inFlight = new Map()
+
+function getMap() {
+  return (mapPromise ??= cache.read().then((m) => m || {}))
+}
 
 export const tmdbRepository = {
   getPosterByIds,
@@ -26,18 +32,19 @@ async function getPosterByTitle(title, year, type) {
 }
 
 async function lookup(key, fetchFn) {
-  if (cache[key] !== undefined) return cache[key]
+  const map = await getMap()
+  if (key in map) return map[key]
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
       const path = await fetchFn()
       const url = path ? `${imageBase}${path}` : ""
-      cache[key] = url
-      persistJsonMap(cacheStorageKey, cache)
+      map[key] = url
+      await cache.write(map)
       return url
     } catch {
-      cache[key] = ""
-      persistJsonMap(cacheStorageKey, cache)
+      map[key] = ""
+      await cache.write(map)
       return ""
     } finally {
       inFlight.delete(key)
@@ -78,14 +85,6 @@ function requireGlobal(key) {
   const value = window[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function loadJsonMap(key) {
-  try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
-}
-
-function persistJsonMap(key, map) {
-  try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 
 function slugify(s) {

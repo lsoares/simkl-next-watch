@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+echo '{"async": true, "asyncTimeout": 300000}'
+
 cd "$CLAUDE_PROJECT_DIR"
 
 npm install --silent --no-audit --no-fund
