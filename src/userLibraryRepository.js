@@ -10,6 +10,10 @@ export async function setAuth(token, provider) {
   await idbSet("auth", { token, provider })
 }
 
+export async function setClientIds(clientIds) {
+  await idbSet("clientIds", clientIds)
+}
+
 export async function clearAuth() {
   await idbSet("auth", null)
 }
