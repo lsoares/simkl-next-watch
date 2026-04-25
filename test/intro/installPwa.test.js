@@ -12,19 +12,6 @@ test("install button appears when the browser signals the PWA is installable", a
   await intro.expectInstallButtonIsVisible()
 })
 
-test("install button hides once the app has been installed", async ({ page, simkl, intro }) => {
-  await signInToSimkl(page, simkl, intro)
-  await page.evaluate(() => {
-    const e = new Event("beforeinstallprompt")
-    e.prompt = () => Promise.resolve()
-    window.dispatchEvent(e)
-  })
-  await intro.expectInstallButtonIsVisible()
-
-  await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")))
-
-  await intro.expectInstallButtonIsHidden()
-})
 
 test("installing the PWA registers periodic-sync notifications and shows a confirmation toast", async ({ page, simkl, intro }) => {
   await page.addInitScript(notificationsStub)
@@ -32,6 +19,7 @@ test("installing the PWA registers periodic-sync notifications and shows a confi
 
   await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")))
 
+  await intro.expectInstallButtonIsHidden()
   await intro.expectToastMessage(/notifications on/i)
 })
 
