@@ -1,6 +1,5 @@
 import { createKeyedCache } from "./cacheClient.js"
 
-const imageBase = "https://image.tmdb.org/t/p/w342"
 const cache = createKeyedCache("next-watch-tmdb-poster-v1")
 const inFlight = new Map()
 
@@ -33,7 +32,7 @@ async function lookup(key, fetchFn) {
   const p = (async () => {
     try {
       const path = await fetchFn()
-      const url = path ? `${imageBase}${path}` : ""
+      const url = path ? `https://image.tmdb.org/t/p/w342${path}` : ""
       await cache.set(key, url)
       return url
     } catch {

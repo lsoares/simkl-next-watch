@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npx playwright test",
     "build": "node build.js",
-    "expose": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s .",
+    "dev": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s .",
     "prepare": "husky"
   },
   "repository": {

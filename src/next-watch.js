@@ -8,8 +8,6 @@ import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
-const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
-
 function byAiPickRelevance(a, b) {
   const aWatched = !!a.last_watched_at
   const bWatched = !!b.last_watched_at
@@ -307,8 +305,10 @@ function initDockEffect(row) {
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
-      tvItems = [...[...ws.items].sort(byWatchingPriority), ...[...wls.items].sort(byAddedDate)]
-        .filter((i) => i.release_status !== "unreleased")
+      tvItems = [
+        ...ws.items.toSorted(byWatchingPriority),
+        ...wls.items.toSorted((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)),
+      ].filter((i) => i.release_status !== "unreleased")
       movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
         .map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
       libraryIndex = collectLibraryIndex(data)
