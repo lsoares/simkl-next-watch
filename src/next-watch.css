@@ -640,6 +640,8 @@
         border-radius: 4px;
         font-size: 0.78rem;
       }
+      body.logged-in .view-teaser { display: none; }
+      body:not(.logged-in) .view-content { display: none; }
       .view-teaser {
         position: relative;
         min-height: 70vh;

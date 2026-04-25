@@ -445,13 +445,6 @@ function initDockEffect(row) {
     })
   }
 
-  function hydrateTrendingView() {
-    const loggedIn = isLoggedIn()
-    el.trendingSetup.hidden = loggedIn
-    el.trendingContent.hidden = !loggedIn
-    if (loggedIn) loadTrending()
-  }
-
   async function loadTrending() {
     const period = el.trendingPeriodTabs.querySelector(".range-tab.active")?.dataset.period || "today"
     writeStorage(STORAGE.trendingPeriod, period)
@@ -476,23 +469,6 @@ function initDockEffect(row) {
   }
 
   // ── AI ──
-
-  function hydrateAiView() {
-    const loggedIn = isLoggedIn()
-    el.aiSetup.hidden = loggedIn
-    el.aiContent.hidden = !loggedIn
-    if (!loggedIn) return
-    el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
-    syncAiKeyLink()
-  }
-
-  function hydrateSimilarView() {
-    const loggedIn = isLoggedIn()
-    el.similarSetup.hidden = loggedIn
-    el.similarContent.hidden = !loggedIn
-    if (!loggedIn) return
-    libraryReady.then(() => renderSimilar())
-  }
 
   const SIMILAR_BATCH = 20
   let similarPool = []
@@ -810,17 +786,17 @@ function initDockEffect(row) {
   function showView(name) {
     currentView = name
     const views = {
-      homepage: { view: el.homepageView, nav: null, hydrate: () => {} },
-      next: { view: el.nextView, nav: el.navNext, hydrate: hydrateNextView },
-      trending: { view: el.trendingView, nav: el.navTrending, hydrate: hydrateTrendingView },
-      similar: { view: el.similarView, nav: el.navSimilar, hydrate: hydrateSimilarView },
-      mood: { view: el.aiView, nav: el.navAi, hydrate: hydrateAiView },
+      homepage: { view: el.homepageView, nav: null },
+      next: { view: el.nextView, nav: el.navNext },
+      trending: { view: el.trendingView, nav: el.navTrending, onShow: () => isLoggedIn() && loadTrending() },
+      similar: { view: el.similarView, nav: el.navSimilar, onShow: () => isLoggedIn() && !similarPool.length && libraryReady.then(renderSimilar) },
+      mood: { view: el.aiView, nav: el.navAi },
     }
     for (const [key, { view, nav }] of Object.entries(views)) {
       view.hidden = key !== name
       if (nav) nav.classList.toggle("active-nav", key === name)
     }
-    views[name].hydrate()
+    views[name].onShow?.()
     const hash = name === "homepage" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
@@ -875,14 +851,9 @@ function initDockEffect(row) {
 
   // ── UI hydration ──
 
-  function hydrateNextView() {
-    const loggedIn = isLoggedIn()
-    el.nextSetup.hidden = loggedIn
-    el.nextContent.hidden = !loggedIn
-  }
-
   function hydrateUI() {
     const loggedIn = isLoggedIn()
+    document.body.classList.toggle("logged-in", loggedIn)
     el.topBar.hidden = false
     el.topBar.classList.toggle("logged-out", !loggedIn)
     el.aiProviderSelect.value = readStorage(STORAGE.aiProvider) || "groq"
@@ -897,7 +868,6 @@ function initDockEffect(row) {
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
-    hydrateNextView()
     syncViewportMetrics()
   }
 

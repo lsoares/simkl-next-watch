@@ -38,7 +38,7 @@
     <nav class="top-bar" id="topBar" hidden>
       <div class="top-bar-scroll">
         <a id="navHome" class="tiny-link tiny-link-home" href="./" aria-label="Home" hidden>⌂</a>
-        <a id="navNext" class="tiny-link active-nav" href="#next">next</a>
+        <a id="navNext" class="tiny-link" href="#next">next</a>
         <a id="navTrending" class="tiny-link" href="#trending">trending</a>
         <a id="navSimilar" class="tiny-link" href="#similar">similar</a>
         <a id="navAi" class="tiny-link" href="#mood">mood</a>
@@ -67,14 +67,14 @@
 
       <!-- Next view -->
       <div id="nextView" role="region" aria-label="Next" hidden>
-        <div id="nextSetup" class="view-teaser" hidden>
+        <div id="nextSetup" class="view-teaser">
           <img class="teaser-bg" src="./assets/teaser-next.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
             <p>Sign in to see your next episode or movie.</p>
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
-        <div id="nextContent" hidden>
+        <div id="nextContent" class="view-content">
           <p class="view-hint">What's next: your ongoing shows and watchlist, <span class="view-hint-term" title="Shows with one episode left come first (shortest first), then the rest by most recently watched, then watchlist shows (oldest added first). Movies are shuffled on purpose, so no title stays buried.">intelligently</span> sorted.</p>
           <div class="suggestions-grid">
             <div class="media-section">
@@ -89,14 +89,14 @@
 
       <!-- Trending view -->
       <div id="trendingView" role="region" aria-label="Trending" hidden>
-        <div id="trendingSetup" class="view-teaser" hidden>
+        <div id="trendingSetup" class="view-teaser">
           <img class="teaser-bg" src="./assets/teaser-trending.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
             <p>Sign in to save trending shows to your watchlist.</p>
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
-        <div id="trendingContent">
+        <div id="trendingContent" class="view-content">
           <p class="view-hint">What's trending right now; hiding titles already in your library.</p>
           <div class="trending-toolbar">
             <div class="range-tabs" id="trendingPeriodTabs">
@@ -118,14 +118,14 @@
 
       <!-- Similar view -->
       <div id="similarView" role="region" aria-label="Similar" hidden>
-        <div id="similarSetup" class="view-teaser" hidden>
+        <div id="similarSetup" class="view-teaser">
           <img class="teaser-bg" src="./assets/teaser-similar.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
             <p>Sign in to find titles similar to what you've rated.</p>
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
-        <div id="similarContent" hidden>
+        <div id="similarContent" class="view-content">
           <p class="view-hint">Your favorite titles, shuffled. Pick one to find more like it.</p>
           <div class="similar-toolbar">
             <div class="range-tabs" id="similarRatingTabs" role="group" aria-label="Minimum rating">
@@ -144,14 +144,14 @@
 
       <!-- AI view -->
       <div id="aiView" role="region" aria-label="Mood" hidden>
-        <div id="aiSetup" class="view-teaser" hidden>
+        <div id="aiSetup" class="view-teaser">
           <img class="teaser-bg" src="./assets/teaser-mood.jpg" alt="" aria-hidden="true" />
           <div class="view-teaser-cta">
             <p>Sign in to get picks tuned to your ratings.</p>
             <div class="app-intro-actions" data-signin-ctas></div>
           </div>
         </div>
-        <div id="aiContent">
+        <div id="aiContent" class="view-content">
         <p class="view-hint">Pick a mood and we'll suggest titles based on your favorite titles.</p>
         <div class="ai-prompts" id="aiPrompts">
           <button class="ai-prompt-btn" type="button" data-gloss="warm, low-stakes, comforting; nothing bleak or violent"><span class="ai-prompt-icon" aria-hidden="true">🛋️</span><span class="ai-prompt-label">Cozy night in</span></button>
