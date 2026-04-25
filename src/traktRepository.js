@@ -247,7 +247,6 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    if (typeof localStorage !== "undefined") localStorage.removeItem("next-watch-access-token")
     await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
     if (typeof window !== "undefined") startOAuth()
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })

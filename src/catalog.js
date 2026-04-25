@@ -4,8 +4,7 @@ import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
 
 export async function catalog() {
-  const ls = typeof localStorage !== "undefined" ? localStorage.getItem("next-watch-provider") : null
-  const provider = ls || (await idbGet("auth"))?.provider
+  const provider = (await idbGet("auth"))?.provider
   const repo = provider === "trakt" ? traktRepository : simklRepository
   return { ...repo, getPoster }
 }
