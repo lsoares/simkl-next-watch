@@ -11,9 +11,7 @@ class PosterCard extends HTMLElement {
     this._rendered = true
   }
 
-  disconnectedCallback() {
-    posterObserver?.unobserve(this)
-  }
+  disconnectedCallback() {}
 
   get cardEl() { return this.querySelector(".item-card"); }
 
@@ -133,14 +131,14 @@ class PosterCard extends HTMLElement {
     this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); })
     this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("more-like-this"); })
 
-    this._maybeObservePoster()
+    this._hydratePosterIfNeeded()
   }
 
-  _maybeObservePoster() {
+  _hydratePosterIfNeeded() {
     const item = this.item
-    if (item.posterUrl) return posterObserver?.unobserve(this)
+    if (item.posterUrl) return
     if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
-    getPosterObserver().observe(this)
+    this._hydratePoster()
   }
 
   async _hydratePoster() {
@@ -165,19 +163,7 @@ class PosterCard extends HTMLElement {
   }
 }
 
-let posterObserver = null
 let posterIdSeq = 0
-function getPosterObserver() {
-  if (posterObserver) return posterObserver
-  posterObserver = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue
-      posterObserver.unobserve(entry.target)
-      entry.target._hydratePoster()
-    }
-  }, { rootMargin: "200px" })
-  return posterObserver
-}
 customElements.define("poster-card", PosterCard)
 
 class PostersRow extends HTMLElement {}

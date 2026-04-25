@@ -72,12 +72,9 @@ export const test = base.extend({
     await use(page)
     await page.evaluate(() => new Promise((resolve) => requestIdleCallback(() => resolve(), { timeout: 2500 }))).catch(() => {})
     await page.waitForLoadState("networkidle").catch(() => {})
-    const deadline = Date.now() + 2500
-    while (registrations.some((r) => r.hits === 0) && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 50))
-    }
-    const unused = registrations.filter((r) => r.hits === 0).map((r) => r.pattern)
-    expect(unused, "unused route handlers").toEqual([])
+    await expect
+      .poll(() => registrations.filter((r) => r.hits === 0).map((r) => r.pattern), { message: "unused route handlers", timeout: 2500 })
+      .toEqual([])
   },
 
   simkl: async ({ page }, use) => use(simklClient(page)),

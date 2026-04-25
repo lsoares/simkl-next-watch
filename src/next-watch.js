@@ -364,19 +364,9 @@ function initDockEffect(row) {
     }
   }
 
-  let progressObserver = null
   function observeProgressHydration(rowEl) {
-    if (!progressObserver) {
-      progressObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          progressObserver.unobserve(entry.target)
-          hydrateProgress(entry.target)
-        }
-      }, { rootMargin: "200px" })
-    }
     rowEl.querySelectorAll("poster-card").forEach((c) => {
-      if (needsProgressHydration(c.item)) progressObserver.observe(c)
+      if (needsProgressHydration(c.item)) hydrateProgress(c)
     })
   }
 
