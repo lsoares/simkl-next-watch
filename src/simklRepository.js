@@ -1,4 +1,5 @@
 import { createCacheClient } from "./cacheClient.js"
+import { idbGet } from "./idbStore.js"
 import { clearAuth } from "./userLibraryRepository.js"
 
 const env = {
@@ -30,42 +31,6 @@ export const simklRepository = {
   getTrendingBrowseUrl,
   searchByTitle,
   getEpisodeTitle,
-  getWatchingForNotifications,
-  resolveNextEpisode,
-}
-
-async function getWatchingForNotifications({ token, clientId }) {
-  const res = await fetch("https://api.simkl.com/sync/all-items/shows/?extended=full&episode_watched_at=yes", {
-    headers: {
-      "Content-Type": "application/json",
-      "simkl-api-key": clientId,
-      Authorization: `Bearer ${token}`,
-    },
-  })
-  if (!res.ok) throw new Error(`Simkl ${res.status}`)
-  const data = await res.json()
-  return (data?.shows ?? [])
-    .filter((s) => normalizeStatus(s.status) === "watching")
-    .map((s) => {
-      const m = s.next_to_watch && /S(\d+)E(\d+)/i.exec(s.next_to_watch)
-      const total = s.total_episodes_count ?? 0
-      const notAired = s.not_aired_episodes_count ?? 0
-      const ids = s.show?.ids || {}
-      const id = ids.simkl || ids.simkl_id || ""
-      return {
-        id,
-        title: s.show?.title || "Unknown",
-        airedCount: Math.max(0, total - notAired),
-        watchedCount: s.watched_episodes_count ?? 0,
-        nextEpisode: m ? { season: Number(m[1]), episode: Number(m[2]) } : null,
-        poster: s.show?.poster ? `https://simkl.in/posters/${s.show.poster}_ca.jpg` : null,
-      }
-    })
-    .filter((s) => s.id)
-}
-
-async function resolveNextEpisode(show) {
-  return show.nextEpisode || null
 }
 
 function startOAuth() {
@@ -210,26 +175,33 @@ async function publicFetch(path) {
 }
 
 async function authFetch(path, options = {}) {
-  const token = localStorage.getItem("next-watch-access-token")
-  if (!token) throw new Error("Not signed in to Simkl.")
+  const auth = await idbGet("auth")
+  if (!auth?.token) throw new Error("Not signed in to Simkl.")
+  const clientIds = await idbGet("clientIds")
+  const clientId = clientIds?.simkl || envClientIdSafe()
+  if (!clientId) throw new Error("Simkl client ID not configured.")
   const res = await fetch(`https://api.simkl.com${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": env.clientId,
-      Authorization: `Bearer ${token}`,
+      "simkl-api-key": clientId,
+      Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    localStorage.removeItem("next-watch-access-token")
-    clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
-    startOAuth()
+    if (typeof localStorage !== "undefined") localStorage.removeItem("next-watch-access-token")
+    await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
+    if (typeof window !== "undefined") startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)
   return data
+}
+
+function envClientIdSafe() {
+  try { return env.clientId } catch { return null }
 }
 
 function authPost(path, payload) {

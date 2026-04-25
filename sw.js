@@ -1,5 +1,5 @@
 import { idbGet, idbSet } from "./src/idbStore.js"
-import { getWatchingForNotifications, resolveNextEpisode } from "./src/userLibraryRepository.js"
+import * as userLibrary from "./src/userLibraryRepository.js"
 
 const CACHE = "next-watch-v8"
 const SHELL = [
@@ -71,15 +71,9 @@ self.addEventListener("fetch", (e) => {
 })
 
 async function checkNewEpisodes() {
-  const auth = await idbGet("auth")
-  if (!auth?.token || !auth?.provider) return
-  const clientIds = await idbGet("clientIds")
-  const clientId = clientIds?.[auth.provider]
-  if (!clientId) return
-
   let shows
   try {
-    shows = await getWatchingForNotifications({ provider: auth.provider, token: auth.token, clientId })
+    shows = (await userLibrary.getWatchingShows()).items
   } catch {
     return
   }
@@ -89,19 +83,24 @@ async function checkNewEpisodes() {
 
   for (const show of shows) {
     const id = String(show.id)
-    next[id] = show.airedCount
+    next[id] = show.total_episodes_count
     const prev = last[id]
-    const remaining = show.airedCount - show.watchedCount
-    const grew = prev != null && show.airedCount > prev
+    const remaining = show.total_episodes_count - show.watched_episodes_count
+    const grew = prev != null && show.total_episodes_count > prev
     if (!grew || remaining > 1) continue
 
-    const ep = await resolveNextEpisode({ provider: auth.provider, show, token: auth.token, clientId })
+    let ep = show.nextEpisode
+    if (!ep) {
+      const key = show.ids?.slug || show.ids?.trakt || show.ids?.simkl
+      const progress = await userLibrary.getProgress(key).catch(() => null)
+      ep = progress?.nextEpisode || null
+    }
     const body = ep
       ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
       : "New episode aired"
     await self.registration.showNotification(show.title, {
       body,
-      icon: show.poster || "./assets/icon.png",
+      icon: show.posterFallbackUrl || "./assets/icon.png",
       tag: `next-watch-show-${id}`,
     })
   }

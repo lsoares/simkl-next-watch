@@ -1,4 +1,5 @@
 import { createCacheClient } from "./cacheClient.js"
+import { idbGet } from "./idbStore.js"
 import { clearAuth } from "./userLibraryRepository.js"
 
 const env = {
@@ -34,58 +35,6 @@ export const traktRepository = {
   getTrending,
   getTrendingBrowseUrl,
   searchByTitle,
-  getWatchingForNotifications,
-  resolveNextEpisode,
-}
-
-async function getWatchingForNotifications({ token, clientId }) {
-  const [watchedRes, droppedRes] = await Promise.all([
-    rawTraktFetch("/sync/watched/shows?extended=full", token, clientId),
-    rawTraktFetch("/users/hidden/dropped?limit=1000", token, clientId),
-  ])
-  const droppedIds = new Set((droppedRes || []).map((h) => h.show?.ids?.trakt).filter(Boolean))
-  return (watchedRes || [])
-    .map((entry) => {
-      const watched = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
-      const ids = entry.show?.ids || {}
-      const id = ids.slug || ids.trakt || ""
-      return {
-        id,
-        traktId: ids.trakt,
-        slug: ids.slug,
-        title: entry.show?.title || "Unknown",
-        airedCount: entry.show?.aired_episodes ?? 0,
-        watchedCount: watched,
-        nextEpisode: null,
-        poster: null,
-      }
-    })
-    .filter((s) => s.id && s.watchedCount > 0 && !droppedIds.has(s.traktId))
-}
-
-async function resolveNextEpisode(show, { token, clientId }) {
-  const key = show.slug || show.traktId
-  if (!key) return null
-  try {
-    const data = await rawTraktFetch(`/shows/${encodeURIComponent(key)}/progress/watched`, token, clientId)
-    const next = data?.next_episode
-    return next ? { season: next.season, episode: next.number } : null
-  } catch {
-    return null
-  }
-}
-
-async function rawTraktFetch(path, token, clientId) {
-  const res = await fetch(`https://api.trakt.tv${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      "trakt-api-key": clientId,
-      "trakt-api-version": "2",
-      Authorization: `Bearer ${token}`,
-    },
-  })
-  if (!res.ok) throw new Error(`Trakt ${res.status}`)
-  return res.json()
 }
 
 function startOAuth() {
@@ -283,27 +232,34 @@ async function publicFetch(path) {
 }
 
 async function authFetch(path, options = {}) {
-  const token = localStorage.getItem("next-watch-access-token")
-  if (!token) throw new Error("Not signed in to Trakt.")
+  const auth = await idbGet("auth")
+  if (!auth?.token) throw new Error("Not signed in to Trakt.")
+  const clientIds = await idbGet("clientIds")
+  const clientId = clientIds?.trakt || envClientIdSafe()
+  if (!clientId) throw new Error("Trakt client ID not configured.")
   const res = await fetch(`https://api.trakt.tv${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": env.clientId,
+      "trakt-api-key": clientId,
       "trakt-api-version": "2",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    localStorage.removeItem("next-watch-access-token")
-    clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
-    startOAuth()
+    if (typeof localStorage !== "undefined") localStorage.removeItem("next-watch-access-token")
+    await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
+    if (typeof window !== "undefined") startOAuth()
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)
   return data
+}
+
+function envClientIdSafe() {
+  try { return env.clientId } catch { return null }
 }
 
 function authPost(path, payload) {
