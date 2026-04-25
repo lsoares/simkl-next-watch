@@ -1,9 +1,11 @@
 import { createCacheClient } from "./cacheClient.js"
 import { clearAuth } from "./userLibraryRepository.js"
 
-const clientId = requireGlobal("__SIMKL_CLIENT_ID__")
-const clientSecret = requireGlobal("__SIMKL_CLIENT_SECRET__")
-const redirectUri = requireGlobal("__REDIRECT_URI__")
+const env = {
+  get clientId() { return requireGlobal("__SIMKL_CLIENT_ID__") },
+  get clientSecret() { return requireGlobal("__SIMKL_CLIENT_SECRET__") },
+  get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
+}
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
 const episodeTitleCache = loadJsonMap("next-watch-simkl-episode-title-v0")
 const episodesInFlight = new Map()
@@ -28,13 +30,49 @@ export const simklRepository = {
   getTrendingBrowseUrl,
   searchByTitle,
   getEpisodeTitle,
+  getWatchingForNotifications,
+  resolveNextEpisode,
+}
+
+async function getWatchingForNotifications({ token, clientId }) {
+  const res = await fetch("https://api.simkl.com/sync/all-items/shows/?extended=full&episode_watched_at=yes", {
+    headers: {
+      "Content-Type": "application/json",
+      "simkl-api-key": clientId,
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  if (!res.ok) throw new Error(`Simkl ${res.status}`)
+  const data = await res.json()
+  return (data?.shows ?? [])
+    .filter((s) => normalizeStatus(s.status) === "watching")
+    .map((s) => {
+      const m = s.next_to_watch && /S(\d+)E(\d+)/i.exec(s.next_to_watch)
+      const total = s.total_episodes_count ?? 0
+      const notAired = s.not_aired_episodes_count ?? 0
+      const ids = s.show?.ids || {}
+      const id = ids.simkl || ids.simkl_id || ""
+      return {
+        id,
+        title: s.show?.title || "Unknown",
+        airedCount: Math.max(0, total - notAired),
+        watchedCount: s.watched_episodes_count ?? 0,
+        nextEpisode: m ? { season: Number(m[1]), episode: Number(m[2]) } : null,
+        poster: s.show?.poster ? `https://simkl.in/posters/${s.show.poster}_ca.jpg` : null,
+      }
+    })
+    .filter((s) => s.id)
+}
+
+async function resolveNextEpisode(show) {
+  return show.nextEpisode || null
 }
 
 function startOAuth() {
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", "simkl")
-  location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
+  location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(env.clientId)}&redirect_uri=${encodeURIComponent(env.redirectUri)}&state=${state}`)
 }
 
 async function exchangeOAuthCode(code) {
@@ -43,9 +81,9 @@ async function exchangeOAuthCode(code) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
+      client_id: env.clientId,
+      client_secret: env.clientSecret,
+      redirect_uri: env.redirectUri,
       grant_type: "authorization_code",
     }),
   })
@@ -164,7 +202,7 @@ async function getEpisodeTitle(showId, season, episode) {
 
 async function publicFetch(path) {
   const res = await fetch(`https://api.simkl.com${path}`, {
-    headers: { "Content-Type": "application/json", "simkl-api-key": clientId },
+    headers: { "Content-Type": "application/json", "simkl-api-key": env.clientId },
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)
@@ -178,7 +216,7 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": clientId,
+      "simkl-api-key": env.clientId,
       Authorization: `Bearer ${token}`,
       ...options.headers,
     },
@@ -242,16 +280,18 @@ function fetchEpisodesOnce(showId) {
 }
 
 function requireGlobal(key) {
-  const value = window[key]
+  const value = globalThis[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
 }
 
 function loadJsonMap(key) {
+  if (typeof localStorage === "undefined") return {}
   try { return JSON.parse(localStorage.getItem(key) || "{}") } catch { return {} }
 }
 
 function persistJsonMap(key, map) {
+  if (typeof localStorage === "undefined") return
   try { localStorage.setItem(key, JSON.stringify(map)) } catch {}
 }
 

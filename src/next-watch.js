@@ -969,7 +969,7 @@ function initDockEffect(row) {
     el.installBtn.classList.add("hidden")
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {})
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
   userLibrary.setClientIds({
     simkl: window.__SIMKL_CLIENT_ID__ || "",
     trakt: window.__TRAKT_CLIENT_ID__ || "",

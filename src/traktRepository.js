@@ -1,9 +1,11 @@
 import { createCacheClient } from "./cacheClient.js"
 import { clearAuth } from "./userLibraryRepository.js"
 
-const clientId = requireGlobal("__TRAKT_CLIENT_ID__")
-const clientSecret = requireGlobal("__TRAKT_CLIENT_SECRET__")
-const redirectUri = requireGlobal("__REDIRECT_URI__")
+const env = {
+  get clientId() { return requireGlobal("__TRAKT_CLIENT_ID__") },
+  get clientSecret() { return requireGlobal("__TRAKT_CLIENT_SECRET__") },
+  get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
+}
 const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v1")
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
@@ -32,13 +34,65 @@ export const traktRepository = {
   getTrending,
   getTrendingBrowseUrl,
   searchByTitle,
+  getWatchingForNotifications,
+  resolveNextEpisode,
+}
+
+async function getWatchingForNotifications({ token, clientId }) {
+  const [watchedRes, droppedRes] = await Promise.all([
+    rawTraktFetch("/sync/watched/shows?extended=full", token, clientId),
+    rawTraktFetch("/users/hidden/dropped?limit=1000", token, clientId),
+  ])
+  const droppedIds = new Set((droppedRes || []).map((h) => h.show?.ids?.trakt).filter(Boolean))
+  return (watchedRes || [])
+    .map((entry) => {
+      const watched = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
+      const ids = entry.show?.ids || {}
+      const id = ids.slug || ids.trakt || ""
+      return {
+        id,
+        traktId: ids.trakt,
+        slug: ids.slug,
+        title: entry.show?.title || "Unknown",
+        airedCount: entry.show?.aired_episodes ?? 0,
+        watchedCount: watched,
+        nextEpisode: null,
+        poster: null,
+      }
+    })
+    .filter((s) => s.id && s.watchedCount > 0 && !droppedIds.has(s.traktId))
+}
+
+async function resolveNextEpisode(show, { token, clientId }) {
+  const key = show.slug || show.traktId
+  if (!key) return null
+  try {
+    const data = await rawTraktFetch(`/shows/${encodeURIComponent(key)}/progress/watched`, token, clientId)
+    const next = data?.next_episode
+    return next ? { season: next.season, episode: next.number } : null
+  } catch {
+    return null
+  }
+}
+
+async function rawTraktFetch(path, token, clientId) {
+  const res = await fetch(`https://api.trakt.tv${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      "trakt-api-key": clientId,
+      "trakt-api-version": "2",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  if (!res.ok) throw new Error(`Trakt ${res.status}`)
+  return res.json()
 }
 
 function startOAuth() {
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", "trakt")
-  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`)
+  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(env.clientId)}&redirect_uri=${encodeURIComponent(env.redirectUri)}&state=${state}`)
 }
 
 async function exchangeOAuthCode(code) {
@@ -47,9 +101,9 @@ async function exchangeOAuthCode(code) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
+      client_id: env.clientId,
+      client_secret: env.clientSecret,
+      redirect_uri: env.redirectUri,
       grant_type: "authorization_code",
     }),
   })
@@ -219,7 +273,7 @@ async function publicFetch(path) {
   const res = await fetch(`https://api.trakt.tv${path}`, {
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": clientId,
+      "trakt-api-key": env.clientId,
       "trakt-api-version": "2",
     },
   })
@@ -235,7 +289,7 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": clientId,
+      "trakt-api-key": env.clientId,
       "trakt-api-version": "2",
       Authorization: `Bearer ${token}`,
       ...options.headers,
@@ -300,15 +354,17 @@ function loadWatchedShowsCached() {
 }
 
 function loadProgressCache() {
+  if (typeof localStorage === "undefined") return {}
   try { return JSON.parse(localStorage.getItem("next-watch-trakt-progress-v0") || "{}") } catch { return {} }
 }
 
 function persistProgressCache() {
+  if (typeof localStorage === "undefined") return
   try { localStorage.setItem("next-watch-trakt-progress-v0", JSON.stringify(progressCache)) } catch {}
 }
 
 function requireGlobal(key) {
-  const value = window[key]
+  const value = globalThis[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
 }

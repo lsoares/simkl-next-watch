@@ -55,6 +55,18 @@ export function hasProgress() {
   return !!providerRepo().getProgress
 }
 
+export async function getWatchingForNotifications({ provider, token, clientId }) {
+  return repoFor(provider).getWatchingForNotifications({ token, clientId })
+}
+
+export async function resolveNextEpisode({ provider, show, token, clientId }) {
+  return repoFor(provider).resolveNextEpisode(show, { token, clientId })
+}
+
 function providerRepo() {
-  return localStorage.getItem("next-watch-provider") === "trakt" ? traktRepository : simklRepository
+  return repoFor(localStorage.getItem("next-watch-provider"))
+}
+
+function repoFor(provider) {
+  return provider === "trakt" ? traktRepository : simklRepository
 }

@@ -1,3 +1,6 @@
+import { idbGet, idbSet } from "./src/idbStore.js"
+import { getWatchingForNotifications, resolveNextEpisode } from "./src/userLibraryRepository.js"
+
 const CACHE = "next-watch-v8"
 const SHELL = [
   "./index.html",
@@ -67,8 +70,6 @@ self.addEventListener("fetch", (e) => {
   )
 })
 
-// Episodes check
-
 async function checkNewEpisodes() {
   const auth = await idbGet("auth")
   if (!auth?.token || !auth?.provider) return
@@ -78,9 +79,7 @@ async function checkNewEpisodes() {
 
   let shows
   try {
-    shows = auth.provider === "trakt"
-      ? await fetchTraktWatching(auth.token, clientId)
-      : await fetchSimklWatching(auth.token, clientId)
+    shows = await getWatchingForNotifications({ provider: auth.provider, token: auth.token, clientId })
   } catch {
     return
   }
@@ -96,8 +95,7 @@ async function checkNewEpisodes() {
     const grew = prev != null && show.airedCount > prev
     if (!grew || remaining > 1) continue
 
-    const ep = show.nextEpisode
-      ?? (auth.provider === "trakt" ? await fetchTraktNextEpisode(show, auth.token, clientId) : null)
+    const ep = await resolveNextEpisode({ provider: auth.provider, show, token: auth.token, clientId })
     const body = ep
       ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
       : "New episode aired"
@@ -111,121 +109,3 @@ async function checkNewEpisodes() {
 }
 
 function pad(n) { return String(n).padStart(2, "0") }
-
-async function fetchSimklWatching(token, clientId) {
-  const res = await fetch("https://api.simkl.com/sync/all-items/shows/?extended=full&episode_watched_at=yes", {
-    headers: {
-      "simkl-api-key": clientId,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  })
-  if (!res.ok) throw new Error(`Simkl ${res.status}`)
-  const data = await res.json()
-  return (data?.shows ?? [])
-    .filter((s) => normalizeStatus(s.status) === "watching")
-    .map((s) => {
-      const m = s.next_to_watch && /S(\d+)E(\d+)/i.exec(s.next_to_watch)
-      const total = s.total_episodes_count ?? 0
-      const notAired = s.not_aired_episodes_count ?? 0
-      const aired = Math.max(0, total - notAired)
-      const ids = s.show?.ids || {}
-      const id = ids.simkl || ids.simkl_id || ""
-      return {
-        id,
-        title: s.show?.title || "Unknown",
-        airedCount: aired,
-        watchedCount: s.watched_episodes_count ?? 0,
-        nextEpisode: m ? { season: Number(m[1]), episode: Number(m[2]) } : null,
-        poster: s.show?.poster ? `https://simkl.in/posters/${s.show.poster}_ca.jpg` : null,
-      }
-    })
-    .filter((s) => s.id)
-}
-
-async function fetchTraktWatching(token, clientId) {
-  const [watchedRes, droppedRes] = await Promise.all([
-    traktFetch("/sync/watched/shows?extended=full", token, clientId),
-    traktFetch("/users/hidden/dropped?limit=1000", token, clientId),
-  ])
-  const droppedIds = new Set((droppedRes || []).map((h) => h.show?.ids?.trakt).filter(Boolean))
-  return (watchedRes || [])
-    .map((entry) => {
-      const watched = (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
-      const ids = entry.show?.ids || {}
-      const aired = entry.show?.aired_episodes ?? 0
-      const id = ids.slug || ids.trakt || ""
-      return {
-        id,
-        traktId: ids.trakt,
-        slug: ids.slug,
-        title: entry.show?.title || "Unknown",
-        airedCount: aired,
-        watchedCount: watched,
-        nextEpisode: null,
-        poster: null,
-      }
-    })
-    .filter((s) => s.id && s.watchedCount > 0 && !droppedIds.has(s.traktId))
-}
-
-async function fetchTraktNextEpisode(show, token, clientId) {
-  const key = show.slug || show.traktId
-  if (!key) return null
-  try {
-    const data = await traktFetch(`/shows/${encodeURIComponent(key)}/progress/watched`, token, clientId)
-    const next = data?.next_episode
-    return next ? { season: next.season, episode: next.number } : null
-  } catch {
-    return null
-  }
-}
-
-async function traktFetch(path, token, clientId) {
-  const res = await fetch(`https://api.trakt.tv${path}`, {
-    headers: {
-      "trakt-api-key": clientId,
-      "trakt-api-version": "2",
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  })
-  if (!res.ok) throw new Error(`Trakt ${res.status}`)
-  return res.json()
-}
-
-function normalizeStatus(s) {
-  return String(s || "").toLowerCase().replace(/\s+/g, "")
-}
-
-// IndexedDB (mirrors src/idbStore.js)
-
-const IDB_NAME = "next-watch"
-const IDB_STORE = "kv"
-
-function idbOpen() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE)
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function idbGet(key) {
-  const db = await idbOpen()
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key)
-    req.onsuccess = () => resolve(req.result ?? null)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function idbSet(key, value) {
-  const db = await idbOpen()
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(value, key)
-    req.onsuccess = () => resolve()
-    req.onerror = () => reject(req.error)
-  })
-}
