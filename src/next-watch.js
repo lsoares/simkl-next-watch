@@ -848,7 +848,15 @@ function initDockEffect(row) {
 
   function logout() {
     clearAllStorage()
+    unregisterPeriodicSync().catch(() => {})
     location.href = location.pathname
+  }
+
+  async function unregisterPeriodicSync() {
+    if (!("serviceWorker" in navigator)) return
+    const reg = await navigator.serviceWorker.ready
+    if (!("periodicSync" in reg)) return
+    await reg.periodicSync.unregister("next-watch-check-episodes")
   }
 
   // ── UI hydration ──
@@ -875,6 +883,7 @@ function initDockEffect(row) {
   }
 
   async function syncNotifsButtonVisibility() {
+    if (!el.notifsBtn) return
     if (!isLoggedIn()) { el.notifsBtn.hidden = true; return }
     if (!("serviceWorker" in navigator)) { el.notifsBtn.hidden = true; return }
     const reg = await navigator.serviceWorker.ready
@@ -889,9 +898,9 @@ function initDockEffect(row) {
     const reg = await navigator.serviceWorker.ready
     if (!("periodicSync" in reg)) { showToast("Periodic sync not supported.", true); return }
     try {
-      await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 12 * 60 * 60 * 1000 })
-      el.notifsBtn.hidden = true
-      showToast("Notifications enabled. Chrome decides when sync fires.")
+      await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 24 * 60 * 60 * 1000 })
+      if (el.notifsBtn) el.notifsBtn.hidden = true
+      showToast("Notifications on. You'll hear about new episodes once a day.")
     } catch (err) {
       showToast(`Couldn't enable notifications: ${err.message}`, true)
     }
@@ -910,7 +919,7 @@ function initDockEffect(row) {
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
   el.aiKeyBtn.addEventListener("click", openAiSettings)
-  el.notifsBtn.addEventListener("click", enableNotifs)
+  el.notifsBtn?.addEventListener("click", enableNotifs)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
@@ -960,7 +969,11 @@ function initDockEffect(row) {
     el.installBtn.classList.add("hidden")
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {})
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
+  userLibrary.setClientIds({
+    simkl: window.__SIMKL_CLIENT_ID__ || "",
+    trakt: window.__TRAKT_CLIENT_ID__ || "",
+  }).catch(() => {})
 
   // ── Boot ──
 

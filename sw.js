@@ -1,4 +1,7 @@
-const CACHE = "next-watch-v7"
+import { idbGet, idbSet } from "./src/idbStore.js"
+import * as userLibrary from "./src/userLibraryRepository.js"
+
+const CACHE = "next-watch-v8"
 const SHELL = [
   "./index.html",
   "./assets/icon.png",
@@ -19,21 +22,15 @@ self.addEventListener("activate", (e) => {
 })
 
 self.addEventListener("periodicsync", (e) => {
-  if (e.tag === "next-watch-check-episodes") {
-    e.waitUntil(self.registration.showNotification("Next Watch", {
-      body: `Sync fired at ${new Date().toLocaleTimeString()}`,
-      icon: "./assets/icon.png",
-      tag: "next-watch-sync-test",
-    }))
-  }
+  if (e.tag === "next-watch-check-episodes") e.waitUntil(checkNewEpisodes())
 })
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close()
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((all) => {
-    const existing = all.find((c) => c.url.includes(self.registration.scope))
+    const existing = all.find((c) => c.url.startsWith(self.registration.scope))
     if (existing) return existing.focus()
-    return self.clients.openWindow("./#next")
+    return self.clients.openWindow(`${self.registration.scope}#next`)
   }))
 })
 
@@ -42,17 +39,13 @@ self.addEventListener("fetch", (e) => {
   if (request.method !== "GET") return
   const url = new URL(request.url)
 
-  // Let Simkl and Trakt API/auth calls through untouched
   if (
     url.hostname === "api.simkl.com" || url.hostname === "simkl.com"
     || url.hostname === "api.trakt.tv" || url.hostname === "trakt.tv"
   ) return
 
-  // Let PostHog through untouched — event POSTs must not be cached,
-  // and the SDK handles its own asset caching.
   if (url.hostname.endsWith(".i.posthog.com")) return
 
-  // Cache-first for CDN assets (Chart.js, image proxies)
   if (url.hostname !== self.location.hostname && url.protocol === "https:") {
     e.respondWith(
       caches.match(request).then(
@@ -66,7 +59,6 @@ self.addEventListener("fetch", (e) => {
     return
   }
 
-  // Network-first for the app shell so updates propagate; fall back to cache offline
   e.respondWith(
     fetch(request)
       .then((res) => {
@@ -77,3 +69,42 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(request))
   )
 })
+
+async function checkNewEpisodes() {
+  let shows
+  try {
+    shows = (await userLibrary.getWatchingShows()).items
+  } catch {
+    return
+  }
+
+  const last = (await idbGet("notifiedAired")) || {}
+  const next = {}
+
+  for (const show of shows) {
+    const id = String(show.id)
+    next[id] = show.total_episodes_count
+    const prev = last[id]
+    const remaining = show.total_episodes_count - show.watched_episodes_count
+    const grew = prev != null && show.total_episodes_count > prev
+    if (!grew || remaining > 1) continue
+
+    let ep = show.nextEpisode
+    if (!ep) {
+      const key = show.ids?.slug || show.ids?.trakt || show.ids?.simkl
+      const progress = await userLibrary.getProgress(key).catch(() => null)
+      ep = progress?.nextEpisode || null
+    }
+    const body = ep
+      ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
+      : "New episode aired"
+    await self.registration.showNotification(show.title, {
+      body,
+      icon: show.posterFallbackUrl || "./assets/icon.png",
+      tag: `next-watch-show-${id}`,
+    })
+  }
+  await idbSet("notifiedAired", next)
+}
+
+function pad(n) { return String(n).padStart(2, "0") }
