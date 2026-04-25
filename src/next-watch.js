@@ -160,7 +160,7 @@ function initDockEffect(row) {
     topBar: $("topBar"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), coffeeLink: $("coffeeLink"), aiSaveBtn: $("aiSaveBtn"),
+    logoutBtn: $("logoutBtn"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
@@ -186,6 +186,7 @@ function initDockEffect(row) {
   let libraryReady = new Promise((r) => { resolveLibraryReady = r; })
   let tvItems = []
   let movieItems = []
+  let moviesShuffled = false
 
   // ── Toast ──
 
@@ -310,7 +311,10 @@ function initDockEffect(row) {
         ...wls.items.toSorted((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)),
       ].filter((i) => i.release_status !== "unreleased")
       movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
-        .map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
+      if (!moviesShuffled) {
+        movieItems = movieItems.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
+        moviesShuffled = true
+      }
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
@@ -640,7 +644,7 @@ function initDockEffect(row) {
     const oldPoster = card.querySelector(".poster")
     if (!oldPoster) return card.refresh()
     const img = document.createElement("img")
-    img.className = "poster poster--hydrating"
+    img.className = "poster"
     img.alt = item.title || ""
     img.loading = "lazy"
     img.draggable = false
@@ -844,7 +848,6 @@ function initDockEffect(row) {
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
     el.navHome.hidden = loggedIn
     el.logoutBtn.hidden = !loggedIn
-    el.coffeeLink.hidden = !loggedIn
     el.aiKeyBtn.hidden = !loggedIn
     el.attribution.hidden = !loggedIn
     if (loggedIn) {

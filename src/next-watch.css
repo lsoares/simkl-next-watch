@@ -82,7 +82,10 @@
         opacity: 0.55;
         transition: opacity 0.15s ease;
       }
-      .top-bar #coffeeLink ~ .tiny-link { font-weight: normal; }
+      .top-bar #aiKeyBtn,
+      .top-bar #installButton,
+      .top-bar #logoutBtn { font-weight: normal; }
+      .top-bar #logoutBtn { opacity: 0.32; font-size: 0.85em; letter-spacing: 0.02em; }
       .top-bar .tiny-link:hover { opacity: 1; }
       .top-bar .tiny-link:focus-visible {
         opacity: 1;

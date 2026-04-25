@@ -309,6 +309,7 @@ function enrichSearch(item, type) {
     rating: simklRating ?? null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     posterFallbackUrl: simklPosterUrl(item.poster),
+    total_episodes_count: type === "tv" ? (item.total_episodes_count || 0) : 0,
     type,
   }
 }
