@@ -1,4 +1,4 @@
-import { tmdbRepository } from "./tmdbRepository.js"
+import { catalog } from "./catalog.js"
 
 class PosterCard extends HTMLElement {
   item = null
@@ -144,11 +144,7 @@ class PosterCard extends HTMLElement {
   async _hydratePoster() {
     const item = this.item
     if (!item || item.posterUrl) return
-    const type = item.type
-    const tmdbUrl = (item.ids?.tmdb || item.ids?.imdb)
-      ? await tmdbRepository.getPosterByIds({ tmdb: item.ids.tmdb, imdb: item.ids.imdb, type })
-      : await tmdbRepository.getPosterByTitle(item.title, item.year, type)
-    const url = tmdbUrl || item.posterFallbackUrl || ""
+    const url = await (await catalog()).getPoster(item)
     if (!url || this.item !== item) return
     item.posterUrl = url
     const oldPoster = this.querySelector(".poster")

@@ -1,6 +1,6 @@
 import { createCacheClient } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
-import { clearAuth } from "./userLibraryRepository.js"
+import { clearAuth } from "./auth.js"
 
 const env = {
   get clientId() { return requireGlobal("__SIMKL_CLIENT_ID__") },
