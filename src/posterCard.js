@@ -25,7 +25,7 @@ class PosterCard extends HTMLElement {
   _render() {
     const { item, loggedIn } = this
     if (!item) {
-      this.innerHTML = `<div class="item-card poster-skeleton"></div>`
+      this.innerHTML = `<article class="item-card"><div class="poster-anchor"><div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(Math.random().toString())}"></div></div></article>`
       return
     }
 
