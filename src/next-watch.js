@@ -10,6 +10,14 @@ import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
 
 const byAddedDate = (a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)
 
+function byAiPickRelevance(a, b) {
+  const aWatched = !!a.last_watched_at
+  const bWatched = !!b.last_watched_at
+  if (aWatched !== bWatched) return aWatched ? 1 : -1
+  if (!aWatched) return 0
+  return new Date(a.last_watched_at) - new Date(b.last_watched_at)
+}
+
 function byWatchingPriority(a, b) {
   const aLeft = availableEpisodesLeft(a), bLeft = availableEpisodesLeft(b)
   if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
@@ -693,19 +701,18 @@ function initDockEffect(row) {
     const entry = dialogStack.at(-1)
     el.aiDialogTitle.replaceChildren(typeof entry.title === "string" ? entry.title : entry.title.cloneNode(true))
     el.aiDialogBack.hidden = dialogStack.length <= 1
-    fillPosterSkeletons(el.aiDialogResults)
+    fillPosterSkeletons(el.aiDialogResults, 9)
     try {
       const suggestions = await entry.fetch()
       if (dialogStack.at(-1) !== entry) return
-      if (!suggestions.length) {
+      const items = await resolveAiSuggestions(suggestions)
+      if (dialogStack.at(-1) !== entry) return
+      if (!items.length) {
         setEmpty(el.aiDialogResults, entry.emptyMsg)
         return
       }
       el.aiDialogResults.replaceChildren()
-      suggestions.forEach((s) => {
-        renderPosterCard(el.aiDialogResults, asSeriesPoster(mergeWithLibrary({ title: s.title, year: s.year, ids: {}, type: "movie" }, libraryIndex)), { fade: true })
-      })
-      observeAiLazyHydration(el.aiDialogResults)
+      items.forEach((item) => renderPosterCard(el.aiDialogResults, asSeriesPoster(item), { fade: true }))
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {
@@ -721,34 +728,15 @@ function initDockEffect(row) {
     }
   }
 
-  function observeAiLazyHydration(row) {
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        observer.unobserve(entry.target)
-        hydrateAiCard(entry.target)
-      }
-    }, { root: row, rootMargin: "400px" })
-    row.querySelectorAll("poster-card").forEach((c) => observer.observe(c))
-  }
-
-  async function hydrateAiCard(card) {
-    const { title, year } = card.item
+  async function resolveAiSuggestions(suggestions) {
     const c = await catalog()
-    const resolved = await c.searchByTitle(title, year)
-    if (!resolved) {
-      card.item = { ...card.item, url: c.getSearchUrl(title) }
-      card.refresh()
-      hydratePoster(card)
-      return
-    }
-    if (resolved.release_status === "unreleased") {
-      card.closest(".row-item")?.remove()
-      return
-    }
-    card.item = asSeriesPoster(mergeWithLibrary(resolved, libraryIndex))
-    card.refresh()
-    hydratePoster(card)
+    const resolved = await Promise.all(suggestions.map(async (s) => {
+      const r = await c.searchByTitle(s.title, s.year).catch(() => null)
+      if (r?.release_status === "unreleased") return null
+      if (r) return mergeWithLibrary(r, libraryIndex)
+      return { title: s.title, year: s.year, ids: {}, type: "movie", url: c.getSearchUrl(s.title) }
+    }))
+    return resolved.filter(Boolean).sort(byAiPickRelevance)
   }
 
   el.aiDialogClose.addEventListener("click", () => closeDialog())

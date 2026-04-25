@@ -25,7 +25,7 @@ function parseSuggestions(raw) {
   }
 }
 
-const MOOD_SYSTEM_PROMPT = `Recommend 10 movies and TV shows (IMDb ≥6.5), none appearing in Library.
+const MOOD_SYSTEM_PROMPT = `Recommend 9 movies and TV shows (IMDb ≥6.5), none appearing in Library.
 Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
 
 Mood is the primary filter. Weight rated 8-10 as strong likes, 1-5 as dislikes; unrated entries are a weaker signal. Infer across tone, era, pacing, and country — not just genre.
@@ -34,7 +34,7 @@ Diversity: ≤2 sharing a franchise or creator; spread across ≥3 decades and �
 
 Output JSON only: [{"title":"...","year":1234}]`
 
-const SIMILAR_SYSTEM_PROMPT = `Recommend 10 movies and TV shows similar to the seed title below (IMDb ≥6.5), none appearing in Library.
+const SIMILAR_SYSTEM_PROMPT = `Recommend 9 movies and TV shows similar to the seed title below (IMDb ≥6.5), none appearing in Library.
 Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
 
 The seed is the anchor: recommend titles that scratch the same itch. Weight tone and mood first, then themes and subject matter, then era and pacing. Genre alone is a weak signal. Shared creator, cast, or franchise is allowed but not required — prefer lateral picks over obvious sequels or spin-offs unless they are clearly the closest match.
