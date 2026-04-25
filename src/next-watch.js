@@ -167,7 +167,6 @@ function initDockEffect(row) {
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
     aiKeyBtn: $("aiKeyBtn"),
-    notifsBtn: $("notifsBtn"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
@@ -856,31 +855,20 @@ function initDockEffect(row) {
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
-    syncNotifsButtonVisibility()
     syncViewportMetrics()
   }
 
-  async function syncNotifsButtonVisibility() {
-    if (!el.notifsBtn) return
-    if (!isLoggedIn()) { el.notifsBtn.hidden = true; return }
-    if (!("serviceWorker" in navigator)) { el.notifsBtn.hidden = true; return }
-    const reg = await navigator.serviceWorker.ready
-    if (!("periodicSync" in reg)) { el.notifsBtn.hidden = true; return }
-    const tags = await reg.periodicSync.getTags()
-    el.notifsBtn.hidden = tags.includes("next-watch-check-episodes")
-  }
-
   async function enableNotifs() {
+    if (!("serviceWorker" in navigator)) return
     const permission = await Notification.requestPermission()
-    if (permission !== "granted") { showToast("Notifications denied.", true); return }
+    if (permission !== "granted") return
     const reg = await navigator.serviceWorker.ready
-    if (!("periodicSync" in reg)) { showToast("Periodic sync not supported.", true); return }
+    if (!("periodicSync" in reg)) return
     try {
       await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 24 * 60 * 60 * 1000 })
-      if (el.notifsBtn) el.notifsBtn.hidden = true
       showToast("Notifications on. You'll hear about new episodes once a day.")
-    } catch (err) {
-      showToast(`Couldn't enable notifications: ${err.message}`, true)
+    } catch {
+      // browser blocked periodic-background-sync (engagement / policy); silent
     }
   }
 
@@ -897,7 +885,6 @@ function initDockEffect(row) {
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
   el.aiKeyBtn.addEventListener("click", openAiSettings)
-  el.notifsBtn?.addEventListener("click", enableNotifs)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.logoutBtn.addEventListener("click", logout)
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
@@ -945,6 +932,7 @@ function initDockEffect(row) {
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null
     el.installBtn.classList.add("hidden")
+    enableNotifs()
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
