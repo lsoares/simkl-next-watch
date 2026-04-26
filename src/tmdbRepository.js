@@ -1,6 +1,6 @@
 import { createKeyedCache } from "./cacheClient.js"
 
-const cache = createKeyedCache("next-watch-tmdb-poster-v3")
+const cache = createKeyedCache("next-watch-tmdb-meta-v1")
 const inFlight = new Map()
 
 export const tmdbRepository = {
@@ -20,7 +20,7 @@ async function find(item) {
   if (item?.title && item.type) {
     return lookup(`title:${slugify(item.title)}:${item.year || ""}:${item.type}`, () => fetchSearch(item.type, item.title, item.year))
   }
-  return { url: "", released: undefined }
+  return empty()
 }
 
 async function lookup(key, fetchFn) {
@@ -29,15 +29,11 @@ async function lookup(key, fetchFn) {
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
-      const { posterPath, released } = await fetchFn()
-      const value = {
-        url: posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : "",
-        released,
-      }
+      const value = await fetchFn()
       await cache.set(key, value)
       return value
     } catch {
-      const value = { url: "", released: undefined }
+      const value = empty()
       await cache.set(key, value)
       return value
     } finally {
@@ -50,13 +46,12 @@ async function lookup(key, fetchFn) {
 
 async function fetchDetails(type, id) {
   const r = await tmdbFetch(`/3/${type === "tv" ? "tv" : "movie"}/${encodeURIComponent(id)}`)
-  return { posterPath: r?.poster_path || "", released: hasReleased(r?.release_date || r?.first_air_date) }
+  return shape(r)
 }
 
 async function fetchFindByImdb(imdb) {
   const r = await tmdbFetch(`/3/find/${encodeURIComponent(imdb)}?external_source=imdb_id`)
-  const hit = r?.movie_results?.[0] || r?.tv_results?.[0]
-  return { posterPath: hit?.poster_path || "", released: hasReleased(hit?.release_date || hit?.first_air_date) }
+  return shape(r?.movie_results?.[0] || r?.tv_results?.[0])
 }
 
 async function fetchSearch(type, title, year) {
@@ -64,8 +59,39 @@ async function fetchSearch(type, title, year) {
   const params = new URLSearchParams({ query: title })
   if (year) params.set(kind === "tv" ? "first_air_date_year" : "year", String(year))
   const r = await tmdbFetch(`/3/search/${kind}?${params}`)
-  const hit = r?.results?.[0]
-  return { posterPath: hit?.poster_path || "", released: hasReleased(hit?.release_date || hit?.first_air_date) }
+  return shape(r?.results?.[0])
+}
+
+function shape(r) {
+  if (!r) return empty()
+  return {
+    url: r.poster_path ? `https://image.tmdb.org/t/p/w342${r.poster_path}` : "",
+    released: hasReleased(r.release_date || r.first_air_date),
+    overview: r.overview || "",
+    genres: (r.genres || []).map((g) => g.name),
+    rating: typeof r.vote_average === "number" ? r.vote_average : null,
+    status: r.status || "",
+    runtime: r.runtime || 0,
+    lastEpisode: episode(r.last_episode_to_air),
+    nextEpisode: episode(r.next_episode_to_air),
+  }
+}
+
+function episode(e) {
+  if (!e) return null
+  return {
+    season: e.season_number,
+    episode: e.episode_number,
+    name: e.name || "",
+    airDate: e.air_date || "",
+    runtime: e.runtime || 0,
+    still: e.still_path ? `https://image.tmdb.org/t/p/w300${e.still_path}` : "",
+    overview: e.overview || "",
+  }
+}
+
+function empty() {
+  return { url: "", released: undefined, overview: "", genres: [], rating: null, status: "", runtime: 0, lastEpisode: null, nextEpisode: null }
 }
 
 function hasReleased(date) {
