@@ -800,12 +800,8 @@ function isLoggedIn() { return loggedInState }
     if (permission !== "granted") return
     const reg = await navigator.serviceWorker.ready
     if (!("periodicSync" in reg)) return
-    try {
-      await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 24 * 60 * 60 * 1000 })
-      showToast("Notifications on. You'll hear about new episodes once a day.")
-    } catch {
-      // browser blocked periodic-background-sync (engagement / policy); silent
-    }
+    await reg.periodicSync.register("next-watch-check-episodes", { minInterval: 24 * 60 * 60 * 1000 })
+    showToast("Notifications on. You'll hear about new episodes once a day.")
   }
 
   // ── Wire events ──
