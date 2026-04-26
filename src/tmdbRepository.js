@@ -1,6 +1,6 @@
 import { createKeyedCache } from "./cacheClient.js"
 
-const cache = createKeyedCache("next-watch-tmdb-meta-v1")
+const cache = createKeyedCache("next-watch-tmdb-meta-v2")
 const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
 const inFlight = new Map()
 
@@ -91,7 +91,7 @@ function shape(r) {
   if (!r) return empty()
   return {
     url: r.poster_path ? `https://image.tmdb.org/t/p/w342${r.poster_path}` : "",
-    released: hasReleased(r.release_date || r.first_air_date),
+    released: hasReleased(r.release_date || r.first_air_date, r.status),
     overview: r.overview || "",
     genres: (r.genres || []).map((g) => g.name),
     rating: typeof r.vote_average === "number" ? r.vote_average : null,
@@ -119,7 +119,8 @@ function empty() {
   return { url: "", released: undefined, overview: "", genres: [], rating: null, status: "", runtime: 0, lastEpisode: null, nextEpisode: null }
 }
 
-function hasReleased(date) {
+function hasReleased(date, status) {
+  if (status === "In Production" || status === "Post Production" || status === "Planned" || status === "Rumored") return false
   return date ? new Date(date).getTime() <= Date.now() : undefined
 }
 
