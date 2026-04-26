@@ -19,9 +19,6 @@ async function find(item) {
     const r = await lookup(`imdb:${ids.imdb}`, () => fetchFindByImdb(ids.imdb))
     if (r.url) return r
   }
-  if (item?.title && item.type) {
-    return lookup(`title:${slugify(item.title)}:${item.year || ""}:${item.type}`, () => fetchSearch(item.type, item.title, item.year))
-  }
   return empty()
 }
 
@@ -79,14 +76,6 @@ async function fetchFindByImdb(imdb) {
   return shape(r?.movie_results?.[0] || r?.tv_results?.[0])
 }
 
-async function fetchSearch(type, title, year) {
-  const kind = type === "tv" ? "tv" : "movie"
-  const params = new URLSearchParams({ query: title })
-  if (year) params.set(kind === "tv" ? "first_air_date_year" : "year", String(year))
-  const r = await tmdbFetch(`/3/search/${kind}?${params}`)
-  return shape(r?.results?.[0])
-}
-
 function shape(r) {
   if (!r) return empty()
   return {
@@ -136,8 +125,4 @@ function requireGlobal(key) {
   const value = window[key]
   if (!value) throw new Error(`${key} is not configured.`)
   return value
-}
-
-function slugify(s) {
-  return String(s || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
 }

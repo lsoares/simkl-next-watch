@@ -209,7 +209,7 @@ function makeRowItem() {
 async function hydratePoster(card) {
   const item = card.item
   if (!item || item.posterUrl) return
-  if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
+  if (!item.ids?.tmdb && !item.ids?.imdb) return
   const meta = await (await catalog()).getPoster(item)
   if (card.item !== item) return
   if (meta.released === false) {
