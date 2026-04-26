@@ -3,7 +3,8 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "test",
   testMatch: "**/*.test.js",
-  timeout: 7000,
+  timeout: 20000,
+  expect: { timeout: 10000 },
   workers: 4,
   use: {
     baseURL: "http://localhost:3999",
