@@ -260,12 +260,6 @@ function normalizeItem(raw) {
     rating,
     ratingSource,
     status: normalizeStatus(raw.status),
-    release_status:
-      (type === "tv" && raw.total_episodes_count > 0 && raw.total_episodes_count === raw.not_aired_episodes_count) ||
-      (releaseDate && new Date(releaseDate).getTime() > Date.now()) ||
-      (type === "movie" && !media.runtime) ||
-      (media.year && media.year > new Date().getFullYear())
-        ? "unreleased" : undefined,
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/` : "",
     added_at: raw.added_to_watchlist_at || raw.added_at || null,
@@ -289,7 +283,6 @@ function enrichSearch(item, type) {
     url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
     rating,
     ratingSource,
-    release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     total_episodes_count: type === "tv" ? (item.total_episodes_count || 0) : 0,
     type,
   }
@@ -307,7 +300,6 @@ function enrichTrending(item, type) {
     url: buildTrendingUrl(item, ids.simkl, type),
     rating,
     ratingSource,
-    release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     type,
   }
 }

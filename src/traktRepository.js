@@ -106,10 +106,7 @@ async function getWatchlistShows() {
   const cached = await watchlistShowsCache.read()
   if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
   const data = await authFetch("/sync/watchlist/shows?extended=full")
-  const now = Date.now()
-  const items = data
-    .filter((entry) => !entry?.show?.first_aired || new Date(entry.show.first_aired).getTime() <= now)
-    .map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
+  const items = data.map((entry) => normalizeTraktShow(entry, { status: "plantowatch", addedAt: entry.listed_at || null }))
   await watchlistShowsCache.write({ ts, items })
   return { items: applyRatings(items), fresh: true }
 }
@@ -121,10 +118,7 @@ async function getWatchlistMovies() {
   const cached = await watchlistMoviesCache.read()
   if (cached?.ts === ts && cached.items) return { items: applyRatings(cached.items), fresh: false }
   const data = await authFetch("/sync/watchlist/movies?extended=full")
-  const now = Date.now()
-  const items = data
-    .filter((entry) => !entry?.movie?.released || new Date(entry.movie.released).getTime() <= now)
-    .map((entry) => normalizeTraktMovie(entry, { status: "plantowatch" }))
+  const items = data.map((entry) => normalizeTraktMovie(entry, { status: "plantowatch" }))
   await watchlistMoviesCache.write({ ts, items })
   return { items: applyRatings(items), fresh: true }
 }
@@ -371,7 +365,6 @@ function enrichSearch(media, type) {
     ...(rawIds.tmdb != null && { tmdb: rawIds.tmdb }),
     ...(rawIds.slug && { slug: rawIds.slug }),
   }
-  const releaseDate = type === "movie" ? media.released : media.first_aired
   return {
     ids,
     id: String(rawIds.imdb || rawIds.trakt || ""),
@@ -381,7 +374,6 @@ function enrichSearch(media, type) {
     url: rawIds.slug ? `https://app.trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(rawIds.slug)}` : "",
     rating: media.rating != null ? Math.round(media.rating * 10) / 10 : null,
     ratingSource: media.rating != null ? "trakt" : null,
-    release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }
 

@@ -212,7 +212,7 @@ async function hydratePoster(card) {
   if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
   const meta = await (await catalog()).getPoster(item)
   if (card.item !== item) return
-  if (item.type === "movie" && (item.year || 0) >= new Date().getFullYear() && meta.released === false) {
+  if (meta.released === false) {
     card.dispatchEvent(new CustomEvent("poster:irrelevant"))
     return
   }

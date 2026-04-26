@@ -35,18 +35,21 @@ test.describe("Simkl", () => {
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
     await tmdb.useDetails("tv", "95396")
+    await tmdb.useDetails("tv", "199099", { poster_path: "/t.jpg", first_air_date: "2099-01-01" })
+    await tmdb.useDetails("tv", "1993939", { poster_path: "/t.jpg", first_air_date: "2099-01-01" })
     await tmdb.useDetails("movie", "603")
+    await tmdb.useDetails("movie", "190000", { poster_path: "/t.jpg", release_date: "2099-12-19" })
     await tmdb.useDetails("movie", "1275779", { poster_path: "/t.jpg", release_date: "2099-06-10" })
     await simkl.useSyncActivities()
     await simkl.useSyncShows([
       { show: { title: "Severance", year: 2022, ids: { simkl_id: 153027, tmdb: "95396" } }, status: "plantowatch" },
-      { show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999 } }, status: "plantowatch" },
-      { show: { title: "Blade Runner 2099", ids: { simkl_id: 1993939 } }, status: "plantowatch", total_episodes_count: 1, not_aired_episodes_count: 1 },
+      { show: { title: "Unreleased Show", year: 2099, ids: { simkl_id: 99999, tmdb: "199099" } }, status: "plantowatch" },
+      { show: { title: "Blade Runner 2099", ids: { simkl_id: 1993939, tmdb: "1993939" } }, status: "plantowatch" },
     ])
     await simkl.useSyncMovies([
-      { movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992, tmdb: "603" } }, status: "plantowatch" },
-      { movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000 } }, status: "plantowatch" },
-      { movie: { title: "Disclosure Day", year: 2026, runtime: 120, ids: { simkl_id: 2437549, tmdb: "1275779" } }, status: "plantowatch" },
+      { movie: { title: "The Matrix", year: 1999, ids: { simkl_id: 53992, tmdb: "603" } }, status: "plantowatch" },
+      { movie: { title: "Avatar Fire and Ash", year: 2099, ids: { simkl_id: 90000, tmdb: "190000" } }, status: "plantowatch" },
+      { movie: { title: "Disclosure Day", year: 2026, ids: { simkl_id: 2437549, tmdb: "1275779" } }, status: "plantowatch" },
     ])
     await simkl.useSyncAnime()
     await simkl.useAuthorize()
@@ -115,7 +118,9 @@ test.describe("Trakt", () => {
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
     await tmdb.useDetails("tv", "95396")
+    await tmdb.useDetails("tv", "199099", { poster_path: "/t.jpg", first_air_date: "2099-01-01" })
     await tmdb.useDetails("movie", "603")
+    await tmdb.useDetails("movie", "190000", { poster_path: "/t.jpg", release_date: "2099-12-19" })
     await trakt.useLastActivities()
     await trakt.useWatchedShows()
     await trakt.useDroppedShows()
@@ -126,7 +131,7 @@ test.describe("Trakt", () => {
       },
       {
         listed_at: "2025-01-01T00:00:00Z",
-        show: { title: "Unreleased Show", year: 2099, first_aired: "2099-01-01", aired_episodes: 0, ids: { trakt: 9999, slug: "unreleased-show", imdb: "tt9999999" } },
+        show: { title: "Unreleased Show", year: 2099, first_aired: "2099-01-01", aired_episodes: 0, ids: { trakt: 9999, slug: "unreleased-show", imdb: "tt9999999", tmdb: "199099" } },
       },
     ])
     await trakt.useWatchlistMovies([
@@ -136,7 +141,7 @@ test.describe("Trakt", () => {
       },
       {
         listed_at: "2025-01-01T00:00:00Z",
-        movie: { title: "Avatar Fire and Ash", year: 2099, released: "2099-12-19", ids: { trakt: 9000, slug: "avatar-fire-and-ash", imdb: "tt1757678" } },
+        movie: { title: "Avatar Fire and Ash", year: 2099, released: "2099-12-19", ids: { trakt: 9000, slug: "avatar-fire-and-ash", imdb: "tt1757678", tmdb: "190000" } },
       },
     ])
     await trakt.useAuthorize()

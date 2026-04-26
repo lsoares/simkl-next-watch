@@ -286,8 +286,8 @@ function isLoggedIn() { return loggedInState }
       tvItems = [
         ...ws.items.toSorted(byWatchingPriority),
         ...wls.items.toSorted((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)),
-      ].filter((i) => i.release_status !== "unreleased")
-      movieItems = wlm.items.filter((i) => i.release_status !== "unreleased")
+      ]
+      movieItems = wlm.items
       if (!moviesShuffled) {
         movieItems = movieItems.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
         moviesShuffled = true
@@ -413,7 +413,7 @@ function isLoggedIn() { return loggedInState }
     renderSkeletons(el.trendingMoviesContent)
     try {
       const [{ tv: tvData, movies: movieData }] = await Promise.all([(await catalog()).getTrending(period), libraryReady])
-      const filterFn = (item) => item.release_status !== "unreleased" && !libraryLookup(libraryIndex, item)
+      const filterFn = (item) => !libraryLookup(libraryIndex, item)
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
       if (tv.length) await renderDiscoveryRow(el.trendingTvContent, tv, "tv", { period })
@@ -677,7 +677,6 @@ function isLoggedIn() { return loggedInState }
     const c = await catalog()
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const r = await c.searchByTitle(s.title, s.year).catch(() => null)
-      if (r?.release_status === "unreleased") return null
       if (r) return mergeWithLibrary(r, libraryIndex)
       return { title: s.title, year: s.year, ids: {}, type: "movie", url: c.getSearchUrl(s.title) }
     }))
