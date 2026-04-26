@@ -26,7 +26,7 @@
         margin: 0;
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background-color: var(--bg);
-        background-image: linear-gradient(to bottom, rgba(59,130,246,0.08), transparent 240px);
+        background-image: linear-gradient(to bottom, rgba(59,130,246,0.08), transparent 120px);
         background-repeat: no-repeat;
         color: var(--text);
         min-height: var(--app-height);
