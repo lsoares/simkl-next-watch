@@ -29,7 +29,7 @@ test.describe("Simkl", () => {
     await trending.expectShowIsPresent("The Boys")
     await trending.expectShowShowsRating("The Rookie", "8\\.5")
     await trending.expectShowIsAbsent("Breaking Bad")
-    await trending.expectViewAllSeriesLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today&not_in_list=true")
+    await trending.expectViewAllTVShowsLinksTo("https://simkl.com/tv/best-shows/most-watched/?wltime=today&not_in_list=true")
   })
 
   test("watchlist items show a trending badge in the next view", async ({ page, simkl, tmdb, intro, next }) => {
@@ -118,6 +118,6 @@ test.describe("Trakt", () => {
     await trending.expectShowIsPresent("Dune")
     await trending.expectTitleLinksTo("Severance", "https://app.trakt.tv/shows/severance")
     await trending.expectTitleLinksTo("Dune", "https://app.trakt.tv/movies/dune-2021")
-    await trending.expectViewAllSeriesLinksTo("https://app.trakt.tv/discover/trending?mode=show&ignore_watched=true")
+    await trending.expectViewAllTVShowsLinksTo("https://app.trakt.tv/discover/trending?mode=show&ignore_watched=true")
   })
 })
