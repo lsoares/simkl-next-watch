@@ -68,45 +68,8 @@ self.addEventListener("fetch", (e) => {
 })
 
 async function checkNewEpisodes() {
-  const [{ idbGet, idbSet }, { catalog }] = await Promise.all([
-    import("./src/idbStore.js"),
-    import("./src/catalog.js"),
-  ])
-  let c, shows
-  try {
-    c = await catalog()
-    shows = (await c.getWatchingShows()).items
-  } catch {
-    return
-  }
-
-  const last = (await idbGet("notifiedAired")) || {}
-  const next = {}
-
-  for (const show of shows) {
-    const id = String(show.id)
-    next[id] = show.total_episodes_count
-    const prev = last[id]
-    const remaining = show.total_episodes_count - show.watched_episodes_count
-    const grew = prev != null && show.total_episodes_count > prev
-    if (!grew || remaining > 1) continue
-
-    let ep = show.nextEpisode
-    if (!ep && c.getProgress) {
-      const key = show.ids?.slug || show.ids?.trakt || show.ids?.simkl
-      const progress = await c.getProgress(key).catch(() => null)
-      ep = progress?.nextEpisode || null
-    }
-    const body = ep
-      ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
-      : "New episode aired"
-    await self.registration.showNotification(show.title, {
-      body,
-      icon: "./assets/icon.png",
-      tag: `next-watch-show-${id}`,
-    })
-  }
-  await idbSet("notifiedAired", next)
+  const { checkNewEpisodes: run } = await import("./src/notifications.js")
+  await run(({ title, body, tag }) =>
+    self.registration.showNotification(title, { body, icon: "./assets/icon.png", tag })
+  )
 }
-
-function pad(n) { return String(n).padStart(2, "0") }
