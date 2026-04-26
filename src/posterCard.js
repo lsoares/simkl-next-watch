@@ -215,17 +215,16 @@ async function hydratePoster(card) {
     card.closest(".row-item")?.remove()
     return
   }
-  const runtimeFallback = !item.runtime
-    ? (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
-    : 0
-  if (runtimeFallback) item.runtime = runtimeFallback
+  const runtime = (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
+  const runtimeChanged = runtime !== (item.runtime || 0)
+  item.runtime = runtime
   if (!meta.url) {
-    if (runtimeFallback) card.refresh()
+    if (runtimeChanged) card.refresh()
     return
   }
   item.posterUrl = meta.url
   const oldPoster = card.querySelector(".poster")
-  if (!oldPoster || runtimeFallback) return card.refresh()
+  if (!oldPoster || runtimeChanged) return card.refresh()
   const img = document.createElement("img")
   img.className = "poster"
   img.alt = item.title || ""

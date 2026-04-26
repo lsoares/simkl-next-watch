@@ -157,17 +157,17 @@ test.describe("Trakt", () => {
     await trakt.useRatingsMovies()
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
-    await tmdb.useDetails("movie", "10001")
-    await tmdb.useDetails("movie", "10002")
-    await tmdb.useDetails("movie", "10003")
+    await tmdb.useDetails("movie", "10001", { poster_path: "/t.jpg", release_date: "2020-01-01", runtime: 45 })
+    await tmdb.useDetails("movie", "10002", { poster_path: "/t.jpg", release_date: "2020-01-01", runtime: 100 })
+    await tmdb.useDetails("movie", "10003", { poster_path: "/t.jpg", release_date: "2020-01-01", runtime: 125 })
     await trakt.useLastActivities()
     await trakt.useWatchlistShows()
     await trakt.useWatchedShows()
     await trakt.useDroppedShows()
     await trakt.useWatchlistMovies([
-      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Short Movie", year: 2020, released: "2020-01-01", runtime: 45, ids: { trakt: 1, slug: "short-movie", imdb: "tt0000001", tmdb: "10001" } } },
-      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Mid Movie", year: 2020, released: "2020-01-01", runtime: 100, ids: { trakt: 2, slug: "mid-movie", imdb: "tt0000002", tmdb: "10002" } } },
-      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Long Movie", year: 2020, released: "2020-01-01", runtime: 125, ids: { trakt: 3, slug: "long-movie", imdb: "tt0000003", tmdb: "10003" } } },
+      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Short Movie", year: 2020, released: "2020-01-01", ids: { trakt: 1, slug: "short-movie", imdb: "tt0000001", tmdb: "10001" } } },
+      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Mid Movie", year: 2020, released: "2020-01-01", ids: { trakt: 2, slug: "mid-movie", imdb: "tt0000002", tmdb: "10002" } } },
+      { listed_at: "2025-01-01T00:00:00Z", movie: { title: "Long Movie", year: 2020, released: "2020-01-01", ids: { trakt: 3, slug: "long-movie", imdb: "tt0000003", tmdb: "10003" } } },
     ])
     await trakt.useAuthorize()
     await page.goto("/")
