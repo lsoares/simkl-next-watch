@@ -1,6 +1,3 @@
-import { idbGet, idbSet } from "./src/idbStore.js"
-import { catalog } from "./src/catalog.js"
-
 const CACHE = "next-watch-v8"
 const SHELL = [
   "./index.html",
@@ -71,6 +68,10 @@ self.addEventListener("fetch", (e) => {
 })
 
 async function checkNewEpisodes() {
+  const [{ idbGet, idbSet }, { catalog }] = await Promise.all([
+    import("./src/idbStore.js"),
+    import("./src/catalog.js"),
+  ])
   let c, shows
   try {
     c = await catalog()
