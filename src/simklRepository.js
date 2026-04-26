@@ -129,20 +129,19 @@ function getTrendingBrowseUrl(type, { period = "today" } = {}) {
 }
 
 async function searchByTitle(title, year, type) {
-  const q = encodeURIComponent(title.trim())
-  const yearParam = year ? `&year=${year}` : ""
+  const q = encodeURIComponent(`${title.trim()} ${year || ""}`.trim())
   try {
     if (type === "tv") {
-      const r = await publicFetch(`/search/tv?q=${q}${yearParam}&limit=1&extended=full`)
+      const r = await publicFetch(`/search/tv?q=${q}&limit=1&extended=full`)
       return r[0] ? enrichSearch(r[0], "tv") : null
     }
     if (type === "movie") {
-      const r = await publicFetch(`/search/movie?q=${q}${yearParam}&limit=1&extended=full`)
+      const r = await publicFetch(`/search/movie?q=${q}&limit=1&extended=full`)
       return r[0] ? enrichSearch(r[0], "movie") : null
     }
-    const movie = await publicFetch(`/search/movie?q=${q}${yearParam}&limit=1&extended=full`)
+    const movie = await publicFetch(`/search/movie?q=${q}&limit=1&extended=full`)
     if (movie[0]) return enrichSearch(movie[0], "movie")
-    const tv = await publicFetch(`/search/tv?q=${q}${yearParam}&limit=1&extended=full`)
+    const tv = await publicFetch(`/search/tv?q=${q}&limit=1&extended=full`)
     if (tv[0]) return enrichSearch(tv[0], "tv")
     return null
   } catch {
