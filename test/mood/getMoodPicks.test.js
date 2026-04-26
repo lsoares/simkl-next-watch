@@ -38,10 +38,8 @@ test.describe("Simkl", () => {
       await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333, tmdb: "603" }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
       await mood.open()
       await mood.pickMood("Make me laugh")
-      await mood.setApiKey(name, "apiAiKey")
-      await mood.expectKeySaved()
 
-      await mood.pickMood("Make me laugh")
+      await mood.setApiKey(name, "apiAiKey")
 
       await aiPicks.expectPosterIsVisible("Parasite")
       await aiPicks.expectPosterIsVisible("Oldboy")
@@ -74,10 +72,8 @@ test.describe("Simkl", () => {
     await simkl.useSearchMovie("UnknownFilm", [])
     await mood.open()
     await mood.pickMood("Make me laugh")
-    await mood.setApiKey("gemini", "apiAiKey")
-    await mood.expectKeySaved()
 
-    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
 
     await aiPicks.expectPosterLinksTo("Parasite", /simkl\.com\/movies\/33001/)
     await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm")
@@ -159,10 +155,8 @@ test.describe("Trakt", () => {
     await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: "496243" }, rating: 8.5 } }])
     await mood.open()
     await mood.pickMood("Make me laugh")
-    await mood.setApiKey("gemini", "apiAiKey")
-    await mood.expectKeySaved()
 
-    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
 
     await aiPicks.expectPosterIsWatchlisted("Inception")
     await aiPicks.expectPosterIsWatched("Parasite")
@@ -187,10 +181,8 @@ test.describe("Trakt", () => {
     await trakt.useSearchMovie("UnknownFilm", [])
     await mood.open()
     await mood.pickMood("Make me laugh")
-    await mood.setApiKey("gemini", "apiAiKey")
-    await mood.expectKeySaved()
 
-    await mood.pickMood("Make me laugh")
+    await mood.setApiKey("gemini", "apiAiKey")
 
     await aiPicks.expectPosterLinksTo("Inception", "https://app.trakt.tv/movies/inception-2010")
     await aiPicks.expectPosterLinksTo("UnknownFilm", "https://trakt.tv/search?query=UnknownFilm")

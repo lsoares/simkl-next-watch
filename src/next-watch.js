@@ -592,6 +592,7 @@ function isLoggedIn() { return loggedInState }
   // ── AI Result Rendering ──
 
   const dialogStack = []
+  let pendingDialogEntry = null
 
   function openMood(mood) {
     pushDialog({
@@ -619,6 +620,7 @@ function isLoggedIn() { return loggedInState }
 
   async function pushDialog(entry) {
     if (!(await getAiKey(await getAiProvider()))) {
+      pendingDialogEntry = entry
       openAiSettings()
       return
     }
@@ -810,17 +812,25 @@ function isLoggedIn() { return loggedInState }
     e.preventDefault()
     const provider = el.aiProviderSelect.value
     const aiKey = el.aiKeyInput.value.trim()
+    const retryEntry = aiKey ? pendingDialogEntry : null
+    pendingDialogEntry = null
     await idbSet("aiProvider", provider)
     await idbSet(`aiKey:${provider}`, aiKey)
     syncAiSaveLabel()
     el.aiSettings.close()
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
+    if (retryEntry) {
+      dialogStack.push(retryEntry)
+      if (!el.aiDialog.open) el.aiDialog.showModal()
+      renderDialogTop()
+    }
   })
   el.menuAiKey.addEventListener("click", () => { el.menu.open = false; openAiSettings() })
   el.menuInstall.addEventListener("click", () => { el.menu.open = false; if (deferredInstallPrompt) deferredInstallPrompt.prompt() })
   el.menuLogout.addEventListener("click", () => { el.menu.open = false; logout() })
   document.addEventListener("click", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false })
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
+  el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
     container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
