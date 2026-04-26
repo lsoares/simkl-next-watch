@@ -118,25 +118,7 @@ useSearchTv(query, items) {
       })
     },
 
-    useMovieDetail(simklId, response) {
-      return page.route(`https://api.simkl.com/movies/${simklId}?**`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(new URL(route.request().url()).searchParams.get("extended")).toBe("full")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) })
-      })
-    },
-
-    useShowDetail(simklId, response) {
-      return page.route(`https://api.simkl.com/tv/${simklId}?**`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(new URL(route.request().url()).searchParams.get("extended")).toBe("full")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) })
-      })
-    },
-
-    useAddToWatchlist(expectedPayload) {
+useAddToWatchlist(expectedPayload) {
       return page.route("https://api.simkl.com/sync/add-to-list", async (route) => {
         expect(route.request().method()).toBe("POST")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")

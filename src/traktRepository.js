@@ -91,7 +91,7 @@ async function getProgress(traktIdOrSlug) {
   try {
     const data = await authFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
     const next = data?.next_episode
-    const result = next ? { nextEpisode: { season: next.season, episode: next.number }, title: next.title || "" } : null
+    const result = next ? { nextEpisode: { season: next.season, episode: next.number } } : null
     await progressCache.set(key, result)
     return result
   } catch {
