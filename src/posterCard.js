@@ -9,6 +9,7 @@ export function renderPoster(row, item, opts = {}) {
   if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
   if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
   if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
+  card.addEventListener("poster:irrelevant", () => card.closest(".row-item")?.remove())
   row.appendChild(frag)
   hydrationObserver.observe(card)
   return card
@@ -212,7 +213,7 @@ async function hydratePoster(card) {
   const meta = await (await catalog()).getPoster(item)
   if (card.item !== item) return
   if (item.type === "movie" && (item.year || 0) >= new Date().getFullYear() && meta.released === false) {
-    card.closest(".row-item")?.remove()
+    card.dispatchEvent(new CustomEvent("poster:irrelevant"))
     return
   }
   const runtime = (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
