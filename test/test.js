@@ -71,7 +71,6 @@ export const test = base.extend({
     }
     await use(page)
     await page.evaluate(() => new Promise((resolve) => requestIdleCallback(() => resolve(), { timeout: 2500 }))).catch(() => {})
-    await page.waitForLoadState("networkidle").catch(() => {})
     await expect
       .poll(() => registrations.filter((r) => r.hits === 0 && !r.pattern.includes("themoviedb.org")).map((r) => r.pattern), { message: "unused route handlers", timeout: 2500 })
       .toEqual([])
