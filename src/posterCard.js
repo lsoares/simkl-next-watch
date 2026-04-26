@@ -209,22 +209,29 @@ async function hydratePoster(card) {
   const item = card.item
   if (!item || item.posterUrl) return
   if (!item.ids?.tmdb && !item.ids?.imdb && !(item.title && item.year && item.type)) return
-  const { url, released } = await (await catalog()).getPoster(item)
+  const meta = await (await catalog()).getPoster(item)
   if (card.item !== item) return
-  if (item.type === "movie" && (item.year || 0) >= new Date().getFullYear() && released === false) {
+  if (item.type === "movie" && (item.year || 0) >= new Date().getFullYear() && meta.released === false) {
     card.closest(".row-item")?.remove()
     return
   }
-  if (!url) return
-  item.posterUrl = url
+  const runtimeFallback = !item.runtime
+    ? (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
+    : 0
+  if (runtimeFallback) item.runtime = runtimeFallback
+  if (!meta.url) {
+    if (runtimeFallback) card.refresh()
+    return
+  }
+  item.posterUrl = meta.url
   const oldPoster = card.querySelector(".poster")
-  if (!oldPoster) return card.refresh()
+  if (!oldPoster || runtimeFallback) return card.refresh()
   const img = document.createElement("img")
   img.className = "poster"
   img.alt = item.title || ""
   img.loading = "lazy"
   img.draggable = false
-  img.src = url
+  img.src = meta.url
   oldPoster.replaceWith(img)
 }
 
