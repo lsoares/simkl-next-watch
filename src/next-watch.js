@@ -810,6 +810,7 @@ function isLoggedIn() { return loggedInState }
 
   el.aiSettingsForm.addEventListener("submit", async (e) => {
     e.preventDefault()
+    if (!e.submitter) return
     const provider = el.aiProviderSelect.value
     const aiKey = el.aiKeyInput.value.trim()
     const retryEntry = aiKey ? pendingDialogEntry : null
