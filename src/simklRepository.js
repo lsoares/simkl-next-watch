@@ -239,7 +239,7 @@ function normalizeItem(raw) {
   const simkl = Number(rawIds.simkl ?? rawIds.simkl_id) || 0
   const imdb = rawIds.imdb || null
   const tmdb = rawIds.tmdb || null
-  const simklRating = media.ratings?.simkl?.rating
+  const { rating, ratingSource } = pickRating(media.ratings)
   const title = decodeSimklText(media.title) || "Unknown"
   const animeType = String(raw.anime_type || "").toLowerCase()
   const type = animeType === "movie" ? "movie"
@@ -258,7 +258,8 @@ function normalizeItem(raw) {
     year,
     url,
     runtime: media.runtime || 0,
-    rating: simklRating ?? null,
+    rating,
+    ratingSource,
     status: normalizeStatus(raw.status),
     release_status:
       (type === "tv" && raw.total_episodes_count > 0 && raw.total_episodes_count === raw.not_aired_episodes_count) ||
@@ -279,7 +280,7 @@ function normalizeItem(raw) {
 
 function enrichSearch(item, type) {
   const ids = canonicalIds(item.ids)
-  const simklRating = item?.ratings?.simkl?.rating
+  const { rating, ratingSource } = pickRating(item.ratings)
   const releaseDate = type === "movie" ? item?.released : item?.first_aired
   return {
     ids,
@@ -288,7 +289,8 @@ function enrichSearch(item, type) {
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
     runtime: item.runtime || 0,
-    rating: simklRating ?? null,
+    rating,
+    ratingSource,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     total_episodes_count: type === "tv" ? (item.total_episodes_count || 0) : 0,
     type,
@@ -297,7 +299,7 @@ function enrichSearch(item, type) {
 
 function enrichTrending(item, type) {
   const ids = canonicalIds(item.ids)
-  const simklRating = item?.ratings?.simkl?.rating
+  const { rating, ratingSource } = pickRating(item.ratings)
   const releaseDate = item?.release_date
   return {
     ids,
@@ -306,10 +308,19 @@ function enrichTrending(item, type) {
     year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
     url: buildTrendingUrl(item, ids.simkl, type),
     runtime: item.runtime || 0,
-    rating: simklRating ?? null,
+    rating,
+    ratingSource,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
     type,
   }
+}
+
+function pickRating(ratings) {
+  const imdb = ratings?.imdb?.rating
+  const own = ratings?.simkl?.rating
+  if (imdb != null) return { rating: imdb, ratingSource: "imdb" }
+  if (own != null) return { rating: own, ratingSource: "simkl" }
+  return { rating: null, ratingSource: null }
 }
 
 function canonicalIds(rawIds = {}) {

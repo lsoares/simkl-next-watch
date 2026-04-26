@@ -329,6 +329,7 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     url,
     runtime: show.runtime || 0,
     rating: show.rating != null ? Math.round(show.rating * 10) / 10 : null,
+    ratingSource: show.rating != null ? "trakt" : null,
     status,
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/seasons/${nextEpisode.season}/episodes/${nextEpisode.episode}` : "",
@@ -353,6 +354,7 @@ function normalizeTraktMovie(entry, { status } = {}) {
     url: ids.slug ? `https://app.trakt.tv/movies/${encodeURIComponent(ids.slug)}` : "",
     runtime: movie.runtime || 0,
     rating: movie.rating != null ? Math.round(movie.rating * 10) / 10 : null,
+    ratingSource: movie.rating != null ? "trakt" : null,
     status,
     nextEpisode: null,
     added_at: entry.listed_at || null,
@@ -381,6 +383,7 @@ function enrichSearch(media, type) {
     url: rawIds.slug ? `https://app.trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(rawIds.slug)}` : "",
     runtime: media.runtime || 0,
     rating: media.rating != null ? Math.round(media.rating * 10) / 10 : null,
+    ratingSource: media.rating != null ? "trakt" : null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
   }
 }

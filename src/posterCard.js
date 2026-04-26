@@ -127,7 +127,7 @@ class PosterCard extends HTMLElement {
     const showYear = !suppressMeta && year
     const showRating = rating != null && !suppressMeta
     const ratingText = showRating ? (Number.isInteger(rating) ? rating : rating.toFixed(1)) : ""
-    const ratingLabel = item.ids?.trakt ? "Trakt" : "Simkl"
+    const ratingLabel = { imdb: "IMDb", trakt: "Trakt", simkl: "Simkl" }[item.ratingSource] || ""
     const watchedAgo = watched && watchedAt ? formatWatchedAgo(watchedAt) : ""
     const watchedRating = userRating != null && !suppressMeta ? userRating : null
     const showWatchingBadge = watching && !ep
