@@ -1,1 +1,1 @@
-CI=true npx playwright test --workers=2
+CI=true npm test

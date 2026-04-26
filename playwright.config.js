@@ -5,7 +5,6 @@ export default defineConfig({
   testMatch: "**/*.test.js",
   timeout: 20000,
   expect: { timeout: 10000 },
-  workers: 4,
   use: {
     baseURL: "http://localhost:3999",
     headless: true,
