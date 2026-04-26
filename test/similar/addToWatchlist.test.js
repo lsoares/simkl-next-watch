@@ -18,7 +18,6 @@ test.describe("Simkl", () => {
     await simkl.useTrendingTv()
     await simkl.useTrendingMovies()
     await tmdb.useDetails("movie", "27205")
-    await tmdb.useDetails("movie", "1124")
     await simkl.useSyncActivities()
     await simkl.useSyncShows()
     await simkl.useSyncMovies([{
@@ -28,8 +27,8 @@ test.describe("Simkl", () => {
     await simkl.useSyncAnime()
     await simkl.useAuthorize()
     await ai.gemini.useSimilar('[{"title":"The Prestige","year":2006}]', "Inception (2010)")
-    await simkl.useSearchMovie("Prestige", [{ title: "The Prestige", year: 2006, ids: { simkl_id: 44444, tmdb: "1124" }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
-    await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 44444 } }] })
+    await tmdb.useSearch("movie", "The Prestige", { id: 1124, title: "The Prestige", release_date: "2006-10-19", poster_path: "/p.jpg", vote_average: 8.5 })
+    await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { tmdb: "1124" } }] })
     await page.goto("/")
     await intro.signIn("simkl")
     await intro.expectIsLoggedIn()

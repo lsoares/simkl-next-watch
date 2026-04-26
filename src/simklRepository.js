@@ -95,19 +95,19 @@ async function getCompletedMovies() {
 }
 
 async function markWatched(item) {
+  const ids = simklIdsOf(item)
   if (item.type === "tv" && item.nextEpisode) {
     await authPost("/sync/history", {
-      shows: [{ ids: item.ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
+      shows: [{ ids, seasons: [{ number: item.nextEpisode.season, episodes: [{ number: item.nextEpisode.episode }] }] }],
     })
     return
   }
-  await authPost("/sync/history", { movies: [{ ids: item.ids, watched_at: new Date().toISOString() }] })
+  await authPost("/sync/history", { movies: [{ ids, watched_at: new Date().toISOString() }] })
 }
 
 async function addToWatchlist(item) {
   const key = item.type === "movie" ? "movies" : "shows"
-  const id = Number(item.ids?.simkl)
-  await authPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: { simkl: id } }] })
+  await authPost("/sync/add-to-list", { [key]: [{ to: "plantowatch", ids: simklIdsOf(item) }] })
 }
 
 async function getTrending(period) {
@@ -309,6 +309,15 @@ function pickRating(ratings) {
   if (imdb != null) return { rating: imdb, ratingSource: "imdb" }
   if (own != null) return { rating: own, ratingSource: "simkl" }
   return { rating: null, ratingSource: null }
+}
+
+function simklIdsOf(item) {
+  const i = item?.ids || {}
+  return {
+    ...(i.simkl && { simkl: Number(i.simkl) }),
+    ...(i.imdb && { imdb: i.imdb }),
+    ...(i.tmdb && { tmdb: String(i.tmdb) }),
+  }
 }
 
 function canonicalIds(rawIds = {}) {

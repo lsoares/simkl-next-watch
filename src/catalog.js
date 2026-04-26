@@ -6,7 +6,7 @@ import { tmdbRepository } from "./tmdbRepository.js"
 export async function catalog() {
   const provider = (await idbGet("auth"))?.provider
   const repo = provider === "trakt" ? traktRepository : simklRepository
-  return { ...repo, getPoster, getEpisodeTitle }
+  return { ...repo, getPoster, getEpisodeTitle, searchByTitle: tmdbRepository.searchByTitle }
 }
 
 async function getPoster(item) {

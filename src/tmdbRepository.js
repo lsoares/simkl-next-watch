@@ -7,6 +7,41 @@ const inFlight = new Map()
 export const tmdbRepository = {
   find,
   getSeason,
+  searchByTitle,
+}
+
+async function searchByTitle(title, year) {
+  const movie = await searchOne("movie", title, year)
+  if (movie) return movie
+  return searchOne("tv", title, year)
+}
+
+async function searchOne(type, title, year) {
+  const params = new URLSearchParams({ query: title })
+  if (year) params.set(type === "tv" ? "first_air_date_year" : "year", String(year))
+  try {
+    const r = await tmdbFetch(`/3/search/${type}?${params}`)
+    const hit = r?.results?.[0]
+    if (!hit) return null
+    return {
+      ids: { tmdb: hit.id },
+      id: String(hit.id),
+      title: hit.title || hit.name || "",
+      year: yearOf(hit.release_date || hit.first_air_date) || year || "",
+      type,
+      posterUrl: hit.poster_path ? `https://image.tmdb.org/t/p/w342${hit.poster_path}` : "",
+      rating: typeof hit.vote_average === "number" ? Math.round(hit.vote_average * 10) / 10 : null,
+      ratingSource: typeof hit.vote_average === "number" ? "tmdb" : null,
+    }
+  } catch {
+    return null
+  }
+}
+
+function yearOf(date) {
+  if (!date) return null
+  const y = new Date(date).getUTCFullYear()
+  return Number.isFinite(y) ? y : null
 }
 
 async function find(item) {

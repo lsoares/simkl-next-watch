@@ -12,7 +12,7 @@ test.describe("Simkl", () => {
       { title: "Dune", year: 2021, ids: { simkl_id: 99003, tmdb: "438631" } },
     ] })
     await tmdb.useDetails("movie", "438631")
-    await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003 } }] })
+    await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { simkl: 99003, tmdb: "438631" } }] })
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")

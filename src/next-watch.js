@@ -676,9 +676,10 @@ function isLoggedIn() { return loggedInState }
   async function resolveAiSuggestions(suggestions) {
     const c = await catalog()
     const resolved = await Promise.all(suggestions.map(async (s) => {
+      const query = `${s.title} ${s.year || ""}`.trim()
       const r = await c.searchByTitle(s.title, s.year).catch(() => null)
-      if (r) return mergeWithLibrary(r, libraryIndex)
-      return { title: s.title, year: s.year, ids: {}, url: c.getSearchUrl(s.title) }
+      if (r) return mergeWithLibrary({ ...r, url: c.getSearchUrl(query) }, libraryIndex)
+      return { title: s.title, year: s.year, ids: {}, url: c.getSearchUrl(query) }
     }))
     return resolved.filter(Boolean).sort(byAiPickRelevance)
   }

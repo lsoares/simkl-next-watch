@@ -5,12 +5,8 @@ test.describe("Simkl", () => {
     test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
       await tmdb.useDetails("tv", "1396")
       await tmdb.useSeason("1396", 5)
-      await tmdb.useDetails("movie", "27205")
       await tmdb.useDetails("movie", "603")
-      await tmdb.useDetails("movie", "496243")
-      await tmdb.useDetails("movie", "670")
-      await tmdb.useDetails("movie", "290098")
-        await signInToSimkl(page, simkl, intro, {
+      await signInToSimkl(page, simkl, intro, {
         shows: [{
           show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
           status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -31,11 +27,11 @@ test.describe("Simkl", () => {
         '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010},{"title":"The Matrix","year":1999}]',
         ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999):7"],
       )
-      await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001, tmdb: "496243" }, type: "movie", ratings: { imdb: { rating: 8.5 } } }])
-      await simkl.useSearchMovie("Oldboy", [{ title: "Oldboy", year: 2003, ids: { simkl_id: 33002, tmdb: "670" }, type: "movie", ratings: { imdb: { rating: 8.4 } } }])
-      await simkl.useSearchMovie("Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003, tmdb: "290098" }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
-      await simkl.useSearchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222, tmdb: "27205" }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
-      await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333, tmdb: "603" }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
+      await tmdb.useSearch("movie", "Parasite", { id: 496243, title: "Parasite", release_date: "2019-05-30", poster_path: "/p.jpg", vote_average: 8.5 })
+      await tmdb.useSearch("movie", "Oldboy", { id: 670, title: "Oldboy", release_date: "2003-11-21", poster_path: "/o.jpg", vote_average: 8.4 })
+      await tmdb.useSearch("movie", "The Handmaiden", { id: 290098, title: "The Handmaiden", release_date: "2016-06-01", poster_path: "/h.jpg", vote_average: 8.1 })
+      await tmdb.useSearch("movie", "Inception", { id: 27205, title: "Inception", release_date: "2010-07-16", poster_path: "/i.jpg", vote_average: 8.8 })
+      await tmdb.useSearch("movie", "The Matrix", { id: 603, title: "The Matrix", release_date: "1999-03-30", poster_path: "/m.jpg", vote_average: 8.7 })
       await mood.open()
       await mood.pickMood("Make me laugh")
 
@@ -51,10 +47,9 @@ test.describe("Simkl", () => {
     })
   }
 
-  test("AI dialog posters link to the matched Simkl page, or to Simkl search when unmatched", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
+  test("AI dialog posters link to a Simkl search filtered by title and year", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
     await tmdb.useDetails("tv", "1396")
     await tmdb.useSeason("1396", 5)
-    await tmdb.useDetails("movie", "496243")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -66,16 +61,16 @@ test.describe("Simkl", () => {
       '[{"title":"Parasite","year":2019},{"title":"UnknownFilm","year":2020}]',
       ["Breaking Bad (2008):9"],
     )
-    await simkl.useSearchTv("", [])
-    await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001, tmdb: "496243" }, type: "movie" }])
-    await simkl.useSearchMovie("UnknownFilm", [])
+    await tmdb.useSearch("movie", "Parasite", { id: 496243, title: "Parasite", release_date: "2019-05-30", poster_path: "/p.jpg", vote_average: 8.5 })
+    await tmdb.useSearch("movie", "UnknownFilm", null)
+    await tmdb.useSearch("tv", "UnknownFilm", null)
     await mood.open()
     await mood.pickMood("Make me laugh")
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Parasite", /simkl\.com\/movies\/33001/)
-    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm")
+    await aiPicks.expectPosterLinksTo("Parasite", "https://simkl.com/search/?q=Parasite%202019")
+    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm%202020")
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
@@ -117,7 +112,6 @@ test.describe("Simkl", () => {
 test.describe("Trakt", () => {
   test("AI Picks sends Trakt ratings in the prompt and reflects library status on posters", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await tmdb.useDetails("movie", "27205")
-    await tmdb.useDetails("movie", "496243")
     await signInToTrakt(page, trakt, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -150,8 +144,8 @@ test.describe("Trakt", () => {
       '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
       ["Breaking Bad (2008):9", "Inception (2010):8"],
     )
-    await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: "27205" }, rating: 8.8 } }])
-    await trakt.useSearchMovie("Parasite", [{ type: "movie", movie: { title: "Parasite", year: 2019, released: "2019-05-30", ids: { trakt: 9999, slug: "parasite-2019", imdb: "tt6751668", tmdb: "496243" }, rating: 8.5 } }])
+    await tmdb.useSearch("movie", "Inception", { id: 27205, title: "Inception", release_date: "2010-07-16", poster_path: "/i.jpg", vote_average: 8.8 })
+    await tmdb.useSearch("movie", "Parasite", { id: 496243, title: "Parasite", release_date: "2019-05-30", poster_path: "/p.jpg", vote_average: 8.5 })
     await mood.open()
     await mood.pickMood("Make me laugh")
 
@@ -161,8 +155,7 @@ test.describe("Trakt", () => {
     await aiPicks.expectPosterIsWatched("Parasite")
   })
 
-  test("AI hits open Trakt pages on click, or Trakt search when unmatched", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
-    await tmdb.useDetails("movie", "27205")
+  test("AI dialog posters link to a Trakt search filtered by title and year", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await signInToTrakt(page, trakt, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
@@ -174,16 +167,16 @@ test.describe("Trakt", () => {
       '[{"title":"Inception","year":2010},{"title":"UnknownFilm","year":2020}]',
       [],
     )
-    await trakt.useSearchShow("", [])
-    await trakt.useSearchMovie("Inception", [{ type: "movie", movie: { title: "Inception", year: 2010, released: "2010-07-16", ids: { trakt: 481, slug: "inception-2010", imdb: "tt1375666", tmdb: "27205" }, rating: 8.8 } }])
-    await trakt.useSearchMovie("UnknownFilm", [])
+    await tmdb.useSearch("movie", "Inception", { id: 27205, title: "Inception", release_date: "2010-07-16", poster_path: "/i.jpg", vote_average: 8.8 })
+    await tmdb.useSearch("movie", "UnknownFilm", null)
+    await tmdb.useSearch("tv", "UnknownFilm", null)
     await mood.open()
     await mood.pickMood("Make me laugh")
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Inception", "https://app.trakt.tv/movies/inception-2010")
-    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://trakt.tv/search?query=UnknownFilm")
+    await aiPicks.expectPosterLinksTo("Inception", "https://trakt.tv/search?query=Inception%202010")
+    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://trakt.tv/search?query=UnknownFilm%202020")
   })
 })
 
