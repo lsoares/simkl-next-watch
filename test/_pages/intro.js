@@ -19,7 +19,7 @@ export function client(page) {
     async expectSignInButtonIsVisible(provider) {
       await expect(page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") })).toBeVisible()
     },
-    async expectLogoutIsVisible() {
+    async expectIsLoggedIn() {
       await expect(page.getByRole("button", { name: /menu/i })).toBeVisible()
     },
     async expectInstallButtonIsVisible() {
