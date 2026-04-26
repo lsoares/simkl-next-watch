@@ -71,17 +71,7 @@ export function client(page) {
       })
     },
 
-    useTvEpisodes(expectedId, episodes = []) {
-      return page.route("https://api.simkl.com/tv/episodes/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        const url = new URL(route.request().url())
-        expect(url.pathname).toContain(expectedId)
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(episodes) })
-      })
-    },
-
-    useSearchTv(query, items) {
+useSearchTv(query, items) {
       return page.route(`https://api.simkl.com/search/tv?q=*${query}*`, async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")

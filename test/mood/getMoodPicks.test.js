@@ -9,8 +9,7 @@ test.describe("Simkl", () => {
       await tmdb.useDetails("movie", "496243")
       await tmdb.useDetails("movie", "670")
       await tmdb.useDetails("movie", "290098")
-      await simkl.useTvEpisodes("11121")
-      await signInToSimkl(page, simkl, intro, {
+        await signInToSimkl(page, simkl, intro, {
         shows: [{
           show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
           status: "watching", user_rating: 9, next_to_watch: "S05E01",
@@ -55,7 +54,6 @@ test.describe("Simkl", () => {
     await tmdb.useDetails("tv", "1396")
     await tmdb.useDetails("movie", "496243")
     await tmdb.useSearch("movie", "UnknownFilm")
-    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -81,7 +79,6 @@ test.describe("Simkl", () => {
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.useDetails("tv", "1396")
-    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -99,7 +96,6 @@ test.describe("Simkl", () => {
 
   test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.useDetails("tv", "1396")
-    await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },

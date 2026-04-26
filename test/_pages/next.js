@@ -24,7 +24,7 @@ export function client(page) {
       await expect(page.getByRole("article", { name: title }).getByRole("link", { name: title, exact: true })).toHaveAttribute("href", href)
     },
     async expectNextEpisodeIs(title, episode, href) {
-      await expect(page.getByRole("article", { name: title }).getByRole("link", { name: episode })).toHaveAttribute("href", href)
+      await expect(page.getByRole("article", { name: title }).getByRole("link", { name: episode, exact: true })).toHaveAttribute("href", href)
     },
     async expectAddTVShowLinksTo(href) {
       await expect(page.getByRole("link", { name: "Add TV show" })).toHaveAttribute("href", href)

@@ -14,15 +14,12 @@ test.describe("Simkl", () => {
     }])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
-    await simkl.useTvEpisodes("11121", [
-      { season: 5, episode: 1, type: "episode", title: "Live Free or Die" },
-    ])
     await simkl.useMarkWatchedShow([{ ids: { simkl: 11121, tmdb: "1396" }, seasons: [{ number: 5, episodes: [{ number: 1 }] }] }])
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
     await next.expectTitleLinksTo("Breaking Bad", "https://simkl.com/tv/11121/breaking-bad")
-    await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
+    await next.expectNextEpisodeIs("Breaking Bad", "5x1", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
     await next.expectAddTVShowLinksTo("https://simkl.com/search/?type=tv")
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncShows([{
@@ -63,7 +60,7 @@ test.describe("Trakt", () => {
     await page.goto("/")
     await intro.signIn("trakt")
     await next.expectTitleLinksTo("Breaking Bad", "https://app.trakt.tv/shows/breaking-bad")
-    await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
+    await next.expectNextEpisodeIs("Breaking Bad", "5x1", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
     await next.expectAddTVShowLinksTo("https://app.trakt.tv/search?m=show")
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),

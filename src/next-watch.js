@@ -249,26 +249,7 @@ function isLoggedIn() { return loggedInState }
     return frag
   }
 
-  // ── Episode title enrichment ──
-
-  async function enrichEpisodeTitles() {
-    const c = await catalog()
-    const results = await Promise.allSettled(tvItems.map((item) => {
-      const ep = item.nextEpisode
-      if (!ep || !item.id || item.status === "plantowatch") return null
-      return c.getEpisodeTitle?.(item.id, ep.season, ep.episode)
-    }))
-    let changed = false
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled" && r.value) {
-        tvItems[i] = { ...tvItems[i], episodeTitle: r.value }
-        changed = true
-      }
-    })
-    if (changed) renderRow(el.tvRow, tvItems, "tv")
-  }
-
-  // ── Load suggestions ──
+// ── Load suggestions ──
 
   async function loadSuggestions() {
     if (!isLoggedIn()) { resolveLibraryReady(); return }
@@ -296,7 +277,6 @@ function isLoggedIn() { return loggedInState }
       resolveLibraryReady()
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
-      enrichEpisodeTitles()
       if (data.fresh && el.toast.hidden) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
@@ -355,7 +335,6 @@ function isLoggedIn() { return loggedInState }
     if (progress?.nextEpisode) {
       item.nextEpisode = progress.nextEpisode
       item.episodeUrl = item.url ? `${item.url}/seasons/${progress.nextEpisode.season}/episodes/${progress.nextEpisode.episode}` : ""
-      if (progress.title) item.episodeTitle = progress.title
       card.refresh()
     }
   }

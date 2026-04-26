@@ -19,7 +19,6 @@ test.describe("Simkl", () => {
     ])
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
-    await simkl.useTvEpisodes("11121", [])
     await tmdb.useDetails("tv", "1396")
     await simkl.useAuthorize()
     await page.goto("/")

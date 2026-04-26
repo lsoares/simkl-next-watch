@@ -1,4 +1,4 @@
-import { createCacheClient, createKeyedCache } from "./cacheClient.js"
+import { createCacheClient } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import { clearAuth } from "./auth.js"
 
@@ -8,8 +8,6 @@ const env = {
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
 const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
-const episodeTitleCache = createKeyedCache("next-watch-simkl-episode-title-v0")
-const episodesInFlight = new Map()
 let libraryInFlight = null
 
 export const simklRepository = {
@@ -30,7 +28,6 @@ export const simklRepository = {
   getTrending,
   getTrendingBrowseUrl,
   searchByTitle,
-  getEpisodeTitle,
 }
 
 function startOAuth() {
@@ -153,18 +150,6 @@ async function searchByTitle(title, year, type) {
   }
 }
 
-async function getEpisodeTitle(showId, season, episode) {
-  if (!showId || season == null || episode == null) return null
-  const key = `${showId}:${season}:${episode}`
-  const cached = await episodeTitleCache.get(key)
-  if (cached) return cached.value
-  const episodes = await fetchEpisodesOnce(showId)
-  const match = episodes.find((e) => Number(e.season) === season && Number(e.episode) === episode && e.type === "episode")
-  const title = match?.title || null
-  await episodeTitleCache.set(key, title)
-  return title
-}
-
 async function publicFetch(path) {
   const res = await fetch(`https://api.simkl.com${path}`, {
     headers: { "Content-Type": "application/json", "simkl-api-key": env.clientId },
@@ -240,14 +225,6 @@ async function loadRawLibrary() {
     }
   })()
   return libraryInFlight
-}
-
-function fetchEpisodesOnce(showId) {
-  if (episodesInFlight.has(showId)) return episodesInFlight.get(showId)
-  const p = publicFetch(`/tv/episodes/${encodeURIComponent(showId)}`)
-    .finally(() => episodesInFlight.delete(showId))
-  episodesInFlight.set(showId, p)
-  return p
 }
 
 function requireGlobal(key) {
