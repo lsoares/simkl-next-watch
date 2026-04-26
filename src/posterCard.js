@@ -166,7 +166,7 @@ class PosterCard extends HTMLElement {
           ${watchedRating != null ? (() => {
             const statusPrefix = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watched ? "Watched" : watching ? "Watching" : null
             const title = statusPrefix ?? "Rated"
-            const body = `${ICON_STAR} ${watchedRating}`
+            const body = `${ICON_EYE} ${watchedRating} ☆`
             const ariaLabel = statusPrefix ? `${statusPrefix} · Rated ${watchedRating} out of 10` : `Rated ${watchedRating} out of 10`
             return url
               ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
@@ -267,6 +267,5 @@ function formatWatchedAgo(iso) {
 
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
 const ICON_BOOKMARK = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
-const ICON_STAR = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
 const ICON_CHECK = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`
 const ICON_SPARKLE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M18 14l.9 2.7L21.6 18l-2.7.9L18 21l-.9-2.1L14.4 18l2.7-.9L18 14z"/></svg>`
