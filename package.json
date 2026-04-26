@@ -1,5 +1,5 @@
 {
-  "name": "simkl",
+  "name": "next-watch",
   "version": "1.0.0",
   "description": "",
   "main": "sw.js",
@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npx playwright test",
     "build": "node build.js",
-    "dev": "(sleep 1 && open http://localhost:62946) & npx serve -l 62946 -s .",
+    "dev": "npx serve -l 62946 -s . & sleep 1; open http://localhost:62946",
     "prepare": "husky"
   },
   "repository": {
