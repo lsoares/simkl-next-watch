@@ -2,7 +2,7 @@ import { test } from "../test.js"
 
 test.describe("Simkl", () => {
   for (const name of ["gemini", "openai", "claude", "grok", "groq", "deepseek", "openrouter"]) {
-    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
+    test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, next, mood, aiPicks }) => {
       await tmdb.useDetails("tv", "1396")
       await tmdb.useDetails("movie", "27205")
       await tmdb.useDetails("movie", "603")
@@ -36,6 +36,7 @@ test.describe("Simkl", () => {
       await simkl.useSearchMovie("Handmaiden", [{ title: "The Handmaiden", year: 2016, ids: { simkl_id: 33003, tmdb: "290098" }, type: "movie", ratings: { imdb: { rating: 8.1 } } }])
       await simkl.useSearchMovie("Inception", [{ title: "Inception", year: 2010, ids: { simkl_id: 22222, tmdb: "27205" }, type: "movie", ratings: { imdb: { rating: 8.8 } } }])
       await simkl.useSearchMovie("Matrix", [{ title: "The Matrix", year: 1999, ids: { simkl_id: 33333, tmdb: "603" }, type: "movie", ratings: { imdb: { rating: 8.7 } } }])
+      await next.expectShowIsPresent("Breaking Bad")
       await mood.open()
       await mood.pickMood("Make me laugh")
       await mood.setApiKey(name, "apiAiKey")
@@ -53,7 +54,7 @@ test.describe("Simkl", () => {
     })
   }
 
-  test("AI dialog posters link to the matched Simkl page, or to Simkl search when unmatched", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
+  test("AI dialog posters link to the matched Simkl page, or to Simkl search when unmatched", async ({ page, simkl, tmdb, ai, intro, next, mood, aiPicks }) => {
     await tmdb.useDetails("tv", "1396")
     await tmdb.useDetails("movie", "496243")
     await tmdb.useSearch("movie", "UnknownFilm")
@@ -72,6 +73,7 @@ test.describe("Simkl", () => {
     await simkl.useSearchTv("", [])
     await simkl.useSearchMovie("Parasite", [{ title: "Parasite", year: 2019, ids: { simkl_id: 33001, tmdb: "496243" }, type: "movie" }])
     await simkl.useSearchMovie("UnknownFilm", [])
+    await next.expectShowIsPresent("Breaking Bad")
     await mood.open()
     await mood.pickMood("Make me laugh")
     await mood.setApiKey("gemini", "apiAiKey")
@@ -83,7 +85,7 @@ test.describe("Simkl", () => {
     await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm")
   })
 
-  test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
+  test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, next, mood }) => {
     await tmdb.useDetails("tv", "1396")
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
@@ -93,6 +95,7 @@ test.describe("Simkl", () => {
         watched_episodes_count: 46, total_episodes_count: 62,
       }],
     })
+    await next.expectShowIsPresent("Breaking Bad")
 
     await mood.open()
 
@@ -101,7 +104,7 @@ test.describe("Simkl", () => {
     await mood.expectPromptIsVisible("Tear-jerker")
   })
 
-  test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
+  test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, next, mood }) => {
     await tmdb.useDetails("tv", "1396")
     await simkl.useTvEpisodes("11121")
     await signInToSimkl(page, simkl, intro, {
@@ -111,6 +114,7 @@ test.describe("Simkl", () => {
         watched_episodes_count: 46, total_episodes_count: 62,
       }],
     })
+    await next.expectShowIsPresent("Breaking Bad")
     await mood.open()
 
     await mood.pickMood("Cozy night in")
