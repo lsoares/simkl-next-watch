@@ -246,8 +246,8 @@
 .mark-watched-btn:hover img { opacity: 1; filter: brightness(10) sepia(1) hue-rotate(80deg) saturate(3); }
 .add-watchlist-btn { background: rgba(30,58,138,0.75); color: rgba(255,255,255,0.7); font-size: 1.8rem; line-height: 1; }
 .add-watchlist-btn:hover { background: rgba(59,130,246,0.4); border-color: #3b82f6; color: #fff; }
-.more-like-btn { background: rgba(76,29,149,0.75); }
-.more-like-btn:hover { background: rgba(139,92,246,0.4); border-color: #8b5cf6; }
+.more-like-btn { background: rgba(120,53,15,0.75); }
+.more-like-btn:hover { background: rgba(245,158,11,0.4); border-color: #f59e0b; }
 .more-like-btn:hover svg { fill: #fff; }
 .item-card .mark-watched-btn,
 .item-card .add-watchlist-btn,
