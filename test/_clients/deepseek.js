@@ -3,7 +3,7 @@ import { expect } from "@playwright/test"
 export function client(page, expectedKey = "apiAiKey") {
   return {
     useChat(responseText, expectedRatings) {
-      return page.route("https://api.deepseek.com/**", async (route) => {
+      return page.route("https://api.deepseek.com/chat/completions", async (route) => {
         expect(route.request().method()).toBe("POST")
         expect(route.request().headers()["authorization"]).toBe(`Bearer ${expectedKey}`)
         const body = route.request().postDataJSON()

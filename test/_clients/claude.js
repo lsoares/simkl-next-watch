@@ -3,7 +3,7 @@ import { expect } from "@playwright/test"
 export function client(page, expectedKey = "apiAiKey") {
   return {
     useChat(responseText, expectedRatings) {
-      return page.route("**/v1/messages", async (route) => {
+      return page.route("https://api.anthropic.com/v1/messages", async (route) => {
         expect(route.request().method()).toBe("POST")
         expect(route.request().headers()["x-api-key"]).toBe(expectedKey)
         expect(route.request().headers()["anthropic-version"]).toBe("2023-06-01")

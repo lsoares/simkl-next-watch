@@ -82,7 +82,7 @@ export function client(page) {
     },
 
     useSearchTv(query, items) {
-      return page.route(`https://api.simkl.com/search/tv?*q=*${query}*`, async (route) => {
+      return page.route(`https://api.simkl.com/search/tv?q=*${query}*`, async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
         const params = new URL(route.request().url()).searchParams
@@ -93,7 +93,7 @@ export function client(page) {
     },
 
     useSearchMovie(query, items) {
-      return page.route(`https://api.simkl.com/search/movie?*q=*${query}*`, async (route) => {
+      return page.route(`https://api.simkl.com/search/movie?q=*${query}*`, async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
         const params = new URL(route.request().url()).searchParams

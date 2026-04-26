@@ -3,7 +3,7 @@ import { expect } from "@playwright/test"
 export function client(page, expectedKey = "apiAiKey") {
   return {
     useChat(responseText, expectedRatings) {
-      return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
+      return page.route("https://generativelanguage.googleapis.com/v1beta/models/*:generateContent?**", async (route) => {
         expect(route.request().method()).toBe("POST")
         const url = new URL(route.request().url())
         expect(url.searchParams.get("key")).toBe(expectedKey)
@@ -29,7 +29,7 @@ export function client(page, expectedKey = "apiAiKey") {
     },
 
     useSimilar(responseText, expectedSeed) {
-      return page.route(/generativelanguage\.googleapis\.com.*generateContent/, async (route) => {
+      return page.route("https://generativelanguage.googleapis.com/v1beta/models/*:generateContent?**", async (route) => {
         expect(route.request().method()).toBe("POST")
         const url = new URL(route.request().url())
         expect(url.searchParams.get("key")).toBe(expectedKey)

@@ -200,7 +200,7 @@ export function client(page) {
     },
 
     useSearchShow(query, items) {
-      return page.route(`https://api.trakt.tv/search/show?*query=*${query}*`, async (route) => {
+      return page.route(`https://api.trakt.tv/search/show?query=*${query}*`, async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
         expect(route.request().headers()["trakt-api-version"]).toBe("2")
@@ -212,7 +212,7 @@ export function client(page) {
     },
 
     useSearchMovie(query, items) {
-      return page.route(`https://api.trakt.tv/search/movie?*query=*${query}*`, async (route) => {
+      return page.route(`https://api.trakt.tv/search/movie?query=*${query}*`, async (route) => {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
         expect(route.request().headers()["trakt-api-version"]).toBe("2")

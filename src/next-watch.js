@@ -107,13 +107,12 @@ function isLoggedIn() { return loggedInState }
     topBar: $("topBar"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    logoutBtn: $("logoutBtn"), aiSaveBtn: $("aiSaveBtn"),
+    menu: $("menu"), menuAiKey: $("menuAiKey"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
     aiSettings: $("aiSettings"), aiSettingsForm: $("aiSettingsForm"), aiProviderUsername: $("aiProviderUsername"), aiSettingsClose: $("aiSettingsClose"),
-    aiKeyBtn: $("aiKeyBtn"),
     aiProviderSelect: $("aiProviderSelect"), aiKeyInput: $("aiKeyInput"), aiKeyLink: $("aiKeyLink"),
     aiPrompts: $("aiPrompts"),
     aiDialog: $("aiDialog"), aiDialogTitle: $("aiDialogTitle"), aiDialogBack: $("aiDialogBack"),
@@ -123,7 +122,7 @@ function isLoggedIn() { return loggedInState }
     similarReload: $("similarReload"), similarGrid: $("similarGrid"),
     similarStats: $("similarStats"), similarRatingTabs: $("similarRatingTabs"),
     toast: $("toast"), installBtn: $("installButton"),
-    attribution: $("attribution"), attributionProviderLink: $("attributionProviderLink"),
+    attributionProviderLink: $("attributionProviderLink"),
   }
 
   let currentView = null
@@ -755,9 +754,7 @@ function isLoggedIn() { return loggedInState }
     el.aiProviderSelect.value = await getAiProvider()
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
     el.navHome.hidden = loggedIn
-    el.logoutBtn.hidden = !loggedIn
-    el.aiKeyBtn.hidden = !loggedIn
-    el.attribution.hidden = !loggedIn
+    el.menu.hidden = !loggedIn
     if (loggedIn) {
       const repo = await catalog()
       el.attributionProviderLink.textContent = repo.name
@@ -792,9 +789,10 @@ function isLoggedIn() { return loggedInState }
     el.aiSettings.close()
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
-  el.aiKeyBtn.addEventListener("click", openAiSettings)
+  el.menuAiKey.addEventListener("click", () => { el.menu.open = false; openAiSettings() })
+  el.menuLogout.addEventListener("click", () => { el.menu.open = false; logout() })
+  document.addEventListener("click", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false })
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
-  el.logoutBtn.addEventListener("click", logout)
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
     container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {

@@ -136,7 +136,6 @@ class PosterCard extends HTMLElement {
     const runtimeLabel = showRuntime ? formatRuntime(item.runtime) : ""
 
     const posterHref = epUrl || url
-    const posterTooltip = watching && item.episodeTitle ? (epCode ? `${epCode} — ${item.episodeTitle}` : item.episodeTitle) : ""
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
@@ -145,7 +144,7 @@ class PosterCard extends HTMLElement {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
           return posterHref
-            ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(anchorLabel)}"${posterTooltip ? ` title="${escapeHtml(posterTooltip)}"` : ""}>${inner}</a>`
+            ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(anchorLabel)}">${inner}</a>`
             : `<div class="poster-anchor">${inner}</div>`
         })()}
         <div class="poster-top">
