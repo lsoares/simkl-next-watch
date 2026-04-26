@@ -12,5 +12,5 @@ export async function catalog() {
 async function getPoster(item) {
   if (!item) return { url: "", released: undefined }
   const tmdb = await tmdbRepository.find(item)
-  return { url: tmdb.url || item.posterFallbackUrl || "", released: tmdb.released }
+  return { url: tmdb.url || "", released: tmdb.released }
 }

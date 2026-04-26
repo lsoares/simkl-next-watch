@@ -101,7 +101,7 @@ async function checkNewEpisodes() {
       : "New episode aired"
     await self.registration.showNotification(show.title, {
       body,
-      icon: show.posterFallbackUrl || "./assets/icon.png",
+      icon: "./assets/icon.png",
       tag: `next-watch-show-${id}`,
     })
   }

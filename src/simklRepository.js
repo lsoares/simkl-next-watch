@@ -296,7 +296,6 @@ function normalizeItem(raw) {
     watched_episodes_count: raw.watched_episodes_count ?? 0,
     total_episodes_count: Math.max(0, (raw.total_episodes_count ?? 0) - (raw.not_aired_episodes_count ?? 0)),
     user_rating: raw.user_rating ?? null,
-    posterFallbackUrl: simklPosterUrl(media.poster),
     type,
   }
 }
@@ -314,7 +313,6 @@ function enrichSearch(item, type) {
     runtime: item.runtime || 0,
     rating: simklRating ?? null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
-    posterFallbackUrl: simklPosterUrl(item.poster),
     total_episodes_count: type === "tv" ? (item.total_episodes_count || 0) : 0,
     type,
   }
@@ -333,13 +331,8 @@ function enrichTrending(item, type) {
     runtime: item.runtime || 0,
     rating: simklRating ?? null,
     release_status: releaseDate && new Date(releaseDate).getTime() > Date.now() ? "unreleased" : undefined,
-    posterFallbackUrl: simklPosterUrl(item.poster),
     type,
   }
-}
-
-function simklPosterUrl(poster) {
-  return poster ? `https://simkl.in/posters/${poster}_ca.jpg` : ""
 }
 
 function canonicalIds(rawIds = {}) {
