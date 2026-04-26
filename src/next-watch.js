@@ -142,7 +142,11 @@ function isLoggedIn() { return loggedInState }
     el.toast.style.color = isError ? "#fca5a5" : ""
     if (typeof msg === "string") el.toast.textContent = msg
     else el.toast.replaceChildren(msg)
-    toastTimer = setTimeout(() => { el.toast.hidden = true; }, 8000)
+    scheduleToastHide()
+  }
+
+  function scheduleToastHide() {
+    toastTimer = setTimeout(() => { el.toast.hidden = true }, 8000)
   }
 
   function handleError(err) {
@@ -841,6 +845,8 @@ function isLoggedIn() { return loggedInState }
     enableNotifs()
   })
   el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
+  el.toast.addEventListener("mouseenter", () => clearTimeout(toastTimer))
+  el.toast.addEventListener("mouseleave", () => { if (!el.toast.hidden) scheduleToastHide() })
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
 
   // ── Boot ──
