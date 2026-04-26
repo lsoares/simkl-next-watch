@@ -1,7 +1,7 @@
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
-import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asSeriesPoster } from "./posterCard.js"
+import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
 import { catalog } from "./catalog.js"
 import { getAuth, setAuth, setClientIds } from "./auth.js"
 import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
@@ -207,7 +207,7 @@ function isLoggedIn() { return loggedInState }
     const c = await catalog()
     rowEl.replaceChildren()
     items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
-    appendAddMore(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add series" : "Add movie" })
+    appendAddMore(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeProgressHydration(rowEl, c)
   }
@@ -309,8 +309,8 @@ function isLoggedIn() { return loggedInState }
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     const c = await catalog()
     containerEl.replaceChildren()
-    items.forEach((item) => showPoster(containerEl, asSeriesPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
-    appendAddMore(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all series" : "View all movies" })
+    items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
+    appendAddMore(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
   }
 
   async function addToWatchlist(card) {
@@ -476,7 +476,7 @@ function isLoggedIn() { return loggedInState }
   function appendSimilarBatch() {
     const slice = similarPool.slice(similarCursor, similarCursor + SIMILAR_BATCH)
     similarCursor += slice.length
-    slice.forEach((item) => showPoster(el.similarGrid, asSeriesPoster(mergeWithLibrary(item, libraryIndex))))
+    slice.forEach((item) => showPoster(el.similarGrid, asTVShowPoster(mergeWithLibrary(item, libraryIndex))))
   }
 
   function observeSimilarTail() {
@@ -654,7 +654,7 @@ function isLoggedIn() { return loggedInState }
         return
       }
       el.aiDialogResults.replaceChildren()
-      items.forEach((item) => showPoster(el.aiDialogResults, asSeriesPoster(item), { fade: true }))
+      items.forEach((item) => showPoster(el.aiDialogResults, asTVShowPoster(item), { fade: true }))
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {

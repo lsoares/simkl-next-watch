@@ -25,7 +25,7 @@
 - **User actions in arrange are fine.** Signing in, navigating to a tab, opening a dialog — all legitimate setup for the *real* act, even though they involve clicks. The rule is about the *final* act and its reaction, not about forbidding clicks before it.
 - **Intermediate sanity-check assertions in arrange are fine.** Asserting the pre-state before the real act is allowed, both as a setup sync point and to frame before/after comparisons.
 - **Don't bundle two independent act→reaction pairs.** If the test has two user actions where neither is setup for the other (e.g. "page load shows X" *and* "clicking Y shows Z"), split them.
-- **Don't assert secondary reactions unrelated to the test's named behavior.** If a test is named "ongoing shows link to next episode", don't also assert the "Add series" link href in it.
+- **Don't assert secondary reactions unrelated to the test's named behavior.** If a test is named "ongoing shows link to next episode", don't also assert the "Add TV show" link href in it.
 
 ## AAA Structure
 - **Every test follows Arrange → Act → Assert.** Act is exactly one isolated line (the real user action). All prior setup clicks belong in arrange; all follow-up checks belong in assert.

@@ -35,8 +35,8 @@ export function client(page) {
     async expectShowIsWatching(title) {
       await expect(page.getByRole("article", { name: title }).getByLabel(/^watching$/i)).toBeVisible()
     },
-    async expectViewAllSeriesLinksTo(href) {
-      await expect(page.getByRole("link", { name: "View all series" })).toHaveAttribute("href", href)
+    async expectViewAllTVShowsLinksTo(href) {
+      await expect(page.getByRole("link", { name: "View all TV shows" })).toHaveAttribute("href", href)
     },
     async expectAddToWatchlistButtonIsAbsent(title) {
       await expect(page.getByRole("article", { name: title }).getByRole("button", { name: /add to watchlist/i })).toHaveCount(0)

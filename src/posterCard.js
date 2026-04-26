@@ -37,7 +37,7 @@ export function appendAddMore(row, { href, icon, label }) {
   row.appendChild(frag)
 }
 
-export function asSeriesPoster(item) {
+export function asTVShowPoster(item) {
   return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
 }
 

@@ -38,7 +38,7 @@
       main {
         width: 100%;
         max-width: 680px;
-        padding: 80px 24px 40px;
+        padding: 80px 24px calc(40px + env(safe-area-inset-bottom));
         box-sizing: border-box;
         flex: 1;
       }
@@ -457,7 +457,7 @@
           display: flex;
           flex-direction: column;
           padding-top: var(--main-top-gap);
-          padding-bottom: 8px;
+          padding-bottom: calc(8px + env(safe-area-inset-bottom));
         }
         main > [role="region"] {
           flex: 1;
@@ -626,7 +626,7 @@
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          padding: var(--main-top-gap) 12px 8px;
+          padding: var(--main-top-gap) 12px calc(8px + env(safe-area-inset-bottom));
         }
         .top-bar-scroll { padding: 0 12px; }
         .poster-title { font-size: 1.08rem; }
@@ -700,6 +700,7 @@
         font-weight: 500;
         line-height: 1.4;
         margin: 0 0 24px;
+        opacity: 0.85;
       }
       .app-intro {
         position: relative;
@@ -733,6 +734,7 @@
         letter-spacing: -0.01em;
         margin: 0 auto 16px;
         max-width: 22ch;
+        opacity: 0.85;
       }
       .app-intro-tagline a {
         text-decoration: none;
@@ -887,8 +889,6 @@
 }
 
 .view-hint-term {
-  text-decoration: underline dotted;
-  text-underline-offset: 2px;
   cursor: help;
 }
 
