@@ -34,7 +34,6 @@ export const traktRepository = {
   addToWatchlist,
   getTrending,
   getTrendingBrowseUrl,
-  searchByTitle,
 }
 
 function startOAuth() {
@@ -190,40 +189,6 @@ function getTrendingBrowseUrl(type) {
   return `https://app.trakt.tv/discover/trending?mode=${mode}&ignore_watched=true`
 }
 
-async function searchByTitle(title, year, type) {
-  const q = encodeURIComponent(`${title} ${year || ""}`.trim())
-  try {
-    if (type === "tv") {
-      const r = await publicFetch(`/search/show?query=${q}&limit=1`)
-      return r[0]?.show ? enrichSearch(r[0].show, "tv") : null
-    }
-    if (type === "movie") {
-      const r = await publicFetch(`/search/movie?query=${q}&limit=1`)
-      return r[0]?.movie ? enrichSearch(r[0].movie, "movie") : null
-    }
-    const movies = await publicFetch(`/search/movie?query=${q}&limit=1`)
-    if (movies[0]?.movie) return enrichSearch(movies[0].movie, "movie")
-    const shows = await publicFetch(`/search/show?query=${q}&limit=1`)
-    if (shows[0]?.show) return enrichSearch(shows[0].show, "tv")
-    return null
-  } catch {
-    return null
-  }
-}
-
-async function publicFetch(path) {
-  const res = await fetch(`https://api.trakt.tv${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      "trakt-api-key": env.clientId,
-      "trakt-api-version": "2",
-    },
-  })
-  const data = await res.json().catch(() => ([]))
-  if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)
-  return data
-}
-
 async function authFetch(path, options = {}) {
   const auth = await idbGet("auth")
   if (!auth?.token) throw new Error("Not signed in to Trakt.")
@@ -358,26 +323,6 @@ function normalizeTraktMovie(entry, { status } = {}) {
     watched_episodes_count: 0,
     total_episodes_count: 0,
     type: "movie",
-  }
-}
-
-function enrichSearch(media, type) {
-  const rawIds = media.ids || {}
-  const ids = {
-    ...(rawIds.trakt != null && { trakt: rawIds.trakt }),
-    ...(rawIds.imdb && { imdb: rawIds.imdb }),
-    ...(rawIds.tmdb != null && { tmdb: rawIds.tmdb }),
-    ...(rawIds.slug && { slug: rawIds.slug }),
-  }
-  return {
-    ids,
-    id: String(rawIds.imdb || rawIds.trakt || ""),
-    title: media.title || "",
-    year: media.year || "",
-    type,
-    url: rawIds.slug ? `https://app.trakt.tv/${type === "movie" ? "movies" : "shows"}/${encodeURIComponent(rawIds.slug)}` : "",
-    rating: media.rating != null ? Math.round(media.rating * 10) / 10 : null,
-    ratingSource: media.rating != null ? "trakt" : null,
   }
 }
 

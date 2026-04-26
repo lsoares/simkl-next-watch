@@ -27,7 +27,6 @@ export const simklRepository = {
   addToWatchlist,
   getTrending,
   getTrendingBrowseUrl,
-  searchByTitle,
 }
 
 function startOAuth() {
@@ -126,36 +125,6 @@ function getTrendingBrowseUrl(type, { period = "today" } = {}) {
     ? "https://simkl.com/movies/best-movies/most-watched/"
     : "https://simkl.com/tv/best-shows/most-watched/"
   return `${base}?wltime=${period}&not_in_list=true`
-}
-
-async function searchByTitle(title, year, type) {
-  const q = encodeURIComponent(`${title.trim()} ${year || ""}`.trim())
-  try {
-    if (type === "tv") {
-      const r = await publicFetch(`/search/tv?q=${q}&limit=1&extended=full`)
-      return r[0] ? enrichSearch(r[0], "tv") : null
-    }
-    if (type === "movie") {
-      const r = await publicFetch(`/search/movie?q=${q}&limit=1&extended=full`)
-      return r[0] ? enrichSearch(r[0], "movie") : null
-    }
-    const movie = await publicFetch(`/search/movie?q=${q}&limit=1&extended=full`)
-    if (movie[0]) return enrichSearch(movie[0], "movie")
-    const tv = await publicFetch(`/search/tv?q=${q}&limit=1&extended=full`)
-    if (tv[0]) return enrichSearch(tv[0], "tv")
-    return null
-  } catch {
-    return null
-  }
-}
-
-async function publicFetch(path) {
-  const res = await fetch(`https://api.simkl.com${path}`, {
-    headers: { "Content-Type": "application/json", "simkl-api-key": env.clientId },
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)
-  return data
 }
 
 async function authFetch(path, options = {}) {
@@ -266,23 +235,6 @@ function normalizeItem(raw) {
     watched_episodes_count: raw.watched_episodes_count ?? 0,
     total_episodes_count: Math.max(0, (raw.total_episodes_count ?? 0) - (raw.not_aired_episodes_count ?? 0)),
     user_rating: raw.user_rating ?? null,
-    type,
-  }
-}
-
-function enrichSearch(item, type) {
-  const ids = canonicalIds(item.ids)
-  const { rating, ratingSource } = pickRating(item.ratings)
-  const releaseDate = type === "movie" ? item?.released : item?.first_aired
-  return {
-    ids,
-    id: ids.simkl ? String(ids.simkl) : "",
-    title: decodeSimklText(item.title),
-    year: item.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : ""),
-    url: buildShowUrl({ id: ids.simkl, title: item.title, type }),
-    rating,
-    ratingSource,
-    total_episodes_count: type === "tv" ? (item.total_episodes_count || 0) : 0,
     type,
   }
 }

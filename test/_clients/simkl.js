@@ -71,28 +71,6 @@ export function client(page) {
       })
     },
 
-useSearchTv(query, items) {
-      return page.route(`https://api.simkl.com/search/tv?q=*${query}*`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("limit")).toBe("1")
-        expect(params.get("extended")).toBe("full")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-      })
-    },
-
-    useSearchMovie(query, items) {
-      return page.route(`https://api.simkl.com/search/movie?q=*${query}*`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("limit")).toBe("1")
-        expect(params.get("extended")).toBe("full")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-      })
-    },
-
     useMarkWatchedMovie(expectedMovies) {
       return page.route("https://api.simkl.com/sync/history", async (route) => {
         expect(route.request().method()).toBe("POST")

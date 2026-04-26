@@ -199,26 +199,6 @@ export function client(page) {
       })
     },
 
-    useSearchShow(query, items) {
-      return page.route(`https://api.trakt.tv/search/show?query=*${query}*`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
-        expect(route.request().headers()["trakt-api-version"]).toBe("2")
-        expect(new URL(route.request().url()).searchParams.get("limit")).toBe("1")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-      })
-    },
-
-    useSearchMovie(query, items) {
-      return page.route(`https://api.trakt.tv/search/movie?query=*${query}*`, async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
-        expect(route.request().headers()["trakt-api-version"]).toBe("2")
-        expect(new URL(route.request().url()).searchParams.get("limit")).toBe("1")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
-      })
-    },
-
     useWatchedShowsByPeriod(byPeriod = {}) {
       return page.route("https://api.trakt.tv/shows/watched/*", async (route) => {
         expect(route.request().method()).toBe("GET")
