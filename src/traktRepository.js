@@ -7,10 +7,10 @@ const env = {
   get clientSecret() { return requireGlobal("__TRAKT_CLIENT_SECRET__") },
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
-const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v1")
-const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v0")
-const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v4")
-const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v0")
+const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v2")
+const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
+const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v5")
+const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v1")
 const progressCache = createKeyedCache("next-watch-trakt-progress-v0")
 let activitiesInFlight = null
 let ratingsInFlight = null
@@ -326,12 +326,16 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     status,
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/seasons/${nextEpisode.season}/episodes/${nextEpisode.episode}` : "",
-    added_at: addedAt,
-    last_watched_at: entry.last_watched_at || null,
+    added_at: toDate(addedAt),
+    last_watched_at: toDate(entry.last_watched_at),
     watched_episodes_count: watched,
     total_episodes_count: show.aired_episodes || 0,
     type: "tv",
   }
+}
+
+function toDate(s) {
+  return s ? new Date(s) : null
 }
 
 function normalizeTraktMovie(entry, { status } = {}) {
@@ -349,8 +353,8 @@ function normalizeTraktMovie(entry, { status } = {}) {
     ratingSource: movie.rating != null ? "trakt" : null,
     status,
     nextEpisode: null,
-    added_at: entry.listed_at || null,
-    last_watched_at: entry.last_watched_at || null,
+    added_at: toDate(entry.listed_at),
+    last_watched_at: toDate(entry.last_watched_at),
     watched_episodes_count: 0,
     total_episodes_count: 0,
     type: "movie",

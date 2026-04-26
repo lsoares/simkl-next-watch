@@ -13,14 +13,14 @@ function byAiPickRelevance(a, b) {
   const bWatched = !!b.last_watched_at
   if (aWatched !== bWatched) return aWatched ? 1 : -1
   if (!aWatched) return 0
-  return new Date(a.last_watched_at) - new Date(b.last_watched_at)
+  return a.last_watched_at - b.last_watched_at
 }
 
 function byWatchingPriority(a, b) {
   const aLeft = availableEpisodesLeft(a), bLeft = availableEpisodesLeft(b)
   if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
   if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
-  return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0)
+  return (b.last_watched_at || 0) - (a.last_watched_at || 0)
 }
 
 function collectLibraryIndex(data) {
@@ -285,7 +285,7 @@ function isLoggedIn() { return loggedInState }
       const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
       tvItems = [
         ...ws.items.toSorted(byWatchingPriority),
-        ...wls.items.toSorted((a, b) => new Date(a.added_at || 0) - new Date(b.added_at || 0)),
+        ...wls.items.toSorted((a, b) => (a.added_at || 0) - (b.added_at || 0)),
       ]
       movieItems = wlm.items
       if (!moviesShuffled) {

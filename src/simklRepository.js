@@ -7,7 +7,7 @@ const env = {
   get clientSecret() { return requireGlobal("__SIMKL_CLIENT_SECRET__") },
   get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
 }
-const libraryCache = createCacheClient("next-watch-simkl-cache-v8")
+const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
 let libraryInFlight = null
 
 export const simklRepository = {
@@ -262,8 +262,8 @@ function normalizeItem(raw) {
     status: normalizeStatus(raw.status),
     nextEpisode,
     episodeUrl: nextEpisode && url ? `${url}/season-${nextEpisode.season}/episode-${nextEpisode.episode}/` : "",
-    added_at: raw.added_to_watchlist_at || raw.added_at || null,
-    last_watched_at: raw.last_watched_at || null,
+    added_at: toDate(raw.added_to_watchlist_at || raw.added_at),
+    last_watched_at: toDate(raw.last_watched_at),
     watched_episodes_count: raw.watched_episodes_count ?? 0,
     total_episodes_count: Math.max(0, (raw.total_episodes_count ?? 0) - (raw.not_aired_episodes_count ?? 0)),
     user_rating: raw.user_rating ?? null,
@@ -320,6 +320,10 @@ function canonicalIds(rawIds = {}) {
     ...(rawIds.tmdb != null && rawIds.tmdb !== "" && { tmdb: rawIds.tmdb }),
     ...(rawIds.slug && { slug: rawIds.slug }),
   }
+}
+
+function toDate(s) {
+  return s ? new Date(s) : null
 }
 
 function decodeSimklText(s) {

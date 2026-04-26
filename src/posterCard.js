@@ -258,9 +258,9 @@ function formatRuntime(mins) {
 }
 
 const relativeTimeUnits = [["year", 31536e6], ["month", 2592e6], ["week", 6048e5], ["day", 864e5], ["hour", 36e5], ["minute", 6e4], ["second", 1e3]]
-function formatWatchedAgo(iso) {
-  const diff = new Date(iso).getTime() - Date.now()
-  if (!iso || Number.isNaN(diff)) return ""
+function formatWatchedAgo(date) {
+  if (!date) return ""
+  const diff = date.getTime() - Date.now()
   const [unit, ms] = relativeTimeUnits.find(([, ms]) => Math.abs(diff) >= ms) || relativeTimeUnits.at(-1)
   return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(Math.round(diff / ms), unit)
 }
