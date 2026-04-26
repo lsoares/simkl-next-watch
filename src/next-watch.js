@@ -678,7 +678,7 @@ function isLoggedIn() { return loggedInState }
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const r = await c.searchByTitle(s.title, s.year).catch(() => null)
       if (r) return mergeWithLibrary(r, libraryIndex)
-      return { title: s.title, year: s.year, ids: {}, type: "movie", url: c.getSearchUrl(s.title) }
+      return { title: s.title, year: s.year, ids: {}, url: c.getSearchUrl(s.title) }
     }))
     return resolved.filter(Boolean).sort(byAiPickRelevance)
   }

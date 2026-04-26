@@ -55,7 +55,6 @@ test.describe("Simkl", () => {
     await tmdb.useDetails("tv", "1396")
     await tmdb.useSeason("1396", 5)
     await tmdb.useDetails("movie", "496243")
-    await tmdb.useSearch("movie", "UnknownFilm")
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -164,7 +163,6 @@ test.describe("Trakt", () => {
 
   test("AI hits open Trakt pages on click, or Trakt search when unmatched", async ({ page, trakt, tmdb, ai, intro, mood, aiPicks }) => {
     await tmdb.useDetails("movie", "27205")
-    await tmdb.useSearch("movie", "UnknownFilm")
     await signInToTrakt(page, trakt, intro, {
       watchedShows: [{
         last_watched_at: new Date().toISOString(),
