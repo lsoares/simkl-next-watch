@@ -1,10 +1,12 @@
 import { createKeyedCache } from "./cacheClient.js"
 
 const cache = createKeyedCache("next-watch-tmdb-meta-v1")
+const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
 const inFlight = new Map()
 
 export const tmdbRepository = {
   find,
+  getSeason,
 }
 
 async function find(item) {
@@ -36,6 +38,29 @@ async function lookup(key, fetchFn) {
       const value = empty()
       await cache.set(key, value)
       return value
+    } finally {
+      inFlight.delete(key)
+    }
+  })()
+  inFlight.set(key, p)
+  return p
+}
+
+async function getSeason(tmdbId, season) {
+  if (!tmdbId || season == null) return []
+  const key = `${tmdbId}:${season}`
+  const cached = await seasonCache.get(key)
+  if (cached) return cached.value
+  if (inFlight.has(key)) return inFlight.get(key)
+  const p = (async () => {
+    try {
+      const r = await tmdbFetch(`/3/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(season)}`)
+      const value = (r?.episodes || []).map((e) => ({ episode: e.episode_number, name: e.name || "" }))
+      await seasonCache.set(key, value)
+      return value
+    } catch {
+      await seasonCache.set(key, [])
+      return []
     } finally {
       inFlight.delete(key)
     }

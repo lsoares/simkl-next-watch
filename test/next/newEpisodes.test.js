@@ -5,6 +5,7 @@ test("first periodic check records baseline counts without notifying", async ({ 
   await simkl.useTrendingTv()
   await simkl.useTrendingMovies()
   await tmdb.useDetails("tv", "1396")
+  await tmdb.useSeason("1396", 5)
   await simkl.useSyncActivities()
   await simkl.useSyncShows([{
     show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -28,6 +29,7 @@ test("subsequent check notifies for each watching show that gained a new episode
   await simkl.useTrendingTv()
   await simkl.useTrendingMovies()
   await tmdb.useDetails("tv", "1396")
+  await tmdb.useSeason("1396", 5)
   await simkl.useSyncActivities()
   await simkl.useSyncShows([{
     show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },

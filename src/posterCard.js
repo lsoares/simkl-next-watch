@@ -38,7 +38,7 @@ export function appendAddMore(row, { href, icon, label }) {
 }
 
 export function asTVShowPoster(item) {
-  return { ...item, nextEpisode: null, episodeUrl: "" }
+  return { ...item, nextEpisode: null, episodeUrl: "", episodeTitle: "" }
 }
 
 export function isUnstarted(item, type) {
@@ -161,7 +161,7 @@ class PosterCard extends HTMLElement {
           </div>
         </div>
         <div class="poster-bottom">
-          ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}</a>` : ""}
+          ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${watchedRating != null ? (() => {
             const statusPrefix = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watched ? "Watched" : watching ? "Watching" : null
             const title = statusPrefix ?? "Rated"

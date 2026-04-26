@@ -74,6 +74,7 @@ test.describe("Trakt", () => {
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await trakt.useWatchlistShows()
     await trakt.useWatchlistMovies()
     await trakt.useDroppedShows()

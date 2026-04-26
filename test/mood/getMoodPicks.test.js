@@ -4,6 +4,7 @@ test.describe("Simkl", () => {
   for (const name of ["gemini", "openai", "claude", "grok", "groq", "deepseek", "openrouter"]) {
     test(`shows poster recommendations with ${name}`, async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
       await tmdb.useDetails("tv", "1396")
+      await tmdb.useSeason("1396", 5)
       await tmdb.useDetails("movie", "27205")
       await tmdb.useDetails("movie", "603")
       await tmdb.useDetails("movie", "496243")
@@ -52,6 +53,7 @@ test.describe("Simkl", () => {
 
   test("AI dialog posters link to the matched Simkl page, or to Simkl search when unmatched", async ({ page, simkl, tmdb, ai, intro, mood, aiPicks }) => {
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await tmdb.useDetails("movie", "496243")
     await tmdb.useSearch("movie", "UnknownFilm")
     await signInToSimkl(page, simkl, intro, {
@@ -79,6 +81,7 @@ test.describe("Simkl", () => {
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -96,6 +99,7 @@ test.describe("Simkl", () => {
 
   test("clicking a mood prompt without a key opens the key dialog", async ({ page, simkl, tmdb, intro, mood }) => {
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await signInToSimkl(page, simkl, intro, {
       shows: [{
         show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },

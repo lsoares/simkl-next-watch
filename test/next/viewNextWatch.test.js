@@ -20,6 +20,7 @@ test.describe("Simkl", () => {
     await simkl.useSyncMovies()
     await simkl.useSyncAnime()
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await simkl.useAuthorize()
     await page.goto("/")
 
@@ -71,6 +72,7 @@ test.describe("Trakt", () => {
     await trakt.useWatchedShowsByPeriod()
     await trakt.useWatchedMoviesByPeriod()
     await tmdb.useDetails("tv", "1396")
+    await tmdb.useSeason("1396", 5)
     await trakt.useLastActivities()
     await trakt.useWatchlistShows()
     await trakt.useWatchlistMovies()
