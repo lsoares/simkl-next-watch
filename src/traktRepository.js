@@ -194,16 +194,16 @@ async function searchByTitle(title, year, type) {
   const q = encodeURIComponent(`${title} ${year || ""}`.trim())
   try {
     if (type === "tv") {
-      const r = await publicFetch(`/search/show?query=${q}&limit=1&extended=full`)
+      const r = await publicFetch(`/search/show?query=${q}&limit=1`)
       return r[0]?.show ? enrichSearch(r[0].show, "tv") : null
     }
     if (type === "movie") {
-      const r = await publicFetch(`/search/movie?query=${q}&limit=1&extended=full`)
+      const r = await publicFetch(`/search/movie?query=${q}&limit=1`)
       return r[0]?.movie ? enrichSearch(r[0].movie, "movie") : null
     }
-    const movies = await publicFetch(`/search/movie?query=${q}&limit=1&extended=full`)
+    const movies = await publicFetch(`/search/movie?query=${q}&limit=1`)
     if (movies[0]?.movie) return enrichSearch(movies[0].movie, "movie")
-    const shows = await publicFetch(`/search/show?query=${q}&limit=1&extended=full`)
+    const shows = await publicFetch(`/search/show?query=${q}&limit=1`)
     if (shows[0]?.show) return enrichSearch(shows[0].show, "tv")
     return null
   } catch {

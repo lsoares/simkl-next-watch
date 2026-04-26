@@ -204,9 +204,7 @@ export function client(page) {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
         expect(route.request().headers()["trakt-api-version"]).toBe("2")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("limit")).toBe("1")
-        expect(params.get("extended")).toBe("full")
+        expect(new URL(route.request().url()).searchParams.get("limit")).toBe("1")
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
       })
     },
@@ -216,9 +214,7 @@ export function client(page) {
         expect(route.request().method()).toBe("GET")
         expect(route.request().headers()["trakt-api-key"]).toBe("test-trakt-client-id")
         expect(route.request().headers()["trakt-api-version"]).toBe("2")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("limit")).toBe("1")
-        expect(params.get("extended")).toBe("full")
+        expect(new URL(route.request().url()).searchParams.get("limit")).toBe("1")
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(items) })
       })
     },
