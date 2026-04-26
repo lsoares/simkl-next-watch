@@ -69,8 +69,8 @@ test.describe("Simkl", () => {
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Parasite", "https://simkl.com/search/?q=Parasite%202019")
-    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm%202020")
+    await aiPicks.expectPosterLinksTo("Parasite", "https://simkl.com/search/?q=Parasite%202019&match=exact")
+    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm%202020&match=exact")
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {

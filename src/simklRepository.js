@@ -62,7 +62,7 @@ function getEpisodeUrl(item, ep) {
 }
 
 function getSearchUrl(title) {
-  return `https://simkl.com/search/?q=${encodeURIComponent(title)}`
+  return `https://simkl.com/search/?q=${encodeURIComponent(title)}&match=exact`
 }
 
 async function getWatchingShows() {
