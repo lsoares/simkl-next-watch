@@ -82,7 +82,6 @@
         opacity: 0.55;
         transition: opacity 0.15s ease;
       }
-      .top-bar #installButton { font-weight: normal; }
       .top-bar .tiny-link:hover { opacity: 1; }
       .top-bar .tiny-link:focus-visible {
         opacity: 1;
@@ -156,10 +155,11 @@
         cursor: pointer;
       }
       .menu [role="menuitem"]:hover { background: rgba(255,255,255,0.08); }
+      .menu [role="menuitem"][hidden] { display: none; }
       .menu p {
-        margin: 10px 0 0;
-        padding: 10px 22px 0;
-        border-top: 1px solid #374151;
+        margin: 0 0 10px;
+        padding: 0 22px 10px;
+        border-bottom: 1px solid #374151;
         font-size: 0.7rem;
         color: var(--muted);
         text-align: left;
@@ -465,10 +465,10 @@
           display: flex;
           flex-direction: column;
         }
-        #nextContent,
-        #trendingContent,
-        #similarContent,
-        #aiContent {
+        body.logged-in #nextContent,
+        body.logged-in #trendingContent,
+        body.logged-in #similarContent,
+        body.logged-in #aiContent {
           flex: 1;
           min-height: 0;
           display: flex;
@@ -550,8 +550,6 @@
         font-weight: 800;
         box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
       }
-
-      #installButton.hidden { display: none; }
 
       .empty {
         color: var(--muted);
@@ -663,13 +661,34 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.35;
-        filter: blur(1px);
+        opacity: 0.32;
+        filter: blur(2px);
         mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
         -webkit-mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
         pointer-events: none;
         z-index: 0;
       }
+      .view-teaser-cta { position: relative; }
+      .view-teaser-cta::before {
+        content: "";
+        position: absolute;
+        inset: -24px -40px;
+        background: radial-gradient(ellipse at center, rgba(15,23,42,0.55) 0%, rgba(15,23,42,0.25) 55%, transparent 85%);
+        z-index: -1;
+        pointer-events: none;
+      }
+      .view-teaser { flex-direction: column; gap: 32px; }
+      .teaser-eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+        opacity: 0.85;
+        transition: color 0.15s ease, opacity 0.15s ease;
+      }
+      .teaser-eyebrow:hover { color: var(--text); opacity: 1; }
       .view-teaser-cta {
         text-align: center;
         max-width: 480px;

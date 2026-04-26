@@ -3,7 +3,7 @@ import { expect } from "@playwright/test"
 export function client(page) {
   return {
     async open() {
-      await page.getByRole("link", { name: /home/i }).click()
+      await page.goto("/")
     },
     async signIn(provider) {
       await page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") }).click()
@@ -22,11 +22,16 @@ export function client(page) {
     async expectIsLoggedIn() {
       await expect(page.getByRole("button", { name: /menu/i })).toBeVisible()
     },
-    async expectInstallButtonIsVisible() {
-      await expect(page.getByRole("button", { name: /install/i })).toBeVisible()
+    async installFromMenu() {
+      await page.getByRole("button", { name: /menu/i }).click()
+      await page.getByRole("menuitem", { name: /install/i }).click()
     },
     async expectInstallButtonIsHidden() {
-      await expect(page.getByRole("button", { name: /install/i })).toBeHidden()
+      await page.getByRole("button", { name: /menu/i }).click()
+      await expect(page.getByRole("menuitem", { name: /install/i })).toBeHidden()
+    },
+    async expectToastSuggestsInstall() {
+      await expect(page.getByRole("status").getByRole("link", { name: /install next watch/i })).toBeVisible()
     },
     async expectViewShowsLoggedOutCta(viewName, ctaRegex) {
       const region = page.getByRole("region", { name: viewName })

@@ -1,15 +1,18 @@
-import { test } from "../test.js"
+import { test, expect } from "../test.js"
 
-test("install button appears when the browser signals the PWA is installable", async ({ page, simkl, intro }) => {
+test("install affordances appear when the browser signals the PWA is installable", async ({ page, simkl, intro }) => {
   await signInToSimkl(page, simkl, intro)
 
   await page.evaluate(() => {
     const e = new Event("beforeinstallprompt")
-    e.prompt = () => Promise.resolve()
+    e.prompt = () => { window.__installPromptCalled = true; return Promise.resolve() }
     window.dispatchEvent(e)
   })
+  await intro.expectToastSuggestsInstall()
 
-  await intro.expectInstallButtonIsVisible()
+  await intro.installFromMenu()
+
+  await expect.poll(() => page.evaluate(() => window.__installPromptCalled)).toBe(true)
 })
 
 

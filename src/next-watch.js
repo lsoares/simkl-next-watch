@@ -104,10 +104,10 @@ function isLoggedIn() { return loggedInState }
       ...opts,
     })
   const el = {
-    topBar: $("topBar"), navHome: $("navHome"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
+    topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
-    menu: $("menu"), menuAiKey: $("menuAiKey"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
+    menu: $("menu"), menuAiKey: $("menuAiKey"), menuInstall: $("menuInstall"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
@@ -121,7 +121,7 @@ function isLoggedIn() { return loggedInState }
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarReload: $("similarReload"), similarGrid: $("similarGrid"),
     similarStats: $("similarStats"), similarRatingTabs: $("similarRatingTabs"),
-    toast: $("toast"), installBtn: $("installButton"),
+    toast: $("toast"),
     attributionProviderLink: $("attributionProviderLink"),
   }
 
@@ -162,6 +162,34 @@ function isLoggedIn() { return loggedInState }
     const frag = document.createDocumentFragment()
     frag.append(`${message} `, link)
     showToast(frag, true)
+  }
+
+  function showPostLoginToast(providerName) {
+    pendingInstallToastPrefix = null
+    clearTimeout(pendingInstallTimer)
+    const connected = `Connected to ${providerName}.`
+    if (window.matchMedia("(display-mode: standalone)").matches) return showToast(connected)
+    if (deferredInstallPrompt) return showToast(buildInstallToastFrag(`${connected} `))
+    if (isIOSSafari()) return showToast(`${connected} Tap Share → Add to Home Screen to install.`)
+    showToast(connected)
+    pendingInstallToastPrefix = `${connected} `
+    pendingInstallTimer = setTimeout(() => { pendingInstallToastPrefix = null }, 4000)
+  }
+
+  function buildInstallToastFrag(prefix) {
+    const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Install Next Watch" })
+    link.style.color = "inherit"
+    link.style.textDecoration = "underline"
+    link.addEventListener("click", (e) => { e.preventDefault(); if (deferredInstallPrompt) deferredInstallPrompt.prompt() })
+    const frag = document.createDocumentFragment()
+    frag.append(prefix, link, " for quick access.")
+    return frag
+  }
+
+  function isIOSSafari() {
+    const ua = navigator.userAgent
+    const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    return iOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)
   }
 
   // ── Viewport ──
@@ -725,7 +753,7 @@ function isLoggedIn() { return loggedInState }
       sessionStorage.removeItem("next-watch-oauth-provider")
       await hydrateUI()
       showView("next")
-      showToast(`Connected to ${userData.name}.`)
+      showPostLoginToast(userData.name)
       await loadSuggestions()
     } catch (err) {
       sessionStorage.removeItem("next-watch-oauth-state")
@@ -757,7 +785,6 @@ function isLoggedIn() { return loggedInState }
     el.topBar.classList.toggle("logged-out", !loggedIn)
     el.aiProviderSelect.value = await getAiProvider()
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
-    el.navHome.hidden = loggedIn
     el.menu.hidden = !loggedIn
     if (loggedIn) {
       const repo = await catalog()
@@ -794,6 +821,7 @@ function isLoggedIn() { return loggedInState }
     showToast(`${el.aiProviderSelect.selectedOptions[0].textContent.replace(/ \(free\)/, "")} key saved.`)
   })
   el.menuAiKey.addEventListener("click", () => { el.menu.open = false; openAiSettings() })
+  el.menuInstall.addEventListener("click", () => { el.menu.open = false; if (deferredInstallPrompt) deferredInstallPrompt.prompt() })
   el.menuLogout.addEventListener("click", () => { el.menu.open = false; logout() })
   document.addEventListener("click", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false })
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
@@ -805,7 +833,9 @@ function isLoggedIn() { return loggedInState }
       if (btn?.dataset.provider === "trakt") traktRepository.startOAuth()
     })
   }
-  el.navHome.addEventListener("click", (e) => { e.preventDefault(); showView("homepage"); })
+  for (const link of document.querySelectorAll("[data-back-home]")) {
+    link.addEventListener("click", (e) => { e.preventDefault(); showView("homepage"); })
+  }
   el.navNext.addEventListener("click", (e) => { e.preventDefault(); showView("next"); })
   el.navTrending.addEventListener("click", (e) => { e.preventDefault(); showView("trending"); })
   el.navSimilar.addEventListener("click", (e) => { e.preventDefault(); showView("similar"); })
@@ -834,17 +864,24 @@ function isLoggedIn() { return loggedInState }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && isLoggedIn()) loadSuggestions(); })
 
   let deferredInstallPrompt = null
+  let pendingInstallToastPrefix = null
+  let pendingInstallTimer = null
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault()
     deferredInstallPrompt = e
-    if (isLoggedIn() && !window.matchMedia("(display-mode: standalone)").matches) el.installBtn.classList.remove("hidden")
+    if (!window.matchMedia("(display-mode: standalone)").matches) el.menuInstall.hidden = false
+    if (pendingInstallToastPrefix) {
+      const prefix = pendingInstallToastPrefix
+      pendingInstallToastPrefix = null
+      clearTimeout(pendingInstallTimer)
+      showToast(buildInstallToastFrag(prefix))
+    }
   })
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null
-    el.installBtn.classList.add("hidden")
+    el.menuInstall.hidden = true
     enableNotifs()
   })
-  el.installBtn.addEventListener("click", () => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); })
   el.toast.addEventListener("mouseenter", () => clearTimeout(toastTimer))
   el.toast.addEventListener("mouseleave", () => { if (!el.toast.hidden) scheduleToastHide() })
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { type: "module" }).catch(() => {})
