@@ -65,8 +65,8 @@ function getEpisodeUrl(item, ep) {
   return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
 }
 
-function getSearchUrl(title) {
-  return `https://simkl.com/search/?q=${encodeURIComponent(title)}&match=exact`
+function getSearchUrl(title, type) {
+  return `https://simkl.com/search/?q=${encodeURIComponent(title)}&match=exact&type=${type === "movie" ? "movies" : "tv"}`
 }
 
 async function getWatchingShows() {

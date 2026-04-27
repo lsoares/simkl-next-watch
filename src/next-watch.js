@@ -634,9 +634,10 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   async function resolveAiSuggestions(suggestions) {
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const query = `${s.title} ${s.year || ""}`.trim()
-      const r = await tmdbRepository.searchByTitle(s.title, s.year).catch(() => null)
-      if (r) return mergeWithLibrary({ ...r, url: repo.getSearchUrl(query) }, libraryIndex)
-      return { title: s.title, year: s.year, ids: {}, url: repo.getSearchUrl(query) }
+      const url = repo.getSearchUrl(query, s.type)
+      const r = await tmdbRepository.searchByTitle(s.title, s.year, s.type).catch(() => null)
+      if (r) return mergeWithLibrary({ ...r, type: s.type, url }, libraryIndex)
+      return { title: s.title, year: s.year, type: s.type, ids: {}, url }
     }))
     return resolved.filter(Boolean).sort(byAiPickRelevance)
   }

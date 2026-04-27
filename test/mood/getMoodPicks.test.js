@@ -24,7 +24,7 @@ test.describe("Simkl", () => {
         ],
       })
       await ai[name].useChat(
-        '[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010},{"title":"The Matrix","year":1999}]',
+        '{"movies":[{"title":"Parasite","year":2019},{"title":"Oldboy","year":2003},{"title":"The Handmaiden","year":2016},{"title":"Inception","year":2010},{"title":"The Matrix","year":1999}],"series":[]}',
         ["Breaking Bad (2008):9", "Inception (2010):8", "The Matrix (1999):7"],
       )
       await tmdb.useSearch("movie", "Parasite", { id: 496243, title: "Parasite", release_date: "2019-05-30", poster_path: "/p.jpg", vote_average: 8.5 })
@@ -58,19 +58,18 @@ test.describe("Simkl", () => {
       }],
     })
     await ai.gemini.useChat(
-      '[{"title":"Parasite","year":2019},{"title":"UnknownFilm","year":2020}]',
+      '{"movies":[{"title":"Parasite","year":2019}],"series":[{"title":"UnknownShow","year":2020}]}',
       ["Breaking Bad (2008):9"],
     )
     await tmdb.useSearch("movie", "Parasite", { id: 496243, title: "Parasite", release_date: "2019-05-30", poster_path: "/p.jpg", vote_average: 8.5 })
-    await tmdb.useSearch("movie", "UnknownFilm", null)
-    await tmdb.useSearch("tv", "UnknownFilm", null)
+    await tmdb.useSearch("tv", "UnknownShow", null)
     await mood.open()
     await mood.pickMood("Make me laugh")
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Parasite", "https://simkl.com/search/?q=Parasite%202019&match=exact")
-    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://simkl.com/search/?q=UnknownFilm%202020&match=exact")
+    await aiPicks.expectPosterLinksTo("Parasite", "https://simkl.com/search/?q=Parasite%202019&match=exact&type=movies")
+    await aiPicks.expectPosterLinksTo("UnknownShow", "https://simkl.com/search/?q=UnknownShow%202020&match=exact&type=tv")
   })
 
   test("mood view shows the mood prompts on load", async ({ page, simkl, tmdb, intro, mood }) => {
@@ -141,7 +140,7 @@ test.describe("Trakt", () => {
       }],
     })
     await ai.gemini.useChat(
-      '[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}]',
+      '{"movies":[{"title":"Inception","year":2010},{"title":"Parasite","year":2019}],"series":[]}',
       ["Breaking Bad (2008):9", "Inception (2010):8"],
     )
     await tmdb.useSearch("movie", "Inception", { id: 27205, title: "Inception", release_date: "2010-07-16", poster_path: "/i.jpg", vote_average: 8.8 })
@@ -164,19 +163,18 @@ test.describe("Trakt", () => {
       }],
     })
     await ai.gemini.useChat(
-      '[{"title":"Inception","year":2010},{"title":"UnknownFilm","year":2020}]',
+      '{"movies":[{"title":"Inception","year":2010}],"series":[{"title":"UnknownShow","year":2020}]}',
       [],
     )
     await tmdb.useSearch("movie", "Inception", { id: 27205, title: "Inception", release_date: "2010-07-16", poster_path: "/i.jpg", vote_average: 8.8 })
-    await tmdb.useSearch("movie", "UnknownFilm", null)
-    await tmdb.useSearch("tv", "UnknownFilm", null)
+    await tmdb.useSearch("tv", "UnknownShow", null)
     await mood.open()
     await mood.pickMood("Make me laugh")
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Inception", "https://trakt.tv/search?query=Inception%202010")
-    await aiPicks.expectPosterLinksTo("UnknownFilm", "https://trakt.tv/search?query=UnknownFilm%202020")
+    await aiPicks.expectPosterLinksTo("Inception", "https://trakt.tv/search?query=Inception%202010&m=movie")
+    await aiPicks.expectPosterLinksTo("UnknownShow", "https://trakt.tv/search?query=UnknownShow%202020&m=show")
   })
 })
 
