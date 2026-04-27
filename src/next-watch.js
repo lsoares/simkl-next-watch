@@ -1,6 +1,10 @@
 import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
-import { getCatalog } from "./catalog.js"
+import { simklRepository } from "./simklRepository.js"
+import { traktRepository } from "./traktRepository.js"
+import { tmdbRepository } from "./tmdbRepository.js"
+
+const repos = { simkl: simklRepository, trakt: traktRepository }
 import { getAuth, setAuth, setClientIds } from "./auth.js"
 import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
 
@@ -86,7 +90,7 @@ async function refreshLoggedIn() {
   currentProvider = auth?.provider || null
 }
 function isLoggedIn() { return loggedInState }
-function currentCatalog() { return getCatalog(currentProvider) }
+function currentCatalog() { return repos[currentProvider] }
 
 // ── App (DOM + state + wiring) ──
 
@@ -101,7 +105,6 @@ function currentCatalog() { return getCatalog(currentProvider) }
   }
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
-      catalog: currentCatalog(),
       loggedIn: isLoggedIn(),
       onMarkWatched: (item, card) => markWatched(item, card.cardEl),
       onAddWatchlist: (_, card) => addToWatchlist(card),
@@ -163,7 +166,7 @@ function currentCatalog() { return getCatalog(currentProvider) }
   function showRetrySignInToast(provider, message) {
     const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Try again" })
     link.style.color = "inherit"
-    link.addEventListener("click", (e) => { e.preventDefault(); getCatalog(provider).startOAuth() })
+    link.addEventListener("click", (e) => { e.preventDefault(); repos[provider].startOAuth() })
     const frag = document.createDocumentFragment()
     frag.append(`${message} `, link)
     showToast(frag, true)
@@ -258,10 +261,11 @@ function currentCatalog() { return getCatalog(currentProvider) }
 
   async function enrichEpisodeTitles() {
     const c = currentCatalog()
-    const results = await Promise.allSettled(tvItems.map((item) => {
+    const results = await Promise.allSettled(tvItems.map(async (item) => {
       const ep = item.nextEpisode
       if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return null
-      return c.getEpisodeTitle(item, ep.season, ep.episode)
+      const episodes = await tmdbRepository.getSeason(item.ids.tmdb, ep.season)
+      return episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
     }))
     let changed = false
     results.forEach((r, i) => {
@@ -356,9 +360,11 @@ function currentCatalog() { return getCatalog(currentProvider) }
       return
     }
     if (progress?.nextEpisode) {
-      item.nextEpisode = progress.nextEpisode
-      item.episodeUrl = item.url ? `${item.url}/seasons/${progress.nextEpisode.season}/episodes/${progress.nextEpisode.episode}` : ""
-      const title = await c.getEpisodeTitle(item, progress.nextEpisode.season, progress.nextEpisode.episode)
+      const ep = progress.nextEpisode
+      item.nextEpisode = ep
+      item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+      const episodes = await tmdbRepository.getSeason(item.ids?.tmdb, ep.season)
+      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
       if (title) item.episodeTitle = title
       card.refresh()
     }
@@ -680,7 +686,7 @@ function currentCatalog() { return getCatalog(currentProvider) }
     const c = currentCatalog()
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const query = `${s.title} ${s.year || ""}`.trim()
-      const r = await c.searchByTitle(s.title, s.year).catch(() => null)
+      const r = await tmdbRepository.searchByTitle(s.title, s.year).catch(() => null)
       if (r) return mergeWithLibrary({ ...r, url: c.getSearchUrl(query) }, libraryIndex)
       return { title: s.title, year: s.year, ids: {}, url: c.getSearchUrl(query) }
     }))
@@ -739,7 +745,7 @@ function currentCatalog() { return getCatalog(currentProvider) }
     history.replaceState(null, "", `${location.pathname}${location.hash || ""}`)
     try {
       const provider = sessionStorage.getItem("next-watch-oauth-provider") || "simkl"
-      const name = getCatalog(provider).name
+      const name = repos[provider].name
       if (error) {
         if (error !== "access_denied") console.error(`${name} OAuth error: ${error}`)
         const message = error === "access_denied"
@@ -752,7 +758,7 @@ function currentCatalog() { return getCatalog(currentProvider) }
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
-      const token = await getCatalog(provider).exchangeOAuthCode(code)
+      const token = await repos[provider].exchangeOAuthCode(code)
       await setAuth(token.access_token, provider)
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
@@ -839,7 +845,7 @@ function currentCatalog() { return getCatalog(currentProvider) }
     container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
-      if (provider === "simkl" || provider === "trakt") getCatalog(provider).startOAuth()
+      if (provider === "simkl" || provider === "trakt") repos[provider].startOAuth()
     })
   }
   for (const link of document.querySelectorAll("[data-back-home]")) {

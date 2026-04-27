@@ -5,7 +5,7 @@ const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
 const inFlight = new Map()
 
 export const tmdbRepository = {
-  find,
+  getDetails,
   getSeason,
   searchByTitle,
 }
@@ -44,7 +44,7 @@ function yearOf(date) {
   return Number.isFinite(y) ? y : null
 }
 
-async function find(item) {
+async function getDetails(item) {
   const ids = item?.ids || {}
   if (ids.tmdb && item.type) {
     const r = await lookup(`tmdb:${item.type}:${ids.tmdb}`, () => fetchDetails(item.type, ids.tmdb))

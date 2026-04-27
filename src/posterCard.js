@@ -1,8 +1,9 @@
+import { tmdbRepository } from "./tmdbRepository.js"
+
 export function renderPoster(row, item, opts = {}) {
-  const { catalog, loggedIn = false, fade = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, fade = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
-  card.catalog = catalog
   card.loggedIn = loggedIn
   card.fade = fade
   if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
@@ -209,7 +210,7 @@ async function hydratePoster(card) {
   const item = card.item
   if (!item || item.posterUrl) return
   if (!item.ids?.tmdb && !item.ids?.imdb) return
-  const meta = await card.catalog.getPoster(item)
+  const meta = await tmdbRepository.getDetails(item)
   if (card.item !== item) return
   if (meta.released === false) {
     card.dispatchEvent(new CustomEvent("poster:irrelevant"))

@@ -1,14 +1,17 @@
 import { idbGet, idbSet } from "./idbStore.js"
 import { getAuth } from "./auth.js"
-import { getCatalog } from "./catalog.js"
+import { simklRepository } from "./simklRepository.js"
+import { traktRepository } from "./traktRepository.js"
 import { createKeyedCache } from "./cacheClient.js"
+
+const repos = { simkl: simklRepository, trakt: traktRepository }
 
 const tmdbMetaCache = createKeyedCache("next-watch-tmdb-meta-v2")
 
 export async function checkNewEpisodes(notify) {
   const provider = (await getAuth())?.provider
   if (!provider) return
-  const c = getCatalog(provider)
+  const c = repos[provider]
   let shows
   try {
     shows = (await c.getWatchingShows()).items
