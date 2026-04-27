@@ -828,7 +828,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })
   window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true })
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && repo != null) loadSuggestions(); })
+  document.addEventListener("visibilitychange", () => { if (document.hidden) el.menu.open = false; else if (repo != null) loadSuggestions() })
 
   let deferredInstallPrompt = null
   let pendingInstallToastPrefix = null
