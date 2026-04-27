@@ -784,7 +784,13 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   el.menuAiKey.addEventListener("click", () => { el.menu.open = false; openAiSettings() })
   el.menuInstall.addEventListener("click", () => { el.menu.open = false; if (deferredInstallPrompt) deferredInstallPrompt.prompt() })
   el.menuLogout.addEventListener("click", () => { el.menu.open = false; logout() })
-  document.addEventListener("click", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false })
+  document.addEventListener("click", (e) => {
+    if (el.menu.open && !el.menu.contains(e.target)) {
+      el.menu.open = false
+      e.stopPropagation()
+      e.preventDefault()
+    }
+  }, true)
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
