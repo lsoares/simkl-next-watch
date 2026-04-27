@@ -475,21 +475,17 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     }
     const recentMovies = watchedMovies.filter((m) => m.last_watched_at?.getTime() >= since).length
     el.menuStats.replaceChildren(
-      statLi("📺", `${fmt(watchedEpisodes)} eps (${fmt(watchedShows.length)} shows)`, `${fmt(recentEpisodes)} eps (${fmt(recentShows)}) · last 30d`),
-      statLi("🎬", `${fmt(watchedMovies.length)} movies`, `${fmt(recentMovies)} · last 30d`),
+      statLi("📺", `${fmt(watchedShows.length)} (${fmt(watchedEpisodes)} eps) · month: ${fmt(recentShows)} (${fmt(recentEpisodes)} eps)`),
+      statLi("🎬", `${fmt(watchedMovies.length)} movies · month: ${fmt(recentMovies)}`),
     )
     el.menuStats.hidden = false
   }
 
   function fmt(n) { return n.toLocaleString() }
 
-  function statLi(icon, primary, sub) {
+  function statLi(icon, text) {
     const li = document.createElement("li")
-    li.append(`${icon} ${primary}`)
-    const subEl = document.createElement("div")
-    subEl.className = "menu-stats-sub"
-    subEl.textContent = sub
-    li.append(subEl)
+    li.textContent = `${icon} ${text}`
     return li
   }
 
