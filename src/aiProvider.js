@@ -26,7 +26,10 @@ export async function fetchSimilarSuggestions({ provider, key, library, seed }) 
 
 function parseSuggestions(raw) {
   try {
-    return JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim())
+    const parsed = JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim())
+    const movies = (parsed.movies || []).map((s) => ({ ...s, type: "movie" }))
+    const series = (parsed.series || []).map((s) => ({ ...s, type: "tv" }))
+    return [...movies, ...series]
   } catch {
     throw new Error("Couldn't parse AI suggestions. Try again.")
   }
@@ -39,7 +42,7 @@ Mood is the primary filter. Weight rated 8-10 as strong likes, 1-5 as dislikes; 
 
 Diversity: ≤2 sharing a franchise or creator; spread across ≥3 decades and ≥3 countries/languages when plausible.
 
-Output JSON only: [{"title":"...","year":1234}]`
+Output JSON only, splitting by kind: {"movies":[{"title":"...","year":1234}],"series":[{"title":"...","year":1234}]}`
 
 const SIMILAR_SYSTEM_PROMPT = `Recommend 10 movies and TV shows similar to the seed title below, none appearing in Library. Skip anything with low IMDb (under 6.5) or weak critical reception — quality is non-negotiable, even if it's a close lateral match.
 Library format: "Title (year)[:N]" where N is the user's 1-10 rating.
@@ -50,7 +53,7 @@ Use Library ratings as secondary signals: 8-10 are likes (lean toward those sens
 
 Spread: at most 3 sharing a franchise or creator with the seed; the rest should be lateral picks from other creators.
 
-Output JSON only: [{"title":"...","year":1234}]`
+Output JSON only, splitting by kind: {"movies":[{"title":"...","year":1234}],"series":[{"title":"...","year":1234}]}`
 
 function buildLibraryContext(shows, movies) {
   const pool = [...(shows || []), ...(movies || [])]

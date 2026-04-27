@@ -26,7 +26,7 @@ test.describe("Simkl", () => {
     }])
     await simkl.useSyncAnime()
     await simkl.useAuthorize()
-    await ai.gemini.useSimilar('[{"title":"The Prestige","year":2006}]', "Inception (2010)")
+    await ai.gemini.useSimilar('{"movies":[{"title":"The Prestige","year":2006}],"series":[]}', "Inception (2010)")
     await tmdb.useSearch("movie", "The Prestige", { id: 1124, title: "The Prestige", release_date: "2006-10-19", poster_path: "/p.jpg", vote_average: 8.5 })
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { tmdb: "1124" } }] })
     await page.goto("/")

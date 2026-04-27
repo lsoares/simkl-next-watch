@@ -10,10 +10,8 @@ export const tmdbRepository = {
   searchByTitle,
 }
 
-async function searchByTitle(title, year) {
-  const movie = await searchOne("movie", title, year)
-  if (movie) return movie
-  return searchOne("tv", title, year)
+async function searchByTitle(title, year, type) {
+  return searchOne(type, title, year)
 }
 
 async function searchOne(type, title, year) {
