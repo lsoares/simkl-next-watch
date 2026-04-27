@@ -27,11 +27,17 @@ export async function idbDelete(key) {
   })
 }
 
-export function idbClearAll() {
+export async function idbDeleteByPrefix(prefix) {
+  const db = await openDb()
   return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase("next-watch")
-    req.onsuccess = () => resolve()
-    req.onblocked = () => resolve()
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE)
+    const req = store.openCursor()
+    req.onsuccess = () => {
+      const cursor = req.result
+      if (!cursor) return resolve()
+      if (typeof cursor.key === "string" && cursor.key.startsWith(prefix)) cursor.delete()
+      cursor.continue()
+    }
     req.onerror = () => reject(req.error)
   })
 }

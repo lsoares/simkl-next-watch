@@ -1,4 +1,4 @@
-import { idbDelete, idbGet, idbSet } from "./idbStore.js"
+import { idbDelete, idbDeleteByPrefix, idbGet, idbSet } from "./idbStore.js"
 
 export function createCacheClient(storageKey) {
   return {
@@ -11,6 +11,9 @@ export function createCacheClient(storageKey) {
       } catch (err) {
         console.warn("Cache not persisted:", err?.message || err)
       }
+    },
+    async clear() {
+      await idbDelete(storageKey)
     },
   }
 }
@@ -33,6 +36,9 @@ export function createKeyedCache(prefix) {
       } catch (err) {
         console.warn("Cache not deleted:", err?.message || err)
       }
+    },
+    async clear() {
+      await idbDeleteByPrefix(`${prefix}:`)
     },
   }
 }

@@ -34,6 +34,19 @@ export const traktRepository = {
   addToWatchlist,
   getTrending,
   getTrendingBrowseUrl,
+  clear,
+}
+
+async function clear() {
+  sessionStorage.removeItem("next-watch-oauth-state")
+  sessionStorage.removeItem("next-watch-oauth-provider")
+  await Promise.all([
+    watchlistShowsCache.clear(),
+    watchlistMoviesCache.clear(),
+    watchedShowsCache.clear(),
+    watchedMoviesCache.clear(),
+    progressCache.clear(),
+  ])
 }
 
 function startOAuth() {

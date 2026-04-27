@@ -1,10 +1,10 @@
-import { fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
+import { clearAi, fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
-import { getAuth, setAuth, setClientIds } from "./auth.js"
-import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
+import { clearAuth, getAuth, setAuth, setClientIds } from "./auth.js"
+import { idbGet, idbSet } from "./idbStore.js"
 
 const repos = { simkl: simklRepository, trakt: traktRepository }
 
@@ -77,10 +77,6 @@ function trendingIdsOf(item) {
 
 // ── Storage ──
 
-function clearAllStorage() {
-  Object.keys(sessionStorage).forEach((k) => { if (k.startsWith("next-watch-")) sessionStorage.removeItem(k) })
-  idbClearAll().catch((err) => console.warn("IDB clear failed:", err))
-}
 
 let repo
 async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
@@ -762,9 +758,9 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
     }
   }
 
-  function logout() {
-    clearAllStorage()
+  async function logout() {
     unregisterPeriodicSync().catch(() => {})
+    await Promise.all([clearAuth(), clearAi(), ...Object.values(repos).map((r) => r.clear())])
     location.href = location.pathname
   }
 

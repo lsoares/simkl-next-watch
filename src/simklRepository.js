@@ -28,6 +28,13 @@ export const simklRepository = {
   addToWatchlist,
   getTrending,
   getTrendingBrowseUrl,
+  clear,
+}
+
+async function clear() {
+  sessionStorage.removeItem("next-watch-oauth-state")
+  sessionStorage.removeItem("next-watch-oauth-provider")
+  await libraryCache.clear()
 }
 
 function startOAuth() {

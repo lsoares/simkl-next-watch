@@ -1,3 +1,10 @@
+import { idbDelete } from "./idbStore.js"
+
+export async function clearAi() {
+  await idbDelete("aiProvider")
+  await Promise.all(Object.keys(PROVIDERS).map((p) => idbDelete(`aiKey:${p}`)))
+}
+
 export async function fetchAiSuggestions({ provider, key, library, mood }) {
   const context = buildLibraryContext(library.shows, library.movies)
   if (!context) return []
