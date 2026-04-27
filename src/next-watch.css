@@ -157,9 +157,8 @@
       .menu [role="menuitem"]:hover { background: rgba(255,255,255,0.08); }
       .menu [role="menuitem"][hidden] { display: none; }
       .menu p {
-        margin: 0 0 10px;
-        padding: 0 22px 10px;
-        border-bottom: 1px solid #374151;
+        margin: 0 0 8px;
+        padding: 0 22px;
         font-size: 0.7rem;
         color: var(--muted);
         text-align: left;
@@ -870,7 +869,7 @@
 .menu-stats {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   list-style: none;
   margin: 0 0 10px;
   padding: 0 22px 10px;
@@ -879,13 +878,7 @@
   color: var(--muted);
   letter-spacing: 0.01em;
 }
-.menu-stats li { line-height: 1.3; }
-.menu-stats-sub {
-  margin-top: 2px;
-  padding-left: 1.4em;
-  font-size: 0.72rem;
-  opacity: 0.7;
-}
+.menu-stats li { line-height: 1.3; white-space: nowrap; }
 
 .view-hint {
   margin: 0 0 24px;
