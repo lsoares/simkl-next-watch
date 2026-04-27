@@ -213,6 +213,9 @@ function normalizeItem(raw) {
   const year = media.year || (releaseDate ? new Date(releaseDate).getUTCFullYear() : "")
   const url = buildShowUrl({ id: simkl, title, type })
   const nextEpisode = parseNextEpisode(raw.next_to_watch)
+  const watchedEpisodesAt = (raw.seasons || []).flatMap((s) => (s.episodes || [])
+    .map((e) => toDate(e.watched_at))
+    .filter(Boolean))
   return {
     ids: { simkl, ...(imdb && { imdb }), ...(tmdb && { tmdb }) },
     id: String(simkl || ""),
@@ -227,6 +230,7 @@ function normalizeItem(raw) {
     added_at: toDate(raw.added_to_watchlist_at || raw.added_at),
     last_watched_at: toDate(raw.last_watched_at),
     watched_episodes_count: raw.watched_episodes_count ?? 0,
+    watched_episodes_at: watchedEpisodesAt,
     total_episodes_count: Math.max(0, (raw.total_episodes_count ?? 0) - (raw.not_aired_episodes_count ?? 0)),
     user_rating: raw.user_rating ?? null,
     type,

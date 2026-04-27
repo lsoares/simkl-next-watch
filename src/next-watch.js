@@ -463,35 +463,33 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   }
 
   function renderStats(shows, movies) {
+    const since = Date.now() - 30 * 24 * 60 * 60 * 1000
     const watchedMovies = movies.filter((m) => m.status === "completed")
     const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
     const watchedEpisodes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0), 0)
-    const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
-    const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
+    let recentEpisodes = 0
+    let recentShows = 0
+    for (const s of shows) {
+      const recent = (s.watched_episodes_at || []).filter((d) => d?.getTime() >= since).length
+      if (recent) { recentEpisodes += recent; recentShows++ }
+    }
+    const recentMovies = watchedMovies.filter((m) => m.last_watched_at?.getTime() >= since).length
     el.menuStats.replaceChildren(
-      statLi("📺", [
-        [watchedShows.length, "shows watched"],
-        [watchedEpisodes, "episodes watched"],
-        [formatDays(showMinutes), "days spent on shows"],
-      ]),
-      statLi("🎬", [
-        [watchedMovies.length, "movies watched"],
-        [formatDays(movieMinutes), "days spent on movies"],
-      ]),
+      statLi("📺", `${fmt(watchedEpisodes)} eps (${fmt(watchedShows.length)} shows)`, `${fmt(recentEpisodes)} eps (${fmt(recentShows)} shows) · last 30d`),
+      statLi("🎬", `${fmt(watchedMovies.length)} movies`, `${fmt(recentMovies)} movies · last 30d`),
     )
     el.menuStats.hidden = false
   }
 
-  function statLi(icon, entries) {
+  function fmt(n) { return n.toLocaleString() }
+
+  function statLi(icon, primary, sub) {
     const li = document.createElement("li")
-    li.append(`${icon} `)
-    entries.forEach(([value, tooltip], i) => {
-      if (i > 0) li.append(" · ")
-      const span = document.createElement("span")
-      span.title = tooltip
-      span.textContent = typeof value === "number" ? value.toLocaleString() : value
-      li.append(span)
-    })
+    li.append(`${icon} ${primary}`)
+    const subEl = document.createElement("div")
+    subEl.className = "menu-stats-sub"
+    subEl.textContent = sub
+    li.append(subEl)
     return li
   }
 
@@ -502,13 +500,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     const minRating = sevenPlus < 10 ? 0 : 7
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", Number.parseInt(t.dataset.minRating, 10) === minRating))
     return minRating
-  }
-
-  function formatDays(minutes) {
-    if (minutes <= 0) return "~0d"
-    const days = minutes / 1440
-    if (days < 10) return `~${(Math.round(days * 2) / 2).toLocaleString()}d`
-    return `~${Math.round(days).toLocaleString()}d`
   }
 
   async function openAiSettings() {
