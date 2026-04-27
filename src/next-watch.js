@@ -791,6 +791,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       e.preventDefault()
     }
   }, true)
+  document.addEventListener("touchmove", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false }, { passive: true, capture: true })
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
