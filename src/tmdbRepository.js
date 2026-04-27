@@ -151,15 +151,8 @@ function hasReleased(date, status) {
 }
 
 async function tmdbFetch(path) {
-  const apiKey = requireGlobal("__TMDB_API_KEY__")
   const sep = path.includes("?") ? "&" : "?"
-  const res = await fetch(`https://api.themoviedb.org${path}${sep}api_key=${encodeURIComponent(apiKey)}`)
+  const res = await fetch(`https://api.themoviedb.org${path}${sep}api_key=${encodeURIComponent(globalThis.__TMDB_API_KEY__)}`)
   if (!res.ok) throw new Error(`TMDB ${res.status}`)
   return res.json()
-}
-
-function requireGlobal(key) {
-  const value = window[key]
-  if (!value) throw new Error(`${key} is not configured.`)
-  return value
 }

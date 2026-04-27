@@ -1,12 +1,6 @@
 import { createCacheClient } from "./cacheClient.js"
-import { idbGet } from "./idbStore.js"
-import { clearAuth } from "./auth.js"
+import { idbGet, idbSet } from "./idbStore.js"
 
-const env = {
-  get clientId() { return requireGlobal("__SIMKL_CLIENT_ID__") },
-  get clientSecret() { return requireGlobal("__SIMKL_CLIENT_SECRET__") },
-  get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
-}
 const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
 let libraryInFlight = null
 
@@ -42,7 +36,7 @@ function startOAuth() {
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", "simkl")
-  location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(env.clientId)}&redirect_uri=${encodeURIComponent(env.redirectUri)}&state=${state}`)
+  location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(globalThis.__SIMKL_CLIENT_ID__)}&redirect_uri=${encodeURIComponent(globalThis.__REDIRECT_URI__)}&state=${state}`)
 }
 
 async function exchangeOAuthCode(code) {
@@ -51,9 +45,9 @@ async function exchangeOAuthCode(code) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       code,
-      client_id: env.clientId,
-      client_secret: env.clientSecret,
-      redirect_uri: env.redirectUri,
+      client_id: globalThis.__SIMKL_CLIENT_ID__,
+      client_secret: globalThis.__SIMKL_CLIENT_SECRET__,
+      redirect_uri: globalThis.__REDIRECT_URI__,
       grant_type: "authorization_code",
     }),
   })
@@ -142,31 +136,23 @@ function getTrendingBrowseUrl(type, { period = "today" } = {}) {
 
 async function authFetch(path, options = {}) {
   const auth = await idbGet("auth")
-  if (!auth?.token) throw new Error("Not signed in to Simkl.")
-  const clientIds = await idbGet("clientIds")
-  const clientId = clientIds?.simkl || envClientIdSafe()
-  if (!clientId) throw new Error("Simkl client ID not configured.")
   const res = await fetch(`https://api.simkl.com${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": clientId,
+      "simkl-api-key": (await idbGet("clientIds")).simkl,
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
+    await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
     startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)
   return data
-}
-
-function envClientIdSafe() {
-  try { return env.clientId } catch { return null }
 }
 
 function authPost(path, payload) {
@@ -208,11 +194,6 @@ async function loadRawLibrary() {
   return libraryInFlight
 }
 
-function requireGlobal(key) {
-  const value = globalThis[key]
-  if (!value) throw new Error(`${key} is not configured.`)
-  return value
-}
 
 function normalizeItem(raw) {
   const media = raw.show || raw.movie || raw

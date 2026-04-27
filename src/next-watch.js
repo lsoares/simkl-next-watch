@@ -3,7 +3,6 @@ import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appe
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
-import { clearAuth, getAuth, setAuth, setClientIds } from "./auth.js"
 import { idbGet, idbSet } from "./idbStore.js"
 
 const repos = { simkl: simklRepository, trakt: traktRepository }
@@ -67,7 +66,7 @@ function trendingPeriodFor(candidateIds, sets) {
 
 
 let repo
-async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
+async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider] }
 
 // ── App (DOM + state + wiring) ──
 
@@ -717,7 +716,7 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
       const token = await repos[provider].exchangeOAuthCode(code)
-      await setAuth(token.access_token, provider)
+      await idbSet("auth", { token: token.access_token, provider })
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
@@ -735,7 +734,7 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
 
   async function logout() {
     unregisterPeriodicSync().catch(() => {})
-    await Promise.all([clearAuth(), clearAi(), ...Object.values(repos).map((r) => r.clear())])
+    await Promise.all([idbSet("auth", null), clearAi(), ...Object.values(repos).map((r) => r.clear())])
     location.href = location.pathname
   }
 
@@ -859,7 +858,7 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
 
   // ── Boot ──
 
-  await setClientIds({
+  await idbSet("clientIds", {
     simkl: window.__SIMKL_CLIENT_ID__ || "",
     trakt: window.__TRAKT_CLIENT_ID__ || "",
   }).catch(() => {})

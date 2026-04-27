@@ -1,12 +1,6 @@
 import { createCacheClient, createKeyedCache } from "./cacheClient.js"
-import { idbGet } from "./idbStore.js"
-import { clearAuth } from "./auth.js"
+import { idbGet, idbSet } from "./idbStore.js"
 
-const env = {
-  get clientId() { return requireGlobal("__TRAKT_CLIENT_ID__") },
-  get clientSecret() { return requireGlobal("__TRAKT_CLIENT_SECRET__") },
-  get redirectUri() { return requireGlobal("__REDIRECT_URI__") },
-}
 const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v2")
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v5")
@@ -54,7 +48,7 @@ function startOAuth() {
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", "trakt")
-  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(env.clientId)}&redirect_uri=${encodeURIComponent(env.redirectUri)}&state=${state}`)
+  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(globalThis.__TRAKT_CLIENT_ID__)}&redirect_uri=${encodeURIComponent(globalThis.__REDIRECT_URI__)}&state=${state}`)
 }
 
 async function exchangeOAuthCode(code) {
@@ -63,9 +57,9 @@ async function exchangeOAuthCode(code) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       code,
-      client_id: env.clientId,
-      client_secret: env.clientSecret,
-      redirect_uri: env.redirectUri,
+      client_id: globalThis.__TRAKT_CLIENT_ID__,
+      client_secret: globalThis.__TRAKT_CLIENT_SECRET__,
+      redirect_uri: globalThis.__REDIRECT_URI__,
       grant_type: "authorization_code",
     }),
   })
@@ -205,32 +199,24 @@ function getTrendingBrowseUrl(type) {
 
 async function authFetch(path, options = {}) {
   const auth = await idbGet("auth")
-  if (!auth?.token) throw new Error("Not signed in to Trakt.")
-  const clientIds = await idbGet("clientIds")
-  const clientId = clientIds?.trakt || envClientIdSafe()
-  if (!clientId) throw new Error("Trakt client ID not configured.")
   const res = await fetch(`https://api.trakt.tv${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": clientId,
+      "trakt-api-key": (await idbGet("clientIds")).trakt,
       "trakt-api-version": "2",
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
+    await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
     startOAuth()
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)
   return data
-}
-
-function envClientIdSafe() {
-  try { return env.clientId } catch { return null }
 }
 
 function authPost(path, payload) {
@@ -280,11 +266,6 @@ function loadWatchedShowsCached() {
   return watchedShowsInFlight
 }
 
-function requireGlobal(key) {
-  const value = globalThis[key]
-  if (!value) throw new Error(`${key} is not configured.`)
-  return value
-}
 
 function normalizeTraktShow(entry, { status, addedAt }) {
   const show = entry.show || entry

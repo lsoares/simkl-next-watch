@@ -1,5 +1,4 @@
 import { idbGet, idbSet } from "./idbStore.js"
-import { getAuth } from "./auth.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
@@ -7,7 +6,7 @@ import { tmdbRepository } from "./tmdbRepository.js"
 const repos = { simkl: simklRepository, trakt: traktRepository }
 
 export async function checkNewEpisodes(notify) {
-  const provider = (await getAuth())?.provider
+  const provider = (await idbGet("auth"))?.provider
   if (!provider) return
   const c = repos[provider]
   let shows
