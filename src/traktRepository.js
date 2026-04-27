@@ -270,6 +270,9 @@ function loadWatchedShowsCached() {
 function normalizeTraktShow(entry, { status, addedAt }) {
   const show = entry.show || entry
   const ids = show.ids || {}
+  const watchedEpisodesAt = status === "watching"
+    ? (entry.seasons || []).flatMap((s) => (s.episodes || []).map((e) => toDate(e.last_watched_at)).filter(Boolean))
+    : []
   const watched = status === "watching"
     ? (entry.seasons || []).reduce((sum, s) => sum + (s.episodes || []).length, 0)
     : 0
@@ -289,6 +292,7 @@ function normalizeTraktShow(entry, { status, addedAt }) {
     added_at: toDate(addedAt),
     last_watched_at: toDate(entry.last_watched_at),
     watched_episodes_count: watched,
+    watched_episodes_at: watchedEpisodesAt,
     total_episodes_count: show.aired_episodes || 0,
     type: "tv",
   }

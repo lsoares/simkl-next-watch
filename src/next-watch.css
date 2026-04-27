@@ -496,7 +496,6 @@
         #aiContent { overflow-y: auto; }
 
         .similar-toolbar { flex-shrink: 0; }
-        #similarStats { flex-shrink: 0; }
 
         /* Similar grid + AI dialog: size cards to fill the available height across 2 rows */
         #similarGrid,
@@ -868,19 +867,25 @@
   margin-bottom: 12px;
 }
 
-.similar-stats {
+.menu-stats {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px 18px;
+  flex-direction: column;
+  gap: 6px;
   list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
+  margin: 0 0 10px;
+  padding: 0 22px 10px;
+  border-bottom: 1px solid #374151;
   font-size: 0.78rem;
   color: var(--muted);
   letter-spacing: 0.01em;
 }
-.similar-stats li { line-height: 1.3; }
+.menu-stats li { line-height: 1.3; }
+.menu-stats-sub {
+  margin-top: 2px;
+  padding-left: 1.4em;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
 
 .view-hint {
   margin: 0 0 24px;
