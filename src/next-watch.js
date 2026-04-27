@@ -475,8 +475,8 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     }
     const recentMovies = watchedMovies.filter((m) => m.last_watched_at?.getTime() >= since).length
     el.menuStats.replaceChildren(
-      statLi("📺", `${fmt(watchedEpisodes)} eps (${fmt(watchedShows.length)} shows)`, `${fmt(recentEpisodes)} eps (${fmt(recentShows)} shows) · last 30d`),
-      statLi("🎬", `${fmt(watchedMovies.length)} movies`, `${fmt(recentMovies)} movies · last 30d`),
+      statLi("📺", `${fmt(watchedEpisodes)} eps (${fmt(watchedShows.length)} shows)`, `${fmt(recentEpisodes)} eps (${fmt(recentShows)}) · last 30d`),
+      statLi("🎬", `${fmt(watchedMovies.length)} movies`, `${fmt(recentMovies)} · last 30d`),
     )
     el.menuStats.hidden = false
   }

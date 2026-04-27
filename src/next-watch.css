@@ -157,9 +157,8 @@
       .menu [role="menuitem"]:hover { background: rgba(255,255,255,0.08); }
       .menu [role="menuitem"][hidden] { display: none; }
       .menu p {
-        margin: 0 0 10px;
-        padding: 0 22px 10px;
-        border-bottom: 1px solid #374151;
+        margin: 0 0 8px;
+        padding: 0 22px;
         font-size: 0.7rem;
         color: var(--muted);
         text-align: left;
