@@ -77,6 +77,20 @@ class PosterCard extends HTMLElement {
     this._render()
   }
 
+  markTrending(period) {
+    if (!period) return
+    const info = TRENDING_BADGE_INFO[period]
+    if (!info) return
+    const host = this.cardEl?.querySelector(".poster-top-text")
+    if (!host || host.querySelector(".trending-badge")) return
+    const badge = document.getElementById("tpl-trending-badge").content.cloneNode(true).firstElementChild
+    badge.classList.add(`trending-badge--${period}`)
+    badge.title = info.tooltip
+    badge.setAttribute("aria-label", info.tooltip)
+    badge.textContent = `🔥 ${info.label}`
+    host.appendChild(badge)
+  }
+
   _emit(name) {
     this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item } }))
   }
@@ -263,6 +277,12 @@ function formatWatchedAgo(date) {
   const diff = date.getTime() - Date.now()
   const [unit, ms] = relativeTimeUnits.find(([, ms]) => Math.abs(diff) >= ms) || relativeTimeUnits.at(-1)
   return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(Math.round(diff / ms), unit)
+}
+
+const TRENDING_BADGE_INFO = {
+  today: { label: "Today", tooltip: "Trending today" },
+  week: { label: "Week", tooltip: "Trending this week" },
+  month: { label: "Month", tooltip: "Trending this month" },
 }
 
 const ICON_EYE = `<svg class="poster-status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`

@@ -53,13 +53,6 @@ function mergeWithLibrary(item, libraryIndex) {
   return match ? { ...item, ...match, ids: { ...item.ids, ...match.ids } } : item
 }
 
-function trendingBadgeInfo(period) {
-  if (period === "today") return { label: "Today", tooltip: "Trending today" }
-  if (period === "week") return { label: "Week", tooltip: "Trending this week" }
-  if (period === "month") return { label: "Month", tooltip: "Trending this month" }
-  return null
-}
-
 function trendingPeriodFor(candidateIds, sets) {
   if (!sets) return null
   const ids = candidateIds.filter(Boolean).map(String)
@@ -68,11 +61,6 @@ function trendingPeriodFor(candidateIds, sets) {
     if (ids.some((id) => sets[period].has(id))) return period
   }
   return null
-}
-
-function trendingIdsOf(item) {
-  const ids = item?.ids || {}
-  return [ids.simkl, ids.imdb, ids.tmdb]
 }
 
 // ── Storage ──
@@ -367,7 +355,7 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
         results.forEach(({ tv, movies }, i) => {
           const period = periods[i]
           for (const item of [...(tv || []), ...(movies || [])]) {
-            for (const id of trendingIdsOf(item)) {
+            for (const id of [item.ids?.simkl, item.ids?.imdb, item.ids?.tmdb]) {
               if (id) sets[period].add(String(id))
             }
           }
@@ -382,21 +370,8 @@ async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
     const sets = await loadTrendingBadgeSets()
     const cards = rowEl.querySelectorAll("poster-card")
     items.forEach((item, i) => {
-      const card = cards[i]
-      if (!card) return
       if (isEligible?.(item) === false) return
-      const period = trendingPeriodFor(trendingIdsOf(item), sets)
-      if (!period) return
-      const info = trendingBadgeInfo(period)
-      if (!info) return
-      const host = card.cardEl?.querySelector(".poster-top-text")
-      if (!host || host.querySelector(".trending-badge")) return
-      const badge = tpl("tpl-trending-badge").firstElementChild
-      badge.classList.add(`trending-badge--${period}`)
-      badge.title = info.tooltip
-      badge.setAttribute("aria-label", info.tooltip)
-      badge.textContent = `🔥 ${info.label}`
-      host.appendChild(badge)
+      cards[i]?.markTrending(trendingPeriodFor([item.ids?.simkl, item.ids?.imdb, item.ids?.tmdb], sets))
     })
   }
 
