@@ -21,8 +21,8 @@ function byAiPickRelevance(a, b) {
 function byWatchingPriority(a, b) {
   const aLeft = availableEpisodesLeft(a), bLeft = availableEpisodesLeft(b)
   if ((aLeft === 1) !== (bLeft === 1)) return aLeft === 1 ? -1 : 1
-  if (aLeft === 1) return (a.runtime || Infinity) - (b.runtime || Infinity)
-  return (b.last_watched_at || 0) - (a.last_watched_at || 0)
+  if (aLeft === 1) return (a.runtime ?? Infinity) - (b.runtime ?? Infinity)
+  return (b.last_watched_at ?? 0) - (a.last_watched_at ?? 0)
 }
 
 function collectLibraryIndex(data) {
@@ -82,14 +82,8 @@ function clearAllStorage() {
   idbClearAll().catch((err) => console.warn("IDB clear failed:", err))
 }
 
-let loggedInState = false
-let currentProvider = null
-async function refreshLoggedIn() {
-  const auth = await getAuth()
-  loggedInState = !!auth?.token
-  currentProvider = auth?.provider || null
-}
-function isLoggedIn() { return loggedInState }
+let repo
+async function refreshLoggedIn() { repo = repos[(await getAuth())?.provider] }
 
 // ── App (DOM + state + wiring) ──
 
@@ -104,7 +98,7 @@ function isLoggedIn() { return loggedInState }
   }
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
-      loggedIn: isLoggedIn(),
+      loggedIn: repo != null,
       onMarkWatched: (item, card) => markWatched(item, card.cardEl),
       onAddWatchlist: (_, card) => addToWatchlist(card),
       onMoreLike: (item) => openSimilar(item),
@@ -211,12 +205,11 @@ function isLoggedIn() { return loggedInState }
   // ── Render rows ──
 
   async function renderRow(rowEl, items, type) {
-    const c = repos[currentProvider]
     rowEl.replaceChildren()
     items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
-    appendAddMore(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
+    appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
-    observeProgressHydration(rowEl, c)
+    observeProgressHydration(rowEl)
   }
 
   // ── Mark watched ──
@@ -234,7 +227,7 @@ function isLoggedIn() { return loggedInState }
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await repos[currentProvider].markWatched(item)
+      await repo.markWatched(item)
       showToast(await toastFrag("Marked ", snapshot, " watched."))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -247,7 +240,7 @@ function isLoggedIn() { return loggedInState }
   async function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (repos[currentProvider].getEpisodeUrl?.(item, ep) || base) : base
+    const url = ep ? (repo.getEpisodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -259,7 +252,6 @@ function isLoggedIn() { return loggedInState }
   // ── Episode title enrichment ──
 
   async function enrichEpisodeTitles() {
-    const c = repos[currentProvider]
     const results = await Promise.allSettled(tvItems.map(async (item) => {
       const ep = item.nextEpisode
       if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return null
@@ -279,14 +271,13 @@ function isLoggedIn() { return loggedInState }
   // ── Load suggestions ──
 
   async function loadSuggestions() {
-    if (!isLoggedIn()) { resolveLibraryReady(); return }
+    if (repo == null) { resolveLibraryReady(); return }
     if (!el.tvRow.children.length) renderSkeletons(el.tvRow)
     if (!el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {
-      const c = repos[currentProvider]
       const [ws, wls, wlm, cs, cm] = await Promise.all([
-        c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
-        c.getCompletedShows(), c.getCompletedMovies(),
+        repo.getWatchingShows(), repo.getWatchlistShows(), repo.getWatchlistMovies(),
+        repo.getCompletedShows(), repo.getCompletedMovies(),
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
@@ -315,10 +306,9 @@ function isLoggedIn() { return loggedInState }
   // ── Trending ──
 
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
-    const c = repos[currentProvider]
     containerEl.replaceChildren()
     items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
-    appendAddMore(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
+    appendAddMore(containerEl, { href: repo.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
   }
 
   async function addToWatchlist(card) {
@@ -328,7 +318,7 @@ function isLoggedIn() { return loggedInState }
     if (!keys.length || !btn) return
     btn.disabled = true
     try {
-      await repos[currentProvider].addToWatchlist(item)
+      await repo.addToWatchlist(item)
       const plantowatchItem = { ...item, status: "plantowatch" }
       for (const key of keys) libraryIndex.set(key, plantowatchItem)
       card.item = plantowatchItem
@@ -341,19 +331,19 @@ function isLoggedIn() { return loggedInState }
     }
   }
 
-  async function observeProgressHydration(rowEl, c) {
+  async function observeProgressHydration(rowEl) {
     rowEl.querySelectorAll("poster-card").forEach((card) => {
       const item = card.item
-      if (item && item.type === "tv" && item.status === "watching" && !item.nextEpisode) {
-        hydrateProgress(card, c)
+      if (item?.type === "tv" && item.status === "watching" && !item.nextEpisode) {
+        hydrateProgress(card)
       }
     })
   }
 
-  async function hydrateProgress(card, c) {
+  async function hydrateProgress(card) {
     const item = card.item
     if (!item) return
-    const progress = await c.getProgress(item)
+    const progress = await repo.getProgress(item)
     if (progress === null) {
       card.closest(".row-item")?.remove()
       return
@@ -374,7 +364,7 @@ function isLoggedIn() { return loggedInState }
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
     const periods = ["today", "week", "month"]
     trendingBadgeSetsPromise = new Promise((resolve) => requestIdleCallback(resolve, { timeout: 2000 }))
-      .then(() => repos[currentProvider])
+      .then(() => repo)
       .then((c) => Promise.all(periods.map((p) => c.getTrending(p))))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() }
@@ -420,7 +410,7 @@ function isLoggedIn() { return loggedInState }
     renderSkeletons(el.trendingTvContent)
     renderSkeletons(el.trendingMoviesContent)
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([repos[currentProvider].getTrending(period), libraryReady])
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([repo.getTrending(period), libraryReady])
       const filterFn = (item) => !libraryLookup(libraryIndex, item)
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
@@ -576,10 +566,9 @@ function isLoggedIn() { return loggedInState }
   // ── Recommendation Flow ──
 
   async function gatherLibrary() {
-    const c = repos[currentProvider]
     const [ws, wls, wlm, cs, cm] = await Promise.all([
-      c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
-      c.getCompletedShows(), c.getCompletedMovies(),
+      repo.getWatchingShows(), repo.getWatchlistShows(), repo.getWatchlistMovies(),
+      repo.getCompletedShows(), repo.getCompletedMovies(),
     ])
     return {
       shows: [...ws.items, ...wls.items, ...cs.items],
@@ -682,12 +671,11 @@ function isLoggedIn() { return loggedInState }
   }
 
   async function resolveAiSuggestions(suggestions) {
-    const c = repos[currentProvider]
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const query = `${s.title} ${s.year || ""}`.trim()
       const r = await tmdbRepository.searchByTitle(s.title, s.year).catch(() => null)
-      if (r) return mergeWithLibrary({ ...r, url: c.getSearchUrl(query) }, libraryIndex)
-      return { title: s.title, year: s.year, ids: {}, url: c.getSearchUrl(query) }
+      if (r) return mergeWithLibrary({ ...r, url: repo.getSearchUrl(query) }, libraryIndex)
+      return { title: s.title, year: s.year, ids: {}, url: repo.getSearchUrl(query) }
     }))
     return resolved.filter(Boolean).sort(byAiPickRelevance)
   }
@@ -705,7 +693,7 @@ function isLoggedIn() { return loggedInState }
   el.aiPrompts.addEventListener("click", (e) => {
     const btn = e.target.closest(".ai-prompt-btn")
     if (!btn) return
-    if (!isLoggedIn()) {
+    if (repo == null) {
       showToast("Sign in to get personalized picks.")
       return
     }
@@ -721,8 +709,8 @@ function isLoggedIn() { return loggedInState }
     const views = {
       homepage: { view: el.homepageView, nav: null },
       next: { view: el.nextView, nav: el.navNext },
-      trending: { view: el.trendingView, nav: el.navTrending, onShow: () => isLoggedIn() && loadTrending() },
-      similar: { view: el.similarView, nav: el.navSimilar, onShow: () => isLoggedIn() && !similarPool.length && libraryReady.then(renderSimilar) },
+      trending: { view: el.trendingView, nav: el.navTrending, onShow: () => repo != null && loadTrending() },
+      similar: { view: el.similarView, nav: el.navSimilar, onShow: () => repo != null && !similarPool.length && libraryReady.then(renderSimilar) },
       mood: { view: el.aiView, nav: el.navAi },
     }
     for (const [key, { view, nav }] of Object.entries(views)) {
@@ -790,15 +778,13 @@ function isLoggedIn() { return loggedInState }
   // ── UI hydration ──
 
   async function hydrateUI() {
-    const loggedIn = isLoggedIn()
-    document.body.classList.toggle("logged-in", loggedIn)
+    document.body.classList.toggle("logged-in", repo != null)
     el.topBar.hidden = false
-    el.topBar.classList.toggle("logged-out", !loggedIn)
+    el.topBar.classList.toggle("logged-out", repo == null)
     el.aiProviderSelect.value = await getAiProvider()
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
-    el.menu.hidden = !loggedIn
-    if (loggedIn) {
-      const repo = repos[currentProvider]
+    el.menu.hidden = repo == null
+    if (repo) {
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
@@ -844,7 +830,7 @@ function isLoggedIn() { return loggedInState }
     container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
-      if (provider === "simkl" || provider === "trakt") repos[provider].startOAuth()
+      repos[provider]?.startOAuth()
     })
   }
   for (const link of document.querySelectorAll("[data-back-home]")) {
@@ -875,7 +861,7 @@ function isLoggedIn() { return loggedInState }
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })
   window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true })
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && isLoggedIn()) loadSuggestions(); })
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && repo != null) loadSuggestions(); })
 
   let deferredInstallPrompt = null
   let pendingInstallToastPrefix = null
@@ -920,7 +906,7 @@ function isLoggedIn() { return loggedInState }
   }
   await handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
-  showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : isLoggedIn() ? "next" : "homepage")
-  if (isLoggedIn()) loadSuggestions()
+  showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : repo != null ? "next" : "homepage")
+  if (repo != null) loadSuggestions()
   else resolveLibraryReady()
 })()
