@@ -112,6 +112,7 @@
         right: max(12px, calc((100vw - 680px) / 2 + 24px));
         z-index: 11;
       }
+      body:has(.menu[open]) main { pointer-events: none; }
       .menu summary {
         list-style: none;
         cursor: pointer;
