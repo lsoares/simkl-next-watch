@@ -2,11 +2,9 @@ import { idbGet, idbSet } from "./idbStore.js"
 import { getAuth } from "./auth.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
-import { createKeyedCache } from "./cacheClient.js"
+import { tmdbRepository } from "./tmdbRepository.js"
 
 const repos = { simkl: simklRepository, trakt: traktRepository }
-
-const tmdbMetaCache = createKeyedCache("next-watch-tmdb-meta-v2")
 
 export async function checkNewEpisodes(notify) {
   const provider = (await getAuth())?.provider
@@ -37,23 +35,10 @@ export async function checkNewEpisodes(notify) {
     const body = ep
       ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
       : "New episode aired"
-    const poster = await cachedPoster(show)
+    const poster = (await tmdbRepository.getDetails(show)).url
     await notify({ title: show.title, body, tag: `next-watch-show-${id}`, ...(poster && { icon: poster, image: poster }) })
   }
   await idbSet("notifiedAired", next)
-}
-
-async function cachedPoster(show) {
-  const ids = show.ids || {}
-  if (ids.tmdb && show.type) {
-    const hit = await tmdbMetaCache.get(`tmdb:${show.type}:${ids.tmdb}`)
-    if (hit?.value?.url) return hit.value.url
-  }
-  if (ids.imdb) {
-    const hit = await tmdbMetaCache.get(`imdb:${ids.imdb}`)
-    if (hit?.value?.url) return hit.value.url
-  }
-  return ""
 }
 
 function pad(n) { return String(n).padStart(2, "0") }

@@ -38,6 +38,7 @@ async function clear() {
 }
 
 function startOAuth() {
+  if (typeof window === "undefined") return
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", "simkl")
@@ -156,7 +157,7 @@ async function authFetch(path, options = {}) {
   })
   if (res.status === 401) {
     await clearAuth().catch((err) => console.warn("IDB auth clear failed:", err))
-    if (typeof window !== "undefined") startOAuth()
+    startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

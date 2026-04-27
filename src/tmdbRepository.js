@@ -45,14 +45,15 @@ function yearOf(date) {
 }
 
 async function getDetails(item) {
+  const canFetch = typeof window !== "undefined"
   const ids = item?.ids || {}
   if (ids.tmdb && item.type) {
-    const r = await lookup(`tmdb:${item.type}:${ids.tmdb}`, () => fetchDetails(item.type, ids.tmdb))
-    if (r.url || r.released != null) return r
+    const r = await lookup(`tmdb:${item.type}:${ids.tmdb}`, canFetch ? (() => fetchDetails(item.type, ids.tmdb)) : null)
+    if (r?.url || r?.released != null) return r
   }
   if (ids.imdb) {
-    const r = await lookup(`imdb:${ids.imdb}`, () => fetchFindByImdb(ids.imdb))
-    if (r.url) return r
+    const r = await lookup(`imdb:${ids.imdb}`, canFetch ? (() => fetchFindByImdb(ids.imdb)) : null)
+    if (r?.url) return r
   }
   return empty()
 }
@@ -60,6 +61,7 @@ async function getDetails(item) {
 async function lookup(key, fetchFn) {
   const cached = await cache.get(key)
   if (cached) return cached.value
+  if (!fetchFn) return null
   if (inFlight.has(key)) return inFlight.get(key)
   const p = (async () => {
     try {
