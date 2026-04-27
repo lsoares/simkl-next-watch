@@ -104,7 +104,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     navSimilar: $("navSimilar"),
     similarView: $("similarView"), similarSetup: $("similarSetup"), similarContent: $("similarContent"),
     similarReload: $("similarReload"), similarGrid: $("similarGrid"),
-    similarStats: $("similarStats"), similarRatingTabs: $("similarRatingTabs"),
+    menuStats: $("menuStats"), similarRatingTabs: $("similarRatingTabs"),
     toast: $("toast"),
     attributionProviderLink: $("attributionProviderLink"),
   }
@@ -276,6 +276,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       }
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
+      renderStats(allShows, allMovies)
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
       enrichEpisodeTitles()
@@ -405,7 +406,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   async function renderSimilar() {
     renderSkeletons(el.similarGrid)
     const { shows, movies } = await gatherLibrary()
-    renderSimilarStats(shows, movies)
     const all = [...shows, ...movies]
     const minRating = await resolveSimilarMinRating(all)
     const pool = minRating === 0 ? all : all.filter((i) => (i.user_rating || 0) >= minRating)
@@ -462,13 +462,13 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     if (items.length) similarObserver.observe(items[items.length - 1])
   }
 
-  function renderSimilarStats(shows, movies) {
+  function renderStats(shows, movies) {
     const watchedMovies = movies.filter((m) => m.status === "completed")
     const watchedShows = shows.filter((s) => (s.watched_episodes_count || 0) > 0 || s.status === "completed")
     const watchedEpisodes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0), 0)
     const movieMinutes = watchedMovies.reduce((sum, m) => sum + (m.runtime || 0), 0)
     const showMinutes = shows.reduce((sum, s) => sum + (s.watched_episodes_count || 0) * (s.runtime || 0), 0)
-    el.similarStats.replaceChildren(
+    el.menuStats.replaceChildren(
       statLi("📺", [
         [watchedShows.length, "shows watched"],
         [watchedEpisodes, "episodes watched"],
@@ -479,7 +479,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
         [formatDays(movieMinutes), "days spent on movies"],
       ]),
     )
-    el.similarStats.hidden = false
+    el.menuStats.hidden = false
   }
 
   function statLi(icon, entries) {
