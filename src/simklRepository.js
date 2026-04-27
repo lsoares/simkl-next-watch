@@ -19,6 +19,7 @@ export const simklRepository = {
   getEpisodeUrl,
   getSearchUrl,
   getWatchingShows,
+  getProgress,
   getWatchlistShows,
   getWatchlistMovies,
   getCompletedShows,
@@ -68,6 +69,10 @@ function getSearchUrl(title) {
 async function getWatchingShows() {
   const { shows, fresh } = await loadRawLibrary()
   return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), fresh }
+}
+
+async function getProgress(item) {
+  return item?.nextEpisode ? { nextEpisode: item.nextEpisode } : null
 }
 
 async function getWatchlistShows() {

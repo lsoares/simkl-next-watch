@@ -1,13 +1,16 @@
 import { idbGet, idbSet } from "./idbStore.js"
-import { catalog } from "./catalog.js"
+import { getAuth } from "./auth.js"
+import { getCatalog } from "./catalog.js"
 import { createKeyedCache } from "./cacheClient.js"
 
 const tmdbMetaCache = createKeyedCache("next-watch-tmdb-meta-v2")
 
 export async function checkNewEpisodes(notify) {
-  let c, shows
+  const provider = (await getAuth())?.provider
+  if (!provider) return
+  const c = getCatalog(provider)
+  let shows
   try {
-    c = await catalog()
     shows = (await c.getWatchingShows()).items
   } catch {
     return
@@ -24,9 +27,8 @@ export async function checkNewEpisodes(notify) {
     if (!grew) continue
 
     let ep = show.nextEpisode
-    if (!ep && c.getProgress) {
-      const key = show.ids?.slug || show.ids?.trakt || show.ids?.simkl
-      const progress = await c.getProgress(key).catch(() => null)
+    if (!ep) {
+      const progress = await c.getProgress(show).catch(() => null)
       ep = progress?.nextEpisode || null
     }
     const body = ep

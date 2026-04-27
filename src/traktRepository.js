@@ -82,9 +82,9 @@ async function getWatchingShows() {
   }
 }
 
-async function getProgress(traktIdOrSlug) {
-  if (!traktIdOrSlug) return null
-  const key = String(traktIdOrSlug)
+async function getProgress(item) {
+  const key = item?.ids?.slug || item?.ids?.trakt
+  if (!key) return null
   const cached = await progressCache.get(key)
   if (cached) return cached.value
   try {
