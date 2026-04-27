@@ -1,5 +1,8 @@
 import { idbGet, idbSet } from "./idbStore.js"
 import { catalog } from "./catalog.js"
+import { createKeyedCache } from "./cacheClient.js"
+
+const tmdbMetaCache = createKeyedCache("next-watch-tmdb-meta-v2")
 
 export async function checkNewEpisodes(notify) {
   let c, shows
@@ -29,9 +32,23 @@ export async function checkNewEpisodes(notify) {
     const body = ep
       ? `New episode S${pad(ep.season)}E${pad(ep.episode)} aired`
       : "New episode aired"
-    await notify({ title: show.title, body, tag: `next-watch-show-${id}` })
+    const poster = await cachedPoster(show)
+    await notify({ title: show.title, body, tag: `next-watch-show-${id}`, ...(poster && { icon: poster, image: poster }) })
   }
   await idbSet("notifiedAired", next)
+}
+
+async function cachedPoster(show) {
+  const ids = show.ids || {}
+  if (ids.tmdb && show.type) {
+    const hit = await tmdbMetaCache.get(`tmdb:${show.type}:${ids.tmdb}`)
+    if (hit?.value?.url) return hit.value.url
+  }
+  if (ids.imdb) {
+    const hit = await tmdbMetaCache.get(`imdb:${ids.imdb}`)
+    if (hit?.value?.url) return hit.value.url
+  }
+  return ""
 }
 
 function pad(n) { return String(n).padStart(2, "0") }

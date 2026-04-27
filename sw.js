@@ -1,3 +1,5 @@
+import { checkNewEpisodes } from "./src/notifications.js"
+
 const CACHE = "next-watch-v8"
 const SHELL = [
   "./index.html",
@@ -19,7 +21,9 @@ self.addEventListener("activate", (e) => {
 })
 
 self.addEventListener("periodicsync", (e) => {
-  if (e.tag === "next-watch-check-episodes") e.waitUntil(checkNewEpisodes())
+  if (e.tag === "next-watch-check-episodes") e.waitUntil(checkNewEpisodes(({ title, ...options }) =>
+    self.registration.showNotification(title, { icon: "./assets/icon.png", ...options })
+  ))
 })
 
 self.addEventListener("notificationclick", (e) => {
@@ -67,9 +71,3 @@ self.addEventListener("fetch", (e) => {
   )
 })
 
-async function checkNewEpisodes() {
-  const { checkNewEpisodes: run } = await import("./src/notifications.js")
-  await run(({ title, body, tag }) =>
-    self.registration.showNotification(title, { body, icon: "./assets/icon.png", tag })
-  )
-}

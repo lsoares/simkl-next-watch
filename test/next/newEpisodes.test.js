@@ -56,6 +56,8 @@ test("subsequent check notifies for each watching show that gained a new episode
     title: "Breaking Bad",
     body: "New episode S05E01 aired",
     tag: "next-watch-show-11121",
+    icon: "https://image.tmdb.org/t/p/w342/t.jpg",
+    image: "https://image.tmdb.org/t/p/w342/t.jpg",
   }])
 })
 
