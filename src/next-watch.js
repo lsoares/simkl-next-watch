@@ -3,10 +3,10 @@ import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appe
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
-
-const repos = { simkl: simklRepository, trakt: traktRepository }
 import { getAuth, setAuth, setClientIds } from "./auth.js"
 import { idbClearAll, idbGet, idbSet } from "./idbStore.js"
+
+const repos = { simkl: simklRepository, trakt: traktRepository }
 
 // ── Pure domain functions (no DOM, no storage, no fetch) ──
 
@@ -90,7 +90,6 @@ async function refreshLoggedIn() {
   currentProvider = auth?.provider || null
 }
 function isLoggedIn() { return loggedInState }
-function currentCatalog() { return repos[currentProvider] }
 
 // ── App (DOM + state + wiring) ──
 
@@ -212,7 +211,7 @@ function currentCatalog() { return repos[currentProvider] }
   // ── Render rows ──
 
   async function renderRow(rowEl, items, type) {
-    const c = currentCatalog()
+    const c = repos[currentProvider]
     rowEl.replaceChildren()
     items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
     appendAddMore(rowEl, { href: c.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
@@ -235,7 +234,7 @@ function currentCatalog() { return repos[currentProvider] }
     if (card) card.classList.add("marking-watched")
     const snapshot = { ...item }
     try {
-      await currentCatalog().markWatched(item)
+      await repos[currentProvider].markWatched(item)
       showToast(await toastFrag("Marked ", snapshot, " watched."))
       await waitForWatchedAnimation(card)
       await loadSuggestions()
@@ -248,7 +247,7 @@ function currentCatalog() { return repos[currentProvider] }
   async function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (currentCatalog().getEpisodeUrl?.(item, ep) || base) : base
+    const url = ep ? (repos[currentProvider].getEpisodeUrl?.(item, ep) || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -260,7 +259,7 @@ function currentCatalog() { return repos[currentProvider] }
   // ── Episode title enrichment ──
 
   async function enrichEpisodeTitles() {
-    const c = currentCatalog()
+    const c = repos[currentProvider]
     const results = await Promise.allSettled(tvItems.map(async (item) => {
       const ep = item.nextEpisode
       if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return null
@@ -284,7 +283,7 @@ function currentCatalog() { return repos[currentProvider] }
     if (!el.tvRow.children.length) renderSkeletons(el.tvRow)
     if (!el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {
-      const c = currentCatalog()
+      const c = repos[currentProvider]
       const [ws, wls, wlm, cs, cm] = await Promise.all([
         c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
         c.getCompletedShows(), c.getCompletedMovies(),
@@ -316,7 +315,7 @@ function currentCatalog() { return repos[currentProvider] }
   // ── Trending ──
 
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
-    const c = currentCatalog()
+    const c = repos[currentProvider]
     containerEl.replaceChildren()
     items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
     appendAddMore(containerEl, { href: c.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
@@ -329,7 +328,7 @@ function currentCatalog() { return repos[currentProvider] }
     if (!keys.length || !btn) return
     btn.disabled = true
     try {
-      await currentCatalog().addToWatchlist(item)
+      await repos[currentProvider].addToWatchlist(item)
       const plantowatchItem = { ...item, status: "plantowatch" }
       for (const key of keys) libraryIndex.set(key, plantowatchItem)
       card.item = plantowatchItem
@@ -375,7 +374,7 @@ function currentCatalog() { return repos[currentProvider] }
     if (trendingBadgeSetsPromise) return trendingBadgeSetsPromise
     const periods = ["today", "week", "month"]
     trendingBadgeSetsPromise = new Promise((resolve) => requestIdleCallback(resolve, { timeout: 2000 }))
-      .then(() => currentCatalog())
+      .then(() => repos[currentProvider])
       .then((c) => Promise.all(periods.map((p) => c.getTrending(p))))
       .then((results) => {
         const sets = { today: new Set(), week: new Set(), month: new Set() }
@@ -421,7 +420,7 @@ function currentCatalog() { return repos[currentProvider] }
     renderSkeletons(el.trendingTvContent)
     renderSkeletons(el.trendingMoviesContent)
     try {
-      const [{ tv: tvData, movies: movieData }] = await Promise.all([currentCatalog().getTrending(period), libraryReady])
+      const [{ tv: tvData, movies: movieData }] = await Promise.all([repos[currentProvider].getTrending(period), libraryReady])
       const filterFn = (item) => !libraryLookup(libraryIndex, item)
       const tv = tvData.filter(filterFn).slice(0, 12)
       const movies = movieData.filter(filterFn).slice(0, 12)
@@ -577,7 +576,7 @@ function currentCatalog() { return repos[currentProvider] }
   // ── Recommendation Flow ──
 
   async function gatherLibrary() {
-    const c = currentCatalog()
+    const c = repos[currentProvider]
     const [ws, wls, wlm, cs, cm] = await Promise.all([
       c.getWatchingShows(), c.getWatchlistShows(), c.getWatchlistMovies(),
       c.getCompletedShows(), c.getCompletedMovies(),
@@ -683,7 +682,7 @@ function currentCatalog() { return repos[currentProvider] }
   }
 
   async function resolveAiSuggestions(suggestions) {
-    const c = currentCatalog()
+    const c = repos[currentProvider]
     const resolved = await Promise.all(suggestions.map(async (s) => {
       const query = `${s.title} ${s.year || ""}`.trim()
       const r = await tmdbRepository.searchByTitle(s.title, s.year).catch(() => null)
@@ -799,7 +798,7 @@ function currentCatalog() { return repos[currentProvider] }
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
     el.menu.hidden = !loggedIn
     if (loggedIn) {
-      const repo = currentCatalog()
+      const repo = repos[currentProvider]
       el.attributionProviderLink.textContent = repo.name
       el.attributionProviderLink.href = repo.siteUrl
     }
