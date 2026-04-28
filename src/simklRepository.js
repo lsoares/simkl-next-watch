@@ -14,7 +14,6 @@ export const simklRepository = {
   startOAuth,
   exchangeOAuthCode,
   getBrowseUrl,
-  getEpisodeUrl,
   getSearchUrl,
   getWatchingShows,
   getProgress,
@@ -37,10 +36,6 @@ async function clear() {
 
 function getBrowseUrl(type) {
   return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/discover/`
-}
-
-function getEpisodeUrl(item, ep) {
-  return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
 }
 
 function getSearchUrl(title, type) {

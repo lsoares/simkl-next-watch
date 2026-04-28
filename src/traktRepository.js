@@ -20,7 +20,6 @@ export const traktRepository = {
   startOAuth,
   exchangeOAuthCode,
   getBrowseUrl,
-  getEpisodeUrl,
   getSearchUrl,
   getWatchingShows,
   getProgress,
@@ -49,10 +48,6 @@ async function clear() {
 
 function getBrowseUrl(type) {
   return `https://app.trakt.tv/discover/recommended?mode=${type === "movie" ? "movie" : "show"}`
-}
-
-function getEpisodeUrl(item, ep) {
-  return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
 }
 
 function getSearchUrl(title, type) {

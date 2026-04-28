@@ -224,7 +224,7 @@ async function refreshLoggedIn() {
   async function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (repo.getEpisodeUrl?.(item, ep) || base) : base
+    const url = ep ? (item.episodeUrl || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
