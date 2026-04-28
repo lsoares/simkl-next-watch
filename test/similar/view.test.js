@@ -27,7 +27,6 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await intro.expectIsLoggedIn()
     await similar.open()
     await similar.expectShowIsPresent("Filler")
 
@@ -53,7 +52,6 @@ test.describe("Simkl", () => {
     await simkl.useAuthorize()
     await page.goto("/")
     await intro.signIn("simkl")
-    await intro.expectIsLoggedIn()
 
     await similar.open()
 
@@ -89,7 +87,6 @@ test.describe("Trakt", () => {
     await trakt.useAuthorize()
     await page.goto("/")
     await intro.signIn("trakt")
-    await intro.expectIsLoggedIn()
 
     await similar.open()
 

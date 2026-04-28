@@ -31,7 +31,6 @@ test.describe("Simkl", () => {
     await simkl.useAddToWatchlist({ movies: [{ to: "plantowatch", ids: { tmdb: "1124" } }] })
     await page.goto("/")
     await intro.signIn("simkl")
-    await intro.expectIsLoggedIn()
     await similar.open()
     await similar.openMoreLikeThis("Inception")
     await aiPicks.expectPosterIsVisible("The Prestige")

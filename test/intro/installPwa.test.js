@@ -52,5 +52,4 @@ async function signInToSimkl(page, simkl, intro) {
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
-  await intro.expectIsLoggedIn()
 }

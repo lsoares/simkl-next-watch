@@ -7,7 +7,7 @@ export function client(page) {
     },
     async signIn(provider) {
       await page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") }).click()
-      await this.expectIsLoggedIn()
+      await expect(page.getByRole("button", { name: /menu/i })).toBeVisible()
     },
     async logout() {
       await page.getByRole("button", { name: /menu/i }).click()
@@ -19,9 +19,6 @@ export function client(page) {
     },
     async expectSignInButtonIsVisible(provider) {
       await expect(page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") })).toBeVisible()
-    },
-    async expectIsLoggedIn() {
-      await expect(page.getByRole("button", { name: /menu/i })).toBeVisible()
     },
     async installFromMenu() {
       await page.getByRole("button", { name: /menu/i }).click()
