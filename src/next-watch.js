@@ -4,6 +4,7 @@ import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
 import { idbGet, idbSet } from "./idbStore.js"
+import * as oauth from "./oauth.js"
 
 const repos = { simkl: simklRepository, trakt: traktRepository }
 
@@ -145,7 +146,7 @@ async function refreshLoggedIn() {
   function showRetrySignInToast(provider, message) {
     const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Try again" })
     link.style.color = "inherit"
-    link.addEventListener("click", (e) => { e.preventDefault(); repos[provider].startOAuth() })
+    link.addEventListener("click", (e) => { e.preventDefault(); oauth.startOAuth(provider) })
     const frag = document.createDocumentFragment()
     frag.append(`${message} `, link)
     showToast(frag, true)
@@ -645,7 +646,7 @@ async function refreshLoggedIn() {
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
-      const token = await repos[provider].exchangeOAuthCode(code)
+      const token = await oauth.exchangeOAuthCode(provider, code)
       await idbSet("auth", { token: token.access_token, provider })
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
@@ -733,7 +734,7 @@ async function refreshLoggedIn() {
     if (!container.firstElementChild) container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
-      repos[provider]?.startOAuth()
+      if (repos[provider]) oauth.startOAuth(provider)
     })
   }
   for (const link of document.querySelectorAll("[data-back-home]")) {

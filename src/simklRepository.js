@@ -5,14 +5,9 @@ import * as oauth from "./oauth.js"
 const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
 let libraryInFlight = null
 
-const startOAuth = () => oauth.startOAuth("simkl")
-const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("simkl", code)
-
 export const simklRepository = {
   name: "Simkl",
   siteUrl: "https://simkl.com",
-  startOAuth,
-  exchangeOAuthCode,
   getBrowseUrl,
   getSearchUrl,
   getWatchingShows,
@@ -115,7 +110,7 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    await startOAuth()
+    await oauth.startOAuth("simkl")
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

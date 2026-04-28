@@ -11,14 +11,9 @@ let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
 
-const startOAuth = () => oauth.startOAuth("trakt")
-const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("trakt", code)
-
 export const traktRepository = {
   name: "Trakt",
   siteUrl: "https://trakt.tv",
-  startOAuth,
-  exchangeOAuthCode,
   getBrowseUrl,
   getSearchUrl,
   getWatchingShows,
@@ -187,7 +182,7 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    await startOAuth()
+    await oauth.startOAuth("trakt")
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))
