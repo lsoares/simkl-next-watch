@@ -66,7 +66,13 @@ function trendingPeriodFor(candidateIds, sets) {
 
 
 let repo
-async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider] }
+async function refreshLoggedIn() {
+  repo = repos[(await idbGet("auth"))?.provider]
+  try {
+    if (repo) localStorage.setItem("next-watch-has-auth", "1")
+    else localStorage.removeItem("next-watch-has-auth")
+  } catch {}
+}
 
 // ── App (DOM + state + wiring) ──
 
@@ -661,6 +667,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   async function logout() {
     unregisterPeriodicSync().catch(() => {})
     await Promise.all([idbSet("auth", null), clearAi(), ...Object.values(repos).map((r) => r.clear())])
+    try { localStorage.removeItem("next-watch-has-auth") } catch {}
     location.href = location.pathname
   }
 
