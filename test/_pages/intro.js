@@ -7,6 +7,7 @@ export function client(page) {
     },
     async signIn(provider) {
       await page.getByRole("button", { name: new RegExp(`sign in with ${provider}`, "i") }).click()
+      await this.expectIsLoggedIn()
     },
     async logout() {
       await page.getByRole("button", { name: /menu/i }).click()
