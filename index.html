@@ -181,15 +181,7 @@
         </div>
       </div>
     </main>
-    <script>
-      // Synchronously decide whether to show the homepage landing before the main module loads.
-      // Without this, logged-in users briefly see the logged-out CTAs while auth is read from IndexedDB.
-      try {
-        if (!localStorage.getItem("next-watch-has-auth")) document.getElementById("homepageView").hidden = false;
-      } catch {
-        document.getElementById("homepageView").hidden = false;
-      }
-    </script>
+    <script>if (!localStorage.getItem("next-watch-auth")) homepageView.hidden = false</script>
 
     <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
       <form id="aiSettingsForm">
