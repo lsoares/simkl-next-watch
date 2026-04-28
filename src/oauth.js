@@ -1,41 +1,31 @@
-import { idbSet } from "./idbStore.js"
+import { idbGet, idbSet } from "./idbStore.js"
 
 const PROVIDERS = {
-  simkl: {
-    authorizeUrl: "https://simkl.com/oauth/authorize",
-    tokenUrl: "https://api.simkl.com/oauth/token",
-    clientId: () => globalThis.__SIMKL_CLIENT_ID__,
-    clientSecret: () => globalThis.__SIMKL_CLIENT_SECRET__,
-  },
-  trakt: {
-    authorizeUrl: "https://trakt.tv/oauth/authorize",
-    tokenUrl: "https://api.trakt.tv/oauth/token",
-    clientId: () => globalThis.__TRAKT_CLIENT_ID__,
-    clientSecret: () => globalThis.__TRAKT_CLIENT_SECRET__,
-  },
+  simkl: { authorizeUrl: "https://simkl.com/oauth/authorize", tokenUrl: "https://api.simkl.com/oauth/token" },
+  trakt: { authorizeUrl: "https://trakt.tv/oauth/authorize", tokenUrl: "https://api.trakt.tv/oauth/token" },
 }
-
-const redirectUri = () => globalThis.__REDIRECT_URI__
 
 export async function startOAuth(provider) {
   const cfg = PROVIDERS[provider]
+  const env = (await idbGet("env")) || {}
   await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
   const state = Math.random().toString(36).slice(2)
   sessionStorage.setItem("next-watch-oauth-state", state)
   sessionStorage.setItem("next-watch-oauth-provider", provider)
-  location.assign(`${cfg.authorizeUrl}?response_type=code&client_id=${encodeURIComponent(cfg.clientId())}&redirect_uri=${encodeURIComponent(redirectUri())}&state=${state}`)
+  location.assign(`${cfg.authorizeUrl}?response_type=code&client_id=${encodeURIComponent(env[provider]?.clientId || "")}&redirect_uri=${encodeURIComponent(env.redirectUri || "")}&state=${state}`)
 }
 
 export async function exchangeOAuthCode(provider, code) {
   const cfg = PROVIDERS[provider]
+  const env = (await idbGet("env")) || {}
   const res = await fetch(cfg.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       code,
-      client_id: cfg.clientId(),
-      client_secret: cfg.clientSecret(),
-      redirect_uri: redirectUri(),
+      client_id: env[provider]?.clientId || "",
+      client_secret: env[provider]?.clientSecret || "",
+      redirect_uri: env.redirectUri || "",
       grant_type: "authorization_code",
     }),
   })

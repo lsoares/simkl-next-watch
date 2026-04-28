@@ -175,7 +175,7 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": (await idbGet("clientIds")).trakt,
+      "trakt-api-key": (await idbGet("env")).trakt.clientId,
       "trakt-api-version": "2",
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,

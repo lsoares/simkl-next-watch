@@ -792,9 +792,11 @@ async function refreshLoggedIn() {
 
   // ── Boot ──
 
-  await idbSet("clientIds", {
-    simkl: window.__SIMKL_CLIENT_ID__ || "",
-    trakt: window.__TRAKT_CLIENT_ID__ || "",
+  await idbSet("env", {
+    simkl: { clientId: window.__SIMKL_CLIENT_ID__ || "", clientSecret: window.__SIMKL_CLIENT_SECRET__ || "" },
+    trakt: { clientId: window.__TRAKT_CLIENT_ID__ || "", clientSecret: window.__TRAKT_CLIENT_SECRET__ || "" },
+    tmdb: { apiKey: window.__TMDB_API_KEY__ || "" },
+    redirectUri: window.__REDIRECT_URI__ || "",
   }).catch(() => {})
   await refreshLoggedIn()
   await hydrateUI()

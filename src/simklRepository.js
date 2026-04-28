@@ -104,7 +104,7 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": (await idbGet("clientIds")).simkl,
+      "simkl-api-key": (await idbGet("env")).simkl.clientId,
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
