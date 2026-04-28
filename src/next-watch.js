@@ -64,7 +64,6 @@ function trendingPeriodFor(candidateIds, sets) {
 
 // ── Storage ──
 
-
 let repo
 async function refreshLoggedIn() {
   repo = repos[(await idbGet("auth"))?.provider]
@@ -237,7 +236,6 @@ async function refreshLoggedIn() {
   // ── Load suggestions ──
 
   async function loadSuggestions() {
-    if (repo == null) { resolveLibraryReady(); return }
     if (!el.tvRow.children.length) renderSkeletons(el.tvRow)
     if (!el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {

@@ -1,5 +1,6 @@
 import { createCacheClient, createKeyedCache } from "./cacheClient.js"
-import { idbGet, idbSet } from "./idbStore.js"
+import { idbGet } from "./idbStore.js"
+import * as oauth from "./oauth.js"
 
 const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v2")
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
@@ -9,6 +10,9 @@ const progressCache = createKeyedCache("next-watch-trakt-progress-v0")
 let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
+
+const startOAuth = () => oauth.startOAuth("trakt")
+const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("trakt", code)
 
 export const traktRepository = {
   name: "Trakt",
@@ -41,32 +45,6 @@ async function clear() {
     watchedMoviesCache.clear(),
     progressCache.clear(),
   ])
-}
-
-async function startOAuth() {
-  if (typeof window === "undefined") return
-  await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
-  const state = Math.random().toString(36).slice(2)
-  sessionStorage.setItem("next-watch-oauth-state", state)
-  sessionStorage.setItem("next-watch-oauth-provider", "trakt")
-  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(globalThis.__TRAKT_CLIENT_ID__)}&redirect_uri=${encodeURIComponent(globalThis.__REDIRECT_URI__)}&state=${state}`)
-}
-
-async function exchangeOAuthCode(code) {
-  const res = await fetch("https://api.trakt.tv/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      code,
-      client_id: globalThis.__TRAKT_CLIENT_ID__,
-      client_secret: globalThis.__TRAKT_CLIENT_SECRET__,
-      redirect_uri: globalThis.__REDIRECT_URI__,
-      grant_type: "authorization_code",
-    }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok || !data.access_token) throw Object.assign(new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`), { user: true })
-  return data
 }
 
 function getBrowseUrl(type) {

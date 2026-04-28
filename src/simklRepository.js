@@ -1,8 +1,12 @@
 import { createCacheClient } from "./cacheClient.js"
-import { idbGet, idbSet } from "./idbStore.js"
+import { idbGet } from "./idbStore.js"
+import * as oauth from "./oauth.js"
 
 const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
 let libraryInFlight = null
+
+const startOAuth = () => oauth.startOAuth("simkl")
+const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("simkl", code)
 
 export const simklRepository = {
   name: "Simkl",
@@ -29,32 +33,6 @@ async function clear() {
   sessionStorage.removeItem("next-watch-oauth-state")
   sessionStorage.removeItem("next-watch-oauth-provider")
   await libraryCache.clear()
-}
-
-async function startOAuth() {
-  if (typeof window === "undefined") return
-  await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
-  const state = Math.random().toString(36).slice(2)
-  sessionStorage.setItem("next-watch-oauth-state", state)
-  sessionStorage.setItem("next-watch-oauth-provider", "simkl")
-  location.assign(`https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(globalThis.__SIMKL_CLIENT_ID__)}&redirect_uri=${encodeURIComponent(globalThis.__REDIRECT_URI__)}&state=${state}`)
-}
-
-async function exchangeOAuthCode(code) {
-  const res = await fetch("https://api.simkl.com/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      code,
-      client_id: globalThis.__SIMKL_CLIENT_ID__,
-      client_secret: globalThis.__SIMKL_CLIENT_SECRET__,
-      redirect_uri: globalThis.__REDIRECT_URI__,
-      grant_type: "authorization_code",
-    }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!data.access_token) throw Object.assign(new Error(data.error || "Token exchange failed."), { user: true })
-  return data
 }
 
 function getBrowseUrl(type) {

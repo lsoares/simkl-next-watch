@@ -108,7 +108,7 @@ class PosterCard extends HTMLElement {
     btn.disabled = true
     try {
       await this.handlers.onMarkWatched?.(this.item)
-    } catch {
+    } finally {
       btn.disabled = false
     }
   }
@@ -119,7 +119,7 @@ class PosterCard extends HTMLElement {
     try {
       await this.handlers.onAddWatchlist?.(this.item)
       this._refresh()
-    } catch {
+    } finally {
       btn.disabled = false
     }
   }
@@ -186,10 +186,6 @@ class PosterCard extends HTMLElement {
     const unstartedEpCount = showEpCount ? availableEpisodesLeft(item) : null
     const unstartedEpLabel = Number.isFinite(unstartedEpCount) && unstartedEpCount > 0 ? `${unstartedEpCount} episode${unstartedEpCount === 1 ? "" : "s"}` : ""
 
-    // Action rules:
-    // - not started → add to watchlist
-    // - started or in watchlist → mark watched
-    // - finished → more like this
     const hasEpisodeInfo = type === "tv" && !!item.nextEpisode
     const showAddWatchlist = loggedIn && id && notStarted
     const showMarkWatched = inWatchlist && (type !== "tv" || hasEpisodeInfo)
