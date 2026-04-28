@@ -229,7 +229,7 @@ class PosterCard extends HTMLElement {
               ${showRuntime ? `<span class="poster-runtime">${escapeHtml(runtimeLabel)}</span>` : ""}
             </div>` : ""}
             ${unstartedEpLabel ? `<span class="poster-episode-count">${escapeHtml(unstartedEpLabel)}</span>` : ""}
-            ${showRating ? `<span class="poster-status poster-status--${ratingLabel.toLowerCase()}" title="${ratingLabel} rating: ${ratingText}/10" aria-label="${ratingLabel} rating ${ratingText} out of 10">${ratingText} ☆</span>` : ""}
+            ${showRating ? `<span class="poster-status poster-status--rating" title="${ratingLabel} rating: ${ratingText}/10" aria-label="${ratingLabel} rating ${ratingText} out of 10">${ratingText} ☆</span>` : ""}
           </div>
         </div>
         <div class="poster-bottom">
