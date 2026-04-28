@@ -13,7 +13,7 @@ function byAiPickRelevance(a, b) {
   const aWatched = !!a.last_watched_at
   const bWatched = !!b.last_watched_at
   if (aWatched !== bWatched) return aWatched ? 1 : -1
-  if (!aWatched) return 0
+  if (!aWatched) return (b.rating ?? 0) - (a.rating ?? 0)
   return a.last_watched_at - b.last_watched_at
 }
 
