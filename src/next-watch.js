@@ -675,7 +675,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function hydrateUI() {
     document.body.classList.toggle("logged-in", repo != null)
-    el.topBar.hidden = false
     el.topBar.classList.toggle("logged-out", repo == null)
     el.aiProviderSelect.value = await getAiProvider()
     el.aiKeyInput.value = await getAiKey(el.aiProviderSelect.value)
@@ -730,7 +729,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
   el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
-    container.appendChild(tpl("tpl-signin-ctas"))
+    if (!container.firstElementChild) container.appendChild(tpl("tpl-signin-ctas"))
     container.addEventListener("click", (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
       repos[provider]?.startOAuth()

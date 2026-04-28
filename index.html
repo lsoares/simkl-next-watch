@@ -35,7 +35,7 @@
         Next Watch needs JavaScript to fetch your Simkl library. Enable JS and reload.
       </p>
     </noscript>
-    <nav class="top-bar" id="topBar" hidden>
+    <nav class="top-bar logged-out" id="topBar">
       <div class="top-bar-scroll">
         <a id="navNext" class="tiny-link" href="#next">next</a>
         <a id="navTrending" class="tiny-link" href="#trending">trending</a>
@@ -57,7 +57,7 @@
 
     <main>
       <!-- Homepage (logged-out landing) -->
-      <div id="homepageView" role="region" aria-label="Home" hidden>
+      <div id="homepageView" role="region" aria-label="Home">
         <div class="app-intro">
           <p class="app-intro-eyebrow">Next Watch</p>
           <h2 class="app-intro-tagline">A no-clutter companion for your <a href="https://app.trakt.tv" target="_blank" rel="noreferrer">Trakt</a> or <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> library.</h2>
@@ -66,7 +66,10 @@
             <li><span class="app-intro-feature-icon">🔥</span><div><strong>Trending:</strong> what's hot today, this week, this month.</div></li>
             <li><span class="app-intro-feature-icon">✨</span><div><strong>Mood &amp; Similar:</strong> AI picks tuned to your ratings — by vibe, or by a title you love.</div></li>
           </ul>
-          <div class="app-intro-actions" data-signin-ctas></div>
+          <div class="app-intro-actions" data-signin-ctas>
+            <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.svg" alt="" />Sign in with Trakt</button>
+            <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Sign in with Simkl</button>
+          </div>
         </div>
       </div>
 
