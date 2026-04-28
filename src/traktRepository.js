@@ -14,6 +14,7 @@ let watchedShowsInFlight = null
 export const traktRepository = {
   name: "Trakt",
   siteUrl: "https://trakt.tv",
+  getOAuthConfig,
   getBrowseUrl,
   getSearchUrl,
   getWatchingShows,
@@ -27,6 +28,18 @@ export const traktRepository = {
   getTrending,
   getTrendingBrowseUrl,
   clear,
+}
+
+async function getOAuthConfig() {
+  const env = (await idbGet("env")) || {}
+  return {
+    name: "trakt",
+    authorizeUrl: "https://trakt.tv/oauth/authorize",
+    tokenUrl: "https://api.trakt.tv/oauth/token",
+    clientId: env.trakt?.clientId || "",
+    clientSecret: env.trakt?.clientSecret || "",
+    redirectUri: env.redirectUri || "",
+  }
 }
 
 async function clear() {
@@ -182,7 +195,7 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    await oauth.startOAuth("trakt")
+    await oauth.startOAuth(await getOAuthConfig())
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

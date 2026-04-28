@@ -8,6 +8,7 @@ let libraryInFlight = null
 export const simklRepository = {
   name: "Simkl",
   siteUrl: "https://simkl.com",
+  getOAuthConfig,
   getBrowseUrl,
   getSearchUrl,
   getWatchingShows,
@@ -20,6 +21,18 @@ export const simklRepository = {
   getTrending,
   getTrendingBrowseUrl,
   clear,
+}
+
+async function getOAuthConfig() {
+  const env = (await idbGet("env")) || {}
+  return {
+    name: "simkl",
+    authorizeUrl: "https://simkl.com/oauth/authorize",
+    tokenUrl: "https://api.simkl.com/oauth/token",
+    clientId: env.simkl?.clientId || "",
+    clientSecret: env.simkl?.clientSecret || "",
+    redirectUri: env.redirectUri || "",
+  }
 }
 
 async function clear() {
@@ -110,7 +123,7 @@ async function authFetch(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    await oauth.startOAuth("simkl")
+    await oauth.startOAuth(await getOAuthConfig())
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

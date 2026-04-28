@@ -146,7 +146,7 @@ async function refreshLoggedIn() {
   function showRetrySignInToast(provider, message) {
     const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Try again" })
     link.style.color = "inherit"
-    link.addEventListener("click", (e) => { e.preventDefault(); oauth.startOAuth(provider) })
+    link.addEventListener("click", async (e) => { e.preventDefault(); oauth.startOAuth(await repos[provider].getOAuthConfig()) })
     const frag = document.createDocumentFragment()
     frag.append(`${message} `, link)
     showToast(frag, true)
@@ -646,7 +646,7 @@ async function refreshLoggedIn() {
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
-      const token = await oauth.exchangeOAuthCode(provider, code)
+      const token = await oauth.exchangeOAuthCode(await repos[provider].getOAuthConfig(), code)
       await idbSet("auth", { token: token.access_token, provider })
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
@@ -732,9 +732,9 @@ async function refreshLoggedIn() {
   el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
     if (!container.firstElementChild) container.appendChild(tpl("tpl-signin-ctas"))
-    container.addEventListener("click", (e) => {
+    container.addEventListener("click", async (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
-      if (repos[provider]) oauth.startOAuth(provider)
+      if (repos[provider]) oauth.startOAuth(await repos[provider].getOAuthConfig())
     })
   }
   for (const link of document.querySelectorAll("[data-back-home]")) {
