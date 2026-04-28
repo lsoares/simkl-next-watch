@@ -12,10 +12,6 @@ export const tmdbRepository = {
 }
 
 async function searchByTitle(title, year, type) {
-  return searchOne(type, title, year)
-}
-
-async function searchOne(type, title, year) {
   const params = new URLSearchParams({ query: title })
   if (year) params.set(type === "tv" ? "first_air_date_year" : "year", String(year))
   try {
