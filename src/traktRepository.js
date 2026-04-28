@@ -48,7 +48,7 @@ async function clear() {
 }
 
 function getBrowseUrl(type) {
-  return `https://app.trakt.tv/search?m=${type === "movie" ? "movie" : "show"}`
+  return `https://app.trakt.tv/discover/recommended?mode=${type === "movie" ? "movie" : "show"}`
 }
 
 function getEpisodeUrl(item, ep) {

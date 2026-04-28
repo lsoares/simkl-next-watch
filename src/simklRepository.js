@@ -36,7 +36,7 @@ async function clear() {
 }
 
 function getBrowseUrl(type) {
-  return `https://simkl.com/search/?type=${type === "movie" ? "movies" : "tv"}`
+  return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/discover/`
 }
 
 function getEpisodeUrl(item, ep) {
