@@ -5,7 +5,7 @@ test.describe("Trakt", () => {
     await trakt.useAuthorizeDeny()
     await page.goto("/")
 
-    await intro.signIn("trakt")
+    await page.getByRole("button", { name: /sign in with trakt/i }).click()
 
     await intro.expectToastMessage(/trakt sign-in was cancelled/i)
   })
