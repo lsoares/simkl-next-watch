@@ -83,11 +83,30 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     renderPoster(row, item, {
       loggedIn: repo != null,
       fetchProgress: repo ? (it) => repo.getProgress(it) : null,
+      fetchPosterMeta,
+      fetchEpisodeTitle,
+      getEpisodeUrl: repo ? (it, ep) => repo.getEpisodeUrl(it, ep) : null,
       onMarkWatched: markWatched,
       onAddWatchlist: addToWatchlist,
       onMoreLike: openSimilar,
       ...opts,
     })
+
+  async function fetchPosterMeta(item) {
+    if (!item.ids?.tmdb && !item.ids?.imdb) return null
+    const meta = await tmdbRepository.getDetails(item)
+    return {
+      url: meta.url,
+      runtime: (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0,
+      released: meta.released,
+    }
+  }
+
+  async function fetchEpisodeTitle(item, ep) {
+    if (!item.ids?.tmdb) return null
+    const episodes = await tmdbRepository.getSeason(item.ids.tmdb, ep.season)
+    return episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
+  }
   const el = {
     topBar: $("topBar"), navNext: $("navNext"), navTrending: $("navTrending"), navAi: $("navAi"),
     homepageView: $("homepageView"),

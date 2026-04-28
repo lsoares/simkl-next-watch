@@ -1,12 +1,13 @@
-import { tmdbRepository } from "./tmdbRepository.js"
-
 export function renderPoster(row, item, opts = {}) {
-  const { loggedIn = false, trendingPeriod = null, fetchProgress = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, trendingPeriod = null, fetchProgress = null, fetchPosterMeta = null, fetchEpisodeTitle = null, getEpisodeUrl = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
   card.loggedIn = loggedIn
   card.trendingPeriod = trendingPeriod
   card.fetchProgress = fetchProgress
+  card.fetchPosterMeta = fetchPosterMeta
+  card.fetchEpisodeTitle = fetchEpisodeTitle
+  card.getEpisodeUrl = getEpisodeUrl
   card.handlers = { onMarkWatched, onAddWatchlist, onMoreLike }
   row.appendChild(frag)
   hydrationObserver.observe(card)
@@ -59,6 +60,9 @@ class PosterCard extends HTMLElement {
   loggedIn = false
   trendingPeriod = null
   fetchProgress = null
+  fetchPosterMeta = null
+  fetchEpisodeTitle = null
+  getEpisodeUrl = null
   handlers = {}
 
   connectedCallback() {
@@ -81,15 +85,14 @@ class PosterCard extends HTMLElement {
       if (progress?.nextEpisode) {
         const ep = progress.nextEpisode
         item.nextEpisode = ep
-        item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+        item.episodeUrl = this.getEpisodeUrl?.(item, ep) || ""
         this._refresh()
       }
     }
-    if (this.item?.nextEpisode && !this.item.episodeTitle && this.item.ids?.tmdb && this.item.status !== "plantowatch") {
+    if (this.item?.nextEpisode && !this.item.episodeTitle && this.fetchEpisodeTitle && this.item.status !== "plantowatch") {
       const ep = this.item.nextEpisode
-      const episodes = await tmdbRepository.getSeason(this.item.ids.tmdb, ep.season)
+      const title = await this.fetchEpisodeTitle(this.item, ep)
       if (this.item !== item) return
-      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name
       if (!title) return
       this.item.episodeTitle = title
       this.querySelector(".poster-episode")?.append(`: ${title}`)
@@ -282,14 +285,15 @@ function makeRowItem() {
 async function hydratePoster(card) {
   const item = card.item
   if (!item || item.posterUrl) return
-  if (!item.ids?.tmdb && !item.ids?.imdb) return
-  const meta = await tmdbRepository.getDetails(item)
+  if (!card.fetchPosterMeta) return
+  const meta = await card.fetchPosterMeta(item)
+  if (!meta) return
   if (card.item !== item) return
   if (meta.released === false) {
     card.closest(".row-item")?.remove()
     return
   }
-  const runtime = (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
+  const runtime = meta.runtime || 0
   const runtimeChanged = runtime !== (item.runtime || 0)
   item.runtime = runtime
   if (!meta.url) {
