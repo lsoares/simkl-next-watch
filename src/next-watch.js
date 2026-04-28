@@ -121,14 +121,6 @@ async function refreshLoggedIn() {
   let tvItems = []
   let movieItems = []
   let moviesShuffled = false
-  let lastTvFingerprint = null
-  let lastMovieFingerprint = null
-
-  function rowFingerprint(items) {
-    return items
-      .map((i) => `${i.ids?.simkl ?? i.ids?.imdb ?? i.ids?.tmdb ?? i.title}|${i.status ?? ""}|${i.watched_episodes_count ?? 0}|${i.last_watched_at ?? ""}`)
-      .join(",")
-  }
 
   // ── Toast ──
 
@@ -200,6 +192,9 @@ async function refreshLoggedIn() {
   // ── Render rows ──
 
   async function renderRow(rowEl, items, type) {
+    const fp = items.map((i) => `${i.ids?.simkl ?? i.ids?.imdb ?? i.ids?.tmdb ?? i.title}|${i.status ?? ""}|${i.watched_episodes_count ?? 0}|${i.last_watched_at ?? ""}`).join(",")
+    if (rowEl._fingerprint === fp) return
+    rowEl._fingerprint = fp
     rowEl.replaceChildren()
     const setsPromise = loadTrendingBadgeSets()
     items.forEach((item) => {
@@ -265,16 +260,8 @@ async function refreshLoggedIn() {
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderStats(allShows, allMovies)
-      const tvFp = rowFingerprint(tvItems)
-      if (tvFp !== lastTvFingerprint) {
-        lastTvFingerprint = tvFp
-        renderRow(el.tvRow, tvItems, "tv")
-      }
-      const movieFp = rowFingerprint(movieItems)
-      if (movieFp !== lastMovieFingerprint) {
-        lastMovieFingerprint = movieFp
-        renderRow(el.movieRow, movieItems, "movie")
-      }
+      renderRow(el.tvRow, tvItems, "tv")
+      renderRow(el.movieRow, movieItems, "movie")
       if (data.fresh && el.toast.hidden) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
