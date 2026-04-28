@@ -204,9 +204,7 @@ posters-row:not(.discovery) .item-card .poster-status--watched .poster-status-ic
 posters-row:not(.discovery) .item-card:hover .poster-status--watched,
 .poster-grid:not(.discovery) .item-card:hover .poster-status--watched { opacity: 1; }
 .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-.poster-status--simkl { background: rgba(30,111,182,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-.poster-status--trakt { background: rgba(237,28,36,0.8); color: #fee2e2; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-.poster-status--imdb { background: rgba(245,197,24,0.85); color: #1a1a1a; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.85; }
+.poster-status--rating { padding: 0; opacity: 0.8; color: rgba(255,255,255,0.85); text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
 
 .poster-progress {
   position: absolute;
