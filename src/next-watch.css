@@ -5,7 +5,6 @@
         --text: #f9fafb;
         --muted: #94a3b8;
         --accent: #22c55e;
-        --danger: #ef4444;
         --app-height: 100dvh;
         --top-bar-height: 68px;
         --main-top-gap: 80px;
@@ -254,11 +253,6 @@
       button.secondary {
         background: #374151;
         color: var(--text);
-      }
-
-      button.danger {
-        background: var(--danger);
-        color: white;
       }
 
       button:disabled {
@@ -800,20 +794,6 @@
         .poster-title {
           font-size: 1.08rem;
         }
-      }
-
-      .setup-hints {
-        margin: 6px 0;
-        padding-left: 18px;
-        font-size: 0.85rem;
-        line-height: 1.8;
-      }
-
-      .setup-hints code {
-        background: #1e293b;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.78rem;
       }
 
       body.logged-in .view-teaser {
