@@ -83,9 +83,9 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     renderPoster(row, item, {
       loggedIn: repo != null,
       fetchProgress: repo ? (it) => repo.getProgress(it) : null,
-      onMarkWatched: (item) => markWatched(item),
-      onAddWatchlist: (_, card) => addToWatchlist(card),
-      onMoreLike: (item) => openSimilar(item),
+      onMarkWatched: markWatched,
+      onAddWatchlist: addToWatchlist,
+      onMoreLike: openSimilar,
       ...opts,
     })
   const el = {
@@ -212,6 +212,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       await loadSuggestions()
     } catch (err) {
       handleError(err)
+      throw err
     }
   }
 
@@ -270,23 +271,18 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     appendAddMore(containerEl, { href: repo.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
   }
 
-  async function addToWatchlist(card) {
-    const item = card.item
+  async function addToWatchlist(item) {
     const keys = itemLookupKeys(item)
-    const btn = card.cardEl?.querySelector(".add-watchlist-btn")
-    if (!keys.length || !btn) return
-    btn.disabled = true
+    if (!keys.length) return
     try {
       await repo.addToWatchlist(item)
-      const plantowatchItem = { ...item, status: "plantowatch" }
-      for (const key of keys) libraryIndex.set(key, plantowatchItem)
-      card.item = plantowatchItem
-      card.refresh()
+      item.status = "plantowatch"
+      for (const key of keys) libraryIndex.set(key, item)
       showToast(await toastFrag("Added ", item, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
-      btn.disabled = false
       handleError(err)
+      throw err
     }
   }
 
