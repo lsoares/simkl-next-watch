@@ -1,4 +1,5 @@
 import { createKeyedCache } from "./cacheClient.js"
+import { idbGet } from "./idbStore.js"
 
 const cache = createKeyedCache("next-watch-tmdb-meta-v2")
 const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
@@ -11,10 +12,6 @@ export const tmdbRepository = {
 }
 
 async function searchByTitle(title, year, type) {
-  return searchOne(type, title, year)
-}
-
-async function searchOne(type, title, year) {
   const params = new URLSearchParams({ query: title })
   if (year) params.set(type === "tv" ? "first_air_date_year" : "year", String(year))
   try {
@@ -148,7 +145,8 @@ function hasReleased(date, status) {
 
 async function tmdbFetch(path) {
   const sep = path.includes("?") ? "&" : "?"
-  const res = await fetch(`https://api.themoviedb.org${path}${sep}api_key=${encodeURIComponent(globalThis.__TMDB_API_KEY__)}`)
+  const apiKey = (await idbGet("env"))?.tmdb?.apiKey || ""
+  const res = await fetch(`https://api.themoviedb.org${path}${sep}api_key=${encodeURIComponent(apiKey)}`)
   if (!res.ok) throw new Error(`TMDB ${res.status}`)
   return res.json()
 }

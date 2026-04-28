@@ -4,6 +4,7 @@ import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
 import { idbGet, idbSet } from "./idbStore.js"
+import * as oauth from "./oauth.js"
 
 const repos = { simkl: simklRepository, trakt: traktRepository }
 
@@ -84,7 +85,7 @@ async function refreshLoggedIn() {
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
       loggedIn: repo != null,
-      fetchProgress: repo ? (it) => repo.getProgress(it) : null,
+      fetchProgress: repo?.getProgress ?? null,
       onMarkWatched: markWatched,
       onAddWatchlist: addToWatchlist,
       onMoreLike: openSimilar,
@@ -145,7 +146,7 @@ async function refreshLoggedIn() {
   function showRetrySignInToast(provider, message) {
     const link = Object.assign(document.createElement("a"), { href: "#", textContent: "Try again" })
     link.style.color = "inherit"
-    link.addEventListener("click", (e) => { e.preventDefault(); repos[provider].startOAuth() })
+    link.addEventListener("click", async (e) => { e.preventDefault(); oauth.startOAuth(await repos[provider].getOAuthConfig()) })
     const frag = document.createDocumentFragment()
     frag.append(`${message} `, link)
     showToast(frag, true)
@@ -224,7 +225,7 @@ async function refreshLoggedIn() {
   async function toastFrag(prefix, item, suffix) {
     const ep = item.type === "tv" ? item.nextEpisode : null
     const base = item.url || ""
-    const url = ep ? (repo.getEpisodeUrl?.(item, ep) || base) : base
+    const url = ep ? (item.episodeUrl || base) : base
     const label = ep ? `${item.title} ${ep.season}x${ep.episode}` : item.title
     const link = Object.assign(document.createElement("a"), { href: url || "#", target: "_blank", rel: "noreferrer", textContent: label })
     link.style.color = "inherit"; link.style.textDecoration = "underline"
@@ -645,18 +646,16 @@ async function refreshLoggedIn() {
       const expected = sessionStorage.getItem("next-watch-oauth-state")
       const state = params.get("state") || ""
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
-      const token = await repos[provider].exchangeOAuthCode(code)
+      const token = await oauth.exchangeOAuthCode(await repos[provider].getOAuthConfig(), code)
       await idbSet("auth", { token: token.access_token, provider })
       await refreshLoggedIn()
-      sessionStorage.removeItem("next-watch-oauth-state")
-      sessionStorage.removeItem("next-watch-oauth-provider")
+      oauth.clearSession()
       await hydrateUI()
       showView("next")
       showPostLoginToast(name)
       await loadSuggestions()
     } catch (err) {
-      sessionStorage.removeItem("next-watch-oauth-state")
-      sessionStorage.removeItem("next-watch-oauth-provider")
+      oauth.clearSession()
       handleError(err)
       showView("next")
     }
@@ -664,6 +663,7 @@ async function refreshLoggedIn() {
 
   async function logout() {
     unregisterPeriodicSync().catch(() => {})
+    oauth.clearSession()
     await Promise.all([idbSet("auth", null), clearAi(), ...Object.values(repos).map((r) => r.clear())])
     localStorage.removeItem("next-watch-auth")
     location.href = location.pathname
@@ -731,9 +731,9 @@ async function refreshLoggedIn() {
   el.aiSettings.addEventListener("close", () => { pendingDialogEntry = null })
   for (const container of document.querySelectorAll("[data-signin-ctas]")) {
     if (!container.firstElementChild) container.appendChild(tpl("tpl-signin-ctas"))
-    container.addEventListener("click", (e) => {
+    container.addEventListener("click", async (e) => {
       const provider = e.target.closest("[data-provider]")?.dataset.provider
-      repos[provider]?.startOAuth()
+      if (repos[provider]) oauth.startOAuth(await repos[provider].getOAuthConfig())
     })
   }
   for (const link of document.querySelectorAll("[data-back-home]")) {
@@ -791,9 +791,11 @@ async function refreshLoggedIn() {
 
   // ── Boot ──
 
-  await idbSet("clientIds", {
-    simkl: window.__SIMKL_CLIENT_ID__ || "",
-    trakt: window.__TRAKT_CLIENT_ID__ || "",
+  await idbSet("env", {
+    simkl: { clientId: window.__SIMKL_CLIENT_ID__ || "", clientSecret: window.__SIMKL_CLIENT_SECRET__ || "" },
+    trakt: { clientId: window.__TRAKT_CLIENT_ID__ || "", clientSecret: window.__TRAKT_CLIENT_SECRET__ || "" },
+    tmdb: { apiKey: window.__TMDB_API_KEY__ || "" },
+    redirectUri: window.__REDIRECT_URI__ || "",
   }).catch(() => {})
   await refreshLoggedIn()
   await hydrateUI()

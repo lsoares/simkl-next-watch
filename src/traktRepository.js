@@ -6,21 +6,16 @@ const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v5")
 const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v1")
-const progressCache = createKeyedCache("next-watch-trakt-progress-v0")
+const progressCache = createKeyedCache("next-watch-trakt-progress-v1")
 let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
 
-const startOAuth = () => oauth.startOAuth("trakt")
-const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("trakt", code)
-
 export const traktRepository = {
   name: "Trakt",
   siteUrl: "https://trakt.tv",
-  startOAuth,
-  exchangeOAuthCode,
+  getOAuthConfig,
   getBrowseUrl,
-  getEpisodeUrl,
   getSearchUrl,
   getWatchingShows,
   getProgress,
@@ -35,9 +30,19 @@ export const traktRepository = {
   clear,
 }
 
+async function getOAuthConfig() {
+  const env = (await idbGet("env")) || {}
+  return {
+    name: "trakt",
+    authorizeUrl: "https://trakt.tv/oauth/authorize",
+    tokenUrl: "https://api.trakt.tv/oauth/token",
+    clientId: env.trakt?.clientId || "",
+    clientSecret: env.trakt?.clientSecret || "",
+    redirectUri: env.redirectUri || "",
+  }
+}
+
 async function clear() {
-  sessionStorage.removeItem("next-watch-oauth-state")
-  sessionStorage.removeItem("next-watch-oauth-provider")
   await Promise.all([
     watchlistShowsCache.clear(),
     watchlistMoviesCache.clear(),
@@ -49,10 +54,6 @@ async function clear() {
 
 function getBrowseUrl(type) {
   return `https://app.trakt.tv/discover/recommended?mode=${type === "movie" ? "movie" : "show"}`
-}
-
-function getEpisodeUrl(item, ep) {
-  return item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
 }
 
 function getSearchUrl(title, type) {
@@ -77,7 +78,10 @@ async function getProgress(item) {
   try {
     const data = await authFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
     const next = data?.next_episode
-    const result = next ? { nextEpisode: { season: next.season, episode: next.number } } : null
+    const result = next ? {
+      nextEpisode: { season: next.season, episode: next.number },
+      episodeUrl: item.url ? `${item.url}/seasons/${next.season}/episodes/${next.number}` : "",
+    } : null
     await progressCache.set(key, result)
     return result
   } catch {
@@ -182,14 +186,14 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "trakt-api-key": (await idbGet("clientIds")).trakt,
+      "trakt-api-key": (await idbGet("env")).trakt.clientId,
       "trakt-api-version": "2",
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    await startOAuth()
+    await oauth.startOAuth(await getOAuthConfig())
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

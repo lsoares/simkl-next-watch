@@ -5,19 +5,13 @@ import * as oauth from "./oauth.js"
 const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
 let libraryInFlight = null
 
-const startOAuth = () => oauth.startOAuth("simkl")
-const exchangeOAuthCode = (code) => oauth.exchangeOAuthCode("simkl", code)
-
 export const simklRepository = {
   name: "Simkl",
   siteUrl: "https://simkl.com",
-  startOAuth,
-  exchangeOAuthCode,
+  getOAuthConfig,
   getBrowseUrl,
-  getEpisodeUrl,
   getSearchUrl,
   getWatchingShows,
-  getProgress,
   getWatchlistShows,
   getWatchlistMovies,
   getCompletedShows,
@@ -29,18 +23,24 @@ export const simklRepository = {
   clear,
 }
 
+async function getOAuthConfig() {
+  const env = (await idbGet("env")) || {}
+  return {
+    name: "simkl",
+    authorizeUrl: "https://simkl.com/oauth/authorize",
+    tokenUrl: "https://api.simkl.com/oauth/token",
+    clientId: env.simkl?.clientId || "",
+    clientSecret: env.simkl?.clientSecret || "",
+    redirectUri: env.redirectUri || "",
+  }
+}
+
 async function clear() {
-  sessionStorage.removeItem("next-watch-oauth-state")
-  sessionStorage.removeItem("next-watch-oauth-provider")
   await libraryCache.clear()
 }
 
 function getBrowseUrl(type) {
   return `https://simkl.com/${type === "movie" ? "movies" : "tv"}/discover/`
-}
-
-function getEpisodeUrl(item, ep) {
-  return item.url ? `${item.url}/season-${ep.season}/episode-${ep.episode}/` : ""
 }
 
 function getSearchUrl(title, type) {
@@ -50,10 +50,6 @@ function getSearchUrl(title, type) {
 async function getWatchingShows() {
   const { shows, fresh } = await loadRawLibrary()
   return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), fresh }
-}
-
-async function getProgress(item) {
-  return item?.nextEpisode ? { nextEpisode: item.nextEpisode } : null
 }
 
 async function getWatchlistShows() {
@@ -119,13 +115,13 @@ async function authFetch(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": (await idbGet("clientIds")).simkl,
+      "simkl-api-key": (await idbGet("env")).simkl.clientId,
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
   })
   if (res.status === 401) {
-    await startOAuth()
+    await oauth.startOAuth(await getOAuthConfig())
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
   const data = await res.json().catch(() => ({}))

@@ -28,7 +28,7 @@ export async function checkNewEpisodes(notify) {
 
     let ep = show.nextEpisode
     if (!ep) {
-      const progress = await c.getProgress(show).catch(() => null)
+      const progress = await c.getProgress?.(show)?.catch(() => null)
       ep = progress?.nextEpisode || null
     }
     const body = ep
