@@ -1,11 +1,12 @@
 import { tmdbRepository } from "./tmdbRepository.js"
 
 export function renderPoster(row, item, opts = {}) {
-  const { loggedIn = false, trendingPeriod = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, trendingPeriod = null, fetchProgress = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
   card.loggedIn = loggedIn
   card.trendingPeriod = trendingPeriod
+  card.fetchProgress = fetchProgress
   if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
   if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
   if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
@@ -61,11 +62,41 @@ class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
   trendingPeriod = null
+  fetchProgress = null
 
   connectedCallback() {
     if (this._rendered) return
     this._render()
     this._rendered = true
+    this._hydrateAsync()
+  }
+
+  async _hydrateAsync() {
+    const item = this.item
+    if (!item) return
+    if (this.fetchProgress && item.type === "tv" && item.status === "watching" && !item.nextEpisode) {
+      const progress = await this.fetchProgress(item)
+      if (this.item !== item) return
+      if (progress === null) {
+        this.dispatchEvent(new CustomEvent("poster:irrelevant"))
+        return
+      }
+      if (progress?.nextEpisode) {
+        const ep = progress.nextEpisode
+        item.nextEpisode = ep
+        item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+        this.refresh()
+      }
+    }
+    if (this.item?.nextEpisode && !this.item.episodeTitle && this.item.ids?.tmdb && this.item.status !== "plantowatch") {
+      const ep = this.item.nextEpisode
+      const episodes = await tmdbRepository.getSeason(this.item.ids.tmdb, ep.season)
+      if (this.item !== item) return
+      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name
+      if (!title) return
+      this.item.episodeTitle = title
+      this.querySelector(".poster-episode")?.append(`: ${title}`)
+    }
   }
 
   disconnectedCallback() { hydrationObserver.unobserve(this) }
