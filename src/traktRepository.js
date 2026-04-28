@@ -43,8 +43,6 @@ async function getOAuthConfig() {
 }
 
 async function clear() {
-  sessionStorage.removeItem("next-watch-oauth-state")
-  sessionStorage.removeItem("next-watch-oauth-provider")
   await Promise.all([
     watchlistShowsCache.clear(),
     watchlistMoviesCache.clear(),

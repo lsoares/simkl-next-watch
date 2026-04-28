@@ -649,15 +649,13 @@ async function refreshLoggedIn() {
       const token = await oauth.exchangeOAuthCode(await repos[provider].getOAuthConfig(), code)
       await idbSet("auth", { token: token.access_token, provider })
       await refreshLoggedIn()
-      sessionStorage.removeItem("next-watch-oauth-state")
-      sessionStorage.removeItem("next-watch-oauth-provider")
+      oauth.clearSession()
       await hydrateUI()
       showView("next")
       showPostLoginToast(name)
       await loadSuggestions()
     } catch (err) {
-      sessionStorage.removeItem("next-watch-oauth-state")
-      sessionStorage.removeItem("next-watch-oauth-provider")
+      oauth.clearSession()
       handleError(err)
       showView("next")
     }
@@ -665,6 +663,7 @@ async function refreshLoggedIn() {
 
   async function logout() {
     unregisterPeriodicSync().catch(() => {})
+    oauth.clearSession()
     await Promise.all([idbSet("auth", null), clearAi(), ...Object.values(repos).map((r) => r.clear())])
     localStorage.removeItem("next-watch-auth")
     location.href = location.pathname
