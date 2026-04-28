@@ -69,7 +69,6 @@ let repo
 async function refreshLoggedIn() {
   repo = repos[(await idbGet("auth"))?.provider]
   if (repo) localStorage.setItem("next-watch-auth", "1")
-  else localStorage.removeItem("next-watch-auth")
 }
 
 // ── App (DOM + state + wiring) ──
