@@ -1,5 +1,4 @@
 import { createCacheClient, createKeyedCache } from "./cacheClient.js"
-import { safeJson } from "./http.js"
 import { idbGet } from "./idbStore.js"
 import { startOAuthFlow } from "./oauth.js"
 
@@ -65,7 +64,7 @@ async function exchangeOAuthCode(code) {
       grant_type: "authorization_code",
     }),
   })
-  const data = await safeJson(res)
+  const data = await res.json().catch(() => ({}))
   if (!res.ok || !data.access_token) throw Object.assign(new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`), { user: true })
   return data
 }
@@ -215,7 +214,7 @@ async function authFetch(path, options = {}) {
     await startOAuth()
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
-  const data = await safeJson(res)
+  const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)
   return data
 }

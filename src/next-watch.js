@@ -1,4 +1,4 @@
-import { clearAi, fetchAiSuggestions, fetchSimilarSuggestions, shuffle } from "./aiProvider.js"
+import { clearAi, fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
 import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
@@ -252,7 +252,7 @@ async function refreshLoggedIn() {
       ]
       movieItems = wlm.items
       if (!moviesShuffled) {
-        movieItems = shuffle(movieItems)
+        movieItems = movieItems.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
         moviesShuffled = true
       }
       libraryIndex = collectLibraryIndex(data)

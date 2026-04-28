@@ -1,5 +1,4 @@
 import { createCacheClient } from "./cacheClient.js"
-import { safeJson } from "./http.js"
 import { idbGet } from "./idbStore.js"
 import { startOAuthFlow } from "./oauth.js"
 
@@ -53,7 +52,7 @@ async function exchangeOAuthCode(code) {
       grant_type: "authorization_code",
     }),
   })
-  const data = await safeJson(res)
+  const data = await res.json().catch(() => ({}))
   if (!data.access_token) throw Object.assign(new Error(data.error || "Token exchange failed."), { user: true })
   return data
 }
@@ -151,7 +150,7 @@ async function authFetch(path, options = {}) {
     await startOAuth()
     throw Object.assign(new Error("Simkl session expired — redirecting to sign in."), { user: true })
   }
-  const data = await safeJson(res)
+  const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || data.message || `Simkl API error ${res.status}`)
   return data
 }
