@@ -82,7 +82,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
       loggedIn: repo != null,
-      onMarkWatched: (item, card) => markWatched(item, card.cardEl),
+      onMarkWatched: (item) => markWatched(item),
       onAddWatchlist: (_, card) => addToWatchlist(card),
       onMoreLike: (item) => openSimilar(item),
       ...opts,
@@ -200,25 +200,13 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   // ── Mark watched ──
 
-  function waitForWatchedAnimation(card) {
-    if (!card) return Promise.resolve()
-    return new Promise((resolve) => {
-      const done = () => resolve()
-      card.addEventListener("animationend", done, { once: true })
-      setTimeout(done, 700)
-    })
-  }
-
-  async function markWatched(item, card) {
-    if (card) card.classList.add("marking-watched")
+  async function markWatched(item) {
     const snapshot = { ...item }
     try {
       await repo.markWatched(item)
       showToast(await toastFrag("Marked ", snapshot, " watched."))
-      await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
-      if (card) card.classList.remove("marking-watched")
       handleError(err)
     }
   }
