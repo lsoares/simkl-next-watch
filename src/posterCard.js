@@ -79,9 +79,8 @@ class PosterCard extends HTMLElement {
         return
       }
       if (progress?.nextEpisode) {
-        const ep = progress.nextEpisode
-        item.nextEpisode = ep
-        item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+        item.nextEpisode = progress.nextEpisode
+        item.episodeUrl = progress.episodeUrl || ""
         this._refresh()
       }
     }

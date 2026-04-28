@@ -6,7 +6,7 @@ const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
 const watchedShowsCache = createCacheClient("next-watch-trakt-watched-shows-v5")
 const watchedMoviesCache = createCacheClient("next-watch-trakt-watched-movies-v1")
-const progressCache = createKeyedCache("next-watch-trakt-progress-v0")
+const progressCache = createKeyedCache("next-watch-trakt-progress-v1")
 let activitiesInFlight = null
 let ratingsInFlight = null
 let watchedShowsInFlight = null
@@ -72,7 +72,10 @@ async function getProgress(item) {
   try {
     const data = await authFetch(`/shows/${encodeURIComponent(key)}/progress/watched`)
     const next = data?.next_episode
-    const result = next ? { nextEpisode: { season: next.season, episode: next.number } } : null
+    const result = next ? {
+      nextEpisode: { season: next.season, episode: next.number },
+      episodeUrl: item.url ? `${item.url}/seasons/${next.season}/episodes/${next.number}` : "",
+    } : null
     await progressCache.set(key, result)
     return result
   } catch {

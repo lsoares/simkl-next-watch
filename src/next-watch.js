@@ -84,7 +84,7 @@ async function refreshLoggedIn() {
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
       loggedIn: repo != null,
-      fetchProgress: repo ? (it) => repo.getProgress(it) : null,
+      fetchProgress: repo?.getProgress ?? null,
       onMarkWatched: markWatched,
       onAddWatchlist: addToWatchlist,
       onMoreLike: openSimilar,
