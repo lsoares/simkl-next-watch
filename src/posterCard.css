@@ -197,9 +197,12 @@
 }
 .poster-status-icon { flex-shrink: 0; }
 .poster-status--watched { background: rgba(20,83,45,0.8); color: #dcfce7; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
-.item-card:not(.fade) .poster-status--watched { font-size: 0.95rem; padding: 6px 14px; font-weight: 700; opacity: 0.9; pointer-events: auto; }
-.item-card:not(.fade) .poster-status--watched .poster-status-icon { width: 18px; height: 18px; }
-.item-card:not(.fade):hover .poster-status--watched { opacity: 1; }
+posters-row:not(.discovery) .item-card .poster-status--watched,
+.poster-grid:not(.discovery) .item-card .poster-status--watched { font-size: 0.95rem; padding: 6px 14px; font-weight: 700; opacity: 0.9; pointer-events: auto; }
+posters-row:not(.discovery) .item-card .poster-status--watched .poster-status-icon,
+.poster-grid:not(.discovery) .item-card .poster-status--watched .poster-status-icon { width: 18px; height: 18px; }
+posters-row:not(.discovery) .item-card:hover .poster-status--watched,
+.poster-grid:not(.discovery) .item-card:hover .poster-status--watched { opacity: 1; }
 .poster-status--watchlist { background: rgba(30,58,138,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--simkl { background: rgba(30,111,182,0.8); color: #dbeafe; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
 .poster-status--trakt { background: rgba(237,28,36,0.8); color: #fee2e2; box-shadow: 0 2px 6px rgba(0,0,0,0.35); opacity: 0.75; }
@@ -254,21 +257,14 @@
 .item-card .more-like-btn { opacity: 1; transition: opacity 0.2s ease; }
 .item-card:has(.add-watchlist-btn) .more-like-btn { right: 64px; }
 
-.item-card.fade.trending-watched .poster,
-.item-card.fade.trending-watched .poster-top-text { opacity: 0.35; transition: opacity 0.2s; }
-.item-card.fade.trending-watched:hover .poster,
-.item-card.fade.trending-watched:hover .poster-top-text { opacity: 0.75; }
-.item-card.fade.trending-watchlisted .poster,
-.item-card.fade.trending-watchlisted .poster-top-text { opacity: 0.55; transition: opacity 0.2s; }
-.item-card.fade.trending-watchlisted:hover .poster,
-.item-card.fade.trending-watchlisted:hover .poster-top-text { opacity: 0.85; }
+.discovery .item-card.trending-watched .poster,
+.discovery .item-card.trending-watched .poster-top-text { opacity: 0.35; transition: opacity 0.2s; }
+.discovery .item-card.trending-watched:hover .poster,
+.discovery .item-card.trending-watched:hover .poster-top-text { opacity: 0.75; }
+.discovery .item-card.trending-watchlisted .poster,
+.discovery .item-card.trending-watchlisted .poster-top-text { opacity: 0.55; transition: opacity 0.2s; }
+.discovery .item-card.trending-watchlisted:hover .poster,
+.discovery .item-card.trending-watchlisted:hover .poster-top-text { opacity: 0.85; }
 
 .similar-grid .more-like-btn { width: 56px; height: 56px; }
 .similar-grid .more-like-btn svg { width: 24px; height: 24px; }
-
-@keyframes watchedOut {
-  0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
-  40%  { filter: brightness(2.5) saturate(0); }
-  100% { opacity: 0; transform: scale(0.9); }
-}
-.item-card.marking-watched { animation: watchedOut 0.55s ease-out forwards; pointer-events: none; }

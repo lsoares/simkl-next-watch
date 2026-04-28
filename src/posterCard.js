@@ -1,18 +1,15 @@
 import { tmdbRepository } from "./tmdbRepository.js"
 
 export function renderPoster(row, item, opts = {}) {
-  const { loggedIn = false, fade = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, trendingPeriod = null, fetchProgress = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
   card.loggedIn = loggedIn
-  card.fade = fade
-  if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
-  if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
-  if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
-  card.addEventListener("poster:irrelevant", () => card.closest(".row-item")?.remove())
+  card.trendingPeriod = trendingPeriod
+  card.fetchProgress = fetchProgress
+  card.handlers = { onMarkWatched, onAddWatchlist, onMoreLike }
   row.appendChild(frag)
   hydrationObserver.observe(card)
-  return card
 }
 
 const hydrationObserver = new IntersectionObserver((entries) => {
@@ -60,28 +57,92 @@ export function availableEpisodesLeft(show) {
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
-  fade = false
+  trendingPeriod = null
+  fetchProgress = null
+  handlers = {}
 
   connectedCallback() {
     if (this._rendered) return
     this._render()
     this._rendered = true
+    this._hydrateAsync()
+  }
+
+  async _hydrateAsync() {
+    const item = this.item
+    if (!item) return
+    if (this.fetchProgress && item.type === "tv" && item.status === "watching" && !item.nextEpisode) {
+      const progress = await this.fetchProgress(item)
+      if (this.item !== item) return
+      if (progress === null) {
+        this.closest(".row-item")?.remove()
+        return
+      }
+      if (progress?.nextEpisode) {
+        const ep = progress.nextEpisode
+        item.nextEpisode = ep
+        item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
+        this._refresh()
+      }
+    }
+    if (this.item?.nextEpisode && !this.item.episodeTitle && this.item.ids?.tmdb && this.item.status !== "plantowatch") {
+      const ep = this.item.nextEpisode
+      const episodes = await tmdbRepository.getSeason(this.item.ids.tmdb, ep.season)
+      if (this.item !== item) return
+      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name
+      if (!title) return
+      this.item.episodeTitle = title
+      this.querySelector(".poster-episode")?.append(`: ${title}`)
+    }
   }
 
   disconnectedCallback() { hydrationObserver.unobserve(this) }
 
-  get cardEl() { return this.querySelector(".item-card"); }
-
-  refresh() {
+  _refresh() {
     this._rendered = false
     this._render()
   }
 
-  markTrending(period) {
+  async _onMarkWatchedClick() {
+    const btn = this.querySelector(".mark-watched-btn")
+    btn.disabled = true
+    try {
+      await this.handlers.onMarkWatched?.(this.item)
+    } catch {
+      btn.disabled = false
+    }
+  }
+
+  async _onAddWatchlistClick() {
+    const btn = this.querySelector(".add-watchlist-btn")
+    btn.disabled = true
+    try {
+      await this.handlers.onAddWatchlist?.(this.item)
+      this._refresh()
+    } catch {
+      btn.disabled = false
+    }
+  }
+
+  _applyTrendingBadge() {
+    const period = this.trendingPeriod
+    if (!period) return
+    if (typeof period.then === "function") {
+      const item = this.item
+      period.then((resolved) => {
+        if (this.item !== item) return
+        this._renderTrendingBadge(resolved)
+      })
+      return
+    }
+    this._renderTrendingBadge(period)
+  }
+
+  _renderTrendingBadge(period) {
     if (!period) return
     const info = TRENDING_BADGE_INFO[period]
     if (!info) return
-    const host = this.cardEl?.querySelector(".poster-top-text")
+    const host = this.querySelector(".poster-top-text")
     if (!host || host.querySelector(".trending-badge")) return
     const badge = document.getElementById("tpl-trending-badge").content.cloneNode(true).firstElementChild
     badge.classList.add(`trending-badge--${period}`)
@@ -89,10 +150,6 @@ class PosterCard extends HTMLElement {
     badge.setAttribute("aria-label", info.tooltip)
     badge.textContent = `🔥 ${info.label}`
     host.appendChild(badge)
-  }
-
-  _emit(name) {
-    this.dispatchEvent(new CustomEvent(`poster:${name}`, { bubbles: true, detail: { item: this.item } }))
   }
 
   _render() {
@@ -154,7 +211,7 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.fade ? " fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
         ${(() => {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
@@ -200,9 +257,11 @@ class PosterCard extends HTMLElement {
       </article>
     `
 
-    this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"))
-    this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); })
-    this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("more-like-this"); })
+    this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._onMarkWatchedClick())
+    this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._onAddWatchlistClick(); })
+    this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this.handlers.onMoreLike?.(this.item); })
+
+    this._applyTrendingBadge()
   }
 }
 
@@ -227,19 +286,19 @@ async function hydratePoster(card) {
   const meta = await tmdbRepository.getDetails(item)
   if (card.item !== item) return
   if (meta.released === false) {
-    card.dispatchEvent(new CustomEvent("poster:irrelevant"))
+    card.closest(".row-item")?.remove()
     return
   }
   const runtime = (item.type === "movie" ? meta.runtime : meta.lastEpisode?.runtime) || 0
   const runtimeChanged = runtime !== (item.runtime || 0)
   item.runtime = runtime
   if (!meta.url) {
-    if (runtimeChanged) card.refresh()
+    if (runtimeChanged) card._refresh()
     return
   }
   item.posterUrl = meta.url
   const oldPoster = card.querySelector(".poster")
-  if (!oldPoster || runtimeChanged) return card.refresh()
+  if (!oldPoster || runtimeChanged) return card._refresh()
   const img = document.createElement("img")
   img.className = "poster"
   img.alt = item.title || ""

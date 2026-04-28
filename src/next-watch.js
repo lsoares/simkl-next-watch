@@ -82,9 +82,10 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   const showPoster = (row, item, opts = {}) =>
     renderPoster(row, item, {
       loggedIn: repo != null,
-      onMarkWatched: (item, card) => markWatched(item, card.cardEl),
-      onAddWatchlist: (_, card) => addToWatchlist(card),
-      onMoreLike: (item) => openSimilar(item),
+      fetchProgress: repo ? (it) => repo.getProgress(it) : null,
+      onMarkWatched: markWatched,
+      onAddWatchlist: addToWatchlist,
+      onMoreLike: openSimilar,
       ...opts,
     })
   const el = {
@@ -189,34 +190,29 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
+    const setsPromise = loadTrendingBadgeSets()
+    items.forEach((item) => {
+      const merged = mergeWithLibrary(item, libraryIndex)
+      showPoster(rowEl, merged, {
+        trendingPeriod: isUnstarted(merged, type)
+          ? setsPromise.then((sets) => trendingPeriodFor([merged.ids?.simkl, merged.ids?.imdb, merged.ids?.tmdb], sets))
+          : null,
+      })
+    })
     appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
-    annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
-    observeProgressHydration(rowEl)
   }
 
   // ── Mark watched ──
 
-  function waitForWatchedAnimation(card) {
-    if (!card) return Promise.resolve()
-    return new Promise((resolve) => {
-      const done = () => resolve()
-      card.addEventListener("animationend", done, { once: true })
-      setTimeout(done, 700)
-    })
-  }
-
-  async function markWatched(item, card) {
-    if (card) card.classList.add("marking-watched")
+  async function markWatched(item) {
     const snapshot = { ...item }
     try {
       await repo.markWatched(item)
       showToast(await toastFrag("Marked ", snapshot, " watched."))
-      await waitForWatchedAnimation(card)
       await loadSuggestions()
     } catch (err) {
-      if (card) card.classList.remove("marking-watched")
       handleError(err)
+      throw err
     }
   }
 
@@ -230,25 +226,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
     const frag = document.createDocumentFragment()
     frag.append(prefix, link, suffix)
     return frag
-  }
-
-  // ── Episode title enrichment ──
-
-  async function enrichEpisodeTitles() {
-    const results = await Promise.allSettled(tvItems.map(async (item) => {
-      const ep = item.nextEpisode
-      if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return null
-      const episodes = await tmdbRepository.getSeason(item.ids.tmdb, ep.season)
-      return episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
-    }))
-    let changed = false
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled" && r.value) {
-        tvItems[i] = { ...tvItems[i], episodeTitle: r.value }
-        changed = true
-      }
-    })
-    if (changed) renderRow(el.tvRow, tvItems, "tv")
   }
 
   // ── Load suggestions ──
@@ -279,7 +256,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       renderStats(allShows, allMovies)
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
-      enrichEpisodeTitles()
       if (data.fresh && el.toast.hidden) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
@@ -291,55 +267,22 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
+    items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex))))
     appendAddMore(containerEl, { href: repo.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
   }
 
-  async function addToWatchlist(card) {
-    const item = card.item
+  async function addToWatchlist(item) {
     const keys = itemLookupKeys(item)
-    const btn = card.cardEl?.querySelector(".add-watchlist-btn")
-    if (!keys.length || !btn) return
-    btn.disabled = true
+    if (!keys.length) return
     try {
       await repo.addToWatchlist(item)
-      const plantowatchItem = { ...item, status: "plantowatch" }
-      for (const key of keys) libraryIndex.set(key, plantowatchItem)
-      card.item = plantowatchItem
-      card.refresh()
+      item.status = "plantowatch"
+      for (const key of keys) libraryIndex.set(key, item)
       showToast(await toastFrag("Added ", item, " to watchlist."))
       await loadSuggestions()
     } catch (err) {
-      btn.disabled = false
       handleError(err)
-    }
-  }
-
-  async function observeProgressHydration(rowEl) {
-    rowEl.querySelectorAll("poster-card").forEach((card) => {
-      const item = card.item
-      if (item?.type === "tv" && item.status === "watching" && !item.nextEpisode) {
-        hydrateProgress(card)
-      }
-    })
-  }
-
-  async function hydrateProgress(card) {
-    const item = card.item
-    if (!item) return
-    const progress = await repo.getProgress(item)
-    if (progress === null) {
-      card.closest(".row-item")?.remove()
-      return
-    }
-    if (progress?.nextEpisode) {
-      const ep = progress.nextEpisode
-      item.nextEpisode = ep
-      item.episodeUrl = item.url ? `${item.url}/seasons/${ep.season}/episodes/${ep.episode}` : ""
-      const episodes = await tmdbRepository.getSeason(item.ids?.tmdb, ep.season)
-      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
-      if (title) item.episodeTitle = title
-      card.refresh()
+      throw err
     }
   }
 
@@ -364,15 +307,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       })
       .catch(() => ({ today: new Set(), week: new Set(), month: new Set() }))
     return trendingBadgeSetsPromise
-  }
-
-  async function annotateTrendingBadges(rowEl, items, isEligible) {
-    const sets = await loadTrendingBadgeSets()
-    const cards = rowEl.querySelectorAll("poster-card")
-    items.forEach((item, i) => {
-      if (isEligible?.(item) === false) return
-      cards[i]?.markTrending(trendingPeriodFor([item.ids?.simkl, item.ids?.imdb, item.ids?.tmdb], sets))
-    })
   }
 
   async function loadTrending() {
@@ -615,7 +549,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
         return
       }
       el.aiDialogResults.replaceChildren()
-      items.forEach((item) => showPoster(el.aiDialogResults, asTVShowPoster(item), { fade: true }))
+      items.forEach((item) => showPoster(el.aiDialogResults, asTVShowPoster(item)))
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {
