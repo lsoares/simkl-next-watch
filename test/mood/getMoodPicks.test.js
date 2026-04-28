@@ -173,8 +173,8 @@ test.describe("Trakt", () => {
 
     await mood.setApiKey("gemini", "apiAiKey")
 
-    await aiPicks.expectPosterLinksTo("Inception", "https://trakt.tv/search?query=Inception%202010&m=movie")
-    await aiPicks.expectPosterLinksTo("UnknownShow", "https://trakt.tv/search?query=UnknownShow%202020&m=show")
+    await aiPicks.expectPosterLinksTo("Inception", "https://app.trakt.tv/search?q=Inception%202010&m=movie")
+    await aiPicks.expectPosterLinksTo("UnknownShow", "https://app.trakt.tv/search?q=UnknownShow%202020&m=show")
   })
 })
 

@@ -78,7 +78,7 @@ function getEpisodeUrl(item, ep) {
 }
 
 function getSearchUrl(title, type) {
-  return `https://trakt.tv/search?query=${encodeURIComponent(title)}&m=${type === "movie" ? "movie" : "show"}`
+  return `https://app.trakt.tv/search?q=${encodeURIComponent(title)}&m=${type === "movie" ? "movie" : "show"}`
 }
 
 async function getWatchingShows() {
