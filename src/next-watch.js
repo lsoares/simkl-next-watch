@@ -66,7 +66,11 @@ function trendingPeriodFor(candidateIds, sets) {
 
 
 let repo
-async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider] }
+async function refreshLoggedIn() {
+  repo = repos[(await idbGet("auth"))?.provider]
+  if (repo) localStorage.setItem("next-watch-auth", "1")
+  else localStorage.removeItem("next-watch-auth")
+}
 
 // ── App (DOM + state + wiring) ──
 
@@ -643,7 +647,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
       const token = await repos[provider].exchangeOAuthCode(code)
       await idbSet("auth", { token: token.access_token, provider })
-      localStorage.setItem("next-watch-auth", "1")
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
