@@ -189,7 +189,10 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
-    items.forEach((item) => showPoster(rowEl, mergeWithLibrary(item, libraryIndex)))
+    items.forEach((item, i) => {
+      const card = showPoster(rowEl, mergeWithLibrary(item, libraryIndex))
+      card.dataset.index = i
+    })
     appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
     annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeProgressHydration(rowEl)
@@ -235,20 +238,15 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   // ── Episode title enrichment ──
 
   async function enrichEpisodeTitles() {
-    const results = await Promise.allSettled(tvItems.map(async (item) => {
+    await Promise.allSettled(tvItems.map(async (item, i) => {
       const ep = item.nextEpisode
-      if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return null
+      if (!ep || !item.ids?.tmdb || item.status === "plantowatch") return
       const episodes = await tmdbRepository.getSeason(item.ids.tmdb, ep.season)
-      return episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name || null
+      const title = episodes.find((e) => Number(e.episode) === Number(ep.episode))?.name
+      if (!title) return
+      item.episodeTitle = title
+      el.tvRow.querySelector(`poster-card[data-index="${i}"] .poster-episode`)?.append(`: ${title}`)
     }))
-    let changed = false
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled" && r.value) {
-        tvItems[i] = { ...tvItems[i], episodeTitle: r.value }
-        changed = true
-      }
-    })
-    if (changed) renderRow(el.tvRow, tvItems, "tv")
   }
 
   // ── Load suggestions ──
