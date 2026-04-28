@@ -719,11 +719,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   el.menuInstall.addEventListener("click", () => { el.menu.open = false; if (deferredInstallPrompt) deferredInstallPrompt.prompt() })
   el.menuLogout.addEventListener("click", () => { el.menu.open = false; logout() })
   document.addEventListener("click", (e) => {
-    if (el.menu.open && !el.menu.contains(e.target)) {
-      el.menu.open = false
-      e.stopPropagation()
-      e.preventDefault()
-    }
+    if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false
   }, true)
   document.addEventListener("touchmove", (e) => { if (el.menu.open && !el.menu.contains(e.target)) el.menu.open = false }, { passive: true, capture: true })
   el.aiSettingsClose.addEventListener("click", () => el.aiSettings.close())
