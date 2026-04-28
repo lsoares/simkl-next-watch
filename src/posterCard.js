@@ -1,11 +1,10 @@
 import { tmdbRepository } from "./tmdbRepository.js"
 
 export function renderPoster(row, item, opts = {}) {
-  const { loggedIn = false, fade = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
   card.loggedIn = loggedIn
-  card.fade = fade
   if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
   if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
   if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
@@ -60,7 +59,6 @@ export function availableEpisodesLeft(show) {
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
-  fade = false
 
   connectedCallback() {
     if (this._rendered) return
@@ -154,7 +152,7 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${this.fade ? " fade" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
         ${(() => {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`

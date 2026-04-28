@@ -277,7 +277,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function renderDiscoveryRow(containerEl, items, type, browseParams = {}) {
     containerEl.replaceChildren()
-    items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex)), { fade: true }))
+    items.forEach((item) => showPoster(containerEl, asTVShowPoster(mergeWithLibrary(item, libraryIndex))))
     appendAddMore(containerEl, { href: repo.getTrendingBrowseUrl(type, browseParams), icon: "→", label: type === "tv" ? "View all TV shows" : "View all movies" })
   }
 
@@ -601,7 +601,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
         return
       }
       el.aiDialogResults.replaceChildren()
-      items.forEach((item) => showPoster(el.aiDialogResults, asTVShowPoster(item), { fade: true }))
+      items.forEach((item) => showPoster(el.aiDialogResults, asTVShowPoster(item)))
     } catch (err) {
       closeDialog()
       if (err?.message === "AI quota exceeded.") {
