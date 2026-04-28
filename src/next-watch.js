@@ -643,6 +643,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       if (expected && state && expected !== state) throw Object.assign(new Error("State mismatch."), { user: true })
       const token = await repos[provider].exchangeOAuthCode(code)
       await idbSet("auth", { token: token.access_token, provider })
+      localStorage.setItem("next-watch-auth", "1")
       await refreshLoggedIn()
       sessionStorage.removeItem("next-watch-oauth-state")
       sessionStorage.removeItem("next-watch-oauth-provider")
@@ -661,6 +662,7 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
   async function logout() {
     unregisterPeriodicSync().catch(() => {})
     await Promise.all([idbSet("auth", null), clearAi(), ...Object.values(repos).map((r) => r.clear())])
+    localStorage.removeItem("next-watch-auth")
     location.href = location.pathname
   }
 

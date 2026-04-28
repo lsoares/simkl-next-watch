@@ -57,7 +57,7 @@
 
     <main>
       <!-- Homepage (logged-out landing) -->
-      <div id="homepageView" role="region" aria-label="Home">
+      <div id="homepageView" role="region" aria-label="Home" hidden>
         <div class="app-intro">
           <p class="app-intro-eyebrow">Next Watch</p>
           <h2 class="app-intro-tagline">A no-clutter companion for your <a href="https://app.trakt.tv" target="_blank" rel="noreferrer">Trakt</a> or <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> library.</h2>
@@ -181,6 +181,7 @@
         </div>
       </div>
     </main>
+    <script>if (!localStorage.getItem("next-watch-auth")) homepageView.hidden = false</script>
 
     <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
       <form id="aiSettingsForm">
