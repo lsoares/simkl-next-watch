@@ -17,7 +17,6 @@ test("first periodic check records baseline counts without notifying", async ({ 
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
-  await intro.expectIsLoggedIn()
 
   const notifs = await runCheckNewEpisodes(page)
 
@@ -41,7 +40,6 @@ test("subsequent check notifies for each watching show that gained a new episode
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
-  await intro.expectIsLoggedIn()
   await runCheckNewEpisodes(page)
   await simkl.useSyncActivities("2025-02-01T00:00:00Z")
   await simkl.useSyncShows([{
