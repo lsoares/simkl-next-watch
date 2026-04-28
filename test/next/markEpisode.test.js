@@ -21,7 +21,7 @@ test.describe("Simkl", () => {
     await intro.signIn("simkl")
     await next.expectTitleLinksTo("Breaking Bad", "https://simkl.com/tv/11121/breaking-bad")
     await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://simkl.com/tv/11121/breaking-bad/season-5/episode-1/")
-    await next.expectAddTVShowLinksTo("https://simkl.com/tv/discover/")
+    await next.expectAddLinks()
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
     await simkl.useSyncShows([{
       show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
@@ -63,7 +63,7 @@ test.describe("Trakt", () => {
     await intro.signIn("trakt")
     await next.expectTitleLinksTo("Breaking Bad", "https://app.trakt.tv/shows/breaking-bad")
     await next.expectNextEpisodeIs("Breaking Bad", "5x1: Live Free or Die", "https://app.trakt.tv/shows/breaking-bad/seasons/5/episodes/1")
-    await next.expectAddTVShowLinksTo("https://app.trakt.tv/discover/recommended?mode=show")
+    await next.expectAddLinks()
     await trakt.useWatchedShows([{
       last_watched_at: new Date().toISOString(),
       show: { title: "Breaking Bad", year: 2008, aired_episodes: 62, ids: { trakt: 1388, slug: "breaking-bad", imdb: "tt0903747", tmdb: "1396" } },

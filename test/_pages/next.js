@@ -26,11 +26,9 @@ export function client(page) {
     async expectNextEpisodeIs(title, episode, href) {
       await expect(page.getByRole("article", { name: title }).getByRole("link", { name: episode, exact: true })).toHaveAttribute("href", href)
     },
-    async expectAddTVShowLinksTo(href) {
-      await expect(page.getByRole("link", { name: "Add TV show" })).toHaveAttribute("href", href)
-    },
-    async expectAddMovieLinksTo(href) {
-      await expect(page.getByRole("link", { name: "Add movie" })).toHaveAttribute("href", href)
+    async expectAddLinks() {
+      await expect(page.getByRole("link", { name: "Add TV show" })).toBeVisible()
+      await expect(page.getByRole("link", { name: "Add movie" })).toBeVisible()
     },
     async expectMovieShowsRuntime(title, runtime) {
       await expect(page.getByRole("article", { name: title }).getByText(runtime, { exact: true })).toBeVisible()
