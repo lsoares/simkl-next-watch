@@ -189,12 +189,17 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
 
   async function renderRow(rowEl, items, type) {
     rowEl.replaceChildren()
+    const setsPromise = loadTrendingBadgeSets()
     items.forEach((item, i) => {
-      const card = showPoster(rowEl, mergeWithLibrary(item, libraryIndex))
+      const merged = mergeWithLibrary(item, libraryIndex)
+      const card = showPoster(rowEl, merged, {
+        trendingPeriod: isUnstarted(merged, type)
+          ? setsPromise.then((sets) => trendingPeriodFor([merged.ids?.simkl, merged.ids?.imdb, merged.ids?.tmdb], sets))
+          : null,
+      })
       card.dataset.index = i
     })
     appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
-    annotateTrendingBadges(rowEl, items, (item) => isUnstarted(item, type))
     observeProgressHydration(rowEl)
   }
 
@@ -350,15 +355,6 @@ async function refreshLoggedIn() { repo = repos[(await idbGet("auth"))?.provider
       })
       .catch(() => ({ today: new Set(), week: new Set(), month: new Set() }))
     return trendingBadgeSetsPromise
-  }
-
-  async function annotateTrendingBadges(rowEl, items, isEligible) {
-    const sets = await loadTrendingBadgeSets()
-    const cards = rowEl.querySelectorAll("poster-card")
-    items.forEach((item, i) => {
-      if (isEligible?.(item) === false) return
-      cards[i]?.markTrending(trendingPeriodFor([item.ids?.simkl, item.ids?.imdb, item.ids?.tmdb], sets))
-    })
   }
 
   async function loadTrending() {

@@ -1,10 +1,11 @@
 import { tmdbRepository } from "./tmdbRepository.js"
 
 export function renderPoster(row, item, opts = {}) {
-  const { loggedIn = false, onMarkWatched, onAddWatchlist, onMoreLike } = opts
+  const { loggedIn = false, trendingPeriod = null, onMarkWatched, onAddWatchlist, onMoreLike } = opts
   const { frag, card } = makeRowItem()
   card.item = item
   card.loggedIn = loggedIn
+  card.trendingPeriod = trendingPeriod
   if (onMarkWatched) card.addEventListener("poster:mark-watched", () => onMarkWatched(card.item, card))
   if (onAddWatchlist) card.addEventListener("poster:add-watchlist", () => onAddWatchlist(card.item, card))
   if (onMoreLike) card.addEventListener("poster:more-like-this", () => onMoreLike(card.item, card))
@@ -59,6 +60,7 @@ export function availableEpisodesLeft(show) {
 class PosterCard extends HTMLElement {
   item = null
   loggedIn = false
+  trendingPeriod = null
 
   connectedCallback() {
     if (this._rendered) return
@@ -75,11 +77,25 @@ class PosterCard extends HTMLElement {
     this._render()
   }
 
-  markTrending(period) {
+  _applyTrendingBadge() {
+    const period = this.trendingPeriod
+    if (!period) return
+    if (typeof period.then === "function") {
+      const item = this.item
+      period.then((resolved) => {
+        if (this.item !== item) return
+        this._renderTrendingBadge(resolved)
+      })
+      return
+    }
+    this._renderTrendingBadge(period)
+  }
+
+  _renderTrendingBadge(period) {
     if (!period) return
     const info = TRENDING_BADGE_INFO[period]
     if (!info) return
-    const host = this.cardEl?.querySelector(".poster-top-text")
+    const host = this.querySelector(".poster-top-text")
     if (!host || host.querySelector(".trending-badge")) return
     const badge = document.getElementById("tpl-trending-badge").content.cloneNode(true).firstElementChild
     badge.classList.add(`trending-badge--${period}`)
@@ -201,6 +217,8 @@ class PosterCard extends HTMLElement {
     this.querySelector(".mark-watched-btn")?.addEventListener("click", () => this._emit("mark-watched"))
     this.querySelector(".add-watchlist-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("add-watchlist"); })
     this.querySelector(".more-like-btn")?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); this._emit("more-like-this"); })
+
+    this._applyTrendingBadge()
   }
 }
 
