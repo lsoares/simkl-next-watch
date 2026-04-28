@@ -1,5 +1,7 @@
 import { createCacheClient, createKeyedCache } from "./cacheClient.js"
-import { idbGet, idbSet } from "./idbStore.js"
+import { safeJson } from "./http.js"
+import { idbGet } from "./idbStore.js"
+import { startOAuthFlow } from "./oauth.js"
 
 const watchlistShowsCache = createCacheClient("next-watch-trakt-watchlist-shows-v2")
 const watchlistMoviesCache = createCacheClient("next-watch-trakt-watchlist-movies-v1")
@@ -43,13 +45,12 @@ async function clear() {
   ])
 }
 
-async function startOAuth() {
-  if (typeof window === "undefined") return
-  await idbSet("auth", null).catch((err) => console.warn("IDB auth clear failed:", err))
-  const state = Math.random().toString(36).slice(2)
-  sessionStorage.setItem("next-watch-oauth-state", state)
-  sessionStorage.setItem("next-watch-oauth-provider", "trakt")
-  location.assign(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(globalThis.__TRAKT_CLIENT_ID__)}&redirect_uri=${encodeURIComponent(globalThis.__REDIRECT_URI__)}&state=${state}`)
+function startOAuth() {
+  return startOAuthFlow({
+    provider: "trakt",
+    authorizeUrl: "https://trakt.tv/oauth/authorize",
+    clientId: globalThis.__TRAKT_CLIENT_ID__,
+  })
 }
 
 async function exchangeOAuthCode(code) {
@@ -64,7 +65,7 @@ async function exchangeOAuthCode(code) {
       grant_type: "authorization_code",
     }),
   })
-  const data = await res.json().catch(() => ({}))
+  const data = await safeJson(res)
   if (!res.ok || !data.access_token) throw Object.assign(new Error(data.error_description || data.error || `Trakt token exchange failed (${res.status}).`), { user: true })
   return data
 }
@@ -214,7 +215,7 @@ async function authFetch(path, options = {}) {
     await startOAuth()
     throw Object.assign(new Error("Trakt session expired — redirecting to sign in."), { user: true })
   }
-  const data = await res.json().catch(() => ({}))
+  const data = await safeJson(res)
   if (!res.ok) throw new Error(data.error || data.message || `Trakt API error ${res.status}`)
   return data
 }
