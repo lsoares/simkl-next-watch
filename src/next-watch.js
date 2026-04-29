@@ -246,7 +246,9 @@ async function refreshLoggedIn() {
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
-      const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
+      const fresh = ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh
+      const syncMode = [ws, wls, wlm, cs, cm].map((r) => r.syncMode).find(Boolean) || null
+      const data = { shows: allShows, movies: allMovies, fresh, syncMode }
       tvItems = [
         ...ws.items.toSorted(byWatchingPriority),
         ...wls.items.toSorted((a, b) => (a.added_at || 0) - (b.added_at || 0)),
@@ -261,7 +263,7 @@ async function refreshLoggedIn() {
       renderStats(allShows, allMovies)
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
-      if (data.fresh && el.toast.hidden) showToast("Synced library.")
+      if (data.fresh && el.toast.hidden) showToast(data.syncMode === "update" ? "Updated library." : "Synced library.")
     } catch (err) {
       resolveLibraryReady()
       handleError(err)

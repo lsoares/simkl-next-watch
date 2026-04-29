@@ -2,8 +2,14 @@ import { createCacheClient } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import * as oauth from "./oauth.js"
 
-const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
+const libraryCache = createCacheClient("next-watch-simkl-cache-v10")
 let libraryInFlight = null
+
+const SYNC_GROUPS = [
+  { type: "shows", activityKey: "tv_shows" },
+  { type: "movies", activityKey: "movies" },
+  { type: "anime", activityKey: "anime" },
+]
 
 export const simklRepository = {
   name: "Simkl",
@@ -48,31 +54,32 @@ function getSearchUrl(title, type) {
 }
 
 async function getWatchingShows() {
-  const { shows, fresh } = await loadRawLibrary()
-  return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), fresh }
+  const { shows, fresh, syncMode } = await loadRawLibrary()
+  return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), fresh, syncMode }
 }
 
 async function getWatchlistShows() {
-  const { shows, fresh } = await loadRawLibrary()
-  return { items: shows.filter((s) => s.status === "plantowatch"), fresh }
+  const { shows, fresh, syncMode } = await loadRawLibrary()
+  return { items: shows.filter((s) => s.status === "plantowatch"), fresh, syncMode }
 }
 
 async function getWatchlistMovies() {
-  const { movies, fresh } = await loadRawLibrary()
-  return { items: movies.filter((m) => m.status === "plantowatch"), fresh }
+  const { movies, fresh, syncMode } = await loadRawLibrary()
+  return { items: movies.filter((m) => m.status === "plantowatch"), fresh, syncMode }
 }
 
 async function getCompletedShows() {
-  const { shows, fresh } = await loadRawLibrary()
+  const { shows, fresh, syncMode } = await loadRawLibrary()
   return {
     items: shows.filter((s) => s.status !== "plantowatch" && (s.status !== "watching" || !s.nextEpisode)),
     fresh,
+    syncMode,
   }
 }
 
 async function getCompletedMovies() {
-  const { movies, fresh } = await loadRawLibrary()
-  return { items: movies.filter((m) => m.status !== "plantowatch"), fresh }
+  const { movies, fresh, syncMode } = await loadRawLibrary()
+  return { items: movies.filter((m) => m.status !== "plantowatch"), fresh, syncMode }
 }
 
 async function markWatched(item) {
@@ -138,34 +145,105 @@ async function loadRawLibrary() {
   libraryInFlight = (async () => {
     try {
       const activities = await authFetch("/sync/activities", { method: "POST" })
-      const sig = JSON.stringify(activities)
       const cached = await libraryCache.read()
+      const cachedActivities = cached?.activities
 
-      if (cached?.sig === sig && cached.shows && cached.movies) {
-        return { shows: cached.shows, movies: cached.movies, fresh: false }
+      if (cachedActivities && activities.all && cachedActivities.all === activities.all) {
+        return projectBuckets(cached, false, null)
       }
 
-      const fetchItems = async (type) => {
-        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
-        const data = await authFetch(`/sync/all-items/${type}/?${params}`)
-        return (data?.[type] ?? []).map(normalizeItem)
-      }
+      const isFirstSync = !cachedActivities
+      const buckets = isFirstSync
+        ? { shows: [], movies: [], anime: [] }
+        : { shows: [...(cached.shows || [])], movies: [...(cached.movies || [])], anime: [...(cached.anime || [])] }
+      let changed = false
 
-      const [rawShows, rawMovies, rawAnime] = await Promise.all([
-        fetchItems("shows"),
-        fetchItems("movies"),
-        fetchItems("anime").catch(() => []),
-      ])
-      const shows = [...rawShows, ...rawAnime.filter((a) => a.type === "tv")]
-      const movies = [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")]
+      await Promise.all(SYNC_GROUPS.map(async ({ type, activityKey }) => {
+        const oldGroup = cachedActivities?.[activityKey]
+        const newGroup = activities?.[activityKey]
+        const lacksDetail = !newGroup
+        const groupAllChanged = oldGroup?.all !== newGroup?.all
+        const removalChanged = !!(oldGroup && newGroup && oldGroup.removed_from_list !== newGroup.removed_from_list)
 
-      await libraryCache.write({ sig, shows, movies })
-      return { shows, movies, fresh: true }
+        const canDelta = !isFirstSync && !lacksDetail && groupAllChanged && oldGroup?.all && newGroup?.all
+        const needsFullFetch = isFirstSync || lacksDetail || (groupAllChanged && !canDelta)
+        const needsIdPrune = !isFirstSync && !lacksDetail && removalChanged
+
+        if (!needsFullFetch && !canDelta && !needsIdPrune) return
+
+        if (needsFullFetch || canDelta) {
+          const updates = await fetchAllItems(type, canDelta ? oldGroup.all : null).catch((err) => {
+            if (type === "anime") return null
+            throw err
+          })
+          if (updates !== null) {
+            buckets[type] = canDelta ? mergeById(buckets[type], updates) : updates
+            changed = true
+          }
+        }
+
+        if (needsIdPrune) {
+          const ids = await fetchAllItemIds(type).catch((err) => {
+            if (type === "anime") return null
+            throw err
+          })
+          if (ids) {
+            const before = buckets[type].length
+            buckets[type] = buckets[type].filter((it) => ids.has(Number(it.ids?.simkl)))
+            if (buckets[type].length !== before) changed = true
+          }
+        }
+      }))
+
+      const next = { activities, shows: buckets.shows, movies: buckets.movies, anime: buckets.anime }
+      await libraryCache.write(next)
+      const syncMode = changed ? (isFirstSync ? "full" : "update") : null
+      return projectBuckets(next, changed, syncMode)
     } finally {
       libraryInFlight = null
     }
   })()
   return libraryInFlight
+}
+
+function projectBuckets({ shows, movies, anime }, fresh, syncMode) {
+  const animeList = anime || []
+  return {
+    shows: [...(shows || []), ...animeList.filter((a) => a.type === "tv")],
+    movies: [...(movies || []), ...animeList.filter((a) => a.type === "movie")],
+    fresh,
+    syncMode,
+  }
+}
+
+async function fetchAllItems(type, dateFrom) {
+  const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
+  if (dateFrom) params.set("date_from", dateFrom)
+  const data = await authFetch(`/sync/all-items/${type}/?${params}`)
+  return (data?.[type] ?? []).map(normalizeItem)
+}
+
+async function fetchAllItemIds(type) {
+  const params = new URLSearchParams({ extended: "simkl_ids_only" })
+  const data = await authFetch(`/sync/all-items/${type}/?${params}`)
+  const list = data?.[type] ?? []
+  const ids = new Set()
+  for (const raw of list) {
+    const media = raw.show || raw.movie || raw
+    const sid = Number(media.ids?.simkl ?? media.ids?.simkl_id ?? raw.ids?.simkl)
+    if (sid) ids.add(sid)
+  }
+  return ids
+}
+
+function mergeById(existing, updates) {
+  const map = new Map(existing.map((it) => [Number(it.ids?.simkl), it]))
+  for (const item of updates) {
+    const id = Number(item.ids?.simkl)
+    if (!id) continue
+    map.set(id, item)
+  }
+  return [...map.values()]
 }
 
 
