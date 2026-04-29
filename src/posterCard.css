@@ -31,7 +31,13 @@
 }
 posters-row:not(.discovery):has(.item-card--active) .item-card:not(.item-card--active) {
   opacity: 0.55;
-  transition: opacity 0.22s ease;
+}
+posters-row:not(.discovery):has(.item-card--active) .row-item:has(.item-card:not(.item-card--active)) {
+  --shrink: 0.85;
+}
+posters-row:not(.discovery):has(.item-card--active) .row-item:has(.item-card:not(.item-card--active)) .item-card {
+  height: 100%;
+  aspect-ratio: auto;
 }
 @media (hover: hover) and (pointer: fine) {
   .item-card:hover {
