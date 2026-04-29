@@ -37,6 +37,7 @@
     z-index: 2;
   }
   .item-card:hover::after { opacity: 1; }
+  .item-card--active:hover::after { opacity: 0.35; }
   .item-card:hover .poster-status { opacity: 1; }
 }
 
