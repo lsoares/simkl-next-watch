@@ -32,9 +32,9 @@ export function client(page) {
         assertSimklAuth(route.request())
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
           all: allTimestamp,
-          tv_shows: { all: allTimestamp },
-          movies: { all: allTimestamp },
-          anime: { all: allTimestamp },
+          tv_shows: { all: allTimestamp, removed_from_list: allTimestamp },
+          movies: { all: allTimestamp, removed_from_list: allTimestamp },
+          anime: { all: allTimestamp, removed_from_list: allTimestamp },
         }) })
       })
     },

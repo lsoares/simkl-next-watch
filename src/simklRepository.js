@@ -2,7 +2,7 @@ import { createCacheClient } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import * as oauth from "./oauth.js"
 
-const libraryCache = createCacheClient("next-watch-simkl-cache-v11")
+const libraryCache = createCacheClient("next-watch-simkl-cache-v12")
 let libraryInFlight = null
 
 export const simklRepository = {
@@ -146,6 +146,11 @@ async function loadRawLibrary() {
         movies: activities?.movies?.all ?? null,
         anime: activities?.anime?.all ?? null,
       }
+      const remoteRemovedAt = {
+        shows: activities?.tv_shows?.removed_from_list ?? null,
+        movies: activities?.movies?.removed_from_list ?? null,
+        anime: activities?.anime?.removed_from_list ?? null,
+      }
       const cached = (await libraryCache.read()) || {}
 
       const synced = {
@@ -154,19 +159,23 @@ async function loadRawLibrary() {
         anime: await syncType("anime", cached.rawAnime, cached.animeAt, remoteAt.anime, { optional: true }),
       }
 
-      const anyDelta = synced.shows.delta || synced.movies.delta || synced.anime.delta
+      const anyRemoval = remoteRemovedAt.shows !== (cached.removedShowsAt ?? null)
+        || remoteRemovedAt.movies !== (cached.removedMoviesAt ?? null)
+        || remoteRemovedAt.anime !== (cached.removedAnimeAt ?? null)
       const assembled = {
         shows: [...synced.shows.items, ...synced.anime.items.filter((a) => a.type === "tv")],
         movies: [...synced.movies.items, ...synced.anime.items.filter((a) => a.type === "movie")],
       }
-      const reconciled = anyDelta ? await reconcileRemovals(assembled) : assembled
+      const hadCache = !!cached.showsAt
+      const reconciled = (anyRemoval && hadCache) ? await reconcileRemovals(assembled) : assembled
 
       const anyChange = synced.shows.changed || synced.movies.changed || synced.anime.changed
       const before = assembleFromCached(cached)
-      const change = detectChange(before, reconciled, { hadCache: !!cached.showsAt, anyChange })
+      const change = detectChange(before, reconciled, { hadCache, anyChange })
       if (anyChange) {
         await libraryCache.write({
           showsAt: remoteAt.shows, moviesAt: remoteAt.movies, animeAt: remoteAt.anime,
+          removedShowsAt: remoteRemovedAt.shows, removedMoviesAt: remoteRemovedAt.movies, removedAnimeAt: remoteRemovedAt.anime,
           rawShows: synced.shows.items, rawMovies: synced.movies.items, rawAnime: synced.anime.items,
         })
       }
