@@ -31,44 +31,25 @@ export function client(page) {
         expect(route.request().method()).toBe("POST")
         expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
         expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ all: allTimestamp }) })
+        const group = { all: allTimestamp, removed_from_list: allTimestamp }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ all: allTimestamp, tv_shows: group, movies: group, anime: group }),
+        })
       })
     },
 
     useSyncShows(shows = []) {
-      return page.route("https://api.simkl.com/sync/all-items/shows/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ shows }) })
-      })
+      return useSyncItems(page, "shows", shows)
     },
 
     useSyncMovies(movies = []) {
-      return page.route("https://api.simkl.com/sync/all-items/movies/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ movies }) })
-      })
+      return useSyncItems(page, "movies", movies)
     },
 
     useSyncAnime(anime = []) {
-      return page.route("https://api.simkl.com/sync/all-items/anime/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ anime }) })
-      })
+      return useSyncItems(page, "anime", anime)
     },
 
     useMarkWatchedMovie(expectedMovies) {
@@ -129,4 +110,16 @@ useAddToWatchlist(expectedPayload) {
 function periodFromTrendingUrl(url) {
   const match = new URL(url).pathname.match(/(today|week|month)_100\.json$/)
   return match?.[1] || null
+}
+
+function useSyncItems(page, type, items) {
+  return page.route(`https://api.simkl.com/sync/all-items/${type}/*`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
+    expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toMatch(/^(full|simkl_ids_only)$/)
+    if (params.get("extended") === "full") expect(params.get("episode_watched_at")).toBe("yes")
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ [type]: items }) })
+  })
 }
