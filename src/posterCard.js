@@ -52,6 +52,14 @@ export function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
+const ACTIVE_RECENT_DAYS = 14
+export function isActive(item) {
+  if (item.type !== "tv" || item.status !== "watching") return false
+  if (availableEpisodesLeft(item) === 1) return true
+  const watchedAt = item.last_watched_at
+  return !!watchedAt && Date.now() - watchedAt.getTime() < ACTIVE_RECENT_DAYS * 86400000
+}
+
 // ── Internal ──
 
 class PosterCard extends HTMLElement {
@@ -206,7 +214,7 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${isActive(item) ? " item-card--active" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
         ${(() => {
           const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
           const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
