@@ -52,7 +52,7 @@ export function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
-const ACTIVE_RECENT_DAYS = 14
+const ACTIVE_RECENT_DAYS = 8
 export function isActive(item) {
   if (item.type !== "tv" || item.status !== "watching") return false
   if (availableEpisodesLeft(item) === 1) return true
