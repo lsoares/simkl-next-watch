@@ -29,6 +29,7 @@
     inset 0 0 0 3px color-mix(in srgb, var(--hover-accent) 18%, transparent);
   transition: opacity 0.22s ease;
 }
+.item-card--active::after { opacity: 0.35; }
 @media (hover: hover) and (pointer: fine) {
   .item-card:hover {
     box-shadow: 0 18px 36px rgba(0,0,0,0.42);
