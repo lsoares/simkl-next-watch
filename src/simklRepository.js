@@ -2,7 +2,7 @@ import { createCacheClient } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 import * as oauth from "./oauth.js"
 
-const libraryCache = createCacheClient("next-watch-simkl-cache-v9")
+const libraryCache = createCacheClient("next-watch-simkl-cache-v11")
 let libraryInFlight = null
 
 export const simklRepository = {
@@ -48,31 +48,31 @@ function getSearchUrl(title, type) {
 }
 
 async function getWatchingShows() {
-  const { shows, fresh } = await loadRawLibrary()
-  return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), fresh }
+  const { shows, change } = await loadRawLibrary()
+  return { items: shows.filter((s) => s.status === "watching" && s.nextEpisode), change }
 }
 
 async function getWatchlistShows() {
-  const { shows, fresh } = await loadRawLibrary()
-  return { items: shows.filter((s) => s.status === "plantowatch"), fresh }
+  const { shows, change } = await loadRawLibrary()
+  return { items: shows.filter((s) => s.status === "plantowatch"), change }
 }
 
 async function getWatchlistMovies() {
-  const { movies, fresh } = await loadRawLibrary()
-  return { items: movies.filter((m) => m.status === "plantowatch"), fresh }
+  const { movies, change } = await loadRawLibrary()
+  return { items: movies.filter((m) => m.status === "plantowatch"), change }
 }
 
 async function getCompletedShows() {
-  const { shows, fresh } = await loadRawLibrary()
+  const { shows, change } = await loadRawLibrary()
   return {
     items: shows.filter((s) => s.status !== "plantowatch" && (s.status !== "watching" || !s.nextEpisode)),
-    fresh,
+    change,
   }
 }
 
 async function getCompletedMovies() {
-  const { movies, fresh } = await loadRawLibrary()
-  return { items: movies.filter((m) => m.status !== "plantowatch"), fresh }
+  const { movies, change } = await loadRawLibrary()
+  return { items: movies.filter((m) => m.status !== "plantowatch"), change }
 }
 
 async function markWatched(item) {
@@ -111,11 +111,14 @@ function getTrendingBrowseUrl(type, { period = "today" } = {}) {
 
 async function authFetch(path, options = {}) {
   const auth = await idbGet("auth")
-  const res = await fetch(`https://api.simkl.com${path}`, {
+  const clientId = (await idbGet("env")).simkl.clientId
+  const sep = path.includes("?") ? "&" : "?"
+  const url = `https://api.simkl.com${path}${sep}client_id=${encodeURIComponent(clientId)}&app-name=next-watch&app-version=1.0.0`
+  const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "simkl-api-key": (await idbGet("env")).simkl.clientId,
+      "simkl-api-key": clientId,
       Authorization: `Bearer ${auth.token}`,
       ...options.headers,
     },
@@ -138,29 +141,36 @@ async function loadRawLibrary() {
   libraryInFlight = (async () => {
     try {
       const activities = await authFetch("/sync/activities", { method: "POST" })
-      const sig = JSON.stringify(activities)
-      const cached = await libraryCache.read()
+      const remoteAt = {
+        shows: activities?.tv_shows?.all ?? null,
+        movies: activities?.movies?.all ?? null,
+        anime: activities?.anime?.all ?? null,
+      }
+      const cached = (await libraryCache.read()) || {}
 
-      if (cached?.sig === sig && cached.shows && cached.movies) {
-        return { shows: cached.shows, movies: cached.movies, fresh: false }
+      const synced = {
+        shows: await syncType("shows", cached.rawShows, cached.showsAt, remoteAt.shows),
+        movies: await syncType("movies", cached.rawMovies, cached.moviesAt, remoteAt.movies),
+        anime: await syncType("anime", cached.rawAnime, cached.animeAt, remoteAt.anime, { optional: true }),
       }
 
-      const fetchItems = async (type) => {
-        const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
-        const data = await authFetch(`/sync/all-items/${type}/?${params}`)
-        return (data?.[type] ?? []).map(normalizeItem)
+      const anyDelta = synced.shows.delta || synced.movies.delta || synced.anime.delta
+      const assembled = {
+        shows: [...synced.shows.items, ...synced.anime.items.filter((a) => a.type === "tv")],
+        movies: [...synced.movies.items, ...synced.anime.items.filter((a) => a.type === "movie")],
       }
+      const reconciled = anyDelta ? await reconcileRemovals(assembled) : assembled
 
-      const [rawShows, rawMovies, rawAnime] = await Promise.all([
-        fetchItems("shows"),
-        fetchItems("movies"),
-        fetchItems("anime").catch(() => []),
-      ])
-      const shows = [...rawShows, ...rawAnime.filter((a) => a.type === "tv")]
-      const movies = [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")]
-
-      await libraryCache.write({ sig, shows, movies })
-      return { shows, movies, fresh: true }
+      const anyChange = synced.shows.changed || synced.movies.changed || synced.anime.changed
+      const before = assembleFromCached(cached)
+      const change = detectChange(before, reconciled, { hadCache: !!cached.showsAt, anyChange })
+      if (anyChange) {
+        await libraryCache.write({
+          showsAt: remoteAt.shows, moviesAt: remoteAt.movies, animeAt: remoteAt.anime,
+          rawShows: synced.shows.items, rawMovies: synced.movies.items, rawAnime: synced.anime.items,
+        })
+      }
+      return { shows: reconciled.shows, movies: reconciled.movies, change }
     } finally {
       libraryInFlight = null
     }
@@ -168,6 +178,66 @@ async function loadRawLibrary() {
   return libraryInFlight
 }
 
+
+function assembleFromCached(cached) {
+  const rawShows = cached.rawShows || []
+  const rawMovies = cached.rawMovies || []
+  const rawAnime = cached.rawAnime || []
+  return {
+    shows: [...rawShows, ...rawAnime.filter((a) => a.type === "tv")],
+    movies: [...rawMovies, ...rawAnime.filter((a) => a.type === "movie")],
+  }
+}
+
+function detectChange(before, after, { hadCache, anyChange }) {
+  if (!anyChange) return null
+  if (!hadCache) return "fullSync"
+  const beforeIds = new Set([...before.shows, ...before.movies].map((i) => i.id))
+  const afterIds = new Set([...after.shows, ...after.movies].map((i) => i.id))
+  const watchlistChanged = beforeIds.size !== afterIds.size
+    || [...afterIds].some((id) => !beforeIds.has(id))
+    || [...beforeIds].some((id) => !afterIds.has(id))
+  if (watchlistChanged) return "updatedWatchlist"
+  const beforeEpisodes = new Map(before.shows.map((s) => [s.id, s.total_episodes_count || 0]))
+  const newEpisodes = after.shows.some((s) => (s.total_episodes_count || 0) > (beforeEpisodes.get(s.id) || 0))
+  return newEpisodes ? "newEpisodes" : null
+}
+
+async function syncType(type, cachedItems, cachedAt, remoteAt, { optional = false } = {}) {
+  if (remoteAt && cachedAt === remoteAt && cachedItems) {
+    return { items: cachedItems, delta: false, changed: false }
+  }
+  const fetchItems = async (dateFrom) => {
+    const params = new URLSearchParams({ extended: "full", episode_watched_at: "yes" })
+    if (dateFrom) params.set("date_from", dateFrom)
+    const data = await authFetch(`/sync/all-items/${type}/?${params}`)
+    return (data?.[type] ?? []).map(normalizeItem)
+  }
+  if (cachedAt && cachedItems) {
+    const fetched = optional ? await fetchItems(cachedAt).catch(() => []) : await fetchItems(cachedAt)
+    return { items: mergeById(cachedItems, fetched), delta: true, changed: true }
+  }
+  const fetched = optional ? await fetchItems(null).catch(() => []) : await fetchItems(null)
+  return { items: fetched, delta: false, changed: true }
+}
+
+function mergeById(existing, delta) {
+  return [...new Map([...existing, ...delta].map((item) => [item.id, item])).values()]
+}
+
+async function reconcileRemovals({ shows, movies }) {
+  const data = await authFetch(`/sync/all-items/?extended=ids_only`)
+  const idOf = (entry) => String((entry.show ?? entry.movie ?? entry)?.ids?.simkl ?? (entry.show ?? entry.movie ?? entry)?.ids?.simkl_id ?? "")
+  const currentIds = new Set([
+    ...(data?.shows ?? []).map(idOf),
+    ...(data?.movies ?? []).map(idOf),
+    ...(data?.anime ?? []).map(idOf),
+  ])
+  return {
+    shows: shows.filter((s) => currentIds.has(s.id)),
+    movies: movies.filter((m) => currentIds.has(m.id)),
+  }
+}
 
 function normalizeItem(raw) {
   const media = raw.show || raw.movie || raw

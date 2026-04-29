@@ -46,7 +46,10 @@ test("subsequent check notifies for each watching show that gained a new episode
     show: { title: "Breaking Bad", year: 2008, ids: { simkl_id: 11121, tmdb: "1396" } },
     status: "watching", next_to_watch: "S05E01",
     watched_episodes_count: 46, total_episodes_count: 63,
-  }])
+  }], "2025-01-01T00:00:00Z")
+  await simkl.useSyncMovies([], "2025-01-01T00:00:00Z")
+  await simkl.useSyncAnime([], "2025-01-01T00:00:00Z")
+  await simkl.useSyncLibraryIds({ shows: [{ show: { ids: { simkl: 11121 } } }] })
 
   const notifs = await runCheckNewEpisodes(page)
 

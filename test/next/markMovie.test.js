@@ -21,10 +21,13 @@ test.describe("Simkl", () => {
     await next.expectTitleLinksTo("The Matrix", "https://simkl.com/movies/53992/the-matrix")
     await next.expectAddLinks()
     await simkl.useSyncActivities("2025-02-01T00:00:00Z")
+    await simkl.useSyncShows([], "2025-01-01T00:00:00Z")
     await simkl.useSyncMovies([{
       movie: { title: "The Matrix", year: 1999, runtime: 136, ids: { simkl_id: 53992, tmdb: "603" } },
       status: "completed",
-    }])
+    }], "2025-01-01T00:00:00Z")
+    await simkl.useSyncAnime([], "2025-01-01T00:00:00Z")
+    await simkl.useSyncLibraryIds({ movies: [{ movie: { ids: { simkl: 53992 } } }] })
 
     await next.markWatched("The Matrix")
 

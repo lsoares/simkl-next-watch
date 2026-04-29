@@ -27,55 +27,44 @@ export function client(page) {
     },
 
     useSyncActivities(allTimestamp = "2025-01-01T00:00:00Z") {
-      return page.route("https://api.simkl.com/sync/activities", async (route) => {
+      return page.route("https://api.simkl.com/sync/activities*", async (route) => {
         expect(route.request().method()).toBe("POST")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ all: allTimestamp }) })
+        assertSimklAuth(route.request())
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+          all: allTimestamp,
+          tv_shows: { all: allTimestamp },
+          movies: { all: allTimestamp },
+          anime: { all: allTimestamp },
+        }) })
       })
     },
 
-    useSyncShows(shows = []) {
-      return page.route("https://api.simkl.com/sync/all-items/shows/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ shows }) })
-      })
+    useSyncShows(shows = [], dateFrom = null) {
+      return registerSyncRoute(page, "shows", shows, dateFrom)
     },
 
-    useSyncMovies(movies = []) {
-      return page.route("https://api.simkl.com/sync/all-items/movies/*", async (route) => {
-        expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
-        const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ movies }) })
-      })
+    useSyncMovies(movies = [], dateFrom = null) {
+      return registerSyncRoute(page, "movies", movies, dateFrom)
     },
 
-    useSyncAnime(anime = []) {
-      return page.route("https://api.simkl.com/sync/all-items/anime/*", async (route) => {
+    useSyncAnime(anime = [], dateFrom = null) {
+      return registerSyncRoute(page, "anime", anime, dateFrom)
+    },
+
+    useSyncLibraryIds({ shows = [], movies = [], anime = [] } = {}) {
+      return page.route(/^https:\/\/api\.simkl\.com\/sync\/all-items\/\?/, async (route) => {
         expect(route.request().method()).toBe("GET")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+        assertSimklAuth(route.request())
         const params = new URL(route.request().url()).searchParams
-        expect(params.get("extended")).toBe("full")
-        expect(params.get("episode_watched_at")).toBe("yes")
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ anime }) })
+        expect(params.get("extended")).toBe("ids_only")
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ shows, movies, anime }) })
       })
     },
 
     useMarkWatchedMovie(expectedMovies) {
-      return page.route("https://api.simkl.com/sync/history", async (route) => {
+      return page.route("https://api.simkl.com/sync/history*", async (route) => {
         expect(route.request().method()).toBe("POST")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+        assertSimklAuth(route.request())
         const body = route.request().postDataJSON()
         expect(body.movies).toHaveLength(expectedMovies.length)
         expectedMovies.forEach((expected, i) => {
@@ -87,20 +76,18 @@ export function client(page) {
     },
 
     useMarkWatchedShow(expectedShows) {
-      return page.route("https://api.simkl.com/sync/history", async (route) => {
+      return page.route("https://api.simkl.com/sync/history*", async (route) => {
         expect(route.request().method()).toBe("POST")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+        assertSimklAuth(route.request())
         expect(route.request().postDataJSON()).toEqual({ shows: expectedShows })
         await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
       })
     },
 
 useAddToWatchlist(expectedPayload) {
-      return page.route("https://api.simkl.com/sync/add-to-list", async (route) => {
+      return page.route("https://api.simkl.com/sync/add-to-list*", async (route) => {
         expect(route.request().method()).toBe("POST")
-        expect(route.request().headers()["simkl-api-key"]).toBe("test-client-id")
-        expect(route.request().headers()["authorization"]).toBe("Bearer test-token")
+        assertSimklAuth(route.request())
         expect(route.request().postDataJSON()).toEqual(expectedPayload)
         await route.fulfill({ status: 200, contentType: "application/json", body: "{}" })
       })
@@ -129,4 +116,25 @@ useAddToWatchlist(expectedPayload) {
 function periodFromTrendingUrl(url) {
   const match = new URL(url).pathname.match(/(today|week|month)_100\.json$/)
   return match?.[1] || null
+}
+
+function registerSyncRoute(page, type, items, dateFrom) {
+  return page.route(`https://api.simkl.com/sync/all-items/${type}/*`, async (route) => {
+    expect(route.request().method()).toBe("GET")
+    assertSimklAuth(route.request())
+    const params = new URL(route.request().url()).searchParams
+    expect(params.get("extended")).toBe("full")
+    expect(params.get("episode_watched_at")).toBe("yes")
+    expect(params.get("date_from")).toBe(dateFrom)
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ [type]: items }) })
+  })
+}
+
+function assertSimklAuth(request) {
+  expect(request.headers()["simkl-api-key"]).toBe("test-client-id")
+  expect(request.headers()["authorization"]).toBe("Bearer test-token")
+  const params = new URL(request.url()).searchParams
+  expect(params.get("client_id")).toBe("test-client-id")
+  expect(params.get("app-name")).toBe("next-watch")
+  expect(params.get("app-version")).toBe("1.0.0")
 }

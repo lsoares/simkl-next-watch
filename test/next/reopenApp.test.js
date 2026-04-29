@@ -22,7 +22,7 @@ test.describe("Simkl", () => {
     await next.expectShowIsPresent("Lost")
     await next.expectShowIsPresent("The Matrix")
     await next.expectShowIsPresent("Inception")
-    await publishSimklLibrary(simkl, {
+    await publishSimklLibraryDelta(simkl, {
       shows: [
         { title: "Breaking Bad", year: 2008, id: 11121, tmdb: "1396", status: "completed" },
         { title: "Chernobyl", year: 2019, id: 22000, tmdb: "87108", status: "plantowatch" },
@@ -32,6 +32,10 @@ test.describe("Simkl", () => {
         { title: "Dune", year: 2021, id: 99003, tmdb: "438631", status: "plantowatch" },
       ],
     }, "2025-02-01T00:00:00Z")
+    await simkl.useSyncLibraryIds({
+      shows: [{ show: { ids: { simkl: 11121 } } }, { show: { ids: { simkl: 22000 } } }],
+      movies: [{ movie: { ids: { simkl: 53992 } } }, { movie: { ids: { simkl: 99003 } } }],
+    })
 
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")))
 
@@ -75,17 +79,29 @@ async function signInWithSimklLibrary(page, simkl, intro, library) {
   await simkl.useOauthToken()
   await simkl.useTrendingTv()
   await simkl.useTrendingMovies()
-  await publishSimklLibrary(simkl, library, "2025-01-01T00:00:00Z")
+  await simkl.useSyncActivities("2025-01-01T00:00:00Z")
+  const { shows, movies } = toLibraryPayload(library)
+  await simkl.useSyncShows(shows)
+  await simkl.useSyncMovies(movies)
   await simkl.useSyncAnime()
   await simkl.useAuthorize()
   await page.goto("/")
   await intro.signIn("simkl")
 }
 
-async function publishSimklLibrary(simkl, { shows, movies }, activityAt) {
+async function publishSimklLibraryDelta(simkl, library, activityAt) {
   await simkl.useSyncActivities(activityAt)
-  await simkl.useSyncShows(shows.map(({ title, year, id, tmdb, status }) => ({ show: { title, year, ids: { simkl_id: id, tmdb } }, status })))
-  await simkl.useSyncMovies(movies.map(({ title, year, id, tmdb, status }) => ({ movie: { title, year, ids: { simkl_id: id, tmdb }, runtime: 120 }, status })))
+  const { shows, movies } = toLibraryPayload(library)
+  await simkl.useSyncShows(shows, "2025-01-01T00:00:00Z")
+  await simkl.useSyncMovies(movies, "2025-01-01T00:00:00Z")
+  await simkl.useSyncAnime([], "2025-01-01T00:00:00Z")
+}
+
+function toLibraryPayload({ shows, movies }) {
+  return {
+    shows: shows.map(({ title, year, id, tmdb, status }) => ({ show: { title, year, ids: { simkl_id: id, tmdb } }, status })),
+    movies: movies.map(({ title, year, id, tmdb, status }) => ({ movie: { title, year, ids: { simkl_id: id, tmdb }, runtime: 120 }, status })),
+  }
 }
 
 async function signInWithTraktLibrary(page, trakt, intro, library) {

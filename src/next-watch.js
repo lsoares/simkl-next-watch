@@ -246,7 +246,7 @@ async function refreshLoggedIn() {
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
-      const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh }
+      const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh, change: ws.change ?? wls.change ?? wlm.change ?? cs.change ?? cm.change ?? null }
       tvItems = [
         ...ws.items.toSorted(byWatchingPriority),
         ...wls.items.toSorted((a, b) => (a.added_at || 0) - (b.added_at || 0)),
@@ -261,7 +261,12 @@ async function refreshLoggedIn() {
       renderStats(allShows, allMovies)
       renderRow(el.tvRow, tvItems, "tv")
       renderRow(el.movieRow, movieItems, "movie")
-      if (data.fresh && el.toast.hidden) showToast("Synced library.")
+      if (el.toast.hidden) {
+        if (data.change === "fullSync") showToast("Synced library.")
+        else if (data.change === "updatedWatchlist") showToast("Updated watchlist.")
+        else if (data.change === "newEpisodes") showToast("There are new episodes.")
+        else if (data.fresh && !data.change) showToast("Synced library.")
+      }
     } catch (err) {
       resolveLibraryReady()
       handleError(err)
