@@ -52,12 +52,20 @@ export function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
-const ACTIVE_RECENT_DAYS = 8
-export function isActive(item) {
-  if (item.type !== "tv" || item.status !== "watching") return false
-  if (availableEpisodesLeft(item) === 1) return true
+export function inactivityScore(item) {
+  const INACTIVE_FULL_DAYS = 30
+  if (item.type !== "tv" || item.status !== "watching") return 1
+  if (availableEpisodesLeft(item) === 1) return 0
   const watchedAt = item.last_watched_at
-  return !!watchedAt && Date.now() - watchedAt.getTime() < ACTIVE_RECENT_DAYS * 86400000
+  if (!watchedAt) return 1
+  const days = (Date.now() - watchedAt.getTime()) / 86400000
+  if (days <= 2) return 0
+  if (days >= INACTIVE_FULL_DAYS) return 1
+  return (days - 1) / (INACTIVE_FULL_DAYS - 1)
+}
+
+export function isActive(item) {
+  return inactivityScore(item) === 0
 }
 
 // ── Internal ──
@@ -214,14 +222,14 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${isActive(item) ? " item-card--active" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${isActive(item) ? " item-card--active" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}" style="--inactivity: ${inactivityScore(item)}">
         ${(() => {
-          const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
-          const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
-          return posterHref
-            ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(anchorLabel)}">${inner}</a>`
-            : `<div class="poster-anchor">${inner}</div>`
-        })()}
+        const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
+        const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
+        return posterHref
+          ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(anchorLabel)}">${inner}</a>`
+          : `<div class="poster-anchor">${inner}</div>`
+      })()}
         <div class="poster-top">
           <div class="poster-top-text">
             <div class="poster-title">
@@ -238,19 +246,19 @@ class PosterCard extends HTMLElement {
         <div class="poster-bottom">
           ${epCode ? `<a class="poster-episode" href="${escapeHtml(epUrl)}" target="_blank" rel="noreferrer">${escapeHtml(epCode)}${item.episodeTitle ? `: ${escapeHtml(item.episodeTitle)}` : ""}</a>` : ""}
           ${watchedRating != null ? (() => {
-            const statusPrefix = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watched ? "Watched" : watching ? "Watching" : null
-            const title = statusPrefix ?? "Rated"
-            const body = `${ICON_EYE} ${watchedRating} ☆`
-            const ariaLabel = statusPrefix ? `${statusPrefix} · Rated ${watchedRating} out of 10` : `Rated ${watchedRating} out of 10`
-            return url
-              ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
-              : `<span class="poster-status poster-status--watched" title="${title}" aria-label="${ariaLabel}">${body}</span>`
-          })() : (watched || showWatchingBadge) ? (() => {
-            const text = watching ? "Watching" : watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
-            return url
-              ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${text}" aria-label="${text}">${ICON_EYE}</a>`
-              : `<span class="poster-status poster-status--watched" title="${text}" aria-label="${text}">${ICON_EYE}</span>`
-          })() : ""}
+        const statusPrefix = watched && watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : watched ? "Watched" : watching ? "Watching" : null
+        const title = statusPrefix ?? "Rated"
+        const body = `${ICON_EYE} ${watchedRating} ☆`
+        const ariaLabel = statusPrefix ? `${statusPrefix} · Rated ${watchedRating} out of 10` : `Rated ${watchedRating} out of 10`
+        return url
+          ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${title}" aria-label="${ariaLabel}">${body}</a>`
+          : `<span class="poster-status poster-status--watched" title="${title}" aria-label="${ariaLabel}">${body}</span>`
+      })() : (watched || showWatchingBadge) ? (() => {
+        const text = watching ? "Watching" : watchedAgo ? `Watched ${escapeHtml(watchedAgo)}` : "Watched"
+        return url
+          ? `<a class="poster-status poster-status--watched" href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${text}" aria-label="${text}">${ICON_EYE}</a>`
+          : `<span class="poster-status poster-status--watched" title="${text}" aria-label="${text}">${ICON_EYE}</span>`
+      })() : ""}
           ${showWatchlistBadge ? `<span class="poster-status poster-status--watchlist" title="On watchlist" aria-label="On watchlist">${ICON_BOOKMARK}</span>` : ""}
         </div>
         ${showProgress ? `<div class="poster-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPct}" aria-label="${watchedEps} of ${totalEps} episodes watched"><div class="poster-progress-fill" style="width: ${progressPct}%"></div></div>` : ""}
@@ -268,7 +276,7 @@ class PosterCard extends HTMLElement {
   }
 }
 
-class PostersRow extends HTMLElement {}
+class PostersRow extends HTMLElement { }
 
 customElements.define("poster-card", PosterCard)
 customElements.define("posters-row", PostersRow)

@@ -420,7 +420,7 @@
 
       .row-item {
         flex-shrink: 0;
-        width: calc((min(100vw, 680px) - 68px) / 2.6 * var(--shrink, 1));
+        width: calc((min(100vw, 680px) - 68px) / 2.6);
         scroll-snap-align: start;
         scroll-snap-stop: always;
       }
@@ -591,7 +591,7 @@
         #movieRow .row-item,
         #trendingGrid .row-item {
           flex-shrink: 0;
-          width: calc(max(140px, calc((100vw - 44px) / 2.6)) * var(--shrink, 1));
+          width: max(140px, calc((100vw - 44px) / 2.6));
           height: 100%;
         }
 
