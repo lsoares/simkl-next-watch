@@ -52,13 +52,6 @@ export function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
-export function isActive(item) {
-  if (item.type !== "tv" || item.status !== "watching") return false
-  if (availableEpisodesLeft(item) === 1) return true
-  if (!item.last_watched_at) return false
-  return (Date.now() - item.last_watched_at.getTime()) / 86400000 <= 3
-}
-
 // ── Internal ──
 
 class PosterCard extends HTMLElement {

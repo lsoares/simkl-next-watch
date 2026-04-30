@@ -425,30 +425,32 @@
         scroll-snap-stop: always;
       }
 
-      #nextContent.active-only #tvRow {
-        justify-content: safe center;
+      #nextContent.simple-view #tvRow {
+        max-width: 420px;
+        margin: 0 auto;
         padding-right: 0;
         -webkit-mask-image: none;
         mask-image: none;
       }
 
-      #nextContent.active-only #tvRow .row-item {
-        width: calc((min(100vw, 680px) - 68px) / 1.6);
+      #nextContent.simple-view #tvRow .row-item {
+        width: 100%;
+        flex: 0 0 100%;
       }
 
-      #nextContent.active-only #tvRow .poster-title { font-size: 2rem; }
-      #nextContent.active-only #tvRow .poster-episode { font-size: 1.2rem; }
-      #nextContent.active-only #tvRow .poster-episode-count,
-      #nextContent.active-only #tvRow .poster-title-meta,
-      #nextContent.active-only #tvRow .poster-runtime { font-size: 0.95rem; }
-      #nextContent.active-only #tvRow .poster-status { font-size: 1rem; padding: 6px 14px; }
-      #nextContent.active-only #tvRow .poster-status--watched { font-size: 1.15rem; padding: 8px 18px; }
-      #nextContent.active-only #tvRow .poster-status-icon,
-      #nextContent.active-only #tvRow .poster-status--watched .poster-status-icon { width: 22px; height: 22px; }
-      #nextContent.active-only #tvRow .poster-progress { height: 5px; }
-      #nextContent.active-only #tvRow .mark-watched-btn,
-      #nextContent.active-only #tvRow .add-watchlist-btn,
-      #nextContent.active-only #tvRow .more-like-btn {
+      #nextContent.simple-view #tvRow .poster-title { font-size: 2rem; }
+      #nextContent.simple-view #tvRow .poster-episode { font-size: 1.2rem; }
+      #nextContent.simple-view #tvRow .poster-episode-count,
+      #nextContent.simple-view #tvRow .poster-title-meta,
+      #nextContent.simple-view #tvRow .poster-runtime { font-size: 0.95rem; }
+      #nextContent.simple-view #tvRow .poster-status { font-size: 1rem; padding: 6px 14px; }
+      #nextContent.simple-view #tvRow .poster-status--watched { font-size: 1.15rem; padding: 8px 18px; }
+      #nextContent.simple-view #tvRow .poster-status-icon,
+      #nextContent.simple-view #tvRow .poster-status--watched .poster-status-icon { width: 22px; height: 22px; }
+      #nextContent.simple-view #tvRow .poster-progress { height: 5px; }
+      #nextContent.simple-view #tvRow .mark-watched-btn,
+      #nextContent.simple-view #tvRow .add-watchlist-btn,
+      #nextContent.simple-view #tvRow .more-like-btn {
         width: 64px;
         height: 64px;
         bottom: 12px;
@@ -625,18 +627,19 @@
           height: 100%;
         }
 
-        #nextContent.active-only .media-section {
+        #nextContent.simple-view .media-section {
           flex: 0 0 auto;
         }
 
-        #nextContent.active-only #tvRow,
-        #nextContent.active-only #tvRow .row-item,
-        #nextContent.active-only #tvRow .row-item .item-card {
+        #nextContent.simple-view #tvRow,
+        #nextContent.simple-view #tvRow .row-item,
+        #nextContent.simple-view #tvRow .row-item .item-card {
           height: auto;
         }
 
-        #nextContent.active-only #tvRow .row-item {
-          width: min(420px, calc(100vw - 40px));
+        #nextContent.simple-view #tvRow .row-item {
+          width: 100%;
+          flex: 0 0 100%;
         }
 
         #tvRow .row-item .item-card,
@@ -1215,11 +1218,11 @@
         margin-bottom: 24px;
       }
 
-      #nextContent.active-only .next-toolbar {
+      #nextContent.simple-view .next-toolbar {
         justify-content: center;
       }
 
-      #nextContent.active-only .next-active-toggle {
+      #nextContent.simple-view .next-active-toggle {
         margin-left: 0;
       }
 

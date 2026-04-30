@@ -1,5 +1,5 @@
 import { clearAi, fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
-import { isUnstarted, isActive, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
+import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
@@ -122,7 +122,7 @@ async function refreshLoggedIn() {
   let tvItems = []
   let movieItems = []
   let moviesShuffled = false
-  let nextActiveOnly = false
+  let simpleView = false
   const nextHints = el.nextContent.querySelectorAll(".view-hint")
 
   // ── Toast ──
@@ -195,12 +195,31 @@ async function refreshLoggedIn() {
   // ── Render rows ──
 
   function renderNext() {
-    el.nextContent.classList.toggle("active-only", nextActiveOnly)
-    el.nextMovieSection.hidden = nextActiveOnly
-    nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "active") !== nextActiveOnly })
-    el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active"
-    renderRow(el.tvRow, nextActiveOnly ? tvItems.filter(isActive) : tvItems, "tv", { withAddMore: !nextActiveOnly })
-    if (!nextActiveOnly) renderRow(el.movieRow, movieItems, "movie")
+    el.nextContent.classList.toggle("simple-view", simpleView)
+    el.nextMovieSection.hidden = simpleView
+    nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "simple") !== simpleView })
+    el.nextActiveToggle.textContent = simpleView ? "View all" : "Simple view"
+    renderRow(el.tvRow, tvItems, "tv", { withAddMore: !simpleView })
+    if (!simpleView) renderRow(el.movieRow, movieItems, "movie")
+    if (simpleView) restoreSimpleViewScroll()
+  }
+
+  async function restoreSimpleViewScroll() {
+    const savedId = await idbGet("simpleViewShowId")
+    const target = savedId && el.tvRow.querySelector(`[data-simkl-id="${savedId}"]`)?.closest(".row-item")
+    target?.scrollIntoView({ behavior: "instant", inline: "start", block: "nearest" })
+  }
+
+  function saveSimpleViewScroll() {
+    const rowRect = el.tvRow.getBoundingClientRect()
+    const center = rowRect.left + rowRect.width / 2
+    const closest = [...el.tvRow.children].reduce((best, child) => {
+      const rect = child.getBoundingClientRect()
+      const dist = Math.abs(rect.left + rect.width / 2 - center)
+      return !best || dist < best.dist ? { child, dist } : best
+    }, null)
+    const id = closest?.child.querySelector("[data-simkl-id]")?.dataset.simklId
+    if (id) idbSet("simpleViewShowId", id)
   }
 
   async function renderRow(rowEl, items, type, { withAddMore = true } = {}) {
@@ -249,8 +268,8 @@ async function refreshLoggedIn() {
   // ── Load suggestions ──
 
   async function loadSuggestions() {
-    if (!el.tvRow.children.length) renderSkeletons(el.tvRow, nextActiveOnly ? 1 : 10)
-    if (!nextActiveOnly && !el.movieRow.children.length) renderSkeletons(el.movieRow)
+    if (!el.tvRow.children.length) renderSkeletons(el.tvRow, simpleView ? 1 : 10)
+    if (!simpleView && !el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {
       const [ws, wls, wlm, cs, cm] = await Promise.all([
         repo.getWatchingShows(), repo.getWatchlistShows(), repo.getWatchlistMovies(),
@@ -777,10 +796,16 @@ async function refreshLoggedIn() {
     loadTrending()
   })
   el.nextActiveToggle.addEventListener("click", async () => {
-    nextActiveOnly = !nextActiveOnly
-    await idbSet("nextActiveOnly", nextActiveOnly)
+    simpleView = !simpleView
+    await idbSet("simpleView", simpleView)
     renderNext()
   })
+  let simpleViewScrollTimer = null
+  el.tvRow.addEventListener("scroll", () => {
+    if (!simpleView) return
+    clearTimeout(simpleViewScrollTimer)
+    simpleViewScrollTimer = setTimeout(saveSimpleViewScroll, 200)
+  }, { passive: true })
 
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })
@@ -820,10 +845,10 @@ async function refreshLoggedIn() {
   }).catch(() => {})
   await refreshLoggedIn()
   await hydrateUI()
-  const [savedPeriod, savedMinRating, savedActiveOnly] = await Promise.all([
+  const [savedPeriod, savedMinRating, savedSimpleView] = await Promise.all([
     idbGet("trendingPeriod"),
     idbGet("similarMinRating"),
-    idbGet("nextActiveOnly"),
+    idbGet("simpleView"),
   ])
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))
@@ -831,11 +856,11 @@ async function refreshLoggedIn() {
   if (savedMinRating) {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
-  nextActiveOnly = !!savedActiveOnly
-  el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active"
-  el.nextContent.classList.toggle("active-only", nextActiveOnly)
-  el.nextMovieSection.hidden = nextActiveOnly
-  nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "active") !== nextActiveOnly })
+  simpleView = !!savedSimpleView
+  el.nextActiveToggle.textContent = simpleView ? "View all" : "Simple view"
+  el.nextContent.classList.toggle("simple-view", simpleView)
+  el.nextMovieSection.hidden = simpleView
+  nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "simple") !== simpleView })
   await handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
   showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : repo != null ? "next" : "homepage")
