@@ -797,6 +797,7 @@ async function refreshLoggedIn() {
   })
   el.nextActiveToggle.addEventListener("click", async () => {
     simpleView = !simpleView
+    el.tvRow._fingerprint = null
     await idbSet("simpleView", simpleView)
     renderNext()
   })

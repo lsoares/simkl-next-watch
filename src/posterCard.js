@@ -171,7 +171,7 @@ class PosterCard extends HTMLElement {
     const year = item.year || ""
     const type = item.type
     const rating = item.rating
-    const img = item.posterUrl || ""
+    const img = (this.closest(".simple-view") ? bigPoster(item.posterUrl) : item.posterUrl) || ""
     const url = item.url || ""
 
     const ep = watching && type === "tv" ? item.nextEpisode : null
@@ -299,8 +299,12 @@ async function hydratePoster(card) {
   img.alt = item.title || ""
   img.loading = "lazy"
   img.draggable = false
-  img.src = meta.url
+  img.src = card.closest(".simple-view") ? bigPoster(meta.url) : meta.url
   oldPoster.replaceWith(img)
+}
+
+function bigPoster(url) {
+  return url?.includes("/t/p/w342") ? url.replace("/t/p/w342", "/t/p/w780") : url
 }
 
 function escapeHtml(s) {
