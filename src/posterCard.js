@@ -53,15 +53,16 @@ export function availableEpisodesLeft(show) {
 }
 
 export function inactivityScore(item) {
-  const INACTIVE_FULL_DAYS = 30
   if (item.type !== "tv" || item.status !== "watching") return 1
   if (availableEpisodesLeft(item) === 1) return 0
   const watchedAt = item.last_watched_at
   if (!watchedAt) return 1
   const days = (Date.now() - watchedAt.getTime()) / 86400000
-  if (days <= 2) return 0
+  const ACTIVE_DAYS = 3
+  const INACTIVE_FULL_DAYS = 30
+  if (days <= ACTIVE_DAYS) return 0
   if (days >= INACTIVE_FULL_DAYS) return 1
-  return (days - 1) / (INACTIVE_FULL_DAYS - 1)
+  return (days - ACTIVE_DAYS) / (INACTIVE_FULL_DAYS - ACTIVE_DAYS)
 }
 
 export function isActive(item) {
