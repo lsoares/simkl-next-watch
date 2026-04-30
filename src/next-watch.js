@@ -1,5 +1,5 @@
 import { clearAi, fetchAiSuggestions, fetchSimilarSuggestions } from "./aiProvider.js"
-import { isUnstarted, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
+import { isUnstarted, isActive, availableEpisodesLeft, renderPoster, renderSkeletons, appendAddMore, asTVShowPoster } from "./posterCard.js"
 import { simklRepository } from "./simklRepository.js"
 import { traktRepository } from "./traktRepository.js"
 import { tmdbRepository } from "./tmdbRepository.js"
@@ -97,6 +97,7 @@ async function refreshLoggedIn() {
     nextSetup: $("nextSetup"), nextContent: $("nextContent"),
     menu: $("menu"), menuAiKey: $("menuAiKey"), menuInstall: $("menuInstall"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
+    nextActiveToggle: $("nextActiveToggle"), nextMovieSection: $("nextMovieSection"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
@@ -121,6 +122,8 @@ async function refreshLoggedIn() {
   let tvItems = []
   let movieItems = []
   let moviesShuffled = false
+  let nextActiveOnly = false
+  const nextHint = el.nextContent.querySelector(".view-hint")
 
   // ── Toast ──
 
@@ -191,7 +194,16 @@ async function refreshLoggedIn() {
 
   // ── Render rows ──
 
-  async function renderRow(rowEl, items, type) {
+  function renderNext() {
+    el.nextContent.classList.toggle("active-only", nextActiveOnly)
+    el.nextMovieSection.hidden = nextActiveOnly
+    nextHint.hidden = nextActiveOnly
+    el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active only"
+    renderRow(el.tvRow, nextActiveOnly ? tvItems.filter(isActive) : tvItems, "tv", { withAddMore: !nextActiveOnly })
+    if (!nextActiveOnly) renderRow(el.movieRow, movieItems, "movie")
+  }
+
+  async function renderRow(rowEl, items, type, { withAddMore = true } = {}) {
     const fp = items.map((i) => `${i.ids?.simkl ?? i.ids?.imdb ?? i.ids?.tmdb ?? i.title}|${i.status ?? ""}|${i.watched_episodes_count ?? 0}|${i.last_watched_at ?? ""}`).join(",")
     if (rowEl._fingerprint === fp) return
     rowEl._fingerprint = fp
@@ -205,7 +217,7 @@ async function refreshLoggedIn() {
           : null,
       })
     })
-    appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
+    if (withAddMore) appendAddMore(rowEl, { href: repo.getBrowseUrl(type), icon: "+", label: type === "tv" ? "Add TV show" : "Add movie" })
   }
 
   // ── Mark watched ──
@@ -237,8 +249,8 @@ async function refreshLoggedIn() {
   // ── Load suggestions ──
 
   async function loadSuggestions() {
-    if (!el.tvRow.children.length) renderSkeletons(el.tvRow)
-    if (!el.movieRow.children.length) renderSkeletons(el.movieRow)
+    if (!el.tvRow.children.length) renderSkeletons(el.tvRow, nextActiveOnly ? 1 : 10)
+    if (!nextActiveOnly && !el.movieRow.children.length) renderSkeletons(el.movieRow)
     try {
       const [ws, wls, wlm, cs, cm] = await Promise.all([
         repo.getWatchingShows(), repo.getWatchlistShows(), repo.getWatchlistMovies(),
@@ -259,8 +271,7 @@ async function refreshLoggedIn() {
       libraryIndex = collectLibraryIndex(data)
       resolveLibraryReady()
       renderStats(allShows, allMovies)
-      renderRow(el.tvRow, tvItems, "tv")
-      renderRow(el.movieRow, movieItems, "movie")
+      renderNext()
       if (el.toast.hidden) {
         if (data.change === "fullSync") showToast("Synced library.")
         else if (data.change === "updatedWatchlist") showToast("Updated watchlist.")
@@ -765,6 +776,11 @@ async function refreshLoggedIn() {
     tab.classList.add("active")
     loadTrending()
   })
+  el.nextActiveToggle.addEventListener("click", async () => {
+    nextActiveOnly = !nextActiveOnly
+    await idbSet("nextActiveOnly", nextActiveOnly)
+    renderNext()
+  })
 
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })
@@ -804,9 +820,10 @@ async function refreshLoggedIn() {
   }).catch(() => {})
   await refreshLoggedIn()
   await hydrateUI()
-  const [savedPeriod, savedMinRating] = await Promise.all([
+  const [savedPeriod, savedMinRating, savedActiveOnly] = await Promise.all([
     idbGet("trendingPeriod"),
     idbGet("similarMinRating"),
+    idbGet("nextActiveOnly"),
   ])
   if (savedPeriod) {
     el.trendingPeriodTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === savedPeriod))
@@ -814,6 +831,11 @@ async function refreshLoggedIn() {
   if (savedMinRating) {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
+  nextActiveOnly = !!savedActiveOnly
+  el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active only"
+  el.nextContent.classList.toggle("active-only", nextActiveOnly)
+  el.nextMovieSection.hidden = nextActiveOnly
+  nextHint.hidden = nextActiveOnly
   await handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
   showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : repo != null ? "next" : "homepage")

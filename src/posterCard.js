@@ -52,21 +52,11 @@ export function availableEpisodesLeft(show) {
   return total > 0 ? Math.max(0, total - watched) : Infinity
 }
 
-export function inactivityScore(item) {
-  if (item.type !== "tv" || item.status !== "watching") return 1
-  if (availableEpisodesLeft(item) === 1) return 0
-  const watchedAt = item.last_watched_at
-  if (!watchedAt) return 1
-  const days = (Date.now() - watchedAt.getTime()) / 86400000
-  const ACTIVE_DAYS = 3
-  const INACTIVE_FULL_DAYS = 30
-  if (days <= ACTIVE_DAYS) return 0
-  if (days >= INACTIVE_FULL_DAYS) return 1
-  return (days - ACTIVE_DAYS) / (INACTIVE_FULL_DAYS - ACTIVE_DAYS)
-}
-
 export function isActive(item) {
-  return inactivityScore(item) === 0
+  if (item.type !== "tv" || item.status !== "watching") return false
+  if (availableEpisodesLeft(item) === 1) return true
+  if (!item.last_watched_at) return false
+  return (Date.now() - item.last_watched_at.getTime()) / 86400000 <= 3
 }
 
 // ── Internal ──
@@ -223,7 +213,7 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}${isActive(item) ? " item-card--active" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}" style="--inactivity: ${inactivityScore(item)}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
         ${(() => {
         const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
         const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
