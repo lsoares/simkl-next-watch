@@ -123,7 +123,7 @@ async function refreshLoggedIn() {
   let movieItems = []
   let moviesShuffled = false
   let nextActiveOnly = false
-  const nextHint = el.nextContent.querySelector(".view-hint")
+  const nextHints = el.nextContent.querySelectorAll(".view-hint")
 
   // ── Toast ──
 
@@ -197,8 +197,8 @@ async function refreshLoggedIn() {
   function renderNext() {
     el.nextContent.classList.toggle("active-only", nextActiveOnly)
     el.nextMovieSection.hidden = nextActiveOnly
-    nextHint.hidden = nextActiveOnly
-    el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active only"
+    nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "active") !== nextActiveOnly })
+    el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active"
     renderRow(el.tvRow, nextActiveOnly ? tvItems.filter(isActive) : tvItems, "tv", { withAddMore: !nextActiveOnly })
     if (!nextActiveOnly) renderRow(el.movieRow, movieItems, "movie")
   }
@@ -832,10 +832,10 @@ async function refreshLoggedIn() {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
   nextActiveOnly = !!savedActiveOnly
-  el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active only"
+  el.nextActiveToggle.textContent = nextActiveOnly ? "View all" : "View active"
   el.nextContent.classList.toggle("active-only", nextActiveOnly)
   el.nextMovieSection.hidden = nextActiveOnly
-  nextHint.hidden = nextActiveOnly
+  nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "active") !== nextActiveOnly })
   await handleOAuthCallback()
   const hash = location.hash.replace("#", "").split("/")[0]
   showView(["next", "trending", "similar", "mood"].includes(hash) ? hash : repo != null ? "next" : "homepage")
