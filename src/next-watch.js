@@ -123,6 +123,8 @@ async function refreshLoggedIn() {
   let movieItems = []
   let moviesShuffled = false
   let simpleView = false
+  let isRestoringTvRowScroll = false
+  let lastSavedTvRowShowId = null
   const nextHints = el.nextContent.querySelectorAll(".view-hint")
 
   // ── Toast ──
@@ -201,25 +203,29 @@ async function refreshLoggedIn() {
     el.nextActiveToggle.textContent = simpleView ? "View all" : "View one"
     renderRow(el.tvRow, tvItems, "tv", { withAddMore: !simpleView })
     if (!simpleView) renderRow(el.movieRow, movieItems, "movie")
-    if (simpleView) restoreSimpleViewScroll()
+    restoreTvRowScroll()
   }
 
-  async function restoreSimpleViewScroll() {
-    const savedId = await idbGet("simpleViewShowId")
+  async function restoreTvRowScroll() {
+    const savedId = await idbGet("tvRowShowId")
     const target = savedId && el.tvRow.querySelector(`[data-simkl-id="${savedId}"]`)?.closest(".row-item")
-    target?.scrollIntoView({ behavior: "instant", inline: "start", block: "nearest" })
+    if (!target) return
+    isRestoringTvRowScroll = true
+    lastSavedTvRowShowId = savedId
+    el.tvRow.scrollLeft = target.offsetLeft
+    setTimeout(() => { isRestoringTvRowScroll = false }, 500)
   }
 
-  function saveSimpleViewScroll() {
-    const rowRect = el.tvRow.getBoundingClientRect()
-    const center = rowRect.left + rowRect.width / 2
+  function saveTvRowScroll() {
+    const scrollLeft = el.tvRow.scrollLeft
     const closest = [...el.tvRow.children].reduce((best, child) => {
-      const rect = child.getBoundingClientRect()
-      const dist = Math.abs(rect.left + rect.width / 2 - center)
+      const dist = Math.abs(child.offsetLeft - scrollLeft)
       return !best || dist < best.dist ? { child, dist } : best
     }, null)
     const id = closest?.child.querySelector("[data-simkl-id]")?.dataset.simklId
-    if (id) idbSet("simpleViewShowId", id)
+    if (!id || id === lastSavedTvRowShowId) return
+    lastSavedTvRowShowId = id
+    idbSet("tvRowShowId", id)
   }
 
   async function renderRow(rowEl, items, type, { withAddMore = true } = {}) {
@@ -801,11 +807,11 @@ async function refreshLoggedIn() {
     await idbSet("simpleView", simpleView)
     renderNext()
   })
-  let simpleViewScrollTimer = null
+  let tvRowScrollTimer = null
   el.tvRow.addEventListener("scroll", () => {
-    if (!simpleView) return
-    clearTimeout(simpleViewScrollTimer)
-    simpleViewScrollTimer = setTimeout(saveSimpleViewScroll, 200)
+    if (isRestoringTvRowScroll) return
+    clearTimeout(tvRowScrollTimer)
+    tvRowScrollTimer = setTimeout(saveTvRowScroll, 200)
   }, { passive: true })
 
   syncViewportMetrics()
