@@ -198,7 +198,7 @@ async function refreshLoggedIn() {
     el.nextContent.classList.toggle("simple-view", simpleView)
     el.nextMovieSection.hidden = simpleView
     nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "simple") !== simpleView })
-    el.nextActiveToggle.textContent = simpleView ? "View all" : "Simple view"
+    el.nextActiveToggle.textContent = simpleView ? "View all" : "View one"
     renderRow(el.tvRow, tvItems, "tv", { withAddMore: !simpleView })
     if (!simpleView) renderRow(el.movieRow, movieItems, "movie")
     if (simpleView) restoreSimpleViewScroll()
@@ -857,7 +857,7 @@ async function refreshLoggedIn() {
     el.similarRatingTabs.querySelectorAll(".range-tab").forEach((t) => t.classList.toggle("active", t.dataset.minRating === savedMinRating))
   }
   simpleView = !!savedSimpleView
-  el.nextActiveToggle.textContent = simpleView ? "View all" : "Simple view"
+  el.nextActiveToggle.textContent = simpleView ? "View all" : "View one"
   el.nextContent.classList.toggle("simple-view", simpleView)
   el.nextMovieSection.hidden = simpleView
   nextHints.forEach((p) => { p.hidden = (p.dataset.mode === "simple") !== simpleView })
