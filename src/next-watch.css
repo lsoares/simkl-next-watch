@@ -436,6 +436,25 @@
         width: calc((min(100vw, 680px) - 68px) / 1.6);
       }
 
+      #nextContent.active-only #tvRow .poster-title { font-size: 2rem; }
+      #nextContent.active-only #tvRow .poster-episode { font-size: 1.2rem; }
+      #nextContent.active-only #tvRow .poster-episode-count,
+      #nextContent.active-only #tvRow .poster-title-meta,
+      #nextContent.active-only #tvRow .poster-runtime { font-size: 0.95rem; }
+      #nextContent.active-only #tvRow .poster-status { font-size: 1rem; padding: 6px 14px; }
+      #nextContent.active-only #tvRow .poster-status--watched { font-size: 1.15rem; padding: 8px 18px; }
+      #nextContent.active-only #tvRow .poster-status-icon,
+      #nextContent.active-only #tvRow .poster-status--watched .poster-status-icon { width: 22px; height: 22px; }
+      #nextContent.active-only #tvRow .poster-progress { height: 5px; }
+      #nextContent.active-only #tvRow .mark-watched-btn,
+      #nextContent.active-only #tvRow .add-watchlist-btn,
+      #nextContent.active-only #tvRow .more-like-btn {
+        width: 64px;
+        height: 64px;
+        bottom: 12px;
+        right: 12px;
+      }
+
       .row-item .item-card {
         width: 100%;
         aspect-ratio: 2/3;
