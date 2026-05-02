@@ -228,15 +228,30 @@ async function refreshLoggedIn() {
     idbSet("tvRowShowId", id)
   }
 
+  let activeBackdropLayer = 0
+  function setSimpleBackdrop(url) {
+    if (!url) {
+      document.body.classList.remove("has-backdrop")
+      return
+    }
+    const layers = document.querySelectorAll("#pageBackdrop > div")
+    const desired = `url("${url}")`
+    const current = layers[activeBackdropLayer]
+    if (current.style.backgroundImage === desired) {
+      document.body.classList.add("has-backdrop")
+      return
+    }
+    const nextIdx = (activeBackdropLayer + 1) % layers.length
+    layers[nextIdx].style.backgroundImage = desired
+    layers[nextIdx].classList.add("active")
+    current.classList.remove("active")
+    activeBackdropLayer = nextIdx
+    document.body.classList.add("has-backdrop")
+  }
+
   function syncSimpleBackdrop() {
     const active = simpleView && currentView === "next"
-    const url = active ? centeredTvRowChild()?.querySelector("[data-backdrop]")?.dataset.backdrop : ""
-    if (url) {
-      document.body.style.setProperty("--bd", `url("${url}")`)
-      document.body.classList.add("has-backdrop")
-    } else {
-      document.body.classList.remove("has-backdrop")
-    }
+    setSimpleBackdrop(active ? centeredTvRowChild()?.querySelector("poster-card")?.item?.backdropUrl : "")
   }
 
   function centeredTvRowChild() {
@@ -826,8 +841,9 @@ async function refreshLoggedIn() {
   let tvRowScrollTimer = null
   el.tvRow.addEventListener("scroll", () => {
     if (isRestoringTvRowScroll) return
+    syncSimpleBackdrop()
     clearTimeout(tvRowScrollTimer)
-    tvRowScrollTimer = setTimeout(() => { saveTvRowScroll(); syncSimpleBackdrop() }, 200)
+    tvRowScrollTimer = setTimeout(saveTvRowScroll, 200)
   }, { passive: true })
   el.tvRow.addEventListener("backdropready", syncSimpleBackdrop)
   document.addEventListener("keydown", (e) => {
@@ -840,6 +856,7 @@ async function refreshLoggedIn() {
     const sibling = e.key === "ArrowLeft" ? centered?.previousElementSibling : centered?.nextElementSibling
     if (!sibling) return
     e.preventDefault()
+    setSimpleBackdrop(sibling.querySelector("poster-card")?.item?.backdropUrl)
     el.tvRow.scrollTo({ left: sibling.offsetLeft, behavior: "smooth" })
   })
 
