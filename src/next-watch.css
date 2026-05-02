@@ -45,14 +45,13 @@
         position: fixed;
         inset: -10vmin;
         z-index: -1;
-        filter: blur(16px) brightness(0.5) saturate(1);
-        opacity: 0;
-        transition: opacity 0.3s ease;
+        filter: blur(28px) brightness(0.22) saturate(0.7);
+        visibility: hidden;
         pointer-events: none;
       }
 
       body.has-backdrop #pageBackdrop {
-        opacity: 0.8;
+        visibility: visible;
       }
 
       #pageBackdrop > div {
@@ -84,52 +83,64 @@
 
       #simpleViewExit {
         position: fixed;
-        top: max(12px, env(safe-area-inset-top));
-        right: max(12px, env(safe-area-inset-right));
-        z-index: 11;
+        top: max(6px, env(safe-area-inset-top));
+        right: max(6px, env(safe-area-inset-right));
+        z-index: 101;
         display: none;
-        width: 44px;
-        height: 44px;
-        padding: 0;
+        padding: 6px 10px;
         border: none;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: none;
         color: var(--text);
-        font-size: 1.6rem;
+        font-size: 1.1rem;
         line-height: 1;
         cursor: pointer;
-        opacity: 0.7;
+        opacity: 0.35;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
         transition: opacity 0.15s ease;
       }
-      #simpleViewExit:hover { opacity: 1; }
+      #simpleViewExit:hover { opacity: 0.9; }
 
       body.simple-view #simpleViewExit { display: block; }
       body.simple-view .top-bar,
       body.simple-view .next-toolbar { display: none; }
 
+      body.simple-view main {
+        padding-top: max(88px, calc(env(safe-area-inset-top) + 76px));
+        padding-bottom: max(140px, calc(env(safe-area-inset-bottom) + 130px));
+      }
+
+      body.simple-view::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 100;
+        background:
+          radial-gradient(circle at bottom right, transparent 15px, var(--bg) 16px) top left / 16px 16px no-repeat,
+          radial-gradient(circle at bottom left, transparent 15px, var(--bg) 16px) top right / 16px 16px no-repeat,
+          radial-gradient(circle at top right, transparent 15px, var(--bg) 16px) bottom left / 16px 16px no-repeat,
+          radial-gradient(circle at top left, transparent 15px, var(--bg) 16px) bottom right / 16px 16px no-repeat;
+      }
+
       #simpleViewMark {
         position: fixed;
-        bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
-        right: max(20px, env(safe-area-inset-right));
-        z-index: 11;
-        width: 64px;
-        height: 64px;
-        padding: 0;
-        border: 1.5px solid rgba(255, 255, 255, 0.5);
-        border-radius: 50%;
-        background: rgba(20, 83, 45, 0.6);
-        color: #fff;
+        bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
+        right: max(14px, env(safe-area-inset-right));
+        z-index: 101;
+        padding: 8px 10px;
+        border: none;
+        background: none;
+        color: var(--accent);
         cursor: pointer;
         display: none;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-        transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+        opacity: 0.7;
+        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+        transition: opacity 0.15s ease, transform 0.15s ease;
       }
-      #simpleViewMark:hover { background: rgba(34, 197, 94, 0.4); border-color: #22c55e; }
-      #simpleViewMark:disabled { opacity: 0.5; cursor: default; }
+      #simpleViewMark:hover { opacity: 1; transform: scale(1.1); }
+      #simpleViewMark:disabled { opacity: 0.4; cursor: default; }
       body.simple-view #simpleViewMark:not([hidden]) { display: flex; }
 
       #simpleViewProgress {
@@ -137,15 +148,15 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 3px;
-        background: rgba(255, 255, 255, 0.08);
+        height: 6px;
+        background: rgba(255, 255, 255, 0.04);
         z-index: 11;
         display: none;
       }
       body.simple-view #simpleViewProgress { display: block; }
       #simpleViewProgress > div {
         height: 100%;
-        background: var(--accent);
+        background: rgba(34, 197, 94, 0.55);
         width: 0%;
         transition: width 0.4s ease;
       }
@@ -154,6 +165,7 @@
       body.simple-view #tvRow .poster-progress,
       body.simple-view #tvRow .poster-top,
       body.simple-view #tvRow .poster-bottom { display: none; }
+
 
       #simpleViewMeta {
         position: fixed;
@@ -176,10 +188,21 @@
         color: var(--text);
       }
       #simpleViewEpisode {
-        font-size: 1rem;
-        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.8);
       }
-      #simpleViewTitle:empty, #simpleViewEpisode:empty { display: none; }
+      #simpleViewTitle:empty, #simpleViewEpisode:empty, #simpleViewPosition:empty { display: none; }
+      #simpleViewPosition {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+      }
 
       .top-bar {
         position: fixed;
@@ -570,7 +593,7 @@
       }
 
       #nextContent.simple-view #tvRow .poster {
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
       }
 
       #nextContent.simple-view #tvRow .poster-top {

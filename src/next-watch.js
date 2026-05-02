@@ -100,6 +100,7 @@ async function refreshLoggedIn() {
     nextActiveToggle: $("nextActiveToggle"), nextMovieSection: $("nextMovieSection"),
     simpleViewExit: $("simpleViewExit"), simpleViewMeta: $("simpleViewMeta"), simpleViewTitle: $("simpleViewTitle"),
     simpleViewEpisode: $("simpleViewEpisode"), simpleViewMark: $("simpleViewMark"), simpleViewProgress: $("simpleViewProgress"),
+    simpleViewPosition: $("simpleViewPosition"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
@@ -264,20 +265,26 @@ async function refreshLoggedIn() {
       el.simpleViewProgress.firstElementChild.style.width = "0%"
       el.simpleViewTitle.textContent = ""
       el.simpleViewEpisode.textContent = ""
+      el.simpleViewPosition.textContent = ""
       return
     }
-    const item = centeredTvRowChild()?.querySelector("poster-card")?.item
+    const centered = centeredTvRowChild()
+    const item = centered?.querySelector("poster-card")?.item
     if (!item) {
       el.simpleViewMark.hidden = true
       el.simpleViewProgress.firstElementChild.style.width = "0%"
       el.simpleViewTitle.textContent = ""
       el.simpleViewEpisode.textContent = ""
+      el.simpleViewPosition.textContent = ""
       return
     }
+    const total = item.total_episodes_count || 0
+    const watched = item.watched_episodes_count || 0
     el.simpleViewTitle.textContent = item.title || ""
     if (item.url) el.simpleViewTitle.href = item.url
     else el.simpleViewTitle.removeAttribute("href")
     const ep = item.status === "watching" ? item.nextEpisode : null
+    el.simpleViewPosition.textContent = ""
     if (ep) {
       el.simpleViewEpisode.textContent = `${ep.season}x${ep.episode}${item.episodeTitle ? `: ${item.episodeTitle}` : ""}`
       const epUrl = item.episodeUrl || item.url
@@ -286,8 +293,6 @@ async function refreshLoggedIn() {
     } else {
       el.simpleViewEpisode.textContent = ""
     }
-    const total = item.total_episodes_count || 0
-    const watched = item.watched_episodes_count || 0
     const pct = item.status === "watching" && total > 0 && watched > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0
     el.simpleViewProgress.firstElementChild.style.width = `${pct}%`
     el.simpleViewMark.hidden = !(item.status === "watching" && item.nextEpisode)
