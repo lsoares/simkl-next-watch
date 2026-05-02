@@ -460,6 +460,10 @@
         flex: 0 0 100%;
       }
 
+      #nextContent.simple-view #tvRow .item-card {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
+
       #nextContent.simple-view #tvRow .poster-title { font-size: 2rem; }
       #nextContent.simple-view #tvRow .poster-episode { font-size: 1.2rem; }
       #nextContent.simple-view #tvRow .poster-episode-count,
