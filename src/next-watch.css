@@ -464,6 +464,10 @@
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
       }
 
+      #nextContent.simple-view #tvRow .poster-top {
+        background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.3) 60%, transparent 90%);
+      }
+
       #nextContent.simple-view #tvRow .poster-title { font-size: 2rem; }
       #nextContent.simple-view #tvRow .poster-episode { font-size: 1.2rem; }
       #nextContent.simple-view #tvRow .poster-episode-count,

@@ -1,250 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Next Watch</title>
-    <link rel="manifest" href="./assets/manifest.json" />
-    <link rel="shortcut icon" href="./assets/favicon.ico" />
-    <link rel="icon" href="./assets/icon.png" type="image/png" />
-    <link rel="apple-touch-icon" href="./assets/icon.png" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Next Watch" />
-    <meta name="description" content="The next episode or movie on your Simkl list — without the scroll. Trending, AI mood picks, and one-tap mark-watched." />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Next Watch" />
-    <meta property="og:description" content="The next episode or movie on your Simkl list — without the scroll." />
-    <meta property="og:image" content="./assets/icon.png" />
-    <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="./src/next-watch.css" />
-    <link rel="stylesheet" href="./src/posterCard.css" />
-    <script>
-      // PostHog: only capture on the deployed site and only when Do-Not-Track is off.
-      if (location.hostname === "lsoares.github.io" && navigator.doNotTrack !== "1" && window.doNotTrack !== "1" && navigator.msDoNotTrack !== "1") {
-        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-        // Replace phc_YOUR_KEY_HERE with the actual PostHog project key.
-        posthog.init("phc_n3yr6nOxFrBnDZ7LWzaF5ZJVVWwR9jtbskzvN6tAD6Q", { api_host: "https://us.i.posthog.com", capture_pageview: true, capture_exceptions: true });
-      }
-    </script>
-  </head>
-  <body>
-    <div id="pageBackdrop" aria-hidden="true"></div>
-    <noscript>
-      <p style="padding:24px;text-align:center;color:#f9fafb;font:1rem system-ui">
-        Next Watch needs JavaScript to fetch your Simkl library. Enable JS and reload.
-      </p>
-    </noscript>
-    <nav class="top-bar logged-out" id="topBar">
-      <div class="top-bar-scroll">
-        <a id="navNext" class="tiny-link" href="#next">next</a>
-        <a id="navTrending" class="tiny-link" href="#trending">trending</a>
-        <a id="navSimilar" class="tiny-link" href="#similar">similar</a>
-        <a id="navAi" class="tiny-link" href="#mood">mood</a>
-      </div>
-      <details class="menu" id="menu" hidden>
-        <summary role="button" aria-label="Menu">⋯</summary>
-        <div role="menu">
-          <ul class="menu-stats" id="menuStats" hidden></ul>
-          <p>via <a id="attributionProviderLink" target="_blank" rel="noreferrer"></a> + <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer">TMDB</a></p>
-          <button id="menuAiKey" type="button" role="menuitem">AI key</button>
-          <button id="menuInstall" type="button" role="menuitem" hidden>Install app</button>
-          <a id="menuSupport" role="menuitem" href="https://buymeacoffee.com/lsoares" target="_blank" rel="noreferrer">Support</a>
-          <button id="menuLogout" type="button" role="menuitem">Logout</button>
-        </div>
-      </details>
-    </nav>
 
-    <main>
-      <!-- Homepage (logged-out landing) -->
-      <div id="homepageView" role="region" aria-label="Home" hidden>
-        <div class="app-intro">
-          <p class="app-intro-eyebrow">Next Watch</p>
-          <h2 class="app-intro-tagline">A no-clutter companion for your <a href="https://app.trakt.tv" target="_blank" rel="noreferrer">Trakt</a> or <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a> library.</h2>
-          <ul class="app-intro-features">
-            <li><span class="app-intro-feature-icon">📺</span><div><strong>Next:</strong> the exact episode you're on across every show you're watching.</div></li>
-            <li><span class="app-intro-feature-icon">🔥</span><div><strong>Trending:</strong> what's hot today, this week, this month.</div></li>
-            <li><span class="app-intro-feature-icon">✨</span><div><strong>Mood &amp; Similar:</strong> AI picks tuned to your ratings — by vibe, or by a title you love.</div></li>
-          </ul>
-          <div class="app-intro-actions" data-signin-ctas>
-            <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.svg" alt="" />Sign in with Trakt</button>
-            <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Sign in with Simkl</button>
-          </div>
-        </div>
-      </div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Next Watch</title>
+  <link rel="manifest" href="./assets/manifest.json" />
+  <link rel="shortcut icon" href="./assets/favicon.ico" />
+  <link rel="icon" href="./assets/icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./assets/icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Next Watch" />
+  <meta name="description"
+    content="The next episode or movie on your Simkl list — without the scroll. Trending, AI mood picks, and one-tap mark-watched." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Next Watch" />
+  <meta property="og:description" content="The next episode or movie on your Simkl list — without the scroll." />
+  <meta property="og:image" content="./assets/icon.png" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="./src/next-watch.css" />
+  <link rel="stylesheet" href="./src/posterCard.css" />
+  <script>
+    // PostHog: only capture on the deployed site and only when Do-Not-Track is off.
+    if (location.hostname === "lsoares.github.io" && navigator.doNotTrack !== "1" && window.doNotTrack !== "1" && navigator.msDoNotTrack !== "1") {
+      !function (t, e) { var o, n, p, r; e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) { function g(t, e) { var o = e.split("."); 2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } (p = t.createElement("script")).type = "text/javascript", p.crossOrigin = "anonymous", p.async = !0, p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r); var u = e; for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) { var e = "posthog"; return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e }, u.people.toString = function () { return u.toString(1) + ".people (stub)" }, o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "), n = 0; n < o.length; n++)g(u, o[n]); e._i.push([i, s, a]) }, e.__SV = 1) }(document, window.posthog || []);
+      // Replace phc_YOUR_KEY_HERE with the actual PostHog project key.
+      posthog.init("phc_n3yr6nOxFrBnDZ7LWzaF5ZJVVWwR9jtbskzvN6tAD6Q", { api_host: "https://us.i.posthog.com", capture_pageview: true, capture_exceptions: true });
+    }
+  </script>
+</head>
 
-      <!-- Next view -->
-      <div id="nextView" role="region" aria-label="Next" hidden>
-        <div id="nextSetup" class="view-teaser">
-          <img class="teaser-bg" src="./assets/teaser-next.jpg" alt="" aria-hidden="true" />
-          <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
-          <div class="view-teaser-cta">
-            <p>See your next episode or movie.</p>
-            <div class="app-intro-actions" data-signin-ctas></div>
-          </div>
-        </div>
-        <div id="nextContent" class="view-content">
-          <div class="next-toolbar">
-            <p class="view-hint" data-mode="all">Your ongoing shows and <span class="view-hint-term" title="Unreleased titles are hidden until they air.">watchlist</span>, <span class="view-hint-term" title="Shows: one-episode-left first, then most recently watched, then watchlist (oldest first).&#10;&#10;Movies are shuffled, so nothing stays buried.">intelligently sorted</span>.</p>
-            <p class="view-hint" data-mode="simple" hidden>Just one show. Swipe to change.</p>
-            <button id="nextActiveToggle" type="button" class="next-active-toggle">View one</button>
-          </div>
-          <div class="suggestions-grid">
-            <div class="media-section">
-              <posters-row id="tvRow"></posters-row>
+<body>
+  <div id="pageBackdrop" aria-hidden="true"></div>
+  <noscript>
+    <p style="padding:24px;text-align:center;color:#f9fafb;font:1rem system-ui">
+      Next Watch needs JavaScript to fetch your Simkl library. Enable JS and reload.
+    </p>
+  </noscript>
+  <nav class="top-bar logged-out" id="topBar">
+    <div class="top-bar-scroll">
+      <a id="navNext" class="tiny-link" href="#next">next</a>
+      <a id="navTrending" class="tiny-link" href="#trending">trending</a>
+      <a id="navSimilar" class="tiny-link" href="#similar">similar</a>
+      <a id="navAi" class="tiny-link" href="#mood">mood</a>
+    </div>
+    <details class="menu" id="menu" hidden>
+      <summary role="button" aria-label="Menu">⋯</summary>
+      <div role="menu">
+        <ul class="menu-stats" id="menuStats" hidden></ul>
+        <p>via <a id="attributionProviderLink" target="_blank" rel="noreferrer"></a> + <a
+            href="https://www.themoviedb.org" target="_blank" rel="noreferrer">TMDB</a></p>
+        <button id="menuAiKey" type="button" role="menuitem">AI key</button>
+        <button id="menuInstall" type="button" role="menuitem" hidden>Install app</button>
+        <a id="menuSupport" role="menuitem" href="https://buymeacoffee.com/lsoares" target="_blank"
+          rel="noreferrer">Support</a>
+        <button id="menuLogout" type="button" role="menuitem">Logout</button>
+      </div>
+    </details>
+  </nav>
+
+  <main>
+    <!-- Homepage (logged-out landing) -->
+    <div id="homepageView" role="region" aria-label="Home" hidden>
+      <div class="app-intro">
+        <p class="app-intro-eyebrow">Next Watch</p>
+        <h2 class="app-intro-tagline">A no-clutter companion for your <a href="https://app.trakt.tv" target="_blank"
+            rel="noreferrer">Trakt</a> or <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a>
+          library.</h2>
+        <ul class="app-intro-features">
+          <li><span class="app-intro-feature-icon">📺</span>
+            <div><strong>Next:</strong> the exact episode you're on across every show you're watching.</div>
+          </li>
+          <li><span class="app-intro-feature-icon">🔥</span>
+            <div><strong>Trending:</strong> what's hot today, this week, this month.</div>
+          </li>
+          <li><span class="app-intro-feature-icon">✨</span>
+            <div><strong>Mood &amp; Similar:</strong> AI picks tuned to your ratings — by vibe, or by a title you love.
             </div>
-            <div class="media-section" id="nextMovieSection">
-              <posters-row id="movieRow"></posters-row>
-            </div>
-          </div>
+          </li>
+        </ul>
+        <div class="app-intro-actions" data-signin-ctas>
+          <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark"
+              src="./assets/trakt.svg" alt="" />Sign in with Trakt</button>
+          <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark"
+              src="./assets/simkl.png" alt="" />Sign in with Simkl</button>
         </div>
       </div>
+    </div>
 
-      <!-- Trending view -->
-      <div id="trendingView" role="region" aria-label="Trending" hidden>
-        <div id="trendingSetup" class="view-teaser">
-          <img class="teaser-bg" src="./assets/teaser-trending.jpg" alt="" aria-hidden="true" />
-          <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
-          <div class="view-teaser-cta">
-            <p>Save trending shows to your watchlist.</p>
-            <div class="app-intro-actions" data-signin-ctas></div>
-          </div>
+    <!-- Next view -->
+    <div id="nextView" role="region" aria-label="Next" hidden>
+      <div id="nextSetup" class="view-teaser">
+        <img class="teaser-bg" src="./assets/teaser-next.jpg" alt="" aria-hidden="true" />
+        <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
+        <div class="view-teaser-cta">
+          <p>See your next episode or movie.</p>
+          <div class="app-intro-actions" data-signin-ctas></div>
         </div>
-        <div id="trendingContent" class="view-content">
-          <p class="view-hint">Trending now, minus your library.</p>
-          <div class="trending-toolbar">
-            <div class="range-tabs" id="trendingPeriodTabs">
-              <button class="range-tab active" data-period="today" type="button">🔥 Today</button>
-              <button class="range-tab" data-period="week" type="button">🔥 Week</button>
-              <button class="range-tab" data-period="month" type="button">🔥 Month</button>
-            </div>
+      </div>
+      <div id="nextContent" class="view-content">
+        <div class="next-toolbar">
+          <p class="view-hint" data-mode="all">Your ongoing shows and <span class="view-hint-term"
+              title="Unreleased titles are hidden until they air.">watchlist</span>, <span class="view-hint-term"
+              title="Shows: one-episode-left first, then most recently watched, then watchlist (oldest first).&#10;&#10;Movies are shuffled, so nothing stays buried.">intelligently
+              sorted</span>.</p>
+          <p class="view-hint" data-mode="simple" hidden>Continue watching…</p>
+          <button id="nextActiveToggle" type="button" class="next-active-toggle">View one</button>
+        </div>
+        <div class="suggestions-grid">
+          <div class="media-section">
+            <posters-row id="tvRow"></posters-row>
           </div>
-          <div class="suggestions-grid" id="trendingGrid">
-            <div class="media-section">
-              <posters-row class="discovery" id="trendingTvContent"></posters-row>
-            </div>
-            <div class="media-section">
-              <posters-row class="discovery" id="trendingMoviesContent"></posters-row>
-            </div>
+          <div class="media-section" id="nextMovieSection">
+            <posters-row id="movieRow"></posters-row>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Similar view -->
-      <div id="similarView" role="region" aria-label="Similar" hidden>
-        <div id="similarSetup" class="view-teaser">
-          <img class="teaser-bg" src="./assets/teaser-similar.jpg" alt="" aria-hidden="true" />
-          <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
-          <div class="view-teaser-cta">
-            <p>Find titles similar to what you've rated.</p>
-            <div class="app-intro-actions" data-signin-ctas></div>
-          </div>
-        </div>
-        <div id="similarContent" class="view-content">
-          <p class="view-hint">Your favorite titles, shuffled. Pick one to find more like it.</p>
-          <div class="similar-toolbar">
-            <div class="range-tabs" id="similarRatingTabs" role="group" aria-label="Minimum rating">
-              <button class="range-tab active" data-min-rating="0" type="button">All</button>
-              <button class="range-tab" data-min-rating="7" type="button">7+</button>
-              <button class="range-tab" data-min-rating="8" type="button">8+</button>
-              <button class="range-tab" data-min-rating="9" type="button">9+</button>
-              <button class="range-tab" data-min-rating="10" type="button">10</button>
-            </div>
-            <button class="tiny-link" id="similarReload" type="button">Reshuffle</button>
-          </div>
-          <section class="similar-grid poster-grid" id="similarGrid" aria-label="Similar picks"></section>
+    <!-- Trending view -->
+    <div id="trendingView" role="region" aria-label="Trending" hidden>
+      <div id="trendingSetup" class="view-teaser">
+        <img class="teaser-bg" src="./assets/teaser-trending.jpg" alt="" aria-hidden="true" />
+        <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
+        <div class="view-teaser-cta">
+          <p>Save trending shows to your watchlist.</p>
+          <div class="app-intro-actions" data-signin-ctas></div>
         </div>
       </div>
-
-      <!-- AI view -->
-      <div id="aiView" role="region" aria-label="Mood" hidden>
-        <div id="aiSetup" class="view-teaser">
-          <img class="teaser-bg" src="./assets/teaser-mood.jpg" alt="" aria-hidden="true" />
-          <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
-          <div class="view-teaser-cta">
-            <p>Get picks for any mood based on titles you've loved.</p>
-            <div class="app-intro-actions" data-signin-ctas></div>
+      <div id="trendingContent" class="view-content">
+        <p class="view-hint">Trending now, minus your library.</p>
+        <div class="trending-toolbar">
+          <div class="range-tabs" id="trendingPeriodTabs">
+            <button class="range-tab active" data-period="today" type="button">🔥 Today</button>
+            <button class="range-tab" data-period="week" type="button">🔥 Week</button>
+            <button class="range-tab" data-period="month" type="button">🔥 Month</button>
           </div>
         </div>
-        <div id="aiContent" class="view-content">
+        <div class="suggestions-grid" id="trendingGrid">
+          <div class="media-section">
+            <posters-row class="discovery" id="trendingTvContent"></posters-row>
+          </div>
+          <div class="media-section">
+            <posters-row class="discovery" id="trendingMoviesContent"></posters-row>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Similar view -->
+    <div id="similarView" role="region" aria-label="Similar" hidden>
+      <div id="similarSetup" class="view-teaser">
+        <img class="teaser-bg" src="./assets/teaser-similar.jpg" alt="" aria-hidden="true" />
+        <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
+        <div class="view-teaser-cta">
+          <p>Find titles similar to what you've rated.</p>
+          <div class="app-intro-actions" data-signin-ctas></div>
+        </div>
+      </div>
+      <div id="similarContent" class="view-content">
+        <p class="view-hint">Your favorite titles, shuffled. Pick one to find more like it.</p>
+        <div class="similar-toolbar">
+          <div class="range-tabs" id="similarRatingTabs" role="group" aria-label="Minimum rating">
+            <button class="range-tab active" data-min-rating="0" type="button">All</button>
+            <button class="range-tab" data-min-rating="7" type="button">7+</button>
+            <button class="range-tab" data-min-rating="8" type="button">8+</button>
+            <button class="range-tab" data-min-rating="9" type="button">9+</button>
+            <button class="range-tab" data-min-rating="10" type="button">10</button>
+          </div>
+          <button class="tiny-link" id="similarReload" type="button">Reshuffle</button>
+        </div>
+        <section class="similar-grid poster-grid" id="similarGrid" aria-label="Similar picks"></section>
+      </div>
+    </div>
+
+    <!-- AI view -->
+    <div id="aiView" role="region" aria-label="Mood" hidden>
+      <div id="aiSetup" class="view-teaser">
+        <img class="teaser-bg" src="./assets/teaser-mood.jpg" alt="" aria-hidden="true" />
+        <a class="teaser-eyebrow" data-back-home href="./">Next Watch</a>
+        <div class="view-teaser-cta">
+          <p>Get picks for any mood based on titles you've loved.</p>
+          <div class="app-intro-actions" data-signin-ctas></div>
+        </div>
+      </div>
+      <div id="aiContent" class="view-content">
         <p class="view-hint">Pick a mood and we'll suggest titles based on your favorites.</p>
         <div class="ai-prompts" id="aiPrompts">
-          <button class="ai-prompt-btn" type="button" data-gloss="warm, low-stakes, comforting; nothing bleak or violent"><span class="ai-prompt-icon" aria-hidden="true">🛋️</span><span class="ai-prompt-label">Cozy night in</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="tense thrillers or action; sustained suspense"><span class="ai-prompt-icon" aria-hidden="true">😬</span><span class="ai-prompt-label">Edge of my seat</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="genuinely funny; comedy-forward, not dramedy"><span class="ai-prompt-icon" aria-hidden="true">😂</span><span class="ai-prompt-label">Make me laugh</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="puzzles, unreliable narrators, non-linear or conceptual"><span class="ai-prompt-icon" aria-hidden="true">🧠</span><span class="ai-prompt-label">Mind-bending</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="large-scale stories, long journeys, high stakes"><span class="ai-prompt-icon" aria-hidden="true">🗺️</span><span class="ai-prompt-label">Epic adventure</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="based on real people or events; documentaries welcome"><span class="ai-prompt-icon" aria-hidden="true">📖</span><span class="ai-prompt-label">True stories</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="under-the-radar quality; skip famous blockbusters"><span class="ai-prompt-icon" aria-hidden="true">💎</span><span class="ai-prompt-label">Hidden gems</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="romantic or shared-viewing friendly; not too heavy"><span class="ai-prompt-icon" aria-hidden="true">💕</span><span class="ai-prompt-label">Date night</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="uplifting, hopeful, warm endings"><span class="ai-prompt-icon" aria-hidden="true">🌞</span><span class="ai-prompt-label">Feel-good</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="morally complex, bleak tone, heavy themes; post-apocalyptic and dystopian welcome"><span class="ai-prompt-icon" aria-hidden="true">🖤</span><span class="ai-prompt-label">Dark &amp; gritty</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="strange, surreal, genre-defying, arthouse"><span class="ai-prompt-icon" aria-hidden="true">🌀</span><span class="ai-prompt-label">Weird &amp; wild</span></button>
-          <button class="ai-prompt-btn" type="button" data-gloss="emotional, cathartic; prepare to feel things"><span class="ai-prompt-icon" aria-hidden="true">😭</span><span class="ai-prompt-label">Tear-jerker</span></button>
-        </div>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="warm, low-stakes, comforting; nothing bleak or violent"><span class="ai-prompt-icon"
+              aria-hidden="true">🛋️</span><span class="ai-prompt-label">Cozy night in</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="tense thrillers or action; sustained suspense"><span
+              class="ai-prompt-icon" aria-hidden="true">😬</span><span class="ai-prompt-label">Edge of my
+              seat</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="genuinely funny; comedy-forward, not dramedy"><span
+              class="ai-prompt-icon" aria-hidden="true">😂</span><span class="ai-prompt-label">Make me
+              laugh</span></button>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="puzzles, unreliable narrators, non-linear or conceptual"><span class="ai-prompt-icon"
+              aria-hidden="true">🧠</span><span class="ai-prompt-label">Mind-bending</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="large-scale stories, long journeys, high stakes"><span
+              class="ai-prompt-icon" aria-hidden="true">🗺️</span><span class="ai-prompt-label">Epic
+              adventure</span></button>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="based on real people or events; documentaries welcome"><span class="ai-prompt-icon"
+              aria-hidden="true">📖</span><span class="ai-prompt-label">True stories</span></button>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="under-the-radar quality; skip famous blockbusters"><span class="ai-prompt-icon"
+              aria-hidden="true">💎</span><span class="ai-prompt-label">Hidden gems</span></button>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="romantic or shared-viewing friendly; not too heavy"><span class="ai-prompt-icon"
+              aria-hidden="true">💕</span><span class="ai-prompt-label">Date night</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="uplifting, hopeful, warm endings"><span
+              class="ai-prompt-icon" aria-hidden="true">🌞</span><span class="ai-prompt-label">Feel-good</span></button>
+          <button class="ai-prompt-btn" type="button"
+            data-gloss="morally complex, bleak tone, heavy themes; post-apocalyptic and dystopian welcome"><span
+              class="ai-prompt-icon" aria-hidden="true">🖤</span><span class="ai-prompt-label">Dark &amp;
+              gritty</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="strange, surreal, genre-defying, arthouse"><span
+              class="ai-prompt-icon" aria-hidden="true">🌀</span><span class="ai-prompt-label">Weird &amp;
+              wild</span></button>
+          <button class="ai-prompt-btn" type="button" data-gloss="emotional, cathartic; prepare to feel things"><span
+              class="ai-prompt-icon" aria-hidden="true">😭</span><span
+              class="ai-prompt-label">Tear-jerker</span></button>
         </div>
       </div>
-    </main>
-    <script>if (!localStorage.getItem("next-watch-auth")) homepageView.hidden = false</script>
+    </div>
+  </main>
+  <script>if (!localStorage.getItem("next-watch-auth")) homepageView.hidden = false</script>
 
-    <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
-      <form id="aiSettingsForm">
-        <div class="ai-settings-header">
-          <h3>AI key</h3>
-          <button class="dialog-close" id="aiSettingsClose" type="button" aria-label="Close">×</button>
-        </div>
-        <p class="field-help">Set a key for personalized recommendations tuned to your watching habits.</p>
-        <div class="provider-row">
-          <select id="aiProviderSelect" aria-label="Provider">
-            <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
-            <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
-            <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
-            <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
-            <option value="grok" data-url="https://console.x.ai">Grok</option>
-            <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
-            <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
-          </select>
-          <a id="aiKeyLink" href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Create</a>
-        </div>
-        <div>
-          <input id="aiProviderUsername" name="username" type="text" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px" />
-          <input id="aiKeyInput" name="password" type="password" placeholder="API key" aria-label="API key" autocomplete="current-password" required />
-        </div>
-        <div class="inline-banner">Your key stays in this browser and is sent only to the provider you pick — we never receive or store it.</div>
-        <div class="ai-settings-actions">
-          <button class="secondary" id="aiSaveBtn" type="submit">Save AI key</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="aiDialog" class="more-like-dialog" aria-label="AI picks">
-      <header class="more-like-header">
-        <button class="more-like-back" id="aiDialogBack" type="button" aria-label="Back" hidden>←</button>
-        <h3 class="more-like-title" id="aiDialogTitle"></h3>
-        <button class="dialog-close" id="aiDialogClose" type="button" aria-label="Close">×</button>
-      </header>
-      <posters-row class="poster-grid discovery" id="aiDialogResults"></posters-row>
-    </dialog>
-
-    <div class="toast" id="toast" role="status" hidden></div>
-
-    <template id="tpl-empty"><p class="empty"></p></template>
-<template id="tpl-row-item"><div class="row-item"></div></template>
-    <template id="tpl-trending-badge"><span class="trending-badge"></span></template>
-    <template id="tpl-signin-ctas">
-      <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.svg" alt="" />Sign in with Trakt</button>
-      <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png" alt="" />Sign in with Simkl</button>
-    </template>
-    <template id="tpl-add-more">
-      <div class="row-item row-item--add-more">
-        <a class="add-more-card" target="_blank" rel="noreferrer">
-          <span class="add-more-plus" aria-hidden="true"></span>
-          <span class="add-more-label"></span>
-        </a>
+  <dialog id="aiSettings" class="ai-settings-dialog" aria-label="AI key">
+    <form id="aiSettingsForm">
+      <div class="ai-settings-header">
+        <h3>AI key</h3>
+        <button class="dialog-close" id="aiSettingsClose" type="button" aria-label="Close">×</button>
       </div>
-    </template>
-    <script src="./config.local.js"></script>
-    <script type="module" src="./src/next-watch.js"></script>
-  </body>
+      <p class="field-help">Set a key for personalized recommendations tuned to your watching habits.</p>
+      <div class="provider-row">
+        <select id="aiProviderSelect" aria-label="Provider">
+          <option value="groq" data-url="https://console.groq.com/keys">Groq (free)</option>
+          <option value="gemini" data-url="https://aistudio.google.com/apikey">Gemini (free)</option>
+          <option value="claude" data-url="https://console.anthropic.com/settings/keys">Claude</option>
+          <option value="deepseek" data-url="https://platform.deepseek.com/api_keys">DeepSeek</option>
+          <option value="grok" data-url="https://console.x.ai">Grok</option>
+          <option value="openai" data-url="https://platform.openai.com/api-keys">OpenAI</option>
+          <option value="openrouter" data-url="https://openrouter.ai/settings/keys">OpenRouter</option>
+        </select>
+        <a id="aiKeyLink" href="https://console.groq.com/keys" target="_blank" rel="noreferrer">Create</a>
+      </div>
+      <div>
+        <input id="aiProviderUsername" name="username" type="text" autocomplete="username" aria-hidden="true"
+          tabindex="-1" style="position:absolute;left:-9999px" />
+        <input id="aiKeyInput" name="password" type="password" placeholder="API key" aria-label="API key"
+          autocomplete="current-password" required />
+      </div>
+      <div class="inline-banner">Your key stays in this browser and is sent only to the provider you pick — we never
+        receive or store it.</div>
+      <div class="ai-settings-actions">
+        <button class="secondary" id="aiSaveBtn" type="submit">Save AI key</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="aiDialog" class="more-like-dialog" aria-label="AI picks">
+    <header class="more-like-header">
+      <button class="more-like-back" id="aiDialogBack" type="button" aria-label="Back" hidden>←</button>
+      <h3 class="more-like-title" id="aiDialogTitle"></h3>
+      <button class="dialog-close" id="aiDialogClose" type="button" aria-label="Close">×</button>
+    </header>
+    <posters-row class="poster-grid discovery" id="aiDialogResults"></posters-row>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <template id="tpl-empty">
+    <p class="empty"></p>
+  </template>
+  <template id="tpl-row-item">
+    <div class="row-item"></div>
+  </template>
+  <template id="tpl-trending-badge"><span class="trending-badge"></span></template>
+  <template id="tpl-signin-ctas">
+    <button class="app-intro-cta" data-provider="trakt" type="button"><img class="brand-mark" src="./assets/trakt.svg"
+        alt="" />Sign in with Trakt</button>
+    <button class="app-intro-cta" data-provider="simkl" type="button"><img class="brand-mark" src="./assets/simkl.png"
+        alt="" />Sign in with Simkl</button>
+  </template>
+  <template id="tpl-add-more">
+    <div class="row-item row-item--add-more">
+      <a class="add-more-card" target="_blank" rel="noreferrer">
+        <span class="add-more-plus" aria-hidden="true"></span>
+        <span class="add-more-label"></span>
+      </a>
+    </div>
+  </template>
+  <script src="./config.local.js"></script>
+  <script type="module" src="./src/next-watch.js"></script>
+</body>
+
 </html>
