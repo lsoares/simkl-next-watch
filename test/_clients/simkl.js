@@ -26,7 +26,7 @@ export function client(page) {
       })
     },
 
-    useSyncActivities(allTimestamp = "2025-01-01T00:00:00Z") {
+    useSyncActivities(allTimestamp = "2025-01-01T00:00:00Z", { times } = {}) {
       return page.route("https://api.simkl.com/sync/activities*", async (route) => {
         expect(route.request().method()).toBe("POST")
         assertSimklAuth(route.request())
@@ -36,19 +36,19 @@ export function client(page) {
           movies: { all: allTimestamp, removed_from_list: allTimestamp },
           anime: { all: allTimestamp, removed_from_list: allTimestamp },
         }) })
-      })
+      }, times ? { times } : undefined)
     },
 
-    useSyncShows(shows = [], dateFrom = null) {
-      return registerSyncRoute(page, "shows", shows, dateFrom)
+    useSyncShows(shows = [], dateFrom = null, { times } = {}) {
+      return registerSyncRoute(page, "shows", shows, dateFrom, times)
     },
 
-    useSyncMovies(movies = [], dateFrom = null) {
-      return registerSyncRoute(page, "movies", movies, dateFrom)
+    useSyncMovies(movies = [], dateFrom = null, { times } = {}) {
+      return registerSyncRoute(page, "movies", movies, dateFrom, times)
     },
 
-    useSyncAnime(anime = [], dateFrom = null) {
-      return registerSyncRoute(page, "anime", anime, dateFrom)
+    useSyncAnime(anime = [], dateFrom = null, { times } = {}) {
+      return registerSyncRoute(page, "anime", anime, dateFrom, times)
     },
 
     useSyncLibraryIds({ shows = [], movies = [], anime = [] } = {}) {
@@ -118,7 +118,7 @@ function periodFromTrendingUrl(url) {
   return match?.[1] || null
 }
 
-function registerSyncRoute(page, type, items, dateFrom) {
+function registerSyncRoute(page, type, items, dateFrom, times) {
   return page.route(`https://api.simkl.com/sync/all-items/${type}/*`, async (route) => {
     expect(route.request().method()).toBe("GET")
     assertSimklAuth(route.request())
@@ -127,7 +127,7 @@ function registerSyncRoute(page, type, items, dateFrom) {
     expect(params.get("episode_watched_at")).toBe("yes")
     expect(params.get("date_from")).toBe(dateFrom)
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ [type]: items }) })
-  })
+  }, times ? { times } : undefined)
 }
 
 function assertSimklAuth(request) {

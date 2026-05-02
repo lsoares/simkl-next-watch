@@ -48,7 +48,7 @@
         background-image: var(--bd);
         background-size: cover;
         background-position: center;
-        filter: blur(40px) brightness(0.45) saturate(1.15);
+        filter: blur(16px) brightness(0.55) saturate(1.1);
         opacity: 0;
         transition: opacity 0.5s ease, background-image 0.4s ease;
         pointer-events: none;

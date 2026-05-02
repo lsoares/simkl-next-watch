@@ -302,7 +302,6 @@ async function refreshLoggedIn() {
       ])
       const allShows = [...ws.items, ...wls.items, ...cs.items]
       const allMovies = [...wlm.items, ...cm.items]
-      const data = { shows: allShows, movies: allMovies, fresh: ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh, change: ws.change ?? wls.change ?? wlm.change ?? cs.change ?? cm.change ?? null }
       tvItems = [
         ...ws.items.toSorted(byWatchingPriority),
         ...wls.items.toSorted((a, b) => (a.added_at || 0) - (b.added_at || 0)),
@@ -312,16 +311,12 @@ async function refreshLoggedIn() {
         movieItems = movieItems.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v)
         moviesShuffled = true
       }
-      libraryIndex = collectLibraryIndex(data)
+      libraryIndex = collectLibraryIndex({ shows: allShows, movies: allMovies })
       resolveLibraryReady()
       renderStats(allShows, allMovies)
       renderNext()
-      if (el.toast.hidden) {
-        if (data.change === "fullSync") showToast("Synced library.")
-        else if (data.change === "updatedWatchlist") showToast("Updated watchlist.")
-        else if (data.change === "newEpisodes") showToast("There are new episodes.")
-        else if (data.fresh && !data.change) showToast("Synced library.")
-      }
+      const fresh = ws.fresh || wls.fresh || wlm.fresh || cs.fresh || cm.fresh
+      if (fresh && el.toast.hidden) showToast("Synced library.")
     } catch (err) {
       resolveLibraryReady()
       handleError(err)
@@ -835,6 +830,18 @@ async function refreshLoggedIn() {
     tvRowScrollTimer = setTimeout(() => { saveTvRowScroll(); syncSimpleBackdrop() }, 200)
   }, { passive: true })
   el.tvRow.addEventListener("backdropready", syncSimpleBackdrop)
+  document.addEventListener("keydown", (e) => {
+    if (!simpleView || currentView !== "next") return
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+    const target = e.target
+    if (target.matches?.("input, textarea, select, [contenteditable=true]")) return
+    const centered = centeredTvRowChild()
+    const sibling = e.key === "ArrowLeft" ? centered?.previousElementSibling : centered?.nextElementSibling
+    if (!sibling) return
+    e.preventDefault()
+    el.tvRow.scrollTo({ left: sibling.offsetLeft, behavior: "smooth" })
+  })
 
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })
