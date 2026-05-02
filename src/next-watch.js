@@ -209,23 +209,42 @@ async function refreshLoggedIn() {
   async function restoreTvRowScroll() {
     const savedId = await idbGet("tvRowShowId")
     const target = savedId && el.tvRow.querySelector(`[data-simkl-id="${savedId}"]`)?.closest(".row-item")
-    if (!target) return
+    if (!target) {
+      syncSimpleBackdrop()
+      return
+    }
     isRestoringTvRowScroll = true
     lastSavedTvRowShowId = savedId
     el.tvRow.scrollLeft = target.offsetLeft
+    syncSimpleBackdrop()
     setTimeout(() => { isRestoringTvRowScroll = false }, 500)
   }
 
   function saveTvRowScroll() {
-    const scrollLeft = el.tvRow.scrollLeft
-    const closest = [...el.tvRow.children].reduce((best, child) => {
-      const dist = Math.abs(child.offsetLeft - scrollLeft)
-      return !best || dist < best.dist ? { child, dist } : best
-    }, null)
-    const id = closest?.child.querySelector("[data-simkl-id]")?.dataset.simklId
+    const centered = centeredTvRowChild()
+    const id = centered?.querySelector("[data-simkl-id]")?.dataset.simklId
     if (!id || id === lastSavedTvRowShowId) return
     lastSavedTvRowShowId = id
     idbSet("tvRowShowId", id)
+  }
+
+  function syncSimpleBackdrop() {
+    const active = simpleView && currentView === "next"
+    const url = active ? centeredTvRowChild()?.querySelector("[data-backdrop]")?.dataset.backdrop : ""
+    if (url) {
+      document.body.style.setProperty("--bd", `url("${url}")`)
+      document.body.classList.add("has-backdrop")
+    } else {
+      document.body.classList.remove("has-backdrop")
+    }
+  }
+
+  function centeredTvRowChild() {
+    const scrollLeft = el.tvRow.scrollLeft
+    return [...el.tvRow.children].reduce((best, child) => {
+      const dist = Math.abs(child.offsetLeft - scrollLeft)
+      return !best || dist < best.dist ? { child, dist } : best
+    }, null)?.child
   }
 
   async function renderRow(rowEl, items, type, { withAddMore = true } = {}) {
@@ -660,6 +679,7 @@ async function refreshLoggedIn() {
       if (nav) nav.classList.toggle("active-nav", key === name)
     }
     views[name].onShow?.()
+    syncSimpleBackdrop()
     const hash = name === "homepage" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
@@ -806,13 +826,15 @@ async function refreshLoggedIn() {
     el.tvRow._fingerprint = null
     await idbSet("simpleView", simpleView)
     renderNext()
+    syncSimpleBackdrop()
   })
   let tvRowScrollTimer = null
   el.tvRow.addEventListener("scroll", () => {
     if (isRestoringTvRowScroll) return
     clearTimeout(tvRowScrollTimer)
-    tvRowScrollTimer = setTimeout(saveTvRowScroll, 200)
+    tvRowScrollTimer = setTimeout(() => { saveTvRowScroll(); syncSimpleBackdrop() }, 200)
   }, { passive: true })
+  el.tvRow.addEventListener("backdropready", syncSimpleBackdrop)
 
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })

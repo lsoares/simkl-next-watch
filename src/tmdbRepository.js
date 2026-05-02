@@ -1,7 +1,7 @@
 import { createKeyedCache } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 
-const cache = createKeyedCache("next-watch-tmdb-meta-v2")
+const cache = createKeyedCache("next-watch-tmdb-meta-v3")
 const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
 const inFlight = new Map()
 
@@ -110,6 +110,7 @@ function shape(r) {
   if (!r) return empty()
   return {
     url: r.poster_path ? `https://image.tmdb.org/t/p/w342${r.poster_path}` : "",
+    backdropUrl: r.backdrop_path ? `https://image.tmdb.org/t/p/w1280${r.backdrop_path}` : "",
     released: hasReleased(r.release_date || r.first_air_date, r.status),
     overview: r.overview || "",
     genres: (r.genres || []).map((g) => g.name),
@@ -135,7 +136,7 @@ function episode(e) {
 }
 
 function empty() {
-  return { url: "", released: undefined, overview: "", genres: [], rating: null, status: "", runtime: 0, lastEpisode: null, nextEpisode: null }
+  return { url: "", backdropUrl: "", released: undefined, overview: "", genres: [], rating: null, status: "", runtime: 0, lastEpisode: null, nextEpisode: null }
 }
 
 function hasReleased(date, status) {

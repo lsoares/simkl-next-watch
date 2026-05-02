@@ -1,6 +1,6 @@
 import { checkNewEpisodes } from "./src/notifications.js"
 
-const CACHE = "next-watch-v8"
+const CACHE = "next-watch-v9"
 const SHELL = [
   "./index.html",
   "./assets/icon.png",
