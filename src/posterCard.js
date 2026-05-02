@@ -206,7 +206,7 @@ class PosterCard extends HTMLElement {
     const titleId = `poster-title-${++posterIdSeq}`
 
     this.innerHTML = `
-      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}" aria-labelledby="${titleId}">
+      <article class="item-card${watched ? " trending-watched" : ""}${watching || (inWatchlist && !watched) ? " trending-watchlisted" : ""}" data-simkl-id="${id}" data-type="${type || ""}" data-title="${escapeHtml(title)}"${!status && !userRating && item.overview ? ` title="${escapeHtml(item.overview)}"` : ""} aria-labelledby="${titleId}">
         ${(() => {
         const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
         const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
@@ -288,7 +288,9 @@ async function hydratePoster(card) {
   const runtimeChanged = runtime !== (item.runtime || 0)
   item.runtime = runtime
   item.backdropUrl = meta.backdropUrl || ""
+  item.overview = meta.overview || ""
   if (item.backdropUrl) new Image().src = item.backdropUrl
+  if (item.overview && !item.status && !item.user_rating) card.querySelector(".item-card")?.setAttribute("title", item.overview)
   card.dispatchEvent(new CustomEvent("backdropready", { bubbles: true }))
   if (!meta.url) {
     if (runtimeChanged) card._refresh()

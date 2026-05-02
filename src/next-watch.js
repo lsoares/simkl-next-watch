@@ -98,6 +98,7 @@ async function refreshLoggedIn() {
     menu: $("menu"), menuAiKey: $("menuAiKey"), menuInstall: $("menuInstall"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     nextActiveToggle: $("nextActiveToggle"), nextMovieSection: $("nextMovieSection"),
+    simpleViewExit: $("simpleViewExit"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
@@ -690,6 +691,7 @@ async function refreshLoggedIn() {
     }
     views[name].onShow?.()
     syncSimpleBackdrop()
+    syncChrome()
     const hash = name === "homepage" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
   }
@@ -831,13 +833,21 @@ async function refreshLoggedIn() {
     tab.classList.add("active")
     loadTrending()
   })
-  el.nextActiveToggle.addEventListener("click", async () => {
-    simpleView = !simpleView
+  el.nextActiveToggle.addEventListener("click", () => setSimpleViewMode(!simpleView))
+  el.simpleViewExit.addEventListener("click", () => setSimpleViewMode(false))
+
+  async function setSimpleViewMode(value) {
+    simpleView = value
     el.tvRow._fingerprint = null
     await idbSet("simpleView", simpleView)
     renderNext()
     syncSimpleBackdrop()
-  })
+    syncChrome()
+  }
+
+  function syncChrome() {
+    document.body.classList.toggle("simple-view", simpleView && currentView === "next")
+  }
   let tvRowScrollTimer = null
   el.tvRow.addEventListener("scroll", () => {
     if (isRestoringTvRowScroll) return
@@ -848,10 +858,14 @@ async function refreshLoggedIn() {
   el.tvRow.addEventListener("backdropready", syncSimpleBackdrop)
   document.addEventListener("keydown", (e) => {
     if (!simpleView || currentView !== "next") return
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
     if (e.metaKey || e.ctrlKey || e.altKey) return
-    const target = e.target
-    if (target.matches?.("input, textarea, select, [contenteditable=true]")) return
+    if (e.target.matches?.("input, textarea, select, [contenteditable=true]")) return
+    if (e.key === "Escape") {
+      e.preventDefault()
+      setSimpleViewMode(false)
+      return
+    }
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
     const centered = centeredTvRowChild()
     const sibling = e.key === "ArrowLeft" ? centered?.previousElementSibling : centered?.nextElementSibling
     if (!sibling) return

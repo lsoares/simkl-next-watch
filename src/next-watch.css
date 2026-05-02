@@ -82,6 +82,33 @@
         margin-top: 0;
       }
 
+      #simpleViewExit {
+        position: fixed;
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        z-index: 11;
+        display: none;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: var(--text);
+        font-size: 1.6rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s ease;
+      }
+      #simpleViewExit:hover { opacity: 1; }
+
+      body.simple-view #simpleViewExit { display: block; }
+      body.simple-view .top-bar,
+      body.simple-view .next-toolbar { display: none; }
+
       .top-bar {
         position: fixed;
         top: 0;
