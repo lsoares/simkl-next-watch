@@ -53,7 +53,7 @@
   transform: scale(1);
   transition: transform 0.24s ease, filter 0.24s ease;
 }
-.poster-anchor { display: block; width: 100%; height: 100%; }
+.poster-anchor { display: block; width: 100%; height: 100%; -webkit-user-drag: none; user-drag: none; }
 .poster--placeholder {
   background:
     radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.22), transparent 55%),

@@ -99,8 +99,8 @@ async function refreshLoggedIn() {
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     nextActiveToggle: $("nextActiveToggle"), nextMovieSection: $("nextMovieSection"),
     simpleViewExit: $("simpleViewExit"), simpleViewMeta: $("simpleViewMeta"), simpleViewTitle: $("simpleViewTitle"),
-    simpleViewEpisode: $("simpleViewEpisode"), simpleViewMark: $("simpleViewMark"), simpleViewProgress: $("simpleViewProgress"),
-    simpleViewPosition: $("simpleViewPosition"),
+    simpleViewEpisode: $("simpleViewEpisode"), simpleViewProgress: $("simpleViewProgress"),
+    simpleViewPosition: $("simpleViewPosition"), simpleViewMark: $("simpleViewMark"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
@@ -278,6 +278,7 @@ async function refreshLoggedIn() {
       el.simpleViewPosition.textContent = ""
       return
     }
+    el.simpleViewMark.hidden = !(!!item.status && item.status !== "completed" && (item.type !== "tv" || !!item.nextEpisode))
     const total = item.total_episodes_count || 0
     const watched = item.watched_episodes_count || 0
     el.simpleViewTitle.textContent = item.title || ""
@@ -286,7 +287,7 @@ async function refreshLoggedIn() {
     const ep = item.status === "watching" ? item.nextEpisode : null
     el.simpleViewPosition.textContent = ""
     if (ep) {
-      el.simpleViewEpisode.textContent = `${ep.season}x${ep.episode}${item.episodeTitle ? `: ${item.episodeTitle}` : ""}`
+      el.simpleViewEpisode.textContent = `${ep.season}×${ep.episode}${item.episodeTitle ? ` · ${item.episodeTitle}` : ""}`
       const epUrl = item.episodeUrl || item.url
       if (epUrl) el.simpleViewEpisode.href = epUrl
       else el.simpleViewEpisode.removeAttribute("href")
@@ -295,7 +296,6 @@ async function refreshLoggedIn() {
     }
     const pct = item.status === "watching" && total > 0 && watched > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0
     el.simpleViewProgress.firstElementChild.style.width = `${pct}%`
-    el.simpleViewMark.hidden = !(item.status === "watching" && item.nextEpisode)
   }
 
   function centeredTvRowChild() {
@@ -906,6 +906,13 @@ async function refreshLoggedIn() {
     tvRowScrollTimer = setTimeout(saveTvRowScroll, 200)
   }, { passive: true })
   el.tvRow.addEventListener("backdropready", syncSimpleView)
+  function moveSimpleView(direction) {
+    const centered = centeredTvRowChild()
+    const sibling = direction < 0 ? centered?.previousElementSibling : centered?.nextElementSibling
+    if (!sibling) return
+    setSimpleBackdrop(sibling.querySelector("poster-card")?.item?.backdropUrl)
+    el.tvRow.scrollTo({ left: sibling.offsetLeft, behavior: "smooth" })
+  }
   document.addEventListener("keydown", (e) => {
     if (!simpleView || currentView !== "next") return
     if (e.metaKey || e.ctrlKey || e.altKey) return
@@ -916,13 +923,24 @@ async function refreshLoggedIn() {
       return
     }
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
-    const centered = centeredTvRowChild()
-    const sibling = e.key === "ArrowLeft" ? centered?.previousElementSibling : centered?.nextElementSibling
-    if (!sibling) return
     e.preventDefault()
-    setSimpleBackdrop(sibling.querySelector("poster-card")?.item?.backdropUrl)
-    el.tvRow.scrollTo({ left: sibling.offsetLeft, behavior: "smooth" })
+    moveSimpleView(e.key === "ArrowLeft" ? -1 : 1)
   })
+  let swipeStartX = null, swipeStartY = null
+  document.addEventListener("touchstart", (e) => {
+    if (!simpleView || currentView !== "next") return
+    if (e.target.closest("#tvRow")) return
+    swipeStartX = e.touches[0].clientX
+    swipeStartY = e.touches[0].clientY
+  }, { passive: true })
+  document.addEventListener("touchend", (e) => {
+    if (swipeStartX === null) return
+    const dx = e.changedTouches[0].clientX - swipeStartX
+    const dy = e.changedTouches[0].clientY - swipeStartY
+    swipeStartX = null
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+    moveSimpleView(dx > 0 ? -1 : 1)
+  }, { passive: true })
 
   syncViewportMetrics()
   window.addEventListener("resize", syncViewportMetrics, { passive: true })

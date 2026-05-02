@@ -122,26 +122,6 @@
           radial-gradient(circle at top left, transparent 15px, var(--bg) 16px) bottom right / 16px 16px no-repeat;
       }
 
-      #simpleViewMark {
-        position: fixed;
-        bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
-        right: max(14px, env(safe-area-inset-right));
-        z-index: 101;
-        padding: 8px 10px;
-        border: none;
-        background: none;
-        color: var(--accent);
-        cursor: pointer;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.7;
-        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
-        transition: opacity 0.15s ease, transform 0.15s ease;
-      }
-      #simpleViewMark:hover { opacity: 1; transform: scale(1.1); }
-      #simpleViewMark:disabled { opacity: 0.4; cursor: default; }
-      body.simple-view #simpleViewMark:not([hidden]) { display: flex; }
 
       #simpleViewProgress {
         position: fixed;
@@ -149,22 +129,55 @@
         left: 0;
         right: 0;
         height: 6px;
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.25);
         z-index: 11;
         display: none;
       }
       body.simple-view #simpleViewProgress { display: block; }
       #simpleViewProgress > div {
         height: 100%;
-        background: rgba(34, 197, 94, 0.55);
+        background: rgba(255, 255, 255, 0.55);
         width: 0%;
         transition: width 0.4s ease;
       }
 
-      body.simple-view #tvRow .mark-watched-btn,
       body.simple-view #tvRow .poster-progress,
       body.simple-view #tvRow .poster-top,
       body.simple-view #tvRow .poster-bottom { display: none; }
+
+      body.simple-view #nextContent #tvRow .mark-watched-btn { display: none; }
+
+      #simpleViewMark {
+        position: fixed;
+        bottom: max(32px, calc(env(safe-area-inset-bottom) + 24px));
+        right: max(28px, env(safe-area-inset-right));
+        z-index: 12;
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--text);
+        cursor: pointer;
+        display: none;
+        opacity: 0.8;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+      #simpleViewMark:hover { opacity: 1; transform: scale(1.08); }
+      #simpleViewMark:disabled { opacity: 0.4; cursor: default; }
+      body.simple-view #simpleViewMark:not([hidden]) { display: block; }
+
+      body.simple-view #tvRow .item-card {
+        max-height: calc(var(--app-height) - 240px);
+        width: auto;
+        max-width: 100%;
+        margin: 0 auto;
+        transform: none;
+        will-change: auto;
+      }
+
+      body.simple-view #tvRow .poster-anchor { pointer-events: none; }
+      body.simple-view #tvRow .item-card { cursor: default; }
+      body.simple-view #tvRow .item-card::after { display: none; }
 
 
       #simpleViewMeta {
@@ -593,7 +606,7 @@
       }
 
       #nextContent.simple-view #tvRow .poster {
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 6px 24px rgba(0, 0, 0, 0.6);
       }
 
       #nextContent.simple-view #tvRow .poster-top {

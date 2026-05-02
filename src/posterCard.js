@@ -211,7 +211,7 @@ class PosterCard extends HTMLElement {
         const inner = img ? `<img class="poster" src="${escapeHtml(img)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />` : `<div class="poster poster--placeholder" aria-hidden="true" style="background:${placeholderGradient(title)}"></div>`
         const anchorLabel = epCode ? `Watch ${title} ${epCode}` : `Open ${title} poster`
         return posterHref
-          ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(anchorLabel)}">${inner}</a>`
+          ? `<a class="poster-anchor" href="${escapeHtml(posterHref)}" target="_blank" rel="noreferrer" draggable="false" aria-label="${escapeHtml(anchorLabel)}">${inner}</a>`
           : `<div class="poster-anchor">${inner}</div>`
       })()}
         <div class="poster-top">
