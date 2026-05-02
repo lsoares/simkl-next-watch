@@ -48,14 +48,14 @@
         background-image: var(--bd);
         background-size: cover;
         background-position: center;
-        filter: blur(16px) brightness(0.55) saturate(1.1);
+        filter: blur(16px) brightness(0.5) saturate(1);
         opacity: 0;
         transition: opacity 0.5s ease, background-image 0.4s ease;
         pointer-events: none;
       }
 
       body.has-backdrop #pageBackdrop {
-        opacity: 1;
+        opacity: 0.8;
       }
 
       main {
@@ -81,7 +81,9 @@
         justify-content: center;
         gap: 20px;
         padding: max(12px, env(safe-area-inset-top)) 0 12px;
-        background: linear-gradient(to top, transparent, rgba(17, 24, 39, 0.95) 40%);
+        background: linear-gradient(to top, rgba(17, 24, 39, 0) 0%, rgba(17, 24, 39, 0.55) 60%, rgba(17, 24, 39, 0.7) 100%);
+        backdrop-filter: blur(12px) saturate(1.2);
+        -webkit-backdrop-filter: blur(12px) saturate(1.2);
         z-index: 10;
         pointer-events: none;
       }

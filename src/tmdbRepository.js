@@ -1,7 +1,7 @@
 import { createKeyedCache } from "./cacheClient.js"
 import { idbGet } from "./idbStore.js"
 
-const cache = createKeyedCache("next-watch-tmdb-meta-v3")
+const cache = createKeyedCache("next-watch-tmdb-meta-v4")
 const seasonCache = createKeyedCache("next-watch-tmdb-season-v1")
 const inFlight = new Map()
 
