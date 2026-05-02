@@ -109,6 +109,78 @@
       body.simple-view .top-bar,
       body.simple-view .next-toolbar { display: none; }
 
+      #simpleViewMark {
+        position: fixed;
+        bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+        right: max(20px, env(safe-area-inset-right));
+        z-index: 11;
+        width: 64px;
+        height: 64px;
+        padding: 0;
+        border: 1.5px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        background: rgba(20, 83, 45, 0.6);
+        color: #fff;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+      }
+      #simpleViewMark:hover { background: rgba(34, 197, 94, 0.4); border-color: #22c55e; }
+      #simpleViewMark:disabled { opacity: 0.5; cursor: default; }
+      body.simple-view #simpleViewMark:not([hidden]) { display: flex; }
+
+      #simpleViewProgress {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        z-index: 11;
+        display: none;
+      }
+      body.simple-view #simpleViewProgress { display: block; }
+      #simpleViewProgress > div {
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.4s ease;
+      }
+
+      body.simple-view #tvRow .mark-watched-btn,
+      body.simple-view #tvRow .poster-progress,
+      body.simple-view #tvRow .poster-top,
+      body.simple-view #tvRow .poster-bottom { display: none; }
+
+      #simpleViewMeta {
+        position: fixed;
+        bottom: max(32px, calc(env(safe-area-inset-bottom) + 20px));
+        left: max(24px, env(safe-area-inset-left));
+        right: 110px;
+        z-index: 11;
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        pointer-events: none;
+      }
+      body.simple-view #simpleViewMeta { display: flex; }
+      #simpleViewMeta > a { pointer-events: auto; }
+      #simpleViewTitle {
+        font-size: 1.9rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--text);
+      }
+      #simpleViewEpisode {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      #simpleViewTitle:empty, #simpleViewEpisode:empty { display: none; }
+
       .top-bar {
         position: fixed;
         top: 0;

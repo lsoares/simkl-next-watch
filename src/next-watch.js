@@ -98,7 +98,8 @@ async function refreshLoggedIn() {
     menu: $("menu"), menuAiKey: $("menuAiKey"), menuInstall: $("menuInstall"), menuLogout: $("menuLogout"), aiSaveBtn: $("aiSaveBtn"),
     nextView: $("nextView"), tvRow: $("tvRow"), movieRow: $("movieRow"),
     nextActiveToggle: $("nextActiveToggle"), nextMovieSection: $("nextMovieSection"),
-    simpleViewExit: $("simpleViewExit"),
+    simpleViewExit: $("simpleViewExit"), simpleViewMeta: $("simpleViewMeta"), simpleViewTitle: $("simpleViewTitle"),
+    simpleViewEpisode: $("simpleViewEpisode"), simpleViewMark: $("simpleViewMark"), simpleViewProgress: $("simpleViewProgress"),
     trendingView: $("trendingView"), trendingSetup: $("trendingSetup"), trendingContent: $("trendingContent"), trendingPeriodTabs: $("trendingPeriodTabs"),
     trendingTvContent: $("trendingTvContent"), trendingMoviesContent: $("trendingMoviesContent"),
     aiView: $("aiView"), aiSetup: $("aiSetup"), aiContent: $("aiContent"),
@@ -211,13 +212,13 @@ async function refreshLoggedIn() {
     const savedId = await idbGet("tvRowShowId")
     const target = savedId && el.tvRow.querySelector(`[data-simkl-id="${savedId}"]`)?.closest(".row-item")
     if (!target) {
-      syncSimpleBackdrop()
+      syncSimpleView()
       return
     }
     isRestoringTvRowScroll = true
     lastSavedTvRowShowId = savedId
     el.tvRow.scrollLeft = target.offsetLeft
-    syncSimpleBackdrop()
+    syncSimpleView()
     setTimeout(() => { isRestoringTvRowScroll = false }, 500)
   }
 
@@ -250,9 +251,46 @@ async function refreshLoggedIn() {
     document.body.classList.add("has-backdrop")
   }
 
-  function syncSimpleBackdrop() {
+  function syncSimpleView() {
     const active = simpleView && currentView === "next"
     setSimpleBackdrop(active ? centeredTvRowChild()?.querySelector("poster-card")?.item?.backdropUrl : "")
+    syncSimpleControls()
+  }
+
+  function syncSimpleControls() {
+    const active = simpleView && currentView === "next"
+    if (!active) {
+      el.simpleViewMark.hidden = true
+      el.simpleViewProgress.firstElementChild.style.width = "0%"
+      el.simpleViewTitle.textContent = ""
+      el.simpleViewEpisode.textContent = ""
+      return
+    }
+    const item = centeredTvRowChild()?.querySelector("poster-card")?.item
+    if (!item) {
+      el.simpleViewMark.hidden = true
+      el.simpleViewProgress.firstElementChild.style.width = "0%"
+      el.simpleViewTitle.textContent = ""
+      el.simpleViewEpisode.textContent = ""
+      return
+    }
+    el.simpleViewTitle.textContent = item.title || ""
+    if (item.url) el.simpleViewTitle.href = item.url
+    else el.simpleViewTitle.removeAttribute("href")
+    const ep = item.status === "watching" ? item.nextEpisode : null
+    if (ep) {
+      el.simpleViewEpisode.textContent = `${ep.season}x${ep.episode}${item.episodeTitle ? `: ${item.episodeTitle}` : ""}`
+      const epUrl = item.episodeUrl || item.url
+      if (epUrl) el.simpleViewEpisode.href = epUrl
+      else el.simpleViewEpisode.removeAttribute("href")
+    } else {
+      el.simpleViewEpisode.textContent = ""
+    }
+    const total = item.total_episodes_count || 0
+    const watched = item.watched_episodes_count || 0
+    const pct = item.status === "watching" && total > 0 && watched > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0
+    el.simpleViewProgress.firstElementChild.style.width = `${pct}%`
+    el.simpleViewMark.hidden = !(item.status === "watching" && item.nextEpisode)
   }
 
   function centeredTvRowChild() {
@@ -690,7 +728,7 @@ async function refreshLoggedIn() {
       if (nav) nav.classList.toggle("active-nav", key === name)
     }
     views[name].onShow?.()
-    syncSimpleBackdrop()
+    syncSimpleView()
     syncChrome()
     const hash = name === "homepage" ? "" : `#${name}`
     if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname)
@@ -835,13 +873,20 @@ async function refreshLoggedIn() {
   })
   el.nextActiveToggle.addEventListener("click", () => setSimpleViewMode(!simpleView))
   el.simpleViewExit.addEventListener("click", () => setSimpleViewMode(false))
+  el.simpleViewMark.addEventListener("click", async () => {
+    const item = centeredTvRowChild()?.querySelector("poster-card")?.item
+    if (!item) return
+    el.simpleViewMark.disabled = true
+    try { await markWatched(item) }
+    finally { el.simpleViewMark.disabled = false }
+  })
 
   async function setSimpleViewMode(value) {
     simpleView = value
     el.tvRow._fingerprint = null
     await idbSet("simpleView", simpleView)
     renderNext()
-    syncSimpleBackdrop()
+    syncSimpleView()
     syncChrome()
   }
 
@@ -851,11 +896,11 @@ async function refreshLoggedIn() {
   let tvRowScrollTimer = null
   el.tvRow.addEventListener("scroll", () => {
     if (isRestoringTvRowScroll) return
-    syncSimpleBackdrop()
+    syncSimpleView()
     clearTimeout(tvRowScrollTimer)
     tvRowScrollTimer = setTimeout(saveTvRowScroll, 200)
   }, { passive: true })
-  el.tvRow.addEventListener("backdropready", syncSimpleBackdrop)
+  el.tvRow.addEventListener("backdropready", syncSimpleView)
   document.addEventListener("keydown", (e) => {
     if (!simpleView || currentView !== "next") return
     if (e.metaKey || e.ctrlKey || e.altKey) return
