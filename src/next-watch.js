@@ -653,8 +653,8 @@ async function refreshLoggedIn() {
       showToast("Sign in to get personalized picks.")
       return
     }
-    const icon = btn.querySelector(".ai-prompt-icon")?.textContent ?? ""
-    const label = btn.querySelector(".ai-prompt-label")?.textContent ?? ""
+    const icon = btn.querySelector(".ai-prompt-icon")?.innerText ?? ""
+    const label = btn.querySelector(".ai-prompt-label")?.innerText ?? ""
     openMood({ label: `${icon} ${label}`.trim(), gloss: btn.dataset.gloss || "" })
   })
 
