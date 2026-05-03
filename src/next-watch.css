@@ -43,7 +43,7 @@
         position: fixed;
         inset: -10vmin;
         z-index: -1;
-        filter: blur(28px) brightness(0.22) saturate(0.7);
+        filter: blur(28px) brightness(0.5) saturate(1.05);
         visibility: hidden;
         pointer-events: none;
       }
