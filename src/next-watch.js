@@ -281,10 +281,10 @@ async function refreshLoggedIn() {
     el.simpleViewMark.hidden = !(!!item.status && item.status !== "completed" && (item.type !== "tv" || !!item.nextEpisode))
     const total = item.total_episodes_count || 0
     const watched = item.watched_episodes_count || 0
-    el.simpleViewTitle.textContent = item.title || ""
-    if (item.url) el.simpleViewTitle.href = item.url
-    else el.simpleViewTitle.removeAttribute("href")
     const ep = item.status === "watching" ? item.nextEpisode : null
+    el.simpleViewTitle.textContent = item.status === "watching" ? "" : (item.title || "")
+    if (item.status !== "watching" && item.url) el.simpleViewTitle.href = item.url
+    else el.simpleViewTitle.removeAttribute("href")
     el.simpleViewPosition.textContent = ""
     if (ep) {
       el.simpleViewEpisode.textContent = `${ep.season}×${ep.episode}${item.episodeTitle ? ` · ${item.episodeTitle}` : ""}`
