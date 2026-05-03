@@ -104,6 +104,8 @@
       body.simple-view .top-bar,
       body.simple-view .next-toolbar { display: none; }
 
+      body.simple-view { background-image: none; }
+
       body.simple-view main {
         padding-top: max(88px, calc(env(safe-area-inset-top) + 76px));
         padding-bottom: max(140px, calc(env(safe-area-inset-bottom) + 130px));
