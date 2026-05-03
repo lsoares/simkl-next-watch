@@ -175,15 +175,6 @@
         margin: 0 auto;
         transform: none;
         will-change: auto;
-        background: transparent;
-        box-shadow: none;
-        border-radius: 0;
-        -webkit-mask-image: radial-gradient(ellipse 75% 80% at center, black 55%, transparent 100%);
-        mask-image: radial-gradient(ellipse 75% 80% at center, black 55%, transparent 100%);
-      }
-
-      body.simple-view #pageBackdrop {
-        filter: blur(40px) brightness(0.5) saturate(1.15);
       }
 
       body.simple-view #tvRow .poster-anchor { pointer-events: none; }
