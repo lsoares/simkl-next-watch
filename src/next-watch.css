@@ -171,13 +171,10 @@
         margin: 0 auto;
         transform: translateY(-8px);
         will-change: auto;
-        border-radius: 14px;
         box-shadow:
           0 28px 48px -12px rgba(0, 0, 0, 0.85),
           0 14px 24px -10px rgba(0, 0, 0, 0.55);
       }
-
-      body.simple-view #tvRow .poster { border-radius: 14px; }
 
       body.simple-view #tvRow .poster-anchor { pointer-events: none; }
       body.simple-view #tvRow .item-card { cursor: default; }
