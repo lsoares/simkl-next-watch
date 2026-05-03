@@ -165,15 +165,12 @@
       body.simple-view #simpleViewMark:not([hidden]) { display: block; }
 
       body.simple-view #tvRow .item-card {
-        max-height: calc(var(--app-height) - 312px);
+        max-height: calc(var(--app-height) - 240px);
         width: auto;
         max-width: 100%;
         margin: 0 auto;
-        transform: translateY(-8px);
+        transform: none;
         will-change: auto;
-        box-shadow:
-          0 28px 48px -12px rgba(0, 0, 0, 0.85),
-          0 14px 24px -10px rgba(0, 0, 0, 0.55);
       }
 
       body.simple-view #tvRow .poster-anchor { pointer-events: none; }
@@ -596,7 +593,7 @@
       #nextContent.simple-view #tvRow {
         max-width: 420px;
         margin: 0 auto;
-        padding: 16px 0 56px;
+        padding-right: 0;
         -webkit-mask-image: none;
         mask-image: none;
       }
